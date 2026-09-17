@@ -1,0 +1,15 @@
+.env
+.venv/
+.comfyui/
+.python/
+.tools/
+.uv-cache/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+data/*.db
+data/uploads/*
+data/outputs/*
+!data/uploads/.gitkeep
+!data/outputs/.gitkeep

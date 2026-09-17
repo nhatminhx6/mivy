@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Giao diện thử nghiệm API tạo ảnh quảng cáo Mivy" />
+    <title>Mivy Studio</title>
+    <link rel="stylesheet" href="/ui/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/ui/" aria-label="Mivy Studio">
+        <span class="brand-mark">M</span>
+        <span>Mivy <b>Studio</b></span>
+      </a>
+      <div class="api-state"><i></i><span>Local API</span></div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <span class="eyebrow">AI PRODUCT CREATIVE</span>
+        <h1>Biến ảnh sản phẩm thành<br /><em>quảng cáo nổi bật.</em></h1>
+        <p>Tải ảnh lên, mô tả ý tưởng và để Mivy dựng bản quảng cáo đầu tiên.</p>
+      </section>
+
+      <section class="workspace">
+        <form id="generation-form" class="control-panel">
+          <div class="section-heading">
+            <span class="step">01</span>
+            <div><h2>Ảnh sản phẩm</h2><p>PNG, JPG hoặc WEBP · tối đa 15 MB</p></div>
+          </div>
+
+          <label id="drop-zone" class="drop-zone" for="image-input">
+            <input id="image-input" name="image" type="file" accept="image/jpeg,image/png,image/webp" required />
+            <div id="upload-empty" class="upload-empty">
+              <span class="upload-icon">↑</span>
+              <strong>Thả ảnh vào đây</strong>
+              <span>hoặc bấm để chọn từ máy</span>
+            </div>
+            <img id="image-preview" alt="Ảnh sản phẩm đã chọn" hidden />
+            <button id="change-image" type="button" class="change-image" hidden>Đổi ảnh</button>
+          </label>
+
+          <div class="section-heading compact">
+            <span class="step">02</span>
+            <div><h2>Ý tưởng quảng cáo</h2><p>Mô tả bối cảnh bạn muốn tạo</p></div>
+          </div>
+
+          <label class="field-label" for="prompt">Prompt</label>
+          <textarea id="prompt" name="prompt" rows="4" required placeholder="Ví dụ: Chai nước hoa trên phiến đá đen, ánh sáng điện ảnh, nền sương mờ..."></textarea>
+
+          <div class="field-row">
+            <label><span class="field-label">Phong cách</span>
+              <select name="style">
+                <option value="">Tự động</option>
+                <option value="minimal">Tối giản</option>
+                <option value="luxury">Sang trọng</option>
+                <option value="playful">Trẻ trung</option>
+                <option value="cinematic">Điện ảnh</option>
+              </select>
+            </label>
+            <fieldset>
+              <legend class="field-label">Tỷ lệ</legend>
+              <div class="ratios">
+                <label><input type="radio" name="aspect_ratio" value="1:1" checked /><span>1:1</span></label>
+                <label><input type="radio" name="aspect_ratio" value="4:5" /><span>4:5</span></label>
+                <label><input type="radio" name="aspect_ratio" value="16:9" /><span>16:9</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <button id="generate-button" class="generate" type="submit">
+            <span>Tạo ảnh quảng cáo</span><b>→</b>
+          </button>
+        </form>
+
+        <section class="result-panel" aria-live="polite">
+          <div class="result-topline"><span>KẾT QUẢ</span><span id="job-id"></span></div>
+          <div id="result-empty" class="result-empty">
+            <div class="orb"><span>✦</span></div>
+            <h2>Sẵn sàng tạo điều kỳ diệu</h2>
+            <p>Ảnh quảng cáo của bạn sẽ xuất hiện tại đây.</p>
+          </div>
+          <div id="result-loading" class="result-loading" hidden>
+            <div class="loader-visual"><div class="scan"></div><span>✦</span></div>
+            <h2 id="status-title">Đang xếp hàng...</h2>
+            <p id="status-copy">Mivy đang chuẩn bị yêu cầu của bạn.</p>
+            <div class="progress-track"><div id="progress-bar"></div></div>
+            <span id="progress-label">0%</span>
+          </div>
+          <div id="result-complete" class="result-complete" hidden>
+            <img id="result-image" alt="Ảnh quảng cáo được tạo bởi Mivy" />
+            <div class="result-actions">
+              <div><strong>Hoàn tất</strong><span>Ảnh đã sẵn sàng</span></div>
+              <a id="download-result" download>Tải ảnh xuống ↓</a>
+            </div>
+          </div>
+          <div id="result-error" class="result-error" hidden>
+            <span>!</span><h2>Chưa thể tạo ảnh</h2><p id="error-message"></p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer><span>MIVY LABS · LOCAL PROTOTYPE</span><a href="/docs">API DOCS ↗</a></footer>
+    <script src="/ui/app.js" defer></script>
+  </body>
+</html>
