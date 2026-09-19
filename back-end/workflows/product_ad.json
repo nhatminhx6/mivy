@@ -8,8 +8,8 @@
     "inputs": {"image": "{{INPUT_IMAGE}}"}
   },
   "3": {
-    "class_type": "VAEEncode",
-    "inputs": {"pixels": ["2", 0], "vae": ["1", 2]}
+    "class_type": "VAEEncodeForInpaint",
+    "inputs": {"pixels": ["9", 0], "vae": ["1", 2], "mask": ["10", 1], "grow_mask_by": 4}
   },
   "4": {
     "class_type": "CLIPTextEncode",
@@ -18,7 +18,7 @@
   "5": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "blurry, low quality, distorted product, duplicate, watermark, text, logo deformation",
+      "text": "white background, plain background, blurry, low quality, duplicate product, extra shoes, watermark, text",
       "clip": ["1", 1]
     }
   },
@@ -26,11 +26,11 @@
     "class_type": "KSampler",
     "inputs": {
       "seed": 84739201,
-      "steps": 20,
+      "steps": 25,
       "cfg": 7.0,
       "sampler_name": "euler_ancestral",
       "scheduler": "normal",
-      "denoise": 0.72,
+      "denoise": 1.0,
       "model": ["1", 0],
       "positive": ["4", 0],
       "negative": ["5", 0],
@@ -41,8 +41,33 @@
     "class_type": "VAEDecode",
     "inputs": {"samples": ["6", 0], "vae": ["1", 2]}
   },
+  "9": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["2", 0],
+      "upscale_method": "lanczos",
+      "width": 512,
+      "height": 512,
+      "crop": "center"
+    }
+  },
+  "10": {
+    "class_type": "MivyProductMask",
+    "inputs": {"image": ["9", 0]}
+  },
+  "11": {
+    "class_type": "ImageCompositeMasked",
+    "inputs": {
+      "destination": ["7", 0],
+      "source": ["9", 0],
+      "mask": ["10", 0],
+      "x": 0,
+      "y": 0,
+      "resize_source": false
+    }
+  },
   "8": {
     "class_type": "SaveImage",
-    "inputs": {"filename_prefix": "{{OUTPUT_PREFIX}}", "images": ["7", 0]}
+    "inputs": {"filename_prefix": "{{OUTPUT_PREFIX}}", "images": ["11", 0]}
   }
 }

@@ -1,5 +1,8 @@
 # Mivy backend
 
+For product direction, current implementation status, and cross-AI continuation notes, read
+[HANDOFF.md](HANDOFF.md).
+
 The initial local-first backend for Mivy. It accepts a product image, persists a generation
 job, and processes jobs one at a time using either a working mock engine or a ComfyUI adapter.
 
@@ -88,6 +91,26 @@ and an image-to-image workflow. Start ComfyUI and Mivy together with:
 ```
 
 Then use the Mivy UI at `http://127.0.0.1:8000/ui/`. Stop both processes with `Ctrl+C`.
+
+`run-local.sh` explicitly selects the ComfyUI engine. The workflow center-crops the uploaded
+image to 512×512 before generation to keep memory usage manageable on a 16 GB Mac.
+The current workflow produces square images regardless of the requested aspect ratio.
+The workflow segments the product with U2NetP, inpaints the background, then composites the
+original product back onto the result. Product interiors are preserved; segmentation boundaries
+can still need refinement, especially for transparent products or cluttered photos. It keeps the
+original product angle rather than generating a new viewpoint.
+
+The project custom node needs additional dependencies in ComfyUI's environment:
+
+```bash
+uv pip install --python .comfyui/.venv/bin/python -r comfy_nodes/requirements.txt
+```
+
+`run-comfyui.sh` links `comfy_nodes/mivy_product` into ComfyUI and stores the segmentation model
+under `.comfyui/models/rembg/` (downloaded automatically on first use).
+
+The local checkpoint is [DreamShaper 8 by Lykon](https://huggingface.co/Lykon/DreamShaper/blob/main/DreamShaper_8_pruned.safetensors),
+saved as `.comfyui/models/checkpoints/dreamshaper_8.safetensors`.
 
 ## API errors
 
