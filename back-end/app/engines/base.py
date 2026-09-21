@@ -9,7 +9,7 @@ class GenerationEngineError(RuntimeError):
 
 @dataclass(frozen=True)
 class GenerationInput:
-    input_image_path: Path
+    input_image_path: Path | None
     prompt: str
     style: str | None
     aspect_ratio: str

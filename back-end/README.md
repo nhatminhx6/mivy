@@ -3,8 +3,16 @@
 For product direction, current implementation status, and cross-AI continuation notes, read
 [HANDOFF.md](HANDOFF.md).
 
-The initial local-first backend for Mivy. It accepts a product image, persists a generation
-job, and processes jobs one at a time using either a working mock engine or a ComfyUI adapter.
+Mivy Studio turns a short campaign brief into Vietnamese copy, captions and a video script
+using local Ollama (`qwen3:8b`), then generates an image using ComfyUI. No API key is needed.
+Open `/ui/`, choose a brief, select a direction, click **Viết bộ nội dung bằng AI**, then
+**Thiết kế → Tạo ảnh AI**. Uploaded product subjects can optionally be preserved.
+
+Start the installed local stack with `./scripts/run-local.sh`. The script reuses services
+already running. Stop with Ctrl+C to stop only services started by that invocation.
+Campaign drafts live in browser localStorage; image jobs/results live in SQLite and `data/`.
+AI errors never fall back to template content. Generated images are 512×512; poster export
+is a 1080×1080 canvas composition. Video output is a script, not a rendered video.
 
 ## Requirements and setup
 
@@ -26,7 +34,7 @@ default, and database tables/directories are created automatically at startup.
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open the local test UI at [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/) or
+Open Mivy Studio at [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/) or
 Swagger UI at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ## Test and lint
@@ -76,9 +84,10 @@ literal strings:
 - `{{PROMPT}}` in the positive text-prompt input
 - `{{OUTPUT_PREFIX}}` in the save-image node's filename-prefix input
 
-All three placeholders are required. The adapter deliberately does not assume node IDs: it
-performs placeholder substitution, uploads the source image, submits `/prompt`, polls `/history`,
-and downloads the resulting image through `/view`. A missing workflow or placeholder produces a
+All three placeholders are required. The bundled adapter maps known node IDs when switching
+to text-to-image (EmptyLatentImage, bypassing input/mask/composite). Keep the bundled node IDs
+when editing this workflow. It uploads reference images when provided, submits `/prompt`,
+polls `/history`, and downloads results through `/view`. A missing workflow or placeholder produces a
 clear failed-job message.
 
 ### Bundled local setup
@@ -92,22 +101,21 @@ and an image-to-image workflow. Start ComfyUI and Mivy together with:
 
 Then use the Mivy UI at `http://127.0.0.1:8000/ui/`. Stop both processes with `Ctrl+C`.
 
-`run-local.sh` explicitly selects the ComfyUI engine. The workflow center-crops the uploaded
-image to 512×512 before generation to keep memory usage manageable on a 16 GB Mac.
-The current workflow produces square images regardless of the requested aspect ratio.
-The workflow segments the product with U2NetP, inpaints the background, then composites the
-original product back onto the result. Product interiors are preserved; segmentation boundaries
-can still need refinement, especially for transparent products or cluttered photos. It keeps the
-original product angle rather than generating a new viewpoint.
+`run-local.sh` selects the real image engine. Uploaded products use local BiRefNet
+segmentation and deterministic composition, preserving original product pixels and fitting
+the entire cutout with padding. Supported backgrounds: white and pastel gradient.
+Exports are PNG: 1080×1080, 1080×1350, or 1080×1920. No diffusion is used for uploaded products.
+Illustrations without an uploaded photo still use ComfyUI.
 
-The project custom node needs additional dependencies in ComfyUI's environment:
+Install the product runtime/model once (about 973 MB download):
 
 ```bash
-uv pip install --python .comfyui/.venv/bin/python -r comfy_nodes/requirements.txt
+./scripts/setup-product.sh
 ```
 
-`run-comfyui.sh` links `comfy_nodes/mivy_product` into ComfyUI and stores the segmentation model
-under `.comfyui/models/rembg/` (downloaded automatically on first use).
+Masks are cached in `data/cutout_cache/`. Each output also has `.mask.png`, `.cutout.png`
+and `.json` diagnostics beside it. Segmentation can still fail on transparent objects,
+complex backgrounds, or tiny details; these are not validated product categories yet.
 
 The local checkpoint is [DreamShaper 8 by Lykon](https://huggingface.co/Lykon/DreamShaper/blob/main/DreamShaper_8_pruned.safetensors),
 saved as `.comfyui/models/checkpoints/dreamshaper_8.safetensors`.
@@ -119,3 +127,14 @@ Errors use a consistent shape and never include local file paths or stack traces
 ```json
 {"error": {"code": "job_not_found", "message": "Generation job was not found"}}
 ```
+
+## Local creative API
+
+- `POST /v1/creative/text`: JSON brief (`name`, `details`, `type`, `brand`, `audience`,
+  `tone`, `concept` 0–2, optional `when`, `where`, `cta`). Returns validated outputs + model.
+- `POST /v1/creative/images`: multipart `prompt`, optional `image`; returns queued job ID.
+  This endpoint refuses the mock engine. Poll existing `/v1/generations/{id}`.
+- `OLLAMA_BASE_URL`, `TEXT_MODEL`, `TEXT_TIMEOUT_SECONDS` configure text inference.
+  The local runner assumes default service ports (11434/8188/8000).
+- Text calls and image worker share a process-local lock. Run one API process for this local
+  setup; it is not a distributed/multi-worker queue.

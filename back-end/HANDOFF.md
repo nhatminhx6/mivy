@@ -1,6 +1,18 @@
 # Mivy — bàn giao định hướng và trạng thái project
 
-Cập nhật: 19/09/2026. File này dành cho Claude hoặc AI khác tiếp tục làm việc từ cuộc trao đổi với anh, không cần đọc lại lịch sử chat.
+Cập nhật: 20/09/2026. File này dành cho Claude hoặc AI khác tiếp tục làm việc từ cuộc trao đổi với anh, không cần đọc lại lịch sử chat.
+
+### Cập nhật mới nhất: 20/09/2026 — nối AI local thật
+
+- Anh đã duyệt **chạy model local, không dùng API key**. Ollama đang dùng `qwen3:8b`; model đã có trên máy. ComfyUI dùng DreamShaper 8.
+- `/ui/` hiện có luồng thật: chọn demo hoặc nhập brief ngắn → chọn hướng → **Viết bộ nội dung bằng AI** → bài giới thiệu/caption/kịch bản → tab Thiết kế → **Tạo ảnh AI** → chỉnh chữ và tải ảnh/poster/TXT.
+- Text từ `/v1/creative/text`, KHÔNG ghép template khi model lỗi. Giọng văn, đối tượng và concept đều gửi đến model. Lỗi hiển thị trên web, giữ nội dung cũ.
+- Ảnh từ `/v1/creative/images`: không cần upload (text-to-image); nếu bật giữ chủ thể và có ảnh thì dùng background inpaint + mask/composite cũ. Ảnh gốc vẫn giữ riêng; ảnh sinh lưu URL job.
+- Text và image dùng chung khóa tính toán. Ollama `keep_alive=0`; ComfyUI được yêu cầu giải phóng model sau khi ảnh thành công.
+- `scripts/run-local.sh` khởi động các dịch vụ còn thiếu (Ollama, ComfyUI, FastAPI); không tạo trùng hoặc dừng dịch vụ có sẵn. Nếu thiếu text model thì tải bằng `ollama pull`.
+- Bản nháp vẫn localStorage `mivy-drafts-v1`, không có tài khoản/đồng bộ. Text chưa có persisted background job; reload giữa lúc viết có thể mất kết quả vừa tạo. Job ảnh lưu SQLite và có nút kiểm tra tiếp.
+- Đọc [COMPETITOR_RESEARCH.md](COMPETITOR_RESEARCH.md) cho định hướng đa mục đích. Không quay lại chỉ tập trung bán hàng hoặc yêu cầu anh viết prompt dài.
+- Màn test API ảnh cũ ở `/ui/image-lab.html`. Bản nháp mẫu cũ được ghi nhãn riêng và có nút viết lại bằng AI.
 
 ## 1. Cách làm việc với anh
 
@@ -71,7 +83,7 @@ Các entity có thể bổ sung: `Brand`, `Campaign`, `Creative`, `Template`, `A
 ### Text quảng cáo
 
 - Dùng API LLM ở giai đoạn đầu; chưa cần train model riêng.
-- Chưa chọn nhà cung cấp/model, chưa cấu hình API key, chưa có module gen text.
+- Đã chọn Ollama local `qwen3:8b`, không cần API key; module `app/services/text_service.py`.
 - Dự kiến `CopywritingService`, đầu ra JSON có cấu trúc theo loại nội dung và kênh; có thể dùng endpoint `POST /v1/campaigns/{id}/copy` sau khi thiết kế Campaign.
 - Template gồm cấu trúc thông điệp, các trường cần nhập và bố cục; ví dụ vấn đề → lợi ích → bằng chứng được cung cấp → ưu đãi nếu có → CTA.
 - Cho sửa/copy/viết lại từng phần và lưu phiên bản đã chọn.
@@ -183,3 +195,39 @@ Không ghi API key/secrets vào tài liệu hoặc commit `.env`.
 4. Nếu tiếp tục phần chất lượng ảnh: mở ảnh job mới nêu trên, đánh giá nền/biên/sản phẩm và báo thật những gì còn thiếu.
 5. Nếu tiếp tục sản phẩm: chốt scope demo chiến dịch rồi đặc tả brief, đầu ra, template, editor và tiêu chí nghiệm thu. Có thể bắt đầu với demo workshop và ra mắt app đã đề xuất.
 6. Sau mỗi phần, cập nhật trạng thái đã làm/chưa làm, lệnh chạy và hạn chế ở đây để chuyển tiếp giữa các AI.
+
+## Prototype web — bàn giao triển khai
+
+- Files: `web/index.html`, `web/studio.css`, `web/studio.js`. API lab vẫn dùng `web/styles.css` và `web/app.js`.
+- LocalStorage key: `mivy-drafts-v1`; bản nháp chỉ trên trình duyệt hiện tại. Không có đồng bộ tài khoản hoặc import JSON.
+- Giọng văn đã gửi tới model. Poster xuất canvas PNG 1080×1080, chưa phải editor kéo thả hoặc render giống hệt preview. Ảnh AI gốc 512×512. Video chỉ là kịch bản text.
+- Bước tiếp theo: nâng chất lượng model/copy và ảnh, persisted Campaign/Creative + text job, editor preview khớp export và nhiều tỉ lệ. Không xem việc đã nối model là chất lượng production: Qwen3 đôi khi tự thêm chi tiết, DreamShaper có thể vẽ sai tay/chi tiết.
+
+### Bằng chứng kiểm tra 20/09
+
+- Browser: từ brief workshop → text Qwen3 → ảnh ComfyUI → tải PNG/TXT và reload mở lại. Job ảnh thật `3946f053-1022-4bde-96da-d7e8f70fcad1`, output `data/outputs/3946f053-1022-4bde-96da-d7e8f70fcad1.png`, sinh khoảng 19 giây. Text thử đầu khoảng 37 giây.
+- Đã sửa lỗi Ollama grammar không nhận maxLength lớn: bỏ giới hạn độ dài khỏi decoding schema, vẫn validate Pydantic khi nhận.
+- Text có bước dịch mô tả hình sang English nếu model trả chữ có dấu. Prompt không hiện thành ô bắt anh nhập.
+- Ollama API tham khảo: https://github.com/ollama/ollama/blob/main/docs/api.md (structured outputs, think=false, keep_alive).
+- Kiểm tra cuối: 17 pytest pass, Ruff pass, node syntax pass; thêm 1 unittest trong ComfyUI runtime xác nhận mask lấp lỗ bên trong chủ thể. Chạy `.comfyui/.venv/bin/python -m unittest comfy_nodes.test_product_mask`.
+- Đã test API text với brief ra mắt app (22.6 giây). Product image upload cũng chạy thật: job cuối `709b0c72-4e03-47ce-9159-5e0e60a79ccf` (~20 giây). Đã xem ảnh; sọc trắng trên giày giữ nguyên sau sửa `binary_fill_holes`, biên vẫn có thể có halo.
+- Custom node mask thay đổi cần restart ComfyUI. `comfy_nodes/requirements.txt` khai báo scipy rõ ràng.
+
+### 21/09/2026 — sửa ảnh tải lên bị bỏ qua
+- Luồng chiến dịch trước đây chỉ gửi ảnh khi `preserveSubject=true`; mặc định false với loại event/service/app khiến upload bị bỏ qua. Đã bỏ điều kiện/toggle: có ảnh thì luôn gửi ảnh để giữ chủ thể và đổi nền, kể cả bản nháp cũ có flag false.
+- Chặn gửi khi FileReader chưa đọc xong. Luồng ảnh sản phẩm bắt buộc có upload; API trả image_required khi preset background thiếu ảnh. Sửa designImage dùng optional chaining để luồng ảnh độc lập không lỗi current=null.
+- Kiểm tra: 18 pytest, 2 Node regression tests pass. Browser đã xác nhận thiếu ảnh có thông báo. Ảnh giày thật + nền bàn gỗ: job ad34f000-cf52-4bba-a387-86e4e4cfea47, ~22 giây; đã xem output.
+- Sau kiểm tra còn thấy model vẽ thêm chi tiết quanh giày, đã đổi adapter sang tạo nền độc lập (EmptyLatentImage), rồi composite chủ thể gốc; preset mô tả mặt phẳng trống. Job xác nhận 1fdae184-3d08-4edc-bdbf-3a67ba1af0be. Đúng giày gốc, nhưng mask vẫn giữ một phần bóng xám ở mũi giày và nền có thể sinh vật thể thừa; không xem đây là chất lượng ảnh thương mại hoàn thiện.
+
+### Đánh giá lại sau phản hồi chất lượng ảnh 21/09
+Đọc `IMAGE_PIPELINE_REVIEW.md` trước khi sửa pipeline tiếp. Đã xác nhận center-crop trước segmentation làm cắt sản phẩm khi đổi tỉ lệ, và nền trắng vẫn dùng diffusion gây vật thể lạ. Quyết định đề xuất: nền trắng/gradient + cutout + fit/padding xác định, benchmark U2NetP/BiRefNet trên ảnh thật trước khi thay model. Không có benchmark hoàn chỉnh hay sửa runtime trong lượt nghiên cứu này; không dùng test API pass làm bằng chứng chất lượng ảnh. Phương án local vẫn ưu tiên theo lựa chọn của anh.
+
+### 21/09/2026 — product output fix implemented and visually checked
+- Uploaded photos now route through `ProductImageEngine` → local BiRefNet cutout → deterministic white/gradient composition. No diffusion for uploaded products; no center-crop before segmentation. Original RGB retained, alpha boundaries preserved (no global hole filling or erosion), fit with 8% minimum-side padding, centered.
+- Exact PNG sizes: 1080×1080, 1080×1350, 1080×1920. ComfyUI remains for no-photo illustrations. Unsupported scene presets removed from UI/API pending quality validation.
+- BiRefNet general model installed locally (~973 MB); `scripts/setup-product.sh` installs pinned rembg and downloads model for another checkout. `.env.example` contains product runtime settings. Keep venv executable symlink unresolved (`absolute`, not `resolve`), otherwise subprocess loses its dependencies.
+- Actual shoe compared U2NetP vs BiRefNet. U2NetP retained gray shadow at toe; BiRefNet removed it while retaining stripes and white sole. Cold local segmentation ~20.5 s; subsequent same-photo ratios use cached mask, ~0.2 s API jobs. This is ONE real photo, not a full product benchmark.
+- Visual artifacts: `data/outputs/qa-u2netp.png`, `qa-birefnet.png`; API square job `7213e90b-4287-4a8f-a5ad-def058885556`, portrait gradient job `c1682781-78cd-4c64-8085-7c6d827224f1`. Each has mask, cutout and JSON diagnostics. Square/portrait export sizes checked; white 9:16 and gradient 4:5 viewed.
+- Browser upload → white 9:16 → result → download verified. Actual downloaded file `/Users/minh.nn1/Downloads/mivy-image.png` is 1080×1920. Preview contains full product; download button above result.
+- Verification: 20 pytest, 6 compositor unittest, 2 Node regression tests; Ruff and JS syntax passed.
+- Next quality work: representative real-photo suite across opaque products, detailed edges, complex backgrounds and transparent objects; user-visible mask correction if needed. Do not re-enable generated scenes merely because an API job succeeds. This is a reliable basic product-photo export, not a finished advertising layout or universal segmentation guarantee.

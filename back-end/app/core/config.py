@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     comfyui_base_url: str = "http://127.0.0.1:8188"
     comfyui_workflow_path: Path = Path("./workflows/product_ad.json")
     generation_timeout_seconds: int = 600
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    text_model: str = "qwen3:8b"
+    text_timeout_seconds: int = 300
+    product_python: Path = Path(".comfyui/.venv/bin/python")
+    product_model_home: Path = Path(".comfyui/models/rembg")
+    product_cache_dir: Path = Path("data/cutout_cache")
+    product_model: str = "birefnet-general"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -24,4 +31,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

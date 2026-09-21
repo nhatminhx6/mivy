@@ -13,3 +13,5 @@ data/uploads/*
 data/outputs/*
 !data/uploads/.gitkeep
 !data/outputs/.gitkeep
+
+data/cutout_cache/

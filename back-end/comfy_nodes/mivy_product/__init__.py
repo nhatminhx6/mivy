@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from PIL import Image
 from rembg import new_session, remove
+from scipy.ndimage import binary_erosion, binary_fill_holes
 
 
 class MivyProductMask:
@@ -29,9 +30,17 @@ class MivyProductMask:
             )
             mask = remove(source, session=self.session, only_mask=True)
             alpha = np.asarray(mask, dtype=np.float32) / 255.0
-            # Make the solid interior opaque while retaining antialiased edges.
-            alpha = np.clip((alpha - 0.05) / 0.9, 0, 1)
-            coverage = float((alpha > 0.5).mean())
+            # Keep only the confident subject core. The soft, low-alpha halo around the
+            # product is the original photo's shadow/background; keeping it composites a
+            # gray "oval pedestal" under the product, so it is dropped entirely.
+            # binary_fill_holes also fills reflective/white markings mistaken for holes.
+            solid = binary_fill_holes(alpha > 0.5)
+            # Erode 1px so the seam between product and the new background has no halo.
+            eroded = binary_erosion(solid, iterations=1)
+            if eroded.any():
+                solid = eroded
+            alpha = solid.astype(np.float32)
+            coverage = float(solid.mean())
             if not 0.01 < coverage < 0.95:
                 raise ValueError("Cannot isolate product; use a clear product photo.")
             masks.append(torch.from_numpy(alpha))

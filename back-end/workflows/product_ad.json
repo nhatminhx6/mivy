@@ -18,7 +18,7 @@
   "5": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "white background, plain background, blurry, low quality, duplicate product, extra shoes, watermark, text",
+      "text": "person, people, human, man, woman, girl, boy, hand, hands, arm, fingers, face, body, legs, feet, model, mannequin, doll, portrait, podium, pedestal, stand, platform, stage, bowl, plate, box, extra objects, clutter, duplicate subject, blurry, low quality, watermark, text, letters",
       "clip": ["1", 1]
     }
   },

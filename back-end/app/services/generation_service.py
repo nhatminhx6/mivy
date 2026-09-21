@@ -12,7 +12,7 @@ class GenerationService:
         self.sessions = sessions
 
     async def create_job(
-        self, input_path: Path, prompt: str, style: str | None, aspect_ratio: str
+        self, input_path: Path | None, prompt: str, style: str | None, aspect_ratio: str
     ) -> GenerationJob:
         job = GenerationJob(
             id=str(uuid4()),
@@ -20,7 +20,7 @@ class GenerationService:
             prompt=prompt,
             style=style,
             aspect_ratio=aspect_ratio,
-            input_path=str(input_path),
+            input_path=str(input_path) if input_path else "",
             progress=0,
         )
         async with self.sessions() as session:

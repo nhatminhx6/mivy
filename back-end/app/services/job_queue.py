@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class JobQueue:
-    def __init__(self, service: GenerationService, engine: GenerationEngine) -> None:
+    def __init__(
+        self,
+        service: GenerationService,
+        engine: GenerationEngine,
+        ai_lock: asyncio.Lock | None = None,
+    ) -> None:
+        self.ai_lock = ai_lock or asyncio.Lock()
         self.service = service
         self.engine = engine
         self.queue: asyncio.Queue[str] = asyncio.Queue()
@@ -34,7 +40,8 @@ class JobQueue:
         while True:
             job_id = await self.queue.get()
             try:
-                await self._process(job_id)
+                async with self.ai_lock:
+                    await self._process(job_id)
             except Exception:
                 logger.exception("Unexpected worker error for job %s", job_id)
             finally:
@@ -46,7 +53,7 @@ class JobQueue:
             return
         await self.service.set_state(job_id, JobStatus.PROCESSING, 10)
         generation_input = GenerationInput(
-            input_image_path=Path(job.input_path),
+            input_image_path=Path(job.input_path) if job.input_path else None,
             prompt=job.prompt,
             style=job.style,
             aspect_ratio=job.aspect_ratio,

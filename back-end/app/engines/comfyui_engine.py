@@ -16,6 +16,11 @@ from app.engines.base import (
 
 
 class ComfyUIEngine(GenerationEngine):
+    # Base render sizes tuned for SD 1.5 (DreamShaper 8); upscaled 2x before saving so
+    # the exported image is large enough to post on Shopee/TikTok/Facebook.
+    ASPECT_DIMENSIONS = {"1:1": (512, 512), "4:5": (512, 640), "9:16": (512, 896)}
+    UPSCALE_BY = 2.0
+
     def __init__(self, base_url: str, workflow_path: Path, output_dir: Path, timeout: int) -> None:
         self.base_url = base_url.rstrip("/")
         self.workflow_path = workflow_path
@@ -26,16 +31,29 @@ class ComfyUIEngine(GenerationEngine):
         try:
             async with asyncio.timeout(self.timeout):
                 async with httpx.AsyncClient(base_url=self.base_url, timeout=30) as client:
-                    uploaded_name = await self._upload(client, generation_input.input_image_path)
+                    uploaded_name = (
+                        await self._upload(client, generation_input.input_image_path)
+                        if generation_input.input_image_path
+                        else None
+                    )
                     prompt = generation_input.prompt
                     if generation_input.style:
                         prompt = f"{prompt}, {generation_input.style} advertising style"
                     workflow = await self._load_and_map_workflow(
-                        uploaded_name, prompt, generation_input.job_id
+                        uploaded_name,
+                        prompt,
+                        generation_input.job_id,
+                        generation_input.aspect_ratio,
                     )
                     prompt_id = await self._submit(client, workflow)
                     image = await self._wait_for_image(client, prompt_id)
                     output_path = await self._download(client, image, generation_input.job_id)
+                    try:
+                        await client.post(
+                            "/free", json={"unload_models": True, "free_memory": True}
+                        )
+                    except httpx.HTTPError:
+                        pass  # Image is already saved; cleanup must not discard it.
                     return GenerationOutput(output_path, prompt_id)
         except TimeoutError as exc:
             raise GenerationEngineError("Generation timed out") from exc
@@ -56,14 +74,18 @@ class ComfyUIEngine(GenerationEngine):
         return name
 
     async def _load_and_map_workflow(
-        self, input_name: str, prompt: str, output_prefix: str
+        self,
+        input_name: str | None,
+        prompt: str,
+        output_prefix: str,
+        aspect_ratio: str = "1:1",
     ) -> dict[str, Any]:
         if not self.workflow_path.is_file():
             raise GenerationEngineError("ComfyUI workflow file is missing")
         async with aiofiles.open(self.workflow_path, encoding="utf-8") as file:
             raw = await file.read()
         placeholders = {
-            "{{INPUT_IMAGE}}": input_name,
+            "{{INPUT_IMAGE}}": input_name or "",
             "{{PROMPT}}": prompt,
             "{{OUTPUT_PREFIX}}": output_prefix,
         }
@@ -79,6 +101,35 @@ class ComfyUIEngine(GenerationEngine):
         if not isinstance(workflow, dict):
             raise GenerationEngineError("ComfyUI workflow must be a JSON object")
         mapped = self._replace_placeholders(workflow, placeholders)
+        width, height = self.ASPECT_DIMENSIONS.get(aspect_ratio, (512, 512))
+        if input_name is None:
+            for key in ("2", "9", "10", "11"):
+                mapped.pop(key, None)
+            mapped["3"] = {
+                "class_type": "EmptyLatentImage",
+                "inputs": {"width": width, "height": height, "batch_size": 1},
+            }
+            upscale_source = ["7", 0]
+        else:
+            mapped["9"]["inputs"]["width"] = width
+            mapped["9"]["inputs"]["height"] = height
+            # Generate scenery independently; never let diffusion redraw/extend the shoe.
+            mapped["3"] = {
+                "class_type": "EmptyLatentImage",
+                "inputs": {"width": width, "height": height, "batch_size": 1},
+            }
+            mapped["5"]["inputs"]["text"] += ", products, shoes, footwear, people, hands"
+            upscale_source = ["11", 0]
+        # Upscale the finished image so the export is large enough to post.
+        mapped["12"] = {
+            "class_type": "ImageScaleBy",
+            "inputs": {
+                "image": upscale_source,
+                "upscale_method": "lanczos",
+                "scale_by": self.UPSCALE_BY,
+            },
+        }
+        mapped["8"]["inputs"]["images"] = ["12", 0]
         self._randomize_sampler_seeds(mapped, output_prefix)
         return mapped
 

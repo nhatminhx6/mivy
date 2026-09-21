@@ -69,3 +69,14 @@ async def get_generation_result(request: Request, job_id: str) -> FileResponse:
     if not await asyncio.to_thread(output_path.is_file):
         raise api_error(404, "result_not_found", "Generated image is unavailable")
     return FileResponse(output_path)
+
+
+@router.get("/{job_id}/cutout", response_class=FileResponse)
+async def get_generation_cutout(request: Request, job_id: str) -> FileResponse:
+    job = await request.app.state.generation_service.get_job(job_id)
+    if job is None or job.status != JobStatus.COMPLETED or not job.output_path:
+        raise api_error(404, "cutout_not_found", "Chưa có ảnh đã tách nền.")
+    path = Path(job.output_path).with_suffix(".cutout.png")
+    if not await asyncio.to_thread(path.is_file):
+        raise api_error(404, "cutout_not_found", "Ảnh này không có bản tách nền.")
+    return FileResponse(path, media_type="image/png")
