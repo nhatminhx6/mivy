@@ -20,6 +20,8 @@ Cập nhật: 20/09/2026. File này dành cho Claude hoặc AI khác tiếp tụ
 - Anh là **Fullstack Mobile dev**, làm ReactJS/NextJS và biết một ít backend. Không gọi anh là “iOS dev”.
 - Anh dùng nhiều công cụ AI để tiết kiệm hạn mức. Ghi lại quyết định, thay đổi và việc còn dang dở vào file này khi bàn giao.
 - Anh ưu tiên làm được thật, không chỉ demo mock hoặc báo thành công vì API trả 200.
+- **Gen ảnh xong: gửi file cho anh, KHÔNG tự mở/đọc ảnh để tự đánh giá. Chỉ khi anh nói "ảnh đạt" thì mới đạt.** Đọc ảnh tốn nhiều token và việc phán ảnh là của anh.
+- Tiết kiệm token: làm gọn, không đọc file/ảnh thừa, không quét cả `.venv`/`.comfyui`, gộp việc, trả lời ngắn ("đơn giản, dài dòng = vứt").
 
 ## 2. Mong muốn anh đã xác nhận
 
@@ -231,3 +233,60 @@ Không ghi API key/secrets vào tài liệu hoặc commit `.env`.
 - Browser upload → white 9:16 → result → download verified. Actual downloaded file `/Users/minh.nn1/Downloads/mivy-image.png` is 1080×1920. Preview contains full product; download button above result.
 - Verification: 20 pytest, 6 compositor unittest, 2 Node regression tests; Ruff and JS syntax passed.
 - Next quality work: representative real-photo suite across opaque products, detailed edges, complex backgrounds and transparent objects; user-visible mask correction if needed. Do not re-enable generated scenes merely because an API job succeeds. This is a reliable basic product-photo export, not a finished advertising layout or universal segmentation guarantee.
+
+### Marketing poster MVP — 21/09
+- New sidebar/home entry Tạo quảng cáo. `web/marketing.js` takes brief + optional image + goal/brand/confirmed offer. Local Ollama endpoint `POST /v1/creative/marketing` returns launch/story/action headline, subline, CTA, caption. TextService existing endpoint unchanged.
+- Three graphic compositions, editable text, 1:1 / 4:5 / 9:16, same canvas preview/export. Product cutout from new completed-job `/cutout` route. No lifestyle scene generation yet; this is graphic poster composition. Brand currently text, not uploaded logo.
+- Download selected PNG, all three PNG + captions in ZIP, or captions TXT. Dependency-free ZIP writer `web/marketing-zip.js`. One current marketing draft in localStorage mivy-marketing-v1; no account or campaign history integration yet.
+- Verified real local AI on shoe brief, 3 visual previews, title edit, aspect switching, reload draft persistence. Downloaded ZIP validated with Python zipfile CRC and all 3 PNG were 1080x1080. Viewed exported launch PNG. 4:5 preview visually inspected; Story selected/download attempted, final file inspection pending.
+- 22 pytest passed, Ruff passed. AI caption can still add subjective/unconfirmed properties (observed comfort wording despite missing source fact); user review remains necessary. Next: tighten factual copy checks, distinct layout art direction for more industries, logo assets and actual scene generation benchmark.
+
+### Industry expansion — recruitment, education, services
+- `MarketingBrief.industry`: general/recruitment/education/service; long source up to 12,000 characters. Industry output requires 1–3 highlights per image in addition to headline/subline/CTA/caption. Existing general output stays compatible.
+- Recruitment: role/pay/location → requirements → benefits/application. Education: introduction → curriculum → registration. Services: introduction → scope → booking. Separate prompts and fact-oriented layouts (numbered cards, learning timeline, service accent cards).
+- Industry selector in Tạo quảng cáo changes input labels and remembers independent local drafts. No required image. Industry photos stay intact, no product background removal. Editable highlight list, existing PNG/TXT/ZIP exports; ZIP now includes original input for review.
+- Real recruitment JD tested through browser with local Qwen: pay 25–35 million, requirements, benefits and contact rendered in three images. Downloaded ZIP CRC valid: three 1080×1350 PNG, three captions, original text. Switching sectors restored recruitment draft. This remains AI summarization requiring source review, not guaranteed factual extraction.
+- Regression tests cover long briefs, unknown industry rejection and required highlights. Initial real runs omitted optional highlights; schema now requires non-empty highlights for industry jobs and rejects missing ones.
+- Revised-schema real API checks: education 33 s, service 26 s, both return nonempty highlights. Outputs still contain generic embellishment; avoid claiming perfectly grounded facts. Fixed sector CTA to a channel-neutral action (or supplied CTA) so an email-only service does not get “call now”; normalized reader address. Ruff and marketing tests pass.
+
+### Industry visual redesign after user rejected list-card output
+- Replaced three near-identical list cards with role-specific editorial layouts in `web/industry-design.js`: large position/title on ink with highlighted concrete fact; light numbered editorial requirements; saturated contact poster with extracted email and supporting facts. Be Vietnam Pro typography shared with the UI. Existing saved copy renders without a new AI call.
+- Render-time deduplication removes repeated headline/bullets and omits unsupported “không cần/không yêu cầu” filler. New generation prompt discourages redundant/generic copy. This is not full fact verification.
+- Same canvas exports; downloaded 4:5 ZIP checked and launch/contact PNG visually reviewed. Salary/price fact prioritized in accent band. Original editable copy and source kept. User still needs to assess this new design direction.
+
+### 22/09 — reference-led recruitment poster
+- Recruitment launch now orange/black photo-led poster, inspired by linked PosterMyWall reference; generated original B&W team asset bundled at web/assets/recruitment-team.png (prompt/provenance in sibling .md). Shows hiring headline, role, source-derived tech/experience tags, large photo, CTA and email on ONE image. Default photo visibly labeled AI illustration; user upload overrides it. No extra AI call to redraw saved drafts.
+- Primary poster larger in results; supporting requirements/contact thumbnails smaller. Main heading/CTA still editable; technology tags derive from input JD. Subline shown when sufficient space under title.
+- Downloaded 1080×1350 PNG visually inspected with real saved recruitment draft. JS syntax verified. User should assess final reference direction; not claiming all content/aspect combinations tested.
+
+### 22/09 — recruitment content density
+- Main recruitment poster now shows up to 10 highlights in two columns, with a small photo strip; no longer limits the main image to two tags. Old sparse drafts fall back to source JD lines. Editing points explicitly overrides that fallback.
+- Recruitment launch schema requests one highlight per source line (6–10), preserves full role title, and uses lower generation temperature. Local browser run with the user's eight-line Lead/Senior JD returned and visibly rendered eight bullets at 4:5. Four marketing tests and Ruff pass.
+- Remaining quality issue: local model still paraphrases imperfectly (production software translation, omission of some nuances); point count is not semantic coverage validation. Supporting cards also need stronger grounding (observed invented contact placeholder). Do not claim these are solved.
+
+### 22/09 — Agency-grade Bento Grid & Multi-Theme Poster Engine
+- Thay thế toàn bộ code canvas 2D thô sơ bằng Engine Poster chuẩn Agency (Bento Grid, Glassmorphism, atmospheric lighting).
+- Tích hợp 5 bộ theme thiết kế cao cấp: `Emerald Pro`, `Tech Dark`, `Warm Editorial`, `Bold Vibrant`, `Clean Minimal`.
+- **Poster tuyển dụng chuẩn thị trường (Market-Grade Recruitment Matrix):**
+  - Loại bỏ hoàn toàn việc ép ảnh stock nhỏ vào góc phải (không dùng ảnh stock vô dụng).
+  - Loại bỏ các khung viền bounding box tù túng quanh từng gạch đầu dòng.
+  - Áp dụng bố cục **Bảng Ma Trận 4 cột (Job Specification Matrix Table)**: `Role / Vị trí`, `Kinh nghiệm`, `Kỹ năng / Stack`, `Địa điểm` với các đường kẻ phân tách thanh mảnh, trích xuất dữ liệu trực tiếp từ JD.
+  - Typography tương phản cao: chữ viết tay *"We're"* nghệ thuật, chữ **"HIRING"** siêu đậm 86px, tên vị trí viết hoa sắc sảo và slogan góc viết tay (*"Good People, Great Products"*, *"Same People, Brighter Tomorrow"*).
+  - Vẽ vector procedural: bóng các tòa nhà chọc trời (City Skyline Silhouette) ở đáy và nút bo tròn `[ ✈ Send your CV ]` kèm thông tin liên hệ trực tiếp (Zalo / Hotline / Email).
+- Hỗ trợ đổi theme tức thì trên UI thông qua Theme Bar mà không cần gọi lại AI.
+- Hỗ trợ toàn diện 4 ngành (Tuyển dụng, Khóa học, Dịch vụ, Sản phẩm tự do) trên cả 3 tỷ lệ (1:1, 4:5, 9:16).
+- Nâng dung lượng tải ảnh từ 2 MB lên 20 MB trên toàn bộ giao diện (Tạo quảng cáo, Tạo ảnh sản phẩm, Tạo chiến dịch) và nâng giới hạn backend lên 25 MB (`MAX_UPLOAD_SIZE_MB=25`).
+- Kiểm tra tự động: 24 pytest pass, `tests/industry-poster.test.mjs` pass 180/180 biến thể render (4 ngành x 3 poster x 3 tỷ lệ x 5 theme); ruff pass clean.
+
+### 23/09 — Kiến trúc Hybrid AI Studio & Hướng dẫn Cài đặt Đa Máy
+- **Kiến trúc Hybrid AI (0đ API, 100% Free):**
+  - **Visual AI Model:** Tích hợp `VisualService` (`POST /v1/creative/background`, `GET /v1/creative/backgrounds/{filename}`) sinh visual background 3D nghệ thuật bằng model Flux.1 miễn phí qua Pollinations AI (hoặc local ComfyUI/fallback). Không để diffusion vẽ chữ để tránh lỗi font và méo ký tự tiếng Việt.
+  - **Modern Layout Engine:** Ảnh visual AI được vẽ làm nền với lớp phủ gradient điện ảnh (cinematic tint) theo từng theme; đặt bên dưới bảng ma trận 4 cột và typography Glassmorphism sắc nét tiếng Việt.
+  - **UI Controls:** Nút `✨ Đổi nền AI` trên thanh công cụ xem trước poster cho phép sinh lại visual background mới tức thì. Tự động sinh nền khi tạo 3 mẫu quảng cáo mới.
+  - **Google Fonts:** Tích hợp preloaded Google Fonts (`Plus Jakarta Sans`, `Be Vietnam Pro`, `Caveat`) trong `web/index.html` với cache buster `v=179013`.
+- **Hỗ trợ Cài đặt Đa Máy (Multi-Machine Support):**
+  - Tạo script cài đặt 1 chạm: [`scripts/setup-machine.sh`](scripts/setup-machine.sh) tự động tạo virtualenv, cài dependencies, kéo model Ollama `qwen3:8b`.
+  - Cập nhật [`scripts/run-local.sh`](scripts/run-local.sh) tự động phát hiện ComfyUI: nếu máy chưa có ComfyUI thì tự chuyển sang chế độ gọn nhẹ (Ollama + Pollinations Visual AI) mà không báo lỗi.
+  - Viết tài liệu chi tiết: [`SETUP_MULTI_MACHINE.md`](SETUP_MULTI_MACHINE.md) hướng dẫn thiết lập từ A-Z cho các máy làm việc khác của anh.
+- **Kiểm thử tự động:** 26 pytest pass, Ruff pass clean, 180 biến thể canvas render pass 100%.
+

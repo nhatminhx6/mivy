@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -22,6 +23,7 @@ from app.services.generation_service import GenerationService
 from app.services.job_queue import JobQueue
 from app.services.storage_service import StorageService
 from app.services.text_service import TextService
+from app.services.visual_service import VisualService
 
 
 def build_engine(settings: Settings) -> GenerationEngine:
@@ -71,6 +73,7 @@ def create_app(
         )
         app.state.generation_service = generation_service
         app.state.job_queue = job_queue
+        app.state.visual_service = VisualService(resolved_settings)
 
         job_queue.start()
         for job_id in await generation_service.recover_jobs():
@@ -82,6 +85,13 @@ def create_app(
             await database.close()
 
     app = FastAPI(title=resolved_settings.app_name, lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(health_router)
     app.include_router(creative_router)
     app.include_router(generations_router)

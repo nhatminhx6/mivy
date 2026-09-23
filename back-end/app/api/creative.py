@@ -3,6 +3,8 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, File, Form, Request, UploadFile
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from app.api.generations import api_error
 from app.schemas.creative import CreativeBrief, CreativeResponse
@@ -95,3 +97,40 @@ async def create_marketing(request: Request, brief: MarketingBrief):
             return await generate_marketing(request.app.state.settings, brief)
         except TextGenerationError as exc:
             raise api_error(503, "marketing_failed", str(exc)) from exc
+
+
+class BackgroundRequest(BaseModel):
+    industry: str = "recruitment"
+    theme: str = "emerald_pro"
+    prompt: str | None = None
+    aspect_ratio: str = "4:5"
+    seed: int | None = None
+
+
+class BackgroundResponse(BaseModel):
+    url: str
+    aspect_ratio: str
+    prompt: str
+
+
+@router.post("/background", response_model=BackgroundResponse)
+async def create_background(request: Request, body: BackgroundRequest) -> BackgroundResponse:
+    visual_service = request.app.state.visual_service
+    prompt = visual_service.get_prompt_for_industry(body.industry, body.theme, body.prompt)
+    url, _ = await visual_service.generate_background(
+        industry=body.industry,
+        theme=body.theme,
+        prompt=body.prompt,
+        aspect_ratio=body.aspect_ratio,
+        seed=body.seed,
+    )
+    return BackgroundResponse(url=url, aspect_ratio=body.aspect_ratio, prompt=prompt)
+
+
+@router.get("/backgrounds/{filename}", response_class=FileResponse)
+async def get_background_file(request: Request, filename: str) -> FileResponse:
+    path = request.app.state.settings.output_dir / "backgrounds" / filename
+    if not await asyncio.to_thread(path.is_file):
+        raise api_error(404, "background_not_found", "Không tìm thấy ảnh nền.")
+    media_type = "image/jpeg" if filename.endswith((".jpg", ".jpeg")) else "image/png"
+    return FileResponse(path, media_type=media_type)

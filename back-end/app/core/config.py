@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./data/mivy.db"
     upload_dir: Path = Path("./data/uploads")
     output_dir: Path = Path("./data/outputs")
-    max_upload_size_mb: int = 15
+    max_upload_size_mb: int = 25
     generation_engine: str = "mock"
     comfyui_base_url: str = "http://127.0.0.1:8188"
     comfyui_workflow_path: Path = Path("./workflows/product_ad.json")
@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     product_model_home: Path = Path(".comfyui/models/rembg")
     product_cache_dir: Path = Path("data/cutout_cache")
     product_model: str = "birefnet-general"
+    visual_engine: str = "pollinations"
+    pollinations_base_url: str = "https://image.pollinations.ai"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

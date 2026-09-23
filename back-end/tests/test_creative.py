@@ -160,3 +160,25 @@ def test_unvalidated_scene_rejected_instead_of_random_output(client):
     )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "unsupported_background"
+
+
+def test_create_background_endpoint(client):
+    client.app.state.settings.visual_engine = "mock"
+    response = client.post(
+        "/v1/creative/background",
+        json={"industry": "recruitment", "theme": "emerald_pro", "aspect_ratio": "4:5"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["url"].startswith("/v1/creative/backgrounds/bg_")
+    assert data["aspect_ratio"] == "4:5"
+    assert "emerald green" in data["prompt"]
+
+    file_resp = client.get(data["url"])
+    assert file_resp.status_code == 200
+    assert file_resp.content == b"MOCK_JPEG_CONTENT"
+
+
+def test_get_nonexistent_background(client):
+    response = client.get("/v1/creative/backgrounds/nonexistent.jpg")
+    assert response.status_code == 404

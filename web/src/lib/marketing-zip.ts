@@ -1,0 +1,66 @@
+export interface ZipFileEntry {
+  name: string;
+  data: Uint8Array;
+}
+
+export function marketingZip(files: ZipFileEntry[]): Blob {
+  const chunks: any[] = [];
+  const directory: any[] = [];
+  let offset = 0;
+  const enc = new TextEncoder();
+
+  function header(size: number): [Uint8Array, DataView] {
+    const a = new Uint8Array(size);
+    return [a, new DataView(a.buffer)];
+  }
+
+  function crc(bytes: Uint8Array): number {
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i];
+      c ^= b;
+      for (let n = 0; n < 8; n++) {
+        c = (c >>> 1) ^ ((c & 1) ? 0xedb88320 : 0);
+      }
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  for (const file of files) {
+    const name = enc.encode(file.name);
+    const data = file.data;
+    const sum = crc(data);
+
+    const [h, v] = header(30);
+    v.setUint32(0, 0x04034b50, true);
+    v.setUint16(4, 20, true);
+    v.setUint32(14, sum, true);
+    v.setUint32(18, data.length, true);
+    v.setUint32(22, data.length, true);
+    v.setUint16(26, name.length, true);
+    chunks.push(h, name, data);
+
+    const [d, q] = header(46);
+    q.setUint32(0, 0x02014b50, true);
+    q.setUint16(4, 20, true);
+    q.setUint16(6, 20, true);
+    q.setUint32(16, sum, true);
+    q.setUint32(20, data.length, true);
+    q.setUint32(24, data.length, true);
+    q.setUint16(28, name.length, true);
+    q.setUint32(42, offset, true);
+    directory.push(d, name);
+
+    offset += 30 + name.length + data.length;
+  }
+
+  const length = directory.reduce((n, v) => n + v.length, 0);
+  const [end, e] = header(22);
+  e.setUint32(0, 0x06054b50, true);
+  e.setUint16(8, files.length, true);
+  e.setUint16(10, files.length, true);
+  e.setUint32(12, length, true);
+  e.setUint32(16, offset, true);
+
+  return new Blob([...chunks, ...directory, end] as any, { type: 'application/zip' });
+}

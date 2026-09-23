@@ -4,12 +4,17 @@ set -eu
 PROJECT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$PROJECT_DIR"
 
-if [ ! -x .comfyui/.venv/bin/python ] || [ ! -f .comfyui/models/checkpoints/dreamshaper_8.safetensors ]; then
-  echo "ComfyUI or DreamShaper 8 is missing. Complete the local setup first." >&2
-  exit 1
-fi
 command -v ollama >/dev/null || { echo "Install Ollama first: https://ollama.com" >&2; exit 1; }
-export GENERATION_ENGINE=comfyui
+
+HAS_COMFYUI=0
+if [ -x .comfyui/.venv/bin/python ] && [ -f .comfyui/models/checkpoints/dreamshaper_8.safetensors ]; then
+  HAS_COMFYUI=1
+  export GENERATION_ENGINE=comfyui
+else
+  export GENERATION_ENGINE=mock
+  echo "Notice: ComfyUI or DreamShaper 8 is not installed. Running in lightweight mode (Ollama + Pollinations Visual AI)."
+fi
+
 TEXT_MODEL=${TEXT_MODEL:-$(.venv/bin/python -c 'from app.core.config import get_settings; print(get_settings().text_model)')}
 export TEXT_MODEL
 CHILD_PIDS=""
@@ -35,11 +40,13 @@ fi
 wait_ready http://127.0.0.1:11434/api/tags
 if ! ollama show "$TEXT_MODEL" >/dev/null 2>&1; then ollama pull "$TEXT_MODEL"; fi
 
-if ! curl -fsS http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
-  scripts/run-comfyui.sh &
-  CHILD_PIDS="$CHILD_PIDS $!"
+if [ "$HAS_COMFYUI" -eq 1 ]; then
+  if ! curl -fsS http://127.0.0.1:8188/system_stats >/dev/null 2>&1; then
+    scripts/run-comfyui.sh &
+    CHILD_PIDS="$CHILD_PIDS $!"
+  fi
+  wait_ready http://127.0.0.1:8188/system_stats
 fi
-wait_ready http://127.0.0.1:8188/system_stats
 
 if ! curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
   .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --reload-dir app &
