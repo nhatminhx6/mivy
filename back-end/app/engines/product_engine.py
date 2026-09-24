@@ -1,7 +1,9 @@
 import asyncio
 import json
+import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from app.engines.base import (
     GenerationEngine,
@@ -9,6 +11,8 @@ from app.engines.base import (
     GenerationInput,
     GenerationOutput,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ProductImageEngine(GenerationEngine):
@@ -23,8 +27,10 @@ class ProductImageEngine(GenerationEngine):
         cache_dir: Path,
         model: str,
         timeout: int,
+        visual_service: Any = None,
     ):
         self.fallback = fallback
+        self.visual_service = visual_service
         # Preserve the venv executable symlink: resolving it loses site-packages.
         self.python = python.absolute()
         self.output_dir = output_dir.resolve()
@@ -36,9 +42,30 @@ class ProductImageEngine(GenerationEngine):
 
     async def generate(self, generation_input: GenerationInput) -> GenerationOutput:
         if generation_input.input_image_path is None:
-            return await self.fallback.generate(generation_input)
-        if not self.python.is_file():
-            raise GenerationEngineError("Thiếu môi trường xử lý ảnh. Anh chạy setup trước nhé.")
+            try:
+                return await self.fallback.generate(generation_input)
+            except Exception as exc:
+                if self.visual_service is not None:
+                    logger.info("Illustration generation fallback to Visual AI: %s", exc)
+                    _, output_path = await self.visual_service.generate_image(
+                        prompt=generation_input.prompt,
+                        aspect_ratio=generation_input.aspect_ratio,
+                        style=generation_input.style,
+                        job_id=generation_input.job_id,
+                    )
+                    return GenerationOutput(output_image_path=output_path)
+                raise
+        python_bin = self.python
+        if not python_bin.is_file():
+            import sys
+            cur_py = Path(sys.executable)
+            venv_py = self.project_dir / ".venv" / "bin" / "python"
+            if cur_py.is_file():
+                python_bin = cur_py
+            elif venv_py.is_file():
+                python_bin = venv_py
+            else:
+                raise GenerationEngineError("Thiếu môi trường xử lý ảnh. Anh chạy setup trước nhé.")
         style = generation_input.style or "product:studio_white"
         background = (
             style.removeprefix("product:") if style.startswith("product:") else "studio_white"
@@ -46,9 +73,13 @@ class ProductImageEngine(GenerationEngine):
         if background not in {"studio_white", "gradient"}:
             raise GenerationEngineError("Nền này chưa được hỗ trợ. Anh chọn trắng hoặc gradient.")
         output = self.output_dir / f"{generation_input.job_id}.png"
-        env = {**os.environ, "U2NET_HOME": str(self.model_home), "OMP_NUM_THREADS": "2"}
+        model_home = self.model_home
+        if not model_home.exists():
+            model_home = self.project_dir / "data" / "models" / "rembg"
+            model_home.mkdir(parents=True, exist_ok=True)
+        env = {**os.environ, "U2NET_HOME": str(model_home), "OMP_NUM_THREADS": "2"}
         process = await asyncio.create_subprocess_exec(
-            str(self.python),
+            str(python_bin),
             "-m",
             "app.services.product_renderer",
             "--input",

@@ -26,7 +26,9 @@ from app.services.text_service import TextService
 from app.services.visual_service import VisualService
 
 
-def build_engine(settings: Settings) -> GenerationEngine:
+def build_engine(
+    settings: Settings, visual_service: VisualService | None = None
+) -> GenerationEngine:
     if settings.generation_engine == "mock":
         return MockGenerationEngine(settings.output_dir)
     if settings.generation_engine == "comfyui":
@@ -44,6 +46,7 @@ def build_engine(settings: Settings) -> GenerationEngine:
             settings.product_cache_dir,
             settings.product_model,
             settings.generation_timeout_seconds,
+            visual_service=visual_service,
         )
     raise ValueError(f"Unsupported generation engine: {settings.generation_engine}")
 
@@ -61,7 +64,8 @@ def create_app(
         database = Database(resolved_settings.database_url)
         await database.create_tables()
         generation_service = GenerationService(database.sessions)
-        engine = generation_engine or build_engine(resolved_settings)
+        visual_service = VisualService(resolved_settings)
+        engine = generation_engine or build_engine(resolved_settings, visual_service=visual_service)
         app.state.ai_lock = asyncio.Lock()
         app.state.text_service = TextService(resolved_settings)
         job_queue = JobQueue(generation_service, engine, app.state.ai_lock)
@@ -73,7 +77,7 @@ def create_app(
         )
         app.state.generation_service = generation_service
         app.state.job_queue = job_queue
-        app.state.visual_service = VisualService(resolved_settings)
+        app.state.visual_service = visual_service
 
         job_queue.start()
         for job_id in await generation_service.recover_jobs():
@@ -85,6 +89,14 @@ def create_app(
             await database.close()
 
     app = FastAPI(title=resolved_settings.app_name, lifespan=lifespan)
+    app.state.settings = resolved_settings
+    app.state.ai_lock = asyncio.Lock()
+    app.state.text_service = TextService(resolved_settings)
+    app.state.visual_service = VisualService(resolved_settings)
+    app.state.storage = StorageService(
+        resolved_settings.upload_dir, resolved_settings.max_upload_size_mb
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

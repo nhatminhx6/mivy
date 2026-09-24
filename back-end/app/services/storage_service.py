@@ -42,4 +42,3 @@ class StorageService:
         finally:
             await upload.close()
         return destination
-

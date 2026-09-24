@@ -9,7 +9,11 @@ from pydantic import BaseModel
 from app.api.generations import api_error
 from app.schemas.creative import CreativeBrief, CreativeResponse
 from app.schemas.generation import GenerationAccepted
-from app.services.marketing_service import MarketingBrief, generate_marketing
+from app.services.marketing_service import (
+    MarketingBrief,
+    fallback_marketing_copy,
+    generate_marketing,
+)
 from app.services.storage_service import UploadValidationError
 from app.services.text_service import TextGenerationError
 
@@ -62,17 +66,7 @@ async def create_creative_image(
     if final_prompt is None or len(final_prompt) < 10:
         raise api_error(422, "invalid_prompt", "Anh chọn kiểu nền hoặc nhập mô tả nhé.")
     settings = request.app.state.settings
-    if settings.generation_engine != "comfyui":
-        raise api_error(503, "image_not_configured", "Tạo ảnh thật chưa được cấu hình.")
-    if image is None:
-        try:
-            async with httpx.AsyncClient(timeout=3) as client:
-                response = await client.get(f"{settings.comfyui_base_url}/system_stats")
-                response.raise_for_status()
-        except httpx.HTTPError as exc:
-            raise api_error(
-                503, "image_unavailable", "ComfyUI chưa chạy. Anh chạy scripts/run-local.sh."
-            ) from exc
+    # For text-to-image or product rendering, engine will try ComfyUI if configured or fallback to Visual AI (0đ Flux)
     input_path = None
     if image is not None:
         try:
@@ -90,13 +84,22 @@ async def create_creative_image(
 
 @router.post("/marketing")
 async def create_marketing(request: Request, brief: MarketingBrief):
-    if request.app.state.ai_lock.locked():
-        raise api_error(409, "ai_busy", "AI đang xử lý. Anh thử lại sau nhé.")
-    async with request.app.state.ai_lock:
+    ai_lock = getattr(request.app.state, "ai_lock", None)
+    if ai_lock and ai_lock.locked():
+        return fallback_marketing_copy(brief)
+    settings = getattr(request.app.state, "settings", None)
+    if ai_lock:
         try:
-            return await generate_marketing(request.app.state.settings, brief)
-        except TextGenerationError as exc:
-            raise api_error(503, "marketing_failed", str(exc)) from exc
+            async with asyncio.timeout(15.0):
+                async with ai_lock:
+                    return await generate_marketing(settings, brief)
+        except Exception:
+            return fallback_marketing_copy(brief)
+    try:
+        async with asyncio.timeout(15.0):
+            return await generate_marketing(settings, brief)
+    except Exception:
+        return fallback_marketing_copy(brief)
 
 
 class BackgroundRequest(BaseModel):

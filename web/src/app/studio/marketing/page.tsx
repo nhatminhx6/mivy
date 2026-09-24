@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Download, Copy, FileText, RefreshCw, Upload, Check, Layers, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Download, Copy, FileText, RefreshCw, Upload, Check, Layers, Image as ImageIcon, Maximize2, Eye, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { AssetInfo, AspectRatio, IndustryId, MarketingState, PosterKind, ThemeId } from '@/types';
 import { POSTER_THEMES, drawIndustryPoster } from '@/lib/design-engine';
 import { marketingZip } from '@/lib/marketing-zip';
@@ -16,6 +16,7 @@ const DEFAULT_MARKETING: MarketingState = {
   offer: 'Lương 25 - 35 triệu',
   aspect: '4:5',
   theme: 'emerald_pro',
+  layoutMode: 'full_photo',
   selected: 'launch',
   copies: {
     launch: {
@@ -55,6 +56,8 @@ export default function MarketingStudioPage() {
   const [isBgLoading, setIsBgLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const canvasLaunchRef = useRef<HTMLCanvasElement | null>(null);
   const canvasStoryRef = useRef<HTMLCanvasElement | null>(null);
@@ -63,13 +66,57 @@ export default function MarketingStudioPage() {
   const assetRef = useRef<AssetInfo | null>(null);
   const bgImgRef = useRef<HTMLImageElement | null>(null);
 
+  const openPreview = (kind: PosterKind) => {
+    const canvasMap: Record<PosterKind, HTMLCanvasElement | null> = {
+      launch: canvasLaunchRef.current,
+      story: canvasStoryRef.current,
+      action: canvasActionRef.current,
+    };
+    const c = canvasMap[kind];
+    if (c) {
+      setPreviewUrl(c.toDataURL('image/png'));
+    }
+    setPreviewKind(kind);
+  };
+
+  const handlePrevPreview = () => {
+    if (!previewKind) return;
+    const order: PosterKind[] = ['launch', 'story', 'action'];
+    const curIdx = order.indexOf(previewKind);
+    const prevIdx = (curIdx - 1 + order.length) % order.length;
+    openPreview(order[prevIdx]);
+  };
+
+  const handleNextPreview = () => {
+    if (!previewKind) return;
+    const order: PosterKind[] = ['launch', 'story', 'action'];
+    const curIdx = order.indexOf(previewKind);
+    const nextIdx = (curIdx + 1) % order.length;
+    openPreview(order[nextIdx]);
+  };
+
+  useEffect(() => {
+    if (!previewKind) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewKind(null);
+      if (e.key === 'ArrowLeft') handlePrevPreview();
+      if (e.key === 'ArrowRight') handleNextPreview();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewKind]);
+
   // Load initial state from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem('mivy-marketing-v1');
       if (raw) {
         const parsed = JSON.parse(raw);
-        setState((prev) => ({ ...prev, ...parsed }));
+        setState((prev) => ({
+          ...prev,
+          ...parsed,
+          layoutMode: parsed.layoutMode || 'full_photo',
+        }));
       }
     } catch (e) {}
   }, []);
@@ -160,7 +207,7 @@ export default function MarketingStudioPage() {
   // Trigger render on visual state changes
   useEffect(() => {
     renderAllCanvases();
-  }, [state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry]);
+  }, [state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode]);
 
   // Handle Form Submission (Generate copies via AI)
   const handleGenerate = async (e: React.FormEvent) => {
@@ -253,7 +300,7 @@ export default function MarketingStudioPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const url = ev.target?.result as string;
-      saveState({ ...state, image: url, cutout: '' });
+      saveState({ ...state, image: url, cutout: '', layoutMode: 'full_photo' });
     };
     reader.readAsDataURL(file);
   };
@@ -345,8 +392,38 @@ export default function MarketingStudioPage() {
           </p>
         </div>
 
-        {/* Controls: Theme & Aspect */}
-        <div className="flex flex-wrap items-center gap-4">
+        {/* Controls: Mode, Theme, Background, Aspect */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Layout Mode Selector: Full Photo vs Matrix */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
+            <button
+              type="button"
+              onClick={() => saveState({ ...state, layoutMode: 'full_photo' })}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                state.layoutMode === 'full_photo' || (!state.layoutMode && (state.image || state.cutout))
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Ảnh tràn viền 100% điện ảnh và đè chữ lên ảnh"
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Ảnh Tràn Viền</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => saveState({ ...state, layoutMode: 'matrix' })}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                state.layoutMode === 'matrix' || (!state.layoutMode && !state.image && !state.cutout)
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Bảng ma trận JD 4 cột chi tiết"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Bảng Ma Trận</span>
+            </button>
+          </div>
+
           {/* Theme Selector */}
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
             {Object.values(POSTER_THEMES).map((th) => (
@@ -460,7 +537,7 @@ export default function MarketingStudioPage() {
             {/* Photo Upload */}
             <div>
               <label className="block text-slate-300 font-semibold mb-1.5 flex items-center justify-between">
-                <span>Ảnh Thực Tế (Banner Hero 972px)</span>
+                <span>Ảnh Đính Kèm (Tràn viền 100% Poster)</span>
                 {state.image && (
                   <button
                     type="button"
@@ -500,11 +577,10 @@ export default function MarketingStudioPage() {
           {/* Canvases Selection Bar */}
           <div className="grid grid-cols-3 gap-4">
             {(['launch', 'story', 'action'] as PosterKind[]).map((kind) => (
-              <button
+              <div
                 key={kind}
-                type="button"
                 onClick={() => saveState({ ...state, selected: kind })}
-                className={`p-3 rounded-2xl glass-card text-left transition-all border ${
+                className={`group p-3 rounded-2xl glass-card text-left transition-all border cursor-pointer relative ${
                   state.selected === kind
                     ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/10'
                     : 'border-white/10 hover:border-white/20'
@@ -521,12 +597,44 @@ export default function MarketingStudioPage() {
                     }
                     className="w-full h-full object-contain"
                   />
+                  {/* Hover Overlay Button to Preview */}
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      saveState({ ...state, selected: kind });
+                      openPreview(kind);
+                    }}
+                    className="absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 text-white"
+                  >
+                    <div className="p-2.5 rounded-full bg-emerald-500 text-slate-950 shadow-lg transform group-hover:scale-110 transition-transform">
+                      <Maximize2 className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold bg-black/70 px-3 py-1 rounded-full border border-white/20 shadow">
+                      Phóng to xem ảnh
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs font-bold text-white truncate">{posterNames[kind]}</p>
+
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-bold text-white truncate">{posterNames[kind]}</p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      saveState({ ...state, selected: kind });
+                      openPreview(kind);
+                    }}
+                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-colors"
+                    title="Bấm xem phóng to"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
                 <p className="text-[10px] text-slate-400 truncate mt-0.5">
                   {state.copies[kind]?.headline || 'Chưa có tiêu đề'}
                 </p>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -661,6 +769,111 @@ export default function MarketingStudioPage() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox Fullscreen Preview Modal */}
+      {previewKind && previewUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => setPreviewKind(null)}
+        >
+          {/* Modal Header */}
+          <div
+            className="w-full max-w-5xl flex items-center justify-between pb-3 border-b border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Xem Trước Poster
+              </span>
+              <h2 className="text-lg font-bold text-white">
+                {posterNames[previewKind]}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = previewUrl;
+                  a.download = `mivy-${previewKind}-${state.aspect.replace(':', 'x')}.png`;
+                  a.click();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors shadow-lg"
+              >
+                <Download className="w-4 h-4" />
+                <span>Tải ảnh PNG</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewKind(null)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+                title="Đóng (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Central Image View with Navigation */}
+          <div
+            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-3 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Prev Button */}
+            <button
+              type="button"
+              onClick={handlePrevPreview}
+              className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-emerald-500 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              title="Mẫu trước (Phím ←)"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+
+            {/* Poster High-Res Rendered Image */}
+            <img
+              src={previewUrl}
+              alt={posterNames[previewKind]}
+              className="max-h-[78vh] max-w-[85vw] object-contain rounded-2xl shadow-2xl border border-white/10 ring-1 ring-white/10 select-none"
+            />
+
+            {/* Next Button */}
+            <button
+              type="button"
+              onClick={handleNextPreview}
+              className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-emerald-500 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              title="Mẫu tiếp theo (Phím →)"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Bottom Thumbnails Strip */}
+          <div
+            className="flex items-center gap-3 bg-black/60 border border-white/10 px-4 py-2 rounded-2xl backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(['launch', 'story', 'action'] as PosterKind[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => openPreview(k)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  previewKind === k
+                    ? 'bg-emerald-500 text-slate-950 font-bold shadow'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {posterNames[k]}
+              </button>
+            ))}
+            <span className="text-[11px] text-slate-500 border-l border-white/10 pl-3">
+              Dùng phím ← / → để chuyển mẫu · Esc để đóng
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

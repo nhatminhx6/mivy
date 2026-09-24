@@ -28,4 +28,3 @@ def client(settings: Settings) -> Iterator[TestClient]:
 
 def make_client(settings: Settings, engine: GenerationEngine) -> TestClient:
     return TestClient(create_app(settings, engine))
-

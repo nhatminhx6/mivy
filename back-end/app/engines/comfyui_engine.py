@@ -39,11 +39,13 @@ class ComfyUIEngine(GenerationEngine):
                     prompt = generation_input.prompt
                     if generation_input.style:
                         prompt = f"{prompt}, {generation_input.style} advertising style"
+                    checkpoint = await self._find_best_checkpoint(client)
                     workflow = await self._load_and_map_workflow(
                         uploaded_name,
                         prompt,
                         generation_input.job_id,
                         generation_input.aspect_ratio,
+                        ckpt_name=checkpoint,
                     )
                     prompt_id = await self._submit(client, workflow)
                     image = await self._wait_for_image(client, prompt_id)
@@ -57,8 +59,10 @@ class ComfyUIEngine(GenerationEngine):
                     return GenerationOutput(output_path, prompt_id)
         except TimeoutError as exc:
             raise GenerationEngineError("Generation timed out") from exc
+        except GenerationEngineError:
+            raise
         except httpx.HTTPError as exc:
-            raise GenerationEngineError("ComfyUI is unavailable") from exc
+            raise GenerationEngineError(f"ComfyUI is unavailable: {exc}") from exc
 
     async def _upload(self, client: httpx.AsyncClient, path: Path) -> str:
         async with aiofiles.open(path, "rb") as file:
@@ -73,12 +77,37 @@ class ComfyUIEngine(GenerationEngine):
             raise GenerationEngineError("ComfyUI returned an invalid upload response")
         return name
 
+    async def _find_best_checkpoint(
+        self, client: httpx.AsyncClient, preferred: str = "dreamshaper_8.safetensors"
+    ) -> str:
+        try:
+            res = await client.get("/object_info/CheckpointLoaderSimple")
+            if res.status_code == 200:
+                data = res.json()
+                ckpt_list = (
+                    data.get("CheckpointLoaderSimple", {})
+                    .get("input", {})
+                    .get("required", {})
+                    .get("ckpt_name", [[]])[0]
+                )
+                if ckpt_list and isinstance(ckpt_list, list):
+                    if preferred in ckpt_list:
+                        return preferred
+                    for c in ckpt_list:
+                        if any(k in str(c).lower() for k in ("dreamshaper", "1.5", "v1-5", "sd15")):
+                            return c
+                    return ckpt_list[0]
+        except Exception:
+            pass
+        return preferred
+
     async def _load_and_map_workflow(
         self,
         input_name: str | None,
         prompt: str,
         output_prefix: str,
         aspect_ratio: str = "1:1",
+        ckpt_name: str | None = None,
     ) -> dict[str, Any]:
         if not self.workflow_path.is_file():
             raise GenerationEngineError("ComfyUI workflow file is missing")
@@ -101,6 +130,8 @@ class ComfyUIEngine(GenerationEngine):
         if not isinstance(workflow, dict):
             raise GenerationEngineError("ComfyUI workflow must be a JSON object")
         mapped = self._replace_placeholders(workflow, placeholders)
+        if ckpt_name and "1" in mapped and isinstance(mapped["1"], dict):
+            mapped["1"].setdefault("inputs", {})["ckpt_name"] = ckpt_name
         width, height = self.ASPECT_DIMENSIONS.get(aspect_ratio, (512, 512))
         if input_name is None:
             for key in ("2", "9", "10", "11"):
@@ -155,7 +186,19 @@ class ComfyUIEngine(GenerationEngine):
 
     async def _submit(self, client: httpx.AsyncClient, workflow: dict[str, Any]) -> str:
         response = await client.post("/prompt", json={"prompt": workflow})
-        response.raise_for_status()
+        if response.status_code >= 400:
+            try:
+                err_data = response.json()
+                node_errors = err_data.get("node_errors", {})
+                if node_errors:
+                    err_msg = json.dumps(node_errors, ensure_ascii=False)
+                else:
+                    err_msg = err_data.get("error", response.text)
+                raise GenerationEngineError(f"ComfyUI rejected prompt: {err_msg}")
+            except (json.JSONDecodeError, GenerationEngineError):
+                raise
+            except Exception:
+                response.raise_for_status()
         prompt_id = response.json().get("prompt_id")
         if not isinstance(prompt_id, str):
             raise GenerationEngineError("ComfyUI returned an invalid prompt response")
@@ -169,7 +212,16 @@ class ComfyUIEngine(GenerationEngine):
             if record:
                 status = record.get("status", {})
                 if status.get("status_str") == "error":
-                    raise GenerationEngineError("ComfyUI generation failed")
+                    error_details = []
+                    for msg in status.get("messages", []):
+                        if isinstance(msg, list) and len(msg) >= 2 and msg[0] == "execution_error":
+                            detail = msg[1]
+                            if isinstance(detail, dict):
+                                node_type = detail.get("node_type", "UnknownNode")
+                                exc_msg = detail.get("exception_message") or detail.get("exception_type", "")
+                                error_details.append(f"[{node_type}] {exc_msg}")
+                    err_suffix = f": {'; '.join(error_details)}" if error_details else ""
+                    raise GenerationEngineError(f"ComfyUI generation failed{err_suffix}")
                 for node_output in record.get("outputs", {}).values():
                     images = node_output.get("images", [])
                     if images:
