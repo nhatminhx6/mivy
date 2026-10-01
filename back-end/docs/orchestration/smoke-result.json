@@ -1,0 +1,44 @@
+{
+  "status": "AWAITING_USER_REVIEW",
+  "events": [
+    {
+      "role": "PO",
+      "provider": "codex"
+    },
+    {
+      "role": "DEV",
+      "provider": "gemini"
+    },
+    {
+      "role": "QC",
+      "provider": "codex"
+    },
+    {
+      "role": "DEV",
+      "provider": "gemini"
+    },
+    {
+      "role": "QC",
+      "provider": "codex"
+    },
+    {
+      "role": "DEV",
+      "provider": "codex"
+    },
+    {
+      "role": "QC",
+      "provider": "gemini"
+    }
+  ],
+  "claude": "disabled",
+  "started": 1790307908.429715,
+  "active_provider": "gemini",
+  "summary": "Dạ thưa anh, em đã kiểm tra mã. Mã đã loại bỏ khoảng trắng hai đầu, chuyển các ký tự ASCII in hoa thành in thường, và gộp các khoảng trắng lại thành một dấu gạch ngang đúng như yêu cầu đầu vào. Tất cả các điều kiện nghiệm thu đều được thỏa mãn và không có lỗi nào được tìm thấy ạ.",
+  "worktree": "/private/var/folders/w6/1nws1p2s237dlprv1rpd8k1h0000gp/T/mivy-orchestrator-smoke-qg0x9riq/run/worktree",
+  "test_result": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "note": "Live isolated code smoke test only. Not MIVY visual benchmark or full autonomous project delivery."
+}

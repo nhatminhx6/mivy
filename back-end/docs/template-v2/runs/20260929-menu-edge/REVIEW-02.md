@@ -1,0 +1,3 @@
+# Revision 02: not integrated
+Measured body allocation improves previous proposal, but regression risks remain: CTA/contact now use unbounded single-line fillText, so long contact data can overflow frame. measureWrap cannot break a single overwide token or preserve newlines. Fonts changed to sans-serif rather than app family. Continuation says only MORE, not where remaining information is available.
+Next patch must preserve bounded footer wrapping, use matching font for measure/render, handle overwide tokens and line breaks, and explicitly point to details. Provide only revised no-image menu branch. Do not integrate change-02.patch unchanged.

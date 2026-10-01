@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import random
+import struct
 import urllib.parse
+import zlib
 from pathlib import Path
 from uuid import uuid4
 
@@ -10,6 +12,103 @@ import httpx
 from app.core.config import Settings
 
 logger = logging.getLogger(__name__)
+
+
+class VisualGenerationError(Exception):
+    """Lỗi khi tạo ảnh hoặc ảnh trả về không hợp lệ."""
+    pass
+
+
+def parse_image_dimensions(data: bytes) -> tuple[str, int, int]:
+    """
+    Xác thực và đọc kích thước của ảnh (PNG, JPEG, WEBP).
+    Từ chối HTML/JSON error page, dữ liệu rác hoặc ảnh bị truncate.
+    Trả về (mime_type, width, height) hoặc raise VisualGenerationError.
+    """
+    if len(data) < 16:
+        raise VisualGenerationError("Dữ liệu ảnh rỗng hoặc quá ngắn (dưới 16 bytes).")
+
+    prefix = data[:64].lower()
+    if b"<!doctype" in prefix or b"<html" in prefix or b"{\"error\"" in prefix or b"<svg" in prefix:
+        raise VisualGenerationError("Nhận phản hồi HTML/JSON lỗi từ provider thay vì dữ liệu ảnh.")
+
+    # 1. PNG
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        if len(data) < 24:
+            raise VisualGenerationError("Header PNG bị hỏng hoặc chưa hoàn chỉnh.")
+        w, h = struct.unpack(">II", data[16:24])
+        return "image/png", w, h
+
+    # 2. JPEG
+    if data.startswith(b"\xff\xd8"):
+        idx = 2
+        data_len = len(data)
+        while idx < data_len - 8:
+            if data[idx] != 0xFF:
+                idx += 1
+                continue
+            marker = data[idx + 1]
+            # SOF markers: SOF0..SOF3, SOF5..SOF7, SOF9..SOF11, SOF13..SOF15
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                h, w = struct.unpack(">HH", data[idx + 5:idx + 9])
+                return "image/jpeg", w, h
+            else:
+                length = struct.unpack(">H", data[idx + 2:idx + 4])[0]
+                idx += 2 + length
+        raise VisualGenerationError("Không tìm thấy SOF marker hợp lệ trong JPEG header.")
+
+    # 3. WEBP
+    if data.startswith(b"RIFF") and len(data) >= 30 and data[8:12] == b"WEBP":
+        format_type = data[12:16]
+        if format_type == b"VP8 ":
+            w, h = struct.unpack("<HH", data[26:30])
+            return "image/webp", w & 0x3FFF, h & 0x3FFF
+        elif format_type == b"VP8L":
+            b0, b1, b2, b3 = data[21:25]
+            w = 1 + (((b1 & 0x3F) << 8) | b0)
+            h = 1 + (((b3 & 0xF) << 10) | (b2 << 2) | ((b1 & 0xC0) >> 6))
+            return "image/webp", w, h
+        elif format_type == b"VP8X":
+            w = 1 + struct.unpack("<I", data[24:27] + b"\x00")[0]
+            h = 1 + struct.unpack("<I", data[27:30] + b"\x00")[0]
+            return "image/webp", w, h
+        raise VisualGenerationError("Định dạng WEBP không được hỗ trợ.")
+
+    raise VisualGenerationError("Định dạng ảnh không được hỗ trợ (chỉ nhận PNG, JPEG, WEBP).")
+
+
+def validate_image_bytes(image_bytes: bytes, min_width: int = 256, min_height: int = 256) -> tuple[str, int, int]:
+    """
+    Xác thực decode, định dạng và kích thước tối thiểu của ảnh.
+    Ngăn chặn 100% bug ảnh 1x1 hoặc ảnh rác masquerade thành công.
+    """
+    mime_type, width, height = parse_image_dimensions(image_bytes)
+    if width < min_width or height < min_height:
+        raise VisualGenerationError(
+            f"Kích thước ảnh không đạt chuẩn tối thiểu: {width}x{height} (yêu cầu >= {min_width}x{min_height})."
+        )
+    return mime_type, width, height
+
+
+def create_valid_png(width: int, height: int, color: tuple[int, int, int] = (16, 185, 129)) -> bytes:
+    """Tạo một file PNG chuẩn RFC có kích thước thực sự phục vụ mock test và nền thủ công."""
+    raw_row = bytes([0]) + bytes(color) * width
+    raw_data = raw_row * height
+    compressed = zlib.compress(raw_data)
+
+    png = bytearray(b"\x89PNG\r\n\x1a\n")
+    # IHDR
+    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    ihdr_crc = zlib.crc32(b"IHDR" + ihdr_data)
+    png.extend(struct.pack(">I", len(ihdr_data)) + b"IHDR" + ihdr_data + struct.pack(">I", ihdr_crc))
+    # IDAT
+    idat_crc = zlib.crc32(b"IDAT" + compressed)
+    png.extend(struct.pack(">I", len(compressed)) + b"IDAT" + compressed + struct.pack(">I", idat_crc))
+    # IEND
+    iend_crc = zlib.crc32(b"IEND")
+    png.extend(struct.pack(">I", 0) + b"IEND" + struct.pack(">I", iend_crc))
+    return bytes(png)
+
 
 INDUSTRY_PROMPTS = {
     "recruitment": {
@@ -110,19 +209,20 @@ class VisualService:
         """
         Generates an AI background image and saves it to output_dir/backgrounds.
         Returns: (relative_url, file_path)
+        Raises VisualGenerationError if generation fails or output image is invalid.
         """
         width, height = ASPECT_DIMENSIONS.get(aspect_ratio, (1024, 1280))
         final_prompt = self.get_prompt_for_industry(industry, theme, prompt)
         seed_val = seed if seed is not None else random.randint(1000, 999999)
 
-        filename = f"bg_{uuid4().hex[:12]}.jpg"
-        destination = self.backgrounds_dir / filename
-
         engine = getattr(self.settings, "visual_engine", "pollinations")
 
         if engine == "mock":
-            # Deterministic mock file for testing
-            destination.write_bytes(b"MOCK_JPEG_CONTENT")
+            filename = f"bg_{uuid4().hex[:12]}.png"
+            destination = self.backgrounds_dir / filename
+            mock_bytes = create_valid_png(width, height, color=(16, 185, 129))
+            validate_image_bytes(mock_bytes, min_width=256, min_height=256)
+            destination.write_bytes(mock_bytes)
             return f"/v1/creative/backgrounds/{filename}", destination
 
         if engine == "pollinations":
@@ -136,19 +236,47 @@ class VisualService:
                     response = await client.get(url)
                     response.raise_for_status()
                     image_bytes = response.content
-                    if len(image_bytes) > 1024:
-                        await asyncio.to_thread(destination.write_bytes, image_bytes)
-                        return f"/v1/creative/backgrounds/{filename}", destination
-            except Exception:
-                # If network fails or Pollinations times out, write a local fallback
-                pass
 
-        # Fallback: create procedural minimal gradient
-        fallback_bytes = self._create_gradient_fallback(theme, width, height)
-        png_filename = f"bg_{uuid4().hex[:12]}.png"
-        fallback_dest = self.backgrounds_dir / png_filename
-        await asyncio.to_thread(fallback_dest.write_bytes, fallback_bytes)
-        return f"/v1/creative/backgrounds/{png_filename}", fallback_dest
+                    mime_type, w, h = validate_image_bytes(image_bytes, min_width=256, min_height=256)
+                    ext = ".jpg" if "jpeg" in mime_type else ".png"
+                    filename = f"bg_{uuid4().hex[:12]}{ext}"
+                    destination = self.backgrounds_dir / filename
+
+                    await asyncio.to_thread(destination.write_bytes, image_bytes)
+                    return f"/v1/creative/backgrounds/{filename}", destination
+            except VisualGenerationError:
+                raise
+            except Exception as exc:
+                logger.error("Pollinations background generation failed: %s", exc)
+                raise VisualGenerationError(f"Không thể tạo ảnh nền từ AI provider: {exc}") from exc
+
+        raise VisualGenerationError(f"Engine tạo ảnh nền không hợp lệ: {engine}")
+
+    def generate_procedural_background(
+        self,
+        theme: str = "emerald_pro",
+        aspect_ratio: str = "4:5",
+    ) -> tuple[str, Path]:
+        """
+        Tạo ảnh nền thủ công/procedural gradient chuẩn kích thước thật có nhãn rõ ràng.
+        Không masquerade thành ảnh AI.
+        """
+        width, height = ASPECT_DIMENSIONS.get(aspect_ratio, (1024, 1280))
+        theme_colors = {
+            "emerald_pro": (6, 78, 59),
+            "tech_dark": (15, 23, 42),
+            "warm_editorial": (120, 53, 15),
+            "bold_vibrant": (67, 56, 202),
+            "clean_minimal": (241, 245, 249),
+        }
+        color = theme_colors.get(theme, (15, 23, 42))
+        png_bytes = create_valid_png(width, height, color=color)
+        validate_image_bytes(png_bytes, min_width=256, min_height=256)
+
+        filename = f"bg_procedural_{uuid4().hex[:12]}.png"
+        destination = self.backgrounds_dir / filename
+        destination.write_bytes(png_bytes)
+        return f"/v1/creative/backgrounds/{filename}", destination
 
     async def generate_image(
         self,
@@ -160,7 +288,8 @@ class VisualService:
     ) -> tuple[str, Path]:
         """
         Generates an AI image directly from prompt using Pollinations Flux.
-        Zero cost (0đ), high quality 8K/HD rendering.
+        Zero cost (0đ), high quality rendering.
+        Raises VisualGenerationError if generation fails or output image is invalid.
         """
         width, height = ASPECT_DIMENSIONS.get(aspect_ratio, (1024, 1024))
         full_prompt = prompt
@@ -169,9 +298,15 @@ class VisualService:
         seed_val = seed if seed is not None else random.randint(1000, 999999)
 
         file_stem = job_id or f"art_{uuid4().hex[:12]}"
-        destination = self.settings.output_dir / f"{file_stem}.jpg"
-
         engine = getattr(self.settings, "visual_engine", "pollinations")
+
+        if engine == "mock":
+            destination = self.settings.output_dir / f"{file_stem}.png"
+            mock_bytes = create_valid_png(width, height, color=(30, 41, 59))
+            validate_image_bytes(mock_bytes, min_width=256, min_height=256)
+            destination.write_bytes(mock_bytes)
+            return f"/v1/generations/{destination.name}", destination
+
         if engine == "pollinations":
             try:
                 encoded_prompt = urllib.parse.quote(full_prompt)
@@ -183,21 +318,17 @@ class VisualService:
                     response = await client.get(url)
                     response.raise_for_status()
                     image_bytes = response.content
-                    if len(image_bytes) > 1024:
-                        await asyncio.to_thread(destination.write_bytes, image_bytes)
-                        return f"/v1/generations/{destination.name}", destination
+
+                    mime_type, w, h = validate_image_bytes(image_bytes, min_width=256, min_height=256)
+                    ext = ".jpg" if "jpeg" in mime_type else ".png"
+                    destination = self.settings.output_dir / f"{file_stem}{ext}"
+
+                    await asyncio.to_thread(destination.write_bytes, image_bytes)
+                    return f"/v1/generations/{destination.name}", destination
+            except VisualGenerationError:
+                raise
             except Exception as e:
-                logger.warning("Pollinations image generation failed: %s", e)
+                logger.error("Pollinations image generation failed: %s", e)
+                raise VisualGenerationError(f"Tạo ảnh AI thất bại từ provider: {e}") from e
 
-        # Fallback if network issue or offline
-        fallback_bytes = self._create_gradient_fallback("emerald_pro", width, height)
-        png_destination = self.settings.output_dir / f"{file_stem}.png"
-        await asyncio.to_thread(png_destination.write_bytes, fallback_bytes)
-        return f"/v1/generations/{png_destination.name}", png_destination
-
-    def _create_gradient_fallback(self, theme: str, width: int, height: int) -> bytes:
-        # 1x1 transparent PNG bytes
-        return bytes.fromhex(
-            "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
-            "0000000b49444154789c636000020000050001e9342e2a0000000049454e44ae426082"
-        )
+        raise VisualGenerationError(f"Engine tạo ảnh không hợp lệ: {engine}")

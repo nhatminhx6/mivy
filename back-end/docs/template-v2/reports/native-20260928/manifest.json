@@ -1,0 +1,50 @@
+[
+  {
+    "concept": "recruitment-announcement",
+    "file": "recruitment-announcement.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  },
+  {
+    "concept": "recruitment-team",
+    "file": "recruitment-team.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  },
+  {
+    "concept": "property-architecture",
+    "file": "property-architecture.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  },
+  {
+    "concept": "property-brochure",
+    "file": "property-brochure.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  },
+  {
+    "concept": "food-hero",
+    "file": "food-hero.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  },
+  {
+    "concept": "food-menu",
+    "file": "food-menu.png",
+    "width": 1080,
+    "height": 1350,
+    "mode": "no-image",
+    "fontParity": "Arial registered as Be Vietnam Pro for native QC; NOT browser typography parity"
+  }
+]

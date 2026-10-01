@@ -66,7 +66,8 @@ async def create_creative_image(
     if final_prompt is None or len(final_prompt) < 10:
         raise api_error(422, "invalid_prompt", "Anh chọn kiểu nền hoặc nhập mô tả nhé.")
     settings = request.app.state.settings
-    # For text-to-image or product rendering, engine will try ComfyUI if configured or fallback to Visual AI (0đ Flux)
+    if settings.generation_engine != "comfyui":
+        raise api_error(503, "image_not_configured", "Tạo ảnh thật chưa được cấu hình.")
     input_path = None
     if image is not None:
         try:
@@ -86,20 +87,32 @@ async def create_creative_image(
 async def create_marketing(request: Request, brief: MarketingBrief):
     ai_lock = getattr(request.app.state, "ai_lock", None)
     if ai_lock and ai_lock.locked():
-        return fallback_marketing_copy(brief)
+        raise api_error(409, "ai_busy", "AI đang xử lý yêu cầu khác. Anh thử lại sau nhé.")
+
     settings = getattr(request.app.state, "settings", None)
+    timeout_val = getattr(settings, "text_timeout_seconds", 60) if settings else 60
+
     if ai_lock:
-        try:
-            async with asyncio.timeout(15.0):
-                async with ai_lock:
+        async with ai_lock:
+            try:
+                async with asyncio.timeout(timeout_val):
                     return await generate_marketing(settings, brief)
-        except Exception:
-            return fallback_marketing_copy(brief)
+            except TimeoutError as exc:
+                raise api_error(504, "text_timeout", "AI xử lý quá lâu. Anh thử lại nhé.") from exc
+            except TextGenerationError as exc:
+                raise api_error(503, "text_generation_failed", str(exc)) from exc
+            except Exception as exc:
+                raise api_error(503, "text_generation_failed", f"Lỗi tạo nội dung: {exc}") from exc
+
     try:
-        async with asyncio.timeout(15.0):
+        async with asyncio.timeout(timeout_val):
             return await generate_marketing(settings, brief)
-    except Exception:
-        return fallback_marketing_copy(brief)
+    except TimeoutError as exc:
+        raise api_error(504, "text_timeout", "AI xử lý quá lâu. Anh thử lại nhé.") from exc
+    except TextGenerationError as exc:
+        raise api_error(503, "text_generation_failed", str(exc)) from exc
+    except Exception as exc:
+        raise api_error(503, "text_generation_failed", f"Lỗi tạo nội dung: {exc}") from exc
 
 
 class BackgroundRequest(BaseModel):
@@ -120,13 +133,16 @@ class BackgroundResponse(BaseModel):
 async def create_background(request: Request, body: BackgroundRequest) -> BackgroundResponse:
     visual_service = request.app.state.visual_service
     prompt = visual_service.get_prompt_for_industry(body.industry, body.theme, body.prompt)
-    url, _ = await visual_service.generate_background(
-        industry=body.industry,
-        theme=body.theme,
-        prompt=body.prompt,
-        aspect_ratio=body.aspect_ratio,
-        seed=body.seed,
-    )
+    try:
+        url, _ = await visual_service.generate_background(
+            industry=body.industry,
+            theme=body.theme,
+            prompt=body.prompt,
+            aspect_ratio=body.aspect_ratio,
+            seed=body.seed,
+        )
+    except Exception as exc:
+        raise api_error(503, "visual_generation_failed", str(exc)) from exc
     return BackgroundResponse(url=url, aspect_ratio=body.aspect_ratio, prompt=prompt)
 
 

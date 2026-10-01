@@ -1,0 +1,1 @@
+{"type": "object", "properties": {"summary": {"type": "string"}, "patch": {"type": "string"}, "passed": {"type": "boolean"}, "issues": {"type": "array", "items": {"type": "string"}}}, "required": ["summary", "patch", "passed", "issues"], "additionalProperties": false}

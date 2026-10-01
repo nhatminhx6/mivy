@@ -1,0 +1,159 @@
+You are an agent in a bounded workflow. Do not call tools, delegate, access files, or run commands. Work ONLY with the supplied context. Return JSON matching schema. Never invoke Claude. User is anh, assistant em in Vietnamese. Role: TEMPLATE_SPEC.
+Create an implementation-ready specification for the supplied plan. Do not code or patch existing files yet. Put the full specification in summary, patch empty, passed true only if complete. Include typed proposed contract, exact field schemas for 3 industries, six genuinely distinct layout blueprints with photo/background rules, category draft migration, no-image and long-content behavior, module breakdown, concrete acceptance cases and ordered bounded coding tasks. Use concise Vietnamese anh/em. Retain current image controls, VI/EN. Never claim visuals are tested. This is a planning deliverable for Gemini to implement next.
+# MIVY — template riêng theo ngành
+
+## Mục tiêu
+Thay 12 bộ lọc dùng chung 6 layout bằng template có cấu trúc nội dung, ảnh và bố cục riêng từng ngành. Không xem đổi palette hay tên mẫu là template mới.
+
+## Phân công và giới hạn
+- Codex: PO/PM, tiêu chí nghiệm thu, review tích hợp và QC.
+- Gemini qua Antigravity: thiết kế schema, code các đợt triển khai, sửa lỗi theo báo cáo QC.
+- Không dùng Claude nếu anh chưa cho phép. Không tự chuyển sang Codex code khi Gemini hết quota. Không gọi API trả phí.
+- Gemini làm patch riêng, không ghi đè thay đổi đang có. Chỉ tích hợp sau kiểm tra.
+
+## Đợt 1 — ba ngành có cấu trúc khác rõ rệt
+1. Tuyển dụng: vị trí, lương (nếu có), địa điểm, yêu cầu, quyền lợi, liên hệ. Hai concept: thông báo tuyển dụng và hồ sơ đội ngũ.
+2. Bất động sản: loại bất động sản, giá, diện tích, địa chỉ, phòng ngủ, tiện ích, liên hệ. Hai concept: ảnh kiến trúc lớn với dải thông số và brochure nhiều ảnh.
+3. Ẩm thực: món/combo, giá, mô tả, ưu đãi, địa chỉ/đặt món. Hai concept: hero món ăn và menu/combo.
+Mỗi ngành có form, content mapping và bố cục riêng. Một concept dùng chung các tỷ lệ nhưng phải reflow, không kéo giãn.
+
+## Đợt 2
+Khóa học, sự kiện, làm đẹp: mỗi ngành hai concept riêng sau khi đợt 1 được duyệt.
+
+## Đợt 3
+Du lịch, sản phẩm, thể thao, app/công nghệ, thương hiệu cá nhân, dịch vụ. Chưa làm xong thì hiển thị mẫu dùng chung rõ ràng; không gắn nhãn template chuyên ngành.
+
+## Luồng người dùng
+Chọn ngành → chọn mẫu bằng preview có dữ liệu minh họa đúng ngành → nhập thông tin → thêm ảnh nền/ảnh chính → chỉnh và tải xuống.
+Preview thư viện không lấy JD tuyển dụng đang mở để minh họa bất động sản. Chọn mẫu không chèn dữ liệu minh họa vào chiến dịch thật. Draft riêng theo ngành; chuyển ngành không mất nội dung.
+
+## Ảnh và chữ
+- Hai lớp độc lập: nền phủ canvas; ảnh chính đúng slot. Không tráo vai trò.
+- Giữ bo góc, fit/contain, zoom/pan; xuất PNG/ZIP giống preview.
+- Ngành không có ảnh vẫn có layout phù hợp, không để khung trống lớn.
+- VI/EN/mixed giữ dấu và ngôn ngữ. Không bịa giá/lương/liên hệ, không lặng lẽ bỏ thông tin dài; phân trang khi cần.
+
+## QC bắt buộc
+1. Data: category/template tương thích; dữ liệu ví dụ không rò vào chiến dịch; lưu/khôi phục draft theo ngành.
+2. Render: 3 ngành × 2 concept × 3 tỷ lệ; cả không ảnh/nền/ảnh chính/cả hai; tiếng Việt dài và English.
+3. Export: đúng tỷ lệ, đủ trang, fonts tải xong, nền và crop giống preview.
+4. Visual: review contact sheet của 6 concept với cùng brief trong từng ngành; khác hierarchy, ảnh, detail và cấu trúc, không chỉ đổi màu.
+5. Không công bố đạt thương mại chỉ vì TypeScript hoặc canvas tests pass. Anh duyệt chất lượng hình ở bước cuối.
+
+## Bước đang giao Gemini
+Thiết kế contract/schema và specification 6 concept đợt 1 trước. Sau đó code từng ngành theo contract, không sửa tất cả trong một patch khổng lồ.
+
+CURRENT TYPES
+export type IndustryId = 'general' | 'recruitment' | 'education' | 'service';
+export type AspectRatio = '1:1' | '4:5' | '9:16';
+export type PosterKind = 'launch' | 'story' | 'action';
+export type LayoutMode = 'full_photo' | 'matrix';
+export type OutputLanguage = 'preserve' | 'vi' | 'en';
+
+export type ThemeId = 'tech_dark' | 'warm_editorial' | 'bold_vibrant' | 'clean_minimal' | 'emerald_pro';
+
+export interface PosterTheme {
+  id: ThemeId;
+  name: string;
+  bg: string;
+  bgGrad: [string, string, string];
+  glow: string;
+  accent: string;
+  accentLight: string;
+  accentText: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+  cardBg: string;
+  cardBorder: string;
+  cardHighlightBg: string;
+  cardHighlightBorder: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  tagBg: string;
+  tagText: string;
+}
+
+export interface FactItem {
+  id: string;
+  source_excerpt: string;
+  text: string;
+  selected: boolean;
+}
+
+export interface CopyItem {
+  headline: string;
+  subline: string;
+  cta: string;
+  caption: string;
+  points?: string[];
+  pointsEdited?: boolean;
+}
+
+export interface MarketingState {
+  industry: IndustryId;
+  categoryId?: string;
+  templateId?: string;
+  name: string;
+  goal: string;
+  details: string;
+  brand: string;
+  offer: string;
+  image?: string;
+  cutout?: string;
+  bgUrl?: string;
+  mainImageFit?: "cover" | "contain";
+  mainImageZoom?: number;
+  mainImageX?: number;
+  mainImageY?: number;
+  backgroundImage?: string;
+  backgroundDim?: number;
+  backgroundBlur?: number;
+  backgroundX?: number;
+  backgroundY?: number;
+  aspect: AspectRatio;
+  theme: ThemeId;
+  layoutMode?: LayoutMode;
+  selected: PosterKind;
+  outputLanguage?: OutputLanguage;
+  facts?: FactItem[];
+  storyPage?: number;
+  storyPerPage?: number;
+  copies: Record<PosterKind, CopyItem>;
+}
+
+export interface AssetInfo {
+  im: HTMLImageElement;
+  l: number;
+  t: number;
+  w: number;
+  h: number;
+}
+
+
+CURRENT CATALOG
+import { IndustryId } from '@/types';
+export const CATEGORIES: {id:string; name:string; industry:IndustryId}[] = [
+  {id:'recruitment',name:'Tuyển dụng',industry:'recruitment'},
+  {id:'education',name:'Khóa học',industry:'education'},
+  {id:'event',name:'Sự kiện',industry:'service'},
+  {id:'food',name:'Ẩm thực',industry:'general'},
+  {id:'beauty',name:'Làm đẹp',industry:'service'},
+  {id:'property',name:'Bất động sản',industry:'service'},
+  {id:'travel',name:'Du lịch',industry:'service'},
+  {id:'retail',name:'Sản phẩm',industry:'general'},
+  {id:'fitness',name:'Thể thao',industry:'service'},
+  {id:'technology',name:'App & công nghệ',industry:'general'},
+  {id:'personal',name:'Thương hiệu cá nhân',industry:'service'},
+  {id:'service',name:'Dịch vụ',industry:'service'},
+];
+export const TEMPLATES = [
+  {id:'editorial',name:'Editorial',description:'Ảnh dọc • tiêu đề lớn • nội dung chia cột',categories:['recruitment','education','personal','service'],bg:'#f2ede3',ink:'#202d28',accent:'#cc472c',photo:true},
+  {id:'spotlight',name:'Product spotlight',description:'Sản phẩm nguyên vẹn • thông điệp • ưu đãi',categories:['retail','beauty','food','technology'],bg:'#f4e8d9',ink:'#44291d',accent:'#a83625',photo:true},
+  {id:'billboard',name:'Bold announcement',description:'Typography lớn • thông tin nổi bật • tương phản',categories:['event','fitness','recruitment','technology'],bg:'#e4fc73',ink:'#152821',accent:'#152821',photo:false},
+  {id:'magazine',name:'Photo journal',description:'Ảnh ngang • tiêu đề • thông tin theo hàng',categories:['travel','property','food','personal','beauty'],bg:'#f8f5ee',ink:'#242e38',accent:'#805031',photo:true},
+  {id:'agenda',name:'Program & details',description:'Nội dung dài • danh sách có phân cấp • chia trang',categories:['education','event','recruitment','service','technology'],bg:'#eeeaff',ink:'#302453',accent:'#6241bb',photo:false},
+  {id:'portrait',name:'Expert profile',description:'Chân dung • thông điệp • thông tin chuyên môn',categories:['personal','education','fitness','beauty','service','property','travel'],bg:'#173e38',ink:'#fff6e6',accent:'#ecd6a0',photo:true},
+] as const;
+export type TemplateId = typeof TEMPLATES[number]['id'];

@@ -1,0 +1,16 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -106,8 +106,9 @@
+   } else if (cId === 'property-brochure') {
+-    drawText(copy.headline || '', m, m + h * 0.05, w * 0.38, h * 0.15, w * 0.08, ink, '800');
++    const hw = asset ? w * 0.38 : w - m * 2;
++    drawText(copy.headline || '', m, m + h * 0.05, hw, h * 0.15, w * 0.08, ink, '800');
+     if (asset) drawPhoto(w * 0.5, m + h * 0.05, w * 0.5 - m, h * 0.35);
+-    drawText(copy.subline || '', m, m + h * 0.22, w * 0.38, h * 0.1, w * 0.045, ink, '700');
+-    const bodyY = m + h * 0.45;
++    drawText(copy.subline || '', m, m + h * 0.22, hw, h * 0.1, w * 0.045, ink, '700');
++    const bodyY = m + (asset ? h * 0.45 : h * 0.34);
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.12);
+     points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));

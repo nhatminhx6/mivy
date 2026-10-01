@@ -1,0 +1,231 @@
+--- web/src/app/studio/marketing/page.tsx
++++ web/src/app/studio/marketing/page.tsx
+@@ -324,84 +324,103 @@
+     reader.readAsDataURL(file);
+   };
+ 
++  const prepareExport = async () => {
++    const snapshot = structuredClone(state);
++    await document.fonts.ready;
++    const assetUrl = snapshot.cutout || snapshot.image || '';
++    const bgUrl = snapshot.backgroundImage || snapshot.bgUrl || '';
++    const [asset, bgImg] = await Promise.all([
++      loadAsset(assetUrl),
++      loadBgImg(bgUrl),
++    ]);
++    if (assetUrl && !asset) throw new Error('Không thể tải ảnh chính. Vui lòng kiểm tra lại.');
++    if (bgUrl && !bgImg) throw new Error('Không thể tải ảnh nền. Vui lòng kiểm tra lại.');
++
++    const draw = (kind: PosterKind, page: number = 0) => {
++      const c = document.createElement('canvas');
++      c.width = 1080;
++      c.height = snapshot.aspect === '1:1' ? 1080 : snapshot.aspect === '9:16' ? 1920 : 1350;
++      drawIndustryPoster(c, { ...snapshot, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg);
++      return c;
++    };
++    return { snapshot, asset, bgImg, draw };
++  };
++
+   // Download single PNG
+-  const handleDownloadSingle = () => {
+-    const canvasMap: Record<PosterKind, HTMLCanvasElement | null> = {
+-      launch: canvasLaunchRef.current,
+-      story: canvasStoryRef.current,
+-      action: canvasActionRef.current,
+-    };
+-    const canvas = canvasMap[state.selected];
+-    if (!canvas) return;
+-
+-    canvas.toBlob((blob) => {
+-      if (!blob) return;
++  const handleDownloadSingle = async () => {
++    try {
++      setStatusText('Đang xử lý ảnh...');
++      const { snapshot, draw } = await prepareExport();
++      const canvas = draw(snapshot.selected);
++      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r));
++      if (!blob) throw new Error('Không thể tạo ảnh PNG.');
+       const url = URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+-      a.download = `mivy-${state.selected}-${state.aspect.replace(':', 'x')}.png`;
++      a.download = `mivy-${snapshot.selected}-${snapshot.aspect.replace(':', 'x')}.png`;
+       a.click();
+-      URL.revokeObjectURL(url);
+-    });
++      setTimeout(() => URL.revokeObjectURL(url), 1000);
++      setStatusText('Tải ảnh thành công!');
++      setTimeout(() => setStatusText(''), 2000);
++    } catch (err: any) {
++      setStatusText(err.message || 'Lỗi tải ảnh.');
++    }
+   };
+ 
+   // Download all posters + carousel pages in ZIP
+   const handleDownloadZip = async () => {
+-    const files = [];
+-
+-    // 1. Launch Hero
+-    if (canvasLaunchRef.current) {
+-      const blob = await new Promise<Blob | null>((r) => canvasLaunchRef.current!.toBlob(r));
+-      if (blob) {
+-        files.push({
+-          name: '01-hero-poster.png',
+-          data: new Uint8Array(await blob.arrayBuffer()),
+-        });
+-      }
+-    }
+-    files.push({
+-      name: '01-hero-caption.txt',
+-      data: new TextEncoder().encode(state.copies.launch.caption || ''),
+-    });
+-
+-    // 2. Story Carousel (render all pages!)
+-    const allStoryPoints = state.copies.story.points || [];
+-    const storyPerPage = state.storyPerPage || 3;
+-    const totalStoryPages = state.conceptId ? balancedPages(allStoryPoints,storyPerPage).length : Math.max(1, Math.ceil(allStoryPoints.length / storyPerPage));
+-
+-    for (let p = 0; p < totalStoryPages; p++) {
+-      const tempCanvas = document.createElement('canvas');
+-      tempCanvas.width = 1080;
+-      tempCanvas.height = state.aspect === '1:1' ? 1080 : state.aspect === '9:16' ? 1920 : 1350;
+-      drawIndustryPoster(tempCanvas, { ...state, storyPage: p }, 'story', state.copies.story, assetRef.current, bgImgRef.current);
+-      const blob = await new Promise<Blob | null>((r) => tempCanvas.toBlob(r));
+-      if (blob) {
++    try {
++      setStatusText('Đang tạo bộ ảnh ZIP...');
++      const { snapshot, draw } = await prepareExport();
++      const files = [];
++
++      // 1. Launch Hero
++      const canvasLaunch = draw('launch');
++      const blobLaunch = await new Promise<Blob | null>((r) => canvasLaunch.toBlob(r));
++      if (!blobLaunch) throw new Error('Lỗi xuất ảnh Hero.');
++      files.push({
++        name: '01-hero-poster.png',
++        data: new Uint8Array(await blobLaunch.arrayBuffer()),
++      });
++      files.push({
++        name: '01-hero-caption.txt',
++        data: new TextEncoder().encode(snapshot.copies.launch.caption || ''),
++      });
++
++      // 2. Story Carousel
++      const allStoryPoints = snapshot.copies.story.points || [];
++      const storyPerPage = snapshot.storyPerPage || 3;
++      const totalStoryPages = snapshot.conceptId ? balancedPages(allStoryPoints, storyPerPage).length : Math.max(1, Math.ceil(allStoryPoints.length / storyPerPage));
++
++      for (let p = 0; p < totalStoryPages; p++) {
++        const canvasStory = draw('story', p);
++        const blobStory = await new Promise<Blob | null>((r) => canvasStory.toBlob(r));
++        if (!blobStory) throw new Error(`Lỗi xuất ảnh Story trang ${p + 1}.`);
+         const pageSuffix = totalStoryPages > 1 ? `-page${p + 1}` : '';
+         files.push({
+           name: `02-story${pageSuffix}-poster.png`,
+-          data: new Uint8Array(await blob.arrayBuffer()),
++          data: new Uint8Array(await blobStory.arrayBuffer()),
+         });
+       }
+-    }
+-    files.push({
+-      name: '02-story-caption.txt',
+-      data: new TextEncoder().encode(state.copies.story.caption || ''),
+-    });
+-
+-    // 3. Action Poster
+-    if (canvasActionRef.current) {
+-      const blob = await new Promise<Blob | null>((r) => canvasActionRef.current!.toBlob(r));
+-      if (blob) {
+-        files.push({
+-          name: '03-action-poster.png',
+-          data: new Uint8Array(await blob.arrayBuffer()),
+-        });
+-      }
+-    }
+-    files.push({
+-      name: '03-action-caption.txt',
+-      data: new TextEncoder().encode(state.copies.action.caption || ''),
+-    });
+-
+-    // 4. Manifest.json and Source.txt
+-    const manifest = {
+-      industry: state.industry,
+-      output_language: state.outputLanguage || 'preserve',
+-      aspect: state.aspect,
+-      total_facts: currentFacts.length,
+-      story_carousel_pages: totalStoryPages,
+-      created_at: new Date().toISOString(),
+-    };
+-    files.push({
+-      name: 'manifest.json',
+-      data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)),
+-    });
+-
+-    const sourceContent = `VỊ TRÍ: ${state.name}\nTHƯƠNG HIỆU: ${state.brand}\nĐÃI NGỘ: ${state.offer}\nNGÔN NGỮ: ${state.outputLanguage || 'preserve'}\n\nNỘI DUNG NGUỒN:\n${state.details}`;
+-    files.push({
+-      name: 'source.txt',
+-      data: new TextEncoder().encode(sourceContent),
+-    });
+-
+-    const zipBlob = marketingZip(files);
+-    const url = URL.createObjectURL(zipBlob);
+-    const a = document.createElement('a');
+-    a.href = url;
+-    a.download = `mivy-marketing-pack-${state.aspect.replace(':', 'x')}.zip`;
+-    a.click();
+-    URL.revokeObjectURL(url);
++      files.push({
++        name: '02-story-caption.txt',
++        data: new TextEncoder().encode(snapshot.copies.story.caption || ''),
++      });
++
++      // 3. Action Poster
++      const canvasAction = draw('action');
++      const blobAction = await new Promise<Blob | null>((r) => canvasAction.toBlob(r));
++      if (!blobAction) throw new Error('Lỗi xuất ảnh Action.');
++      files.push({
++        name: '03-action-poster.png',
++        data: new Uint8Array(await blobAction.arrayBuffer()),
++      });
++      files.push({
++        name: '03-action-caption.txt',
++        data: new TextEncoder().encode(snapshot.copies.action.caption || ''),
++      });
++
++      // 4. Manifest.json and Source.txt
++      const totalFacts = (snapshot.facts && snapshot.facts.length > 0)
++        ? snapshot.facts.length
++        : extractFactsFromDetails(snapshot.details, snapshot.offer).length;
++
++      const manifest = {
++        industry: snapshot.industry,
++        output_language: snapshot.outputLanguage || 'preserve',
++        aspect: snapshot.aspect,
++        total_facts: totalFacts,
++        story_carousel_pages: totalStoryPages,
++        created_at: new Date().toISOString(),
++      };
++      files.push({
++        name: 'manifest.json',
++        data: new TextEncoder().encode(JSON.stringify(manifest, null, 2)),
++      });
++
++      const sourceContent = `VỊ TRÍ: ${snapshot.name}\nTHƯƠNG HIỆU: ${snapshot.brand}\nĐÃI NGỘ: ${snapshot.offer}\nNGÔN NGỮ: ${snapshot.outputLanguage || 'preserve'}\n\nNỘI DUNG NGUỒN:\n${snapshot.details}`;
++      files.push({
++        name: 'source.txt',
++        data: new TextEncoder().encode(sourceContent),
++      });
++
++      const zipBlob = marketingZip(files);
++      const url = URL.createObjectURL(zipBlob);
++      const a = document.createElement('a');
++      a.href = url;
++      a.download = `mivy-marketing-pack-${snapshot.aspect.replace(':', 'x')}.zip`;
++      a.click();
++      setTimeout(() => URL.revokeObjectURL(url), 1000);
++      setStatusText('Tải bộ ZIP thành công!');
++      setTimeout(() => setStatusText(''), 2000);
++    } catch (err: any) {
++      setStatusText(err.message || 'Lỗi kết xuất ZIP.');
++    }
+   };

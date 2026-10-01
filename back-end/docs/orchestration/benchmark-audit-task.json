@@ -1,0 +1,16 @@
+{
+  "goal": "Fix validate_image_file in back-end/app/benchmark/evaluator.py so a mismatched aspect ratio cannot return valid=True. Reject unknown aspect labels explicitly. Keep other behavior unchanged. Return a unified diff only for that file.",
+  "acceptance": [
+    "aspect mismatch returns valid False with aspect_ok False",
+    "unknown expected aspect returns valid False",
+    "matching 4:5 remains valid True"
+  ],
+  "files": [
+    "back-end/app/benchmark/evaluator.py"
+  ],
+  "test_command": [
+    "/Users/minh.nn1/Projects/personal/mivy/back-end/.venv/bin/python",
+    "-c",
+    "import sys; sys.path.insert(0,'back-end'); from unittest.mock import patch; from pathlib import Path; import tempfile; from app.benchmark.evaluator import validate_image_file; p=Path(tempfile.mktemp()); p.write_bytes(b'x');\nwith patch('app.benchmark.evaluator.parse_image_dimensions',return_value=('image/png',1000,1000)):\n r=validate_image_file(p,'4:5'); assert r['valid'] is False and r['aspect_ok'] is False\n assert validate_image_file(p,'garbage')['valid'] is False\nwith patch('app.benchmark.evaluator.parse_image_dimensions',return_value=('image/png',800,1000)):\n assert validate_image_file(p,'4:5')['valid'] is True\np.unlink()"
+  ]
+}

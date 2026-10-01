@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "pilot_case_ids": [
+    "recruitment-mixed",
+    "product-vi",
+    "course-en"
+  ],
+  "cases": [
+    {
+      "id": "recruitment-mixed",
+      "language": "mixed",
+      "aspect": "4:5",
+      "brief": "Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.",
+      "exact_text": [
+        "MIVY",
+        "ĐANG TUYỂN",
+        "Lead / Senior Fullstack Developer (ReactJS, NodeJS)",
+        "At least 5 years building and running production software, and still writing code today",
+        "Depth in system design and architecture: scalability, performance, distributed systems, reliability",
+        "A track record of setting technical direction across several teams, or on one large and long-running program",
+        "Quick to find your way around an unfamiliar codebase",
+        "Judgment about when not to build something, when to pay down debt, and when to say no",
+        "The ability to mentor engineers and change their minds without formal authority",
+        "Comfort working directly with clients and non-engineering stakeholders",
+        "A habit of following where the field is going",
+        "Ứng tuyển"
+      ],
+      "forbidden_facts": [
+        "salary",
+        "location",
+        "email",
+        "benefits not supplied"
+      ],
+      "asset_required": false
+    },
+    {
+      "id": "product-vi",
+      "language": "vi",
+      "aspect": "4:5",
+      "brief": "Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.",
+      "exact_text": [
+        "BƯỚC ĐI THEO CÁCH RIÊNG",
+        "Khám phá bộ sưu tập",
+        "Xem sản phẩm"
+      ],
+      "forbidden_facts": [
+        "price",
+        "discount",
+        "comfort or material claims"
+      ],
+      "asset_required": true,
+      "asset_path": "fixtures/product_shoe.jpg"
+    },
+    {
+      "id": "course-en",
+      "language": "en",
+      "aspect": "4:5",
+      "brief": "Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.",
+      "exact_text": [
+        "LIGHT & STORY",
+        "A practical photography workshop",
+        "Learn composition, natural light and visual storytelling",
+        "4 sessions · Small group practice",
+        "Starts 18 October 2026",
+        "Reserve your place"
+      ],
+      "forbidden_facts": [
+        "price",
+        "certificate",
+        "location",
+        "contact not supplied"
+      ],
+      "asset_required": false
+    },
+    {
+      "id": "recruitment-en",
+      "language": "en",
+      "aspect": "4:5",
+      "brief": "Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.",
+      "exact_text": [
+        "MIVY",
+        "WE ARE HIRING",
+        "Lead / Senior Fullstack Developer (ReactJS, NodeJS)",
+        "At least 5 years building and running production software, and still writing code today",
+        "Depth in system design and architecture: scalability, performance, distributed systems, reliability",
+        "A track record of setting technical direction across several teams, or on one large and long-running program",
+        "Quick to find your way around an unfamiliar codebase",
+        "Judgment about when not to build something, when to pay down debt, and when to say no",
+        "The ability to mentor engineers and change their minds without formal authority",
+        "Comfort working directly with clients and non-engineering stakeholders",
+        "A habit of following where the field is going",
+        "Apply now"
+      ],
+      "forbidden_facts": [
+        "salary",
+        "location",
+        "email",
+        "benefits not supplied"
+      ],
+      "asset_required": false
+    },
+    {
+      "id": "course-vi",
+      "language": "vi",
+      "aspect": "4:5",
+      "brief": "Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.",
+      "exact_text": [
+        "ÁNH SÁNG & CÂU CHUYỆN",
+        "Workshop nhiếp ảnh thực hành",
+        "Học bố cục, ánh sáng tự nhiên và kể chuyện bằng hình ảnh",
+        "4 buổi · Thực hành nhóm nhỏ",
+        "Khai giảng 18/10/2026",
+        "Đăng ký tham gia"
+      ],
+      "forbidden_facts": [
+        "price",
+        "certificate",
+        "location",
+        "contact not supplied"
+      ],
+      "asset_required": false
+    }
+  ]
+}

@@ -1,5 +1,30 @@
 # Mivy backend
 
+## Chạy BE + Web hiện tại (2 terminal)
+
+Trên máy anh đã setup, mở hai terminal và chạy:
+
+**Terminal 1 — Backend + dịch vụ AI local:**
+
+```bash
+cd /Users/minh.nn1/Projects/personal/mivy/back-end && sh scripts/run-local.sh
+```
+
+Script khởi động hoặc dùng lại Ollama, kiểm tra model text, chạy ComfyUI nếu đã cài đủ và backend ở port 8000. Lần đầu thiếu model thì script sẽ tải model. Nếu thiếu ComfyUI, script chuyển engine ảnh sang `mock`; điều này không đồng nghĩa đã có model tạo ảnh local thật.
+
+**Terminal 2 — Web Next.js:**
+
+```bash
+cd /Users/minh.nn1/Projects/personal/mivy/web && npm run dev
+```
+
+- Web hiện tại: **http://localhost:3009/studio/marketing**
+- Bộ mẫu kiểm tra: http://localhost:3009/studio/marketing/review
+- API docs: http://localhost:8000/docs
+- `http://localhost:8000/ui/` là giao diện cũ; các thay đổi template mới nằm trên web port **3009**.
+
+Giữ hai terminal mở; Ctrl+C để dừng. Script backend chỉ dừng các dịch vụ do lần chạy đó khởi động. Các phần dưới đây mô tả thêm backend và giao diện legacy.
+
 For product direction, current implementation status, and cross-AI continuation notes, read
 [HANDOFF.md](HANDOFF.md).
 

@@ -1,0 +1,126 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -71,13 +71,82 @@
+     } else {
+       listTop = h * 0.34;
+     }
+     
+-    const menuPoints = allPoints.slice(0, 6);
+-    const slotH = (h * 0.78 - listTop) / Math.max(1, menuPoints.length);
+-    menuPoints.forEach((p, i) => {
+-      const py = listTop + i * slotH;
+-      if (i > 0) { ctx.fillStyle = 'rgba(38,58,44,0.15)'; ctx.fillRect(inset * 2, py, w - inset * 4, 1); }
+-      drawText(p, inset * 2, py + slotH * 0.1, w - inset * 4, slotH * 0.8, w * 0.04, paperInk, '500');
+-    });
+-    
+     const lang = state.outputLanguage;
+     const contact = fields.contact || fields.booking || '';
+     const ctaText = copy.cta || (lang === 'en' ? 'VIEW MENU' : 'XEM THỰC ĐƠN');
++
++    const measureWrap = (text: string, size: number, maxWidth: number) => {
++      ctx.font = `500 ${size}px "Be Vietnam Pro"`;
++      const paragraphs = text.split('\n');
++      let lines: string[] = [];
++      for (const p of paragraphs) {
++        if (!p) {
++          lines.push('');
++          continue;
++        }
++        const words = p.split(' ');
++        let currentLine = '';
++        for (const word of words) {
++          const testLine = currentLine ? currentLine + ' ' + word : word;
++          if (ctx.measureText(testLine).width <= maxWidth) {
++            currentLine = testLine;
++          } else {
++            if (ctx.measureText(word).width > maxWidth) {
++              if (currentLine) { lines.push(currentLine); currentLine = ''; }
++              let tempLine = '';
++              for (const char of word) {
++                if (ctx.measureText(tempLine + char).width <= maxWidth) {
++                  tempLine += char;
++                } else {
++                  if (tempLine) lines.push(tempLine);
++                  tempLine = char;
++                }
++              }
++              currentLine = tempLine;
++            } else {
++              if (currentLine) lines.push(currentLine);
++              currentLine = word;
++            }
++          }
++        }
++        if (currentLine) lines.push(currentLine);
++      }
++      return lines;
++    };
++
++    const minSize = Math.max(30, (w / 1080) * 30);
++    const sizes = [Math.max(w * 0.045, minSize), Math.max(w * 0.035, minSize)];
++    let finalLayout: { lines: string[], height: number }[] = [];
++    let finalSize = sizes[1];
++    let hiddenCount = 0;
++    const listBottom = h * 0.83;
++    
++    for (const size of sizes) {
++      ctx.font = `500 ${size}px "Be Vietnam Pro"`;
++      const lineHeight = size * 1.4;
++      const padding = size * 1.0;
++      let currentH = 0;
++      let tempLayout = [];
++      let tempHidden = 0;
++      
++      for (let i = 0; i < allPoints.length; i++) {
++        const lines = measureWrap(allPoints[i], size, w - inset * 4);
++        const itemH = lines.length * lineHeight;
++        const padH = tempLayout.length > 0 ? padding : 0;
++        const needsCue = (i < allPoints.length - 1);
++        const cueH = needsCue ? size * 3.0 : 0;
++        
++        if (listTop + currentH + itemH + padH + cueH <= listBottom) {
++          currentH += itemH + padH;
++          tempLayout.push({ lines, height: itemH });
++        } else {
++          tempHidden = allPoints.length - i;
++          break;
++        }
++      }
++      
++      if (tempHidden === 0 || size === sizes[1]) {
++        finalLayout = tempLayout;
++        finalSize = size;
++        hiddenCount = tempHidden;
++        if (tempHidden === 0) break;
++      }
++    }
++    
++    let currentY = listTop;
++    const lineHeight = finalSize * 1.4;
++    
++    ctx.textBaseline = 'top';
++    finalLayout.forEach((item, i) => {
++      if (i > 0) { 
++        currentY += finalSize * 0.5; 
++        ctx.fillStyle = 'rgba(38,58,44,0.15)'; 
++        ctx.fillRect(inset * 2, currentY, w - inset * 4, 1); 
++        currentY += finalSize * 0.5; 
++      }
++      ctx.font = `500 ${finalSize}px "Be Vietnam Pro"`;
++      ctx.fillStyle = paperInk;
++      item.lines.forEach((line) => {
++        ctx.fillText(line, inset * 2, currentY);
++        currentY += lineHeight;
++      });
++    });
++    
++    if (hiddenCount > 0) {
++      currentY += finalSize * 0.8;
++      const cue = lang === 'en' ? `+${hiddenCount} MORE ON DETAIL PAGE` : `+${hiddenCount} MÓN KHÁC Ở TRANG CHI TIẾT`;
++      ctx.font = `700 ${finalSize * 0.9}px "Be Vietnam Pro"`;
++      ctx.fillStyle = paperRust;
++      ctx.fillText(cue, inset * 2, currentY);
++    }
++    
+     drawText(ctaText, inset * 2, h * 0.85, w - inset * 4, h * 0.04, w * 0.04, paperRust, '800');
+     drawText(contact, inset * 2, h * 0.90, w - inset * 4, h * 0.04, w * 0.035, paperInk, '500');

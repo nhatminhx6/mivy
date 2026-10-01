@@ -18,6 +18,7 @@ class CreativeBrief(BaseModel):
     cta: ShortText = ""
     tone: Literal["Gần gũi", "Chuyên nghiệp", "Súc tích"] = "Gần gũi"
     concept: int = Field(default=0, ge=0, le=2)
+    output_language: Literal["preserve", "vi", "en"] = "preserve"
 
 
 class CreativeContent(BaseModel):

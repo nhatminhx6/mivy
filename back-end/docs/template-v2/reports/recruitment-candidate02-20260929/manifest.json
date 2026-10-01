@@ -1,0 +1,50 @@
+[
+  {
+    "file": "recruitment-vi-1x1.png",
+    "aspect": "1:1",
+    "language": "vi",
+    "width": 1080,
+    "height": 1080,
+    "fontParity": false
+  },
+  {
+    "file": "recruitment-en-1x1.png",
+    "aspect": "1:1",
+    "language": "en",
+    "width": 1080,
+    "height": 1080,
+    "fontParity": false
+  },
+  {
+    "file": "recruitment-vi-4x5.png",
+    "aspect": "4:5",
+    "language": "vi",
+    "width": 1080,
+    "height": 1350,
+    "fontParity": false
+  },
+  {
+    "file": "recruitment-en-4x5.png",
+    "aspect": "4:5",
+    "language": "en",
+    "width": 1080,
+    "height": 1350,
+    "fontParity": false
+  },
+  {
+    "file": "recruitment-vi-9x16.png",
+    "aspect": "9:16",
+    "language": "vi",
+    "width": 1080,
+    "height": 1920,
+    "fontParity": false
+  },
+  {
+    "file": "recruitment-en-9x16.png",
+    "aspect": "9:16",
+    "language": "en",
+    "width": 1080,
+    "height": 1920,
+    "fontParity": false
+  }
+]

@@ -1,0 +1,55 @@
+--- a/web/src/lib/industry-renderer.ts
++++ b/web/src/lib/industry-renderer.ts
+@@ -41,6 +41,44 @@
+   const pages = balancedPages(allPoints, state.storyPerPage || 3);
+   const currentPage = pageAt(pages, state.storyPage || 0);
+   const points = isStory ? currentPage.items : allPoints.slice(0,3);
+   
++  if (cId === 'food-menu' && !asset && !bgImg && kind !== 'story') {
++    ctx.fillStyle = '#f4eedf';
++    ctx.fillRect(0, 0, w, h);
++    
++    const paperInk = '#263a2c';
++    const paperRust = '#ab4b32';
++    const inset = w * 0.04;
++    
++    ctx.strokeStyle = paperInk;
++    ctx.lineWidth = 1;
++    ctx.strokeRect(inset, inset, w - inset * 2, h - inset * 2);
++    ctx.strokeRect(inset + 4, inset + 4, w - (inset + 4) * 2, h - (inset + 4) * 2);
++    
++    if (state.brand) {
++      drawText(state.brand, inset * 2, inset * 2, w - inset * 4, h * 0.05, w * 0.035, paperInk, '700');
++    }
++    
++    drawText(copy.headline || '', inset * 2, h * 0.15, w - inset * 4, h * 0.16, w * 0.11, paperInk, '900');
++    
++    let listTop = h * 0.48;
++    if (copy.subline) {
++      ctx.fillStyle = paperRust;
++      ctx.fillRect(0, h * 0.34, w, h * 0.10);
++      drawText(copy.subline, inset * 2, h * 0.36, w - inset * 4, h * 0.06, w * 0.05, '#f4eedf', '700');
++    } else {
++      listTop = h * 0.34;
++    }
++    
++    const menuPoints = allPoints.slice(0, 6);
++    const slotH = (h * 0.78 - listTop) / Math.max(1, menuPoints.length);
++    menuPoints.forEach((p, i) => {
++      const py = listTop + i * slotH;
++      if (i > 0) { ctx.fillStyle = 'rgba(38,58,44,0.15)'; ctx.fillRect(inset * 2, py, w - inset * 4, 1); }
++      drawText(p, inset * 2, py + slotH * 0.1, w - inset * 4, slotH * 0.8, w * 0.04, paperInk, '500');
++    });
++    
++    const lang = state.outputLanguage;
++    const contact = fields.contact || fields.booking || '';
++    const ctaText = copy.cta || (lang === 'en' ? 'VIEW MENU' : 'XEM THỰC ĐƠN');
++    drawText(ctaText, inset * 2, h * 0.85, w - inset * 4, h * 0.04, w * 0.04, paperRust, '800');
++    drawText(contact, inset * 2, h * 0.90, w - inset * 4, h * 0.04, w * 0.035, paperInk, '500');
++    
++    return true;
++  }
++
+   if (state.brand) {
+     drawText(state.brand, m, m, w - m * 2, h * 0.05, w * 0.03, brandInk, '600');
+   }

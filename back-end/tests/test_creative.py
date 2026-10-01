@@ -176,7 +176,83 @@ def test_create_background_endpoint(client):
 
     file_resp = client.get(data["url"])
     assert file_resp.status_code == 200
-    assert file_resp.content == b"MOCK_JPEG_CONTENT"
+    from app.services.visual_service import validate_image_bytes
+    mime, w, h = validate_image_bytes(file_resp.content, min_width=256, min_height=256)
+    assert mime == "image/png"
+    assert w == 1024 and h == 1280
+
+
+def test_visual_service_rejects_1x1_and_corrupt_images():
+    import pytest
+    from app.services.visual_service import VisualGenerationError, validate_image_bytes
+
+    # 1x1 transparent PNG
+    tiny_1x1_png = bytes.fromhex(
+        "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+        "0000000b49444154789c636000020000050001e9342e2a0000000049454e44ae426082"
+    )
+    with pytest.raises(VisualGenerationError, match="Kích thước ảnh không đạt chuẩn"):
+        validate_image_bytes(tiny_1x1_png, min_width=256, min_height=256)
+
+    # HTML error response from provider
+    html_error = b"<!DOCTYPE html><html><body>502 Bad Gateway</body></html>"
+    with pytest.raises(VisualGenerationError, match="Nhận phản hồi HTML/JSON lỗi"):
+        validate_image_bytes(html_error, min_width=256, min_height=256)
+
+    # Corrupt garbage bytes
+    garbage = b"THIS_IS_DEFINITELY_NOT_AN_IMAGE_STREAM_OR_HEADER"
+    with pytest.raises(VisualGenerationError, match="Định dạng ảnh không được hỗ trợ"):
+        validate_image_bytes(garbage, min_width=256, min_height=256)
+
+
+def test_marketing_busy_lock_returns_409(client):
+    import asyncio
+
+    # Lock the AI semaphore
+    lock = client.app.state.ai_lock
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(lock.acquire())
+    try:
+        response = client.post(
+            "/v1/creative/marketing",
+            json={
+                "name": "Senior Frontend Engineer",
+                "details": "Tuyển dụng kỹ sư Frontend kinh nghiệm ReactJS.",
+                "industry": "recruitment",
+                "audience": "Developers",
+                "goal": "Tuyển dụng kỹ sư",
+            },
+        )
+        assert response.status_code == 409
+        assert response.json()["error"]["code"] == "ai_busy"
+    finally:
+        lock.release()
+
+
+def test_fallback_marketing_pure_without_fabricated_facts():
+    from app.services.marketing_service import MarketingBrief, fallback_marketing_copy
+
+    brief = MarketingBrief(
+        name="Senior Frontend Engineer",
+        industry="recruitment",
+        audience="Developers",
+        goal="Tuyển dụng kỹ sư",
+        details="Yêu cầu: 3 năm kinh nghiệm ReactJS, TypeScript. Đọc hiểu tài liệu kỹ thuật.",
+    )
+    res = fallback_marketing_copy(brief)
+    assert res.launch is not None
+    assert res.story is not None
+    assert res.action is not None
+
+    # Ensure no fabricated locations, perks or salary
+    for copy in [res.launch, res.story, res.action]:
+        text_corpus = f"{copy.headline} {copy.subline} {' '.join(copy.points)} {copy.caption}"
+        assert "TP.HCM" not in text_corpus
+        assert "Hybrid" not in text_corpus
+        assert "0907124244" not in text_corpus
+        assert "thưởng KPI" not in text_corpus
+        assert "học bổng" not in text_corpus
+        assert "Macbook" not in text_corpus
 
 
 def test_get_nonexistent_background(client):

@@ -1,0 +1,86 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -194,15 +194,59 @@
+   }
+ 
+   if (cId === 'recruitment-announcement') {
+-    drawText(copy.headline || '', m, m + h * 0.05, w - m * 2, h * 0.15, w * 0.09, ink, '900');
+-    drawText(copy.subline || '', m, m + h * 0.2, w - m * 2, h * 0.05, w * 0.05, ink, '700');
+-    let bodyY = m + h * 0.28;
+-    if (asset) { 
+-      drawPhoto(m, bodyY, w - m * 2, h * 0.25); 
+-      bodyY += h * 0.28; 
+-    }
+-    const bodyH = (h * 0.83) - bodyY;
+-    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+-    points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
+-    
+-    const ctaText = copy.cta || (lang === 'en' ? 'Apply Now' : 'Ứng tuyển ngay');
+-    drawText(ctaText, m, h * 0.86, w - m * 2, h * 0.06, w * 0.04, ink, '800');
+-    drawText(contact, m, h * 0.93, w - m * 2, h * 0.05, w * 0.03, brandInk, '500');
++    if (!asset && !bgImg) {
++      ctx.fillStyle = '#0a192f';
++      ctx.fillRect(0, 0, w, h);
++      if (state.brand) {
++        drawText(state.brand, m, m, w - m * 2, h * 0.05, w * 0.035, '#a3e635', '700');
++      }
++      drawText(copy.headline || '', m, h * 0.15, w - m * 2, h * 0.17, w * 0.08, '#fdfbf7', '900');
++      
++      let infoY = h * 0.34;
++      const infoH = h * 0.12;
++      const salaryText = copy.subline || fields.salary || '';
++      const hasSal = !!salaryText;
++      const hasLoc = !!fields.location;
++      
++      if (hasSal) {
++        const salH = hasLoc ? infoH * 0.45 : infoH * 0.8;
++        ctx.save(); ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.roundRect(m, infoY, w - m * 2, salH, w * 0.02); ctx.fill(); ctx.restore();
++        const label = lang === 'en' ? 'SALARY' : 'MỨC LƯƠNG';
++        drawText(`${label}: ${salaryText}`, m + w * 0.04, infoY + salH * 0.15, w - m * 2 - w * 0.08, salH * 0.7, w * 0.035, '#0a192f', '800');
++        infoY += salH + infoH * 0.1;
++      }
++      if (hasLoc) {
++        const locH = hasSal ? infoH * 0.45 : infoH * 0.8;
++        ctx.save(); ctx.fillStyle = '#112240'; ctx.beginPath(); ctx.roundRect(m, infoY, w - m * 2, locH, w * 0.02); ctx.fill(); ctx.restore();
++        const label = lang === 'en' ? 'LOCATION' : 'ĐỊA ĐIỂM';
++        drawText(`${label}: ${fields.location}`, m + w * 0.04, infoY + locH * 0.15, w - m * 2 - w * 0.08, locH * 0.7, w * 0.035, '#fdfbf7', '700');
++      }
++      
++      const reqY = h * 0.50;
++      const reqH = h * 0.25;
++      const dispPoints = allPoints.slice(0, 3);
++      const pointH = reqH / Math.max(1, dispPoints.length);
++      dispPoints.forEach((p, i) => {
++        const py = reqY + i * pointH;
++        drawText(`0${i + 1}`, m, py, w * 0.08, pointH * 0.9, w * 0.045, '#a3e635', '800');
++        drawText(p, m + w * 0.1, py, w - m * 2 - w * 0.1, pointH * 0.9, w * 0.035, '#fdfbf7', '500');
++      });
++      if (allPoints.length > 3) {
++        const extra = allPoints.length - 3;
++        const msg = lang === 'en' ? `+${extra} MORE IN DETAILS` : `+${extra} NỘI DUNG Ở TRANG CHI TIẾT`;
++        drawText(msg, m + w * 0.1, reqY + reqH, w - m * 2 - w * 0.1, h * 0.03, w * 0.03, '#a3e635', '600');
++      }
++      
++      const footY = h * 0.82;
++      ctx.save(); ctx.fillStyle = '#a3e635'; ctx.fillRect(0, footY, w, h - footY); ctx.restore();
++      const ctaText = copy.cta || (lang === 'en' ? 'APPLY NOW' : 'ỨNG TUYỂN NGAY');
++      drawText(ctaText, m, footY + h * 0.03, w - m * 2, h * 0.05, w * 0.05, '#0a192f', '900');
++      if (contact) {
++        drawText(contact, m, footY + h * 0.09, w - m * 2, h * 0.04, w * 0.035, '#0a192f', '600');
++      }
++    } else {
++      drawText(copy.headline || '', m, m + h * 0.05, w - m * 2, h * 0.15, w * 0.09, ink, '900');
++      drawText(copy.subline || '', m, m + h * 0.2, w - m * 2, h * 0.05, w * 0.05, ink, '700');
++      let bodyY = m + h * 0.28;
++      if (asset) { 
++        drawPhoto(m, bodyY, w - m * 2, h * 0.25); 
++        bodyY += h * 0.28; 
++      }
++      const bodyH = (h * 0.83) - bodyY;
++      const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
++      points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
++      
++      const ctaText = copy.cta || (lang === 'en' ? 'Apply Now' : 'Ứng tuyển ngay');
++      drawText(ctaText, m, h * 0.86, w - m * 2, h * 0.06, w * 0.04, ink, '800');
++      drawText(contact, m, h * 0.93, w - m * 2, h * 0.05, w * 0.03, brandInk, '500');
++    }

@@ -1,0 +1,25 @@
+diff --git a/back-end/app/benchmark/evaluator.py b/back-end/app/benchmark/evaluator.py
+index f822bca..76644db 100644
+--- a/back-end/app/benchmark/evaluator.py
++++ b/back-end/app/benchmark/evaluator.py
+@@ -46,12 +46,18 @@ def validate_image_file(image_path: Path | str, expected_aspect: str = "4:5") ->
+             "9:16": 9.0 / 16.0,  # 0.5625
+             "16:9": 16.0 / 9.0,  # 1.7778
+         }
+-        expected_ratio = target_ratios.get(expected_aspect, 0.8)
++        if expected_aspect not in target_ratios:
++            return {
++                "valid": False,
++                "error": f"Unknown expected aspect ratio: {expected_aspect}",
++                "aspect_ok": False,
++            }
++        expected_ratio = target_ratios[expected_aspect]
+         aspect_diff = abs(actual_ratio - expected_ratio)
+         aspect_ok = aspect_diff <= 0.05
+ 
+         return {
+-            "valid": True,
++            "valid": aspect_ok,
+             "width": w,
+             "height": h,
+             "format": mime_type,

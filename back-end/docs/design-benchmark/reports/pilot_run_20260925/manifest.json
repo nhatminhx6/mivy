@@ -1,0 +1,578 @@
+{
+  "run_id": "pilot_run_20260925",
+  "created_at": "2026-09-25T03:51:55.459317+00:00",
+  "cases_file": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/cases.json",
+  "cases_tested": [
+    "recruitment-mixed",
+    "product-vi",
+    "course-en"
+  ],
+  "providers": {
+    "ideogram": {
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "blocking_reason": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "supports_full_design": true,
+      "cost": "$0.08"
+    },
+    "gemini_image": {
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "blocking_reason": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "supports_full_design": true,
+      "cost": "Pay-as-you-go"
+    },
+    "qwen_image": {
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "blocking_reason": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "supports_full_design": true,
+      "cost": "Alibaba DashScope Pricing"
+    },
+    "offline_fixture": {
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "AVAILABLE",
+      "blocking_reason": null,
+      "supports_full_design": true,
+      "cost": "0.00"
+    }
+  },
+  "total_runs": 24,
+  "summary": {
+    "success_count": 6,
+    "blocked_count": 18,
+    "error_count": 0
+  },
+  "results": [
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Language: mixed. Must render the following exact text clearly with professional typography and hierarchy: \"MIVY\", \"ĐANG TUYỂN\", \"Lead / Senior Fullstack Developer (ReactJS, NodeJS)\", \"At least 5 years building and running production software, and still writing code today\", \"Depth in system design and architecture: scalability, performance, distributed systems, reliability\", \"A track record of setting technical direction across several teams, or on one large and long-running program\", \"Quick to find your way around an unfamiliar codebase\", \"Judgment about when not to build something, when to pay down debt, and when to say no\", \"The ability to mentor engineers and change their minds without formal authority\", \"Comfort working directly with clients and non-engineering stakeholders\", \"A habit of following where the field is going\", \"Ứng tuyển\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Language: mixed. Must render the following exact text clearly with professional typography and hierarchy: \"MIVY\", \"ĐANG TUYỂN\", \"Lead / Senior Fullstack Developer (ReactJS, NodeJS)\", \"At least 5 years building and running production software, and still writing code today\", \"Depth in system design and architecture: scalability, performance, distributed systems, reliability\", \"A track record of setting technical direction across several teams, or on one large and long-running program\", \"Quick to find your way around an unfamiliar codebase\", \"Judgment about when not to build something, when to pay down debt, and when to say no\", \"The ability to mentor engineers and change their minds without formal authority\", \"Comfort working directly with clients and non-engineering stakeholders\", \"A habit of following where the field is going\", \"Ứng tuyển\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Typography must precisely include all the following text elements without hallucination:\n- MIVY\n- ĐANG TUYỂN\n- Lead / Senior Fullstack Developer (ReactJS, NodeJS)\n- At least 5 years building and running production software, and still writing code today\n- Depth in system design and architecture: scalability, performance, distributed systems, reliability\n- A track record of setting technical direction across several teams, or on one large and long-running program\n- Quick to find your way around an unfamiliar codebase\n- Judgment about when not to build something, when to pay down debt, and when to say no\n- The ability to mentor engineers and change their minds without formal authority\n- Comfort working directly with clients and non-engineering stakeholders\n- A habit of following where the field is going\n- Ứng tuyển\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Typography must precisely include all the following text elements without hallucination:\n- MIVY\n- ĐANG TUYỂN\n- Lead / Senior Fullstack Developer (ReactJS, NodeJS)\n- At least 5 years building and running production software, and still writing code today\n- Depth in system design and architecture: scalability, performance, distributed systems, reliability\n- A track record of setting technical direction across several teams, or on one large and long-running program\n- Quick to find your way around an unfamiliar codebase\n- Judgment about when not to build something, when to pay down debt, and when to say no\n- The ability to mentor engineers and change their minds without formal authority\n- Comfort working directly with clients and non-engineering stakeholders\n- A habit of following where the field is going\n- Ứng tuyển\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Exact text required on image: MIVY; ĐANG TUYỂN; Lead / Senior Fullstack Developer (ReactJS, NodeJS); At least 5 years building and running production software, and still writing code today; Depth in system design and architecture: scalability, performance, distributed systems, reliability; A track record of setting technical direction across several teams, or on one large and long-running program; Quick to find your way around an unfamiliar codebase; Judgment about when not to build something, when to pay down debt, and when to say no; The ability to mentor engineers and change their minds without formal authority; Comfort working directly with clients and non-engineering stakeholders; A habit of following where the field is going; Ứng tuyển.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.. Exact text required on image: MIVY; ĐANG TUYỂN; Lead / Senior Fullstack Developer (ReactJS, NodeJS); At least 5 years building and running production software, and still writing code today; Depth in system design and architecture: scalability, performance, distributed systems, reliability; A track record of setting technical direction across several teams, or on one large and long-running program; Quick to find your way around an unfamiliar codebase; Judgment about when not to build something, when to pay down debt, and when to say no; The ability to mentor engineers and change their minds without formal authority; Comfort working directly with clients and non-engineering stakeholders; A habit of following where the field is going; Ứng tuyển.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] recruitment-mixed: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": "recruitment-mixed_offline_fixture_run1.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    },
+    {
+      "case_id": "recruitment-mixed",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] recruitment-mixed: Professional recruitment campaign. Distinctive technology visual concept; all requirements readable, preserve every line. No invented facts.",
+      "input_hashes": {
+        "brief_sha256": "c6589037944163631c8df25c3ad859a00003ad14178e1125f2b82ed77bb5704d",
+        "exact_text_sha256": "294d831edc18720b1bb8a11d1f8e0889bd0c4b80fac9a7d765ab37ba6a9e96b0"
+      },
+      "image_path": "recruitment-mixed_offline_fixture_run2.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Language: vi. Must render the following exact text clearly with professional typography and hierarchy: \"BƯỚC ĐI THEO CÁCH RIÊNG\", \"Khám phá bộ sưu tập\", \"Xem sản phẩm\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Language: vi. Must render the following exact text clearly with professional typography and hierarchy: \"BƯỚC ĐI THEO CÁCH RIÊNG\", \"Khám phá bộ sưu tập\", \"Xem sản phẩm\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Typography must precisely include all the following text elements without hallucination:\n- BƯỚC ĐI THEO CÁCH RIÊNG\n- Khám phá bộ sưu tập\n- Xem sản phẩm\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Typography must precisely include all the following text elements without hallucination:\n- BƯỚC ĐI THEO CÁCH RIÊNG\n- Khám phá bộ sưu tập\n- Xem sản phẩm\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Exact text required on image: BƯỚC ĐI THEO CÁCH RIÊNG; Khám phá bộ sưu tập; Xem sản phẩm.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.. Exact text required on image: BƯỚC ĐI THEO CÁCH RIÊNG; Khám phá bộ sưu tập; Xem sản phẩm.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] product-vi: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": "product-vi_offline_fixture_run1.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    },
+    {
+      "case_id": "product-vi",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] product-vi: Thiết kế quảng cáo giày bằng tiếng Việt. Dùng nguyên sản phẩm trong ảnh tham chiếu, thể hiện concept chuyển động và chi tiết sản phẩm; không đổi hình dáng, logo, màu hoặc kết cấu.",
+      "input_hashes": {
+        "brief_sha256": "6ce35d26bfcaab4126264f6e717b1f7ddb07134781886868ab292d16820c0f1d",
+        "exact_text_sha256": "b3fb536d2567e69dd6d16b75995a16896178c07b19a14f57e79f22abb8a90762",
+        "asset_sha256": "862f2fc97e06be2e98d9175961069070caa00daff1863576223bd0c6084c4c92",
+        "asset_resolved_path": "/Users/minh.nn1/Projects/personal/mivy/back-end/docs/design-benchmark/fixtures/product_shoe.jpg"
+      },
+      "image_path": "product-vi_offline_fixture_run2.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Language: en. Must render the following exact text clearly with professional typography and hierarchy: \"LIGHT & STORY\", \"A practical photography workshop\", \"Learn composition, natural light and visual storytelling\", \"4 sessions · Small group practice\", \"Starts 18 October 2026\", \"Reserve your place\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "ideogram",
+      "model_id": "ideogram-v2",
+      "status": "BLOCKED",
+      "prompt": "Commercial graphic design poster for marketing campaign. Aspect ratio 4:5. Creative brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Language: en. Must render the following exact text clearly with professional typography and hierarchy: \"LIGHT & STORY\", \"A practical photography workshop\", \"Learn composition, natural light and visual storytelling\", \"4 sessions · Small group practice\", \"Starts 18 October 2026\", \"Reserve your place\". No spelling errors, clean layout, no unnecessary invented facts.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing IDEOGRAM_API_KEY. Ideogram is a paid commercial cloud API requiring approved budget and credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Typography must precisely include all the following text elements without hallucination:\n- LIGHT & STORY\n- A practical photography workshop\n- Learn composition, natural light and visual storytelling\n- 4 sessions · Small group practice\n- Starts 18 October 2026\n- Reserve your place\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "gemini_image",
+      "model_id": "imagen-3.0-generate-002",
+      "status": "BLOCKED",
+      "prompt": "Professional advertising poster design, high quality editorial layout, 4:5 aspect ratio. Campaign Brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Typography must precisely include all the following text elements without hallucination:\n- LIGHT & STORY\n- A practical photography workshop\n- Learn composition, natural light and visual storytelling\n- 4 sessions · Small group practice\n- Starts 18 October 2026\n- Reserve your place\nBalanced layout, sharp text rendering, intentional color palette and lighting.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing GEMINI_API_KEY / GOOGLE_API_KEY. Imagen 3 requires Google AI Studio or Vertex AI credentials.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Exact text required on image: LIGHT & STORY; A practical photography workshop; Learn composition, natural light and visual storytelling; 4 sessions · Small group practice; Starts 18 October 2026; Reserve your place.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "qwen_image",
+      "model_id": "wanx-v2.1",
+      "status": "BLOCKED",
+      "prompt": "Commercial poster design, high resolution marketing key visual. Brief: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.. Exact text required on image: LIGHT & STORY; A practical photography workshop; Learn composition, natural light and visual storytelling; 4 sessions · Small group practice; Starts 18 October 2026; Reserve your place.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": null,
+      "image_dimensions": null,
+      "latency_seconds": 0.0,
+      "cost_usd": null,
+      "error_message": "Missing DASHSCOPE_API_KEY. Wanx-v2.1 requires Alibaba Cloud DashScope credentials. Local execution is not feasible on 16GB RAM Apple M5.",
+      "automated_eval": {}
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] course-en: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": "course-en_offline_fixture_run1.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    },
+    {
+      "case_id": "course-en",
+      "provider_id": "offline_fixture",
+      "model_id": "offline-fixture-test",
+      "status": "SUCCESS",
+      "prompt": "[OFFLINE TEST] course-en: Create a distinctive editorial campaign for a practical photography workshop. Use a purposeful photography visual, not a generic office stock image. All supplied facts are demo fixtures.",
+      "input_hashes": {
+        "brief_sha256": "94c4fe827be5a17a7c134f43dd5d92811b4f2902ca6e99f92acd1677557df20e",
+        "exact_text_sha256": "f7f544a1200faeeaaddb75af9fb52d2aa1241a4b238e1b8f4f00008e36a9fd3a"
+      },
+      "image_path": "course-en_offline_fixture_run2.png",
+      "image_dimensions": [
+        1024,
+        1280
+      ],
+      "latency_seconds": 0.01,
+      "cost_usd": 0.0,
+      "error_message": null,
+      "automated_eval": {
+        "image": {
+          "valid": true,
+          "width": 1024,
+          "height": 1280,
+          "format": "image/png",
+          "actual_ratio": 0.8,
+          "expected_ratio": 0.8,
+          "aspect_ok": true
+        },
+        "forbidden_facts": {
+          "violations": [],
+          "clean": true
+        }
+      }
+    }
+  ]
+}

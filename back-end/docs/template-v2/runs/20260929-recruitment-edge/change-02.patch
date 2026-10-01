@@ -1,0 +1,149 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -250,44 +250,88 @@
+       drawText(copy.headline || '', m, h * 0.15, w - m * 2, h * 0.17, w * 0.08, '#fdfbf7', '900');
+       
+-      let infoY = h * 0.34;
+-      const infoH = h * 0.12;
+-      const salaryText = copy.subline || fields.salary || '';
+-      const hasSal = !!salaryText;
++      let currentY = h * 0.34;
++      const subText = copy.subline || fields.salary || '';
++      const hasSub = !!subText;
+       const hasLoc = !!fields.location;
+       
+-      if (hasSal) {
+-        const salH = hasLoc ? infoH * 0.45 : infoH * 0.8;
+-        ctx.save(); ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.roundRect(m, infoY, w - m * 2, salH, w * 0.02); ctx.fill(); ctx.restore();
+-        const label = lang === 'en' ? 'SALARY' : 'MỨC LƯƠNG';
+-        drawText(`${label}: ${salaryText}`, m + w * 0.04, infoY + salH * 0.15, w - m * 2 - w * 0.08, salH * 0.7, w * 0.035, '#0a192f', '800');
+-        infoY += salH + infoH * 0.1;
++      const wrapText = (text: string, size: number, maxWidth: number, weight: string) => {
++        ctx.font = `${weight} ${size}px "Be Vietnam Pro"`;
++        const words = text.split(' ');
++        let lines: string[] = [];
++        let currentLine = '';
++        for (const word of words) {
++          const testLine = currentLine ? currentLine + ' ' + word : word;
++          if (ctx.measureText(testLine).width <= maxWidth) {
++            currentLine = testLine;
++          } else {
++            if (ctx.measureText(word).width > maxWidth) {
++              if (currentLine) { lines.push(currentLine); currentLine = ''; }
++              let tempLine = '';
++              for (const char of word) {
++                if (ctx.measureText(tempLine + char).width <= maxWidth) {
++                  tempLine += char;
++                } else {
++                  if (tempLine) lines.push(tempLine);
++                  tempLine = char;
++                }
++              }
++              currentLine = tempLine;
++            } else {
++              if (currentLine) lines.push(currentLine);
++              currentLine = word;
++            }
++          }
++        }
++        if (currentLine) lines.push(currentLine);
++        return lines;
++      };
++
++      let subLines: string[] = [];
++      if (hasSub) {
++        const isSal = subText === fields.salary && !!fields.salary;
++        const prefix = isSal ? (lang === 'en' ? 'SALARY: ' : 'MỨC LƯƠNG: ') : '';
++        subLines = wrapText(prefix + subText, w * 0.035, w - m * 2 - w * 0.08, '800');
++      }
++      
++      let locLines: string[] = [];
++      if (hasLoc) {
++        const prefix = lang === 'en' ? 'LOCATION: ' : 'ĐỊA ĐIỂM: ';
++        locLines = wrapText(prefix + fields.location, w * 0.035, w - m * 2 - w * 0.08, '700');
++      }
++      
++      if (hasSub) {
++        const subH = subLines.length * (w * 0.045) + h * 0.04;
++        ctx.save(); ctx.fillStyle = '#a3e635'; ctx.beginPath(); ctx.roundRect(m, currentY, w - m * 2, subH, w * 0.02); ctx.fill(); ctx.restore();
++        subLines.forEach((line, i) => {
++          drawText(line, m + w * 0.04, currentY + h * 0.02 + i * w * 0.045, w - m * 2 - w * 0.08, w * 0.045, w * 0.035, '#0a192f', '800');
++        });
++        currentY += subH + h * 0.015;
+       }
+       if (hasLoc) {
+-        const locH = hasSal ? infoH * 0.45 : infoH * 0.8;
+-        ctx.save(); ctx.fillStyle = '#112240'; ctx.beginPath(); ctx.roundRect(m, infoY, w - m * 2, locH, w * 0.02); ctx.fill(); ctx.restore();
+-        const label = lang === 'en' ? 'LOCATION' : 'ĐỊA ĐIỂM';
+-        drawText(`${label}: ${fields.location}`, m + w * 0.04, infoY + locH * 0.15, w - m * 2 - w * 0.08, locH * 0.7, w * 0.035, '#fdfbf7', '700');
++        const locH = locLines.length * (w * 0.045) + h * 0.04;
++        ctx.save(); ctx.fillStyle = '#112240'; ctx.beginPath(); ctx.roundRect(m, currentY, w - m * 2, locH, w * 0.02); ctx.fill(); ctx.restore();
++        locLines.forEach((line, i) => {
++          drawText(line, m + w * 0.04, currentY + h * 0.02 + i * w * 0.045, w - m * 2 - w * 0.08, w * 0.045, w * 0.035, '#fdfbf7', '700');
++        });
++        currentY += locH + h * 0.015;
+       }
+       
+-      const reqY = h * 0.50;
+-      const reqH = h * 0.25;
++      let contactLines: string[] = [];
++      if (contact) {
++        contactLines = wrapText(contact, w * 0.035, w - m * 2, '600');
++      }
++      const contactH = contactLines.length * (w * 0.045);
++      const footContentH = h * 0.05 + (contact ? h * 0.02 + contactH : 0);
++      const footH = h * 0.06 + footContentH;
++      const maxFootY = h - footH;
++      
++      const reqY = currentY + (hasSub || hasLoc ? h * 0.01 : 0);
+       const dispPoints = allPoints.slice(0, 3);
+-      const pointH = reqH / Math.max(1, dispPoints.length);
++      const isSparse = dispPoints.length === 1;
++      const hasCue = allPoints.length > 3;
++      const cueH = hasCue ? h * 0.03 : 0;
++      
++      const availableH = Math.max(0, maxFootY - reqY - cueH - h * 0.02);
++      let pointH = availableH / Math.max(1, dispPoints.length);
++      let numSize = w * 0.045;
++      let textSize = w * 0.035;
++      let reqStartY = reqY;
++      let actualFootY = maxFootY;
++      
++      if (isSparse) {
++        pointH = Math.min(availableH, h * 0.16);
++        numSize = w * 0.06;
++        textSize = w * 0.045;
++        reqStartY = reqY + h * 0.02;
++        actualFootY = Math.min(maxFootY, reqStartY + pointH + cueH + h * 0.06);
++      }
++      
+       dispPoints.forEach((p, i) => {
+-        const py = reqY + i * pointH;
+-        drawText(`0${i + 1}`, m, py, w * 0.08, pointH * 0.9, w * 0.045, '#a3e635', '800');
+-        drawText(p, m + w * 0.1, py, w - m * 2 - w * 0.1, pointH * 0.9, w * 0.035, '#fdfbf7', '500');
++        const py = reqStartY + i * pointH;
++        drawText(`0${i + 1}`, m, py, w * 0.08, pointH * 0.9, numSize, '#a3e635', '800');
++        drawText(p, m + w * 0.1, py, w - m * 2 - w * 0.1, pointH * 0.9, textSize, '#fdfbf7', '500');
+       });
+-      if (allPoints.length > 3) {
++      if (hasCue) {
+         const extra = allPoints.length - 3;
+         const msg = lang === 'en' ? `+${extra} MORE IN DETAILS` : `+${extra} NỘI DUNG Ở TRANG CHI TIẾT`;
+-        drawText(msg, m + w * 0.1, reqY + reqH, w - m * 2 - w * 0.1, h * 0.03, w * 0.03, '#a3e635', '600');
++        drawText(msg, m + w * 0.1, reqStartY + dispPoints.length * pointH + h * 0.01, w - m * 2 - w * 0.1, h * 0.03, w * 0.03, '#a3e635', '600');
+       }
+       
+-      const footY = h * 0.82;
+-      ctx.save(); ctx.fillStyle = '#a3e635'; ctx.fillRect(0, footY, w, h - footY); ctx.restore();
++      ctx.save(); ctx.fillStyle = '#a3e635'; ctx.fillRect(0, actualFootY, w, h - actualFootY); ctx.restore();
+       const ctaText = copy.cta || (lang === 'en' ? 'APPLY NOW' : 'ỨNG TUYỂN NGAY');
+-      drawText(ctaText, m, footY + h * 0.03, w - m * 2, h * 0.05, w * 0.05, '#0a192f', '900');
++      const ctaY = actualFootY + h * 0.03;
++      drawText(ctaText, m, ctaY, w - m * 2, h * 0.05, w * 0.05, '#0a192f', '900');
+       if (contact) {
+-        drawText(contact, m, footY + h * 0.09, w - m * 2, h * 0.04, w * 0.035, '#0a192f', '600');
++        contactLines.forEach((line, i) => {
++          drawText(line, m, ctaY + h * 0.06 + i * w * 0.045, w - m * 2, w * 0.045, w * 0.035, '#0a192f', '600');
++        });
+       }
+     } else {

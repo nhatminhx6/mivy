@@ -1,0 +1,29 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {balancedPages} from '@/lib/balanced-pages';
+import {CONCEPTS,EXAMPLES,makeIndustryCopy} from '@/lib/industry-concepts';
+import {drawIndustryPoster} from '@/lib/design-engine';
+import {MarketingState,AspectRatio} from '@/types';
+const english:Record<string,Record<string,string>>={recruitment:{role:'Lead Fullstack Developer',salary:'Negotiable',location:'Ho Chi Minh City',requirements:'Build and operate production software\nDesign reliable distributed systems\nMentor engineers across teams\nWork directly with clients',benefits:'Flexible working arrangements',contact:'careers@example.com'},property:{type:'Two-bedroom apartment',price:'Contact for price',area:'75 m²',address:'Sample address for layout testing',bedrooms:'2 bedrooms',amenities:'Shared swimming pool\nFitness room\nBalcony with open views\nParking available',contact:'property@example.com'},food:{item:'Family sharing menu',price:'499,000 VND',description:'Large cheese pizza\nTwo seafood pasta portions\nFresh garden salad\nFour soft drinks',offer:'Dessert included',booking:'orders@example.com'}};
+function Card({concept,aspect,en,long,photo}:{concept:typeof CONCEPTS[number];aspect:AspectRatio;en:boolean;long:boolean;photo:string}){
+ const ref=useRef<HTMLCanvasElement>(null);const [status,setStatus]=useState('Đang render');const [page,setPage]=useState(0);const [pages,setPages]=useState(1);
+ useEffect(()=>{let active=true;(async()=>{
+  await document.fonts.ready;
+  const fields={...(en?english:EXAMPLES)[concept.category]};
+  if(long){const key=concept.category==='recruitment'?'requirements':concept.category==='property'?'amenities':'description';fields[key]=Array.from({length:9},(_,i)=>`${i+1}. ${en?'Detailed information for checking readability and completeness across multiple pages.':'Thông tin chi tiết để kiểm tra khả năng đọc, dấu tiếng Việt và việc giữ đầy đủ nội dung trên nhiều trang.'}`).join('\n');}
+  const copy=makeIndustryCopy(concept.category,fields); const total=balancedPages(copy.points || [],3).length; if(active)setPages(total);copy.cta=en?'Contact us':'Liên hệ';
+  const state:MarketingState={industry:concept.category==='recruitment'?'recruitment':concept.category==='food'?'general':'service',categoryId:concept.category,conceptId:concept.id,industryFields:fields,brand:'MIVY · MẪU KIỂM TRA',name:copy.headline,details:copy.caption,goal:'',offer:'',aspect,theme:'emerald_pro',selected:'launch',outputLanguage:en?'en':'vi',storyPage:Math.min(page,total-1),storyPerPage:3,copies:{launch:copy,story:copy,action:copy}};
+  let asset=null;
+  if(photo){try{const im=await new Promise<HTMLImageElement>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=reject;image.src=photo;});asset={im,l:0,t:0,w:im.width,h:im.height};}catch{if(active)setStatus('Không tải được ảnh');return;}}
+  if(active&&ref.current){drawIndustryPoster(ref.current,state,long?'story':'launch',copy,asset);setStatus(long?`Trang chi tiết ${Math.min(page,total-1)+1}/${total}`:'Đã render · chưa duyệt thẩm mỹ');}
+ })();return()=>{active=false;};},[concept,aspect,en,long,photo,page]);
+ return <article className="rounded-xl border border-white/15 p-3"><canvas ref={ref} className="w-full rounded-lg"/><h2 className="font-bold mt-3">{concept.name}</h2><p className="text-xs text-slate-400">{status}</p><div className="flex gap-3">{long&&<><button disabled={page===0} onClick={()=>setPage(p=>Math.max(0,p-1))}>← Trang trước</button><button disabled={page>=pages-1} onClick={()=>setPage(p=>Math.min(pages-1,p+1))}>Trang sau →</button></>}</div><button className="mt-2 text-emerald-300" onClick={()=>{ref.current?.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');const url=URL.createObjectURL(blob);a.href=url;a.download=`qc-${concept.id}-${aspect.replace(':','x')}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});}}>Tải PNG kiểm tra</button></article>;
+}
+export default function Review(){
+ const [aspect,setAspect]=useState<AspectRatio>('4:5'),[en,setEn]=useState(false),[long,setLong]=useState(false);
+ const [photos,setPhotos]=useState<Record<string,string>>({recruitment:'/assets/recruitment-team.png'});
+ return <main className="space-y-5 text-white"><a href="/studio/marketing" className="text-emerald-300">← Quay lại thiết kế</a><h1 className="text-2xl font-bold">So sánh 6 concept</h1><p className="text-slate-400">Dữ liệu minh họa, không thay đổi chiến dịch của anh. Ảnh tuyển dụng là ảnh minh họa AI có sẵn; nhà đất và món ăn chưa có ảnh mẫu.</p>
+ <div className="flex flex-wrap gap-4"><select aria-label="Khổ kiểm tra" className="bg-slate-800 p-2" value={aspect} onChange={e=>setAspect(e.target.value as AspectRatio)}><option>1:1</option><option>4:5</option><option>9:16</option></select><label><input type="checkbox" checked={en} onChange={e=>setEn(e.target.checked)}/> English</label><label><input type="checkbox" checked={long} onChange={e=>setLong(e.target.checked)}/> Nội dung dài / trang chi tiết</label></div>
+ <div className="flex flex-wrap gap-4">{[['recruitment','Tuyển dụng'],['property','Bất động sản'],['food','Ẩm thực']].map(([id,label])=><label key={id} className="text-sm">Ảnh {label}<input aria-label={`Ảnh ${label}`} className="block" type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0];if(!file)return;const r=new FileReader();r.onload=()=>setPhotos(p=>({...p,[id]:String(r.result)}));r.readAsDataURL(file);}}/></label>)}</div>
+ <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{CONCEPTS.map(c=><Card key={c.id} concept={c} aspect={aspect} en={en} long={long} photo={photos[c.category]||''}/>)}</div></main>;
+}

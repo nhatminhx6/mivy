@@ -1,0 +1,31 @@
+{
+  "conversation": "3c674fcc-e683-4c19-886d-c4110f7c1faf",
+  "steps": [
+    [
+      0,
+      14,
+      3,
+      51743
+    ],
+    [
+      1,
+      15,
+      3,
+      121962
+    ],
+    [
+      2,
+      14,
+      3,
+      505
+    ],
+    [
+      3,
+      15,
+      3,
+      3379
+    ]
+  ],
+  "statusEnumMeaning": "unverified; do not infer completion",
+  "localPrintProcess": false
+}

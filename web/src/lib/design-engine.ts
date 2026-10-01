@@ -1,3 +1,5 @@
+import { drawIndustryConcept } from './industry-renderer';
+import { drawCatalogPoster } from './catalog-renderer';
 import { AssetInfo, AspectRatio, CopyItem, IndustryId, MarketingState, PosterKind, PosterTheme, ThemeId } from '@/types';
 
 export const POSTER_THEMES: Record<ThemeId, PosterTheme> = {
@@ -112,6 +114,36 @@ export const POSTER_THEMES: Record<ThemeId, PosterTheme> = {
     tagText: '#334155',
   },
 };
+
+export function isMostlyEnglish(text: string): boolean {
+  if (!text) return false;
+  const viRegex = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  if (viRegex.test(text)) return false;
+  const enWords = text.match(/\b(the|and|for|with|in|to|of|lead|senior|engineer|developer|experience|requirements|skills|apply|build|system|backend|frontend)\b/gi);
+  return (enWords ? enWords.length : 0) >= 2;
+}
+
+export function getPosterLabels(marketing: MarketingState, sampleText: string = '') {
+  const lang = marketing.outputLanguage || 'preserve';
+  const isEn = lang === 'en' || (lang === 'preserve' && isMostlyEnglish(sampleText || marketing.details || ''));
+  return {
+    isEn,
+    launchTag: isEn ? '01 / 03 · CAREER OPPORTUNITY' : '01 / 03 · CƠ HỘI NGHỀ NGHIỆP',
+    storyTag: (pageLabel?: string) => {
+      if (pageLabel) {
+        return isEn ? `02 / 03 · ${pageLabel} · REQUIREMENTS` : `02 / 03 · ${pageLabel} · TIÊU CHÍ & YÊU CẦU`;
+      }
+      return isEn ? '02 / 03 · CRITERIA & REQUIREMENTS' : '02 / 03 · TIÊU CHÍ & YÊU CẦU';
+    },
+    storySubtitle: isEn ? 'WHAT WE ARE LOOKING FOR' : 'ĐIỀU CHÚNG EM TÌM KIẾM Ở ANH',
+    storyFooter: isEn ? 'Next step: Review benefits & submit application' : 'Bước tiếp theo: Tìm hiểu quyền lợi & nộp hồ sơ ứng tuyển',
+    actionTag: isEn ? '03 / 03 · CONNECT & APPLY' : '03 / 03 · KẾT NỐI & ỨNG TUYỂN',
+    actionSubtitle: isEn ? 'JOIN OUR TEAM TODAY' : 'GIA NHẬP ĐỘI NGŨ NGAY HÔM NAY',
+    actionPerkTitle: isEn ? 'OFFER & BENEFITS FOR YOU' : 'ĐÃI NGỘ DÀNH RIÊNG CHO BẠN',
+    actionStepPrefix: isEn ? 'STEP' : 'BƯỚC',
+    actionContactTitle: isEn ? 'Direct Contact & Inquiries:' : 'Liên hệ & Trao đổi trực tiếp:',
+  };
+}
 
 export function posterText(
   ctx: CanvasRenderingContext2D,
@@ -543,9 +575,13 @@ export function drawRecruitmentHero(
 
   const m = 54, contentW = w - m * 2;
 
+  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
+  const labels = getPosterLabels(marketing, source);
+  const isEn = labels.isEn;
+
   const brandText = marketing.brand || 'MIVY STUDIO';
   drawBadgePill(ctx, brandText, m, 52, th.badgeBg, th.cardBorder, th.textPrimary);
-  drawHandwrittenSlogan(ctx, 'Good People\nGreat Products', w - m, 68, 30, th.accentLight, -6);
+  drawBadgePill(ctx, labels.launchTag, w - m - 320, 52, th.badgeBg, th.cardBorder, th.accent);
 
   ctx.save();
   ctx.font = 'italic 700 44px "Caveat", "Dancing Script", cursive, sans-serif';
@@ -569,10 +605,9 @@ export function drawRecruitmentHero(
   ctx.save();
   ctx.font = '600 14px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textMuted;
-  ctx.fillText('JOIN OUR TEAM   ·   BUILD BETTER TOGETHER', m + 3, 296);
+  ctx.fillText(isEn ? 'JOIN OUR TEAM   ·   BUILD BETTER TOGETHER' : 'GIA NHẬP ĐỘI NGŨ   ·   CÙNG NHAU PHÁT TRIỂN', m + 3, 296);
   ctx.restore();
 
-  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
   const allFacts = (copy.pointsEdited || (copy.points && copy.points.length >= 5))
     ? copy.points!
     : (marketing.details || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
@@ -595,149 +630,114 @@ export function drawRecruitmentHero(
 
   const tableY = 330;
   const tableH = footerY - tableY - 24;
-  drawCard(ctx, m, tableY, contentW, tableH, 20, th.cardBg, th.cardBorder);
 
-  const col0W = 320, col1W = 210, col2W = 250, col3W = contentW - col0W - col1W - col2W;
-  const colX = [m, m + col0W, m + col0W + col1W, m + col0W + col1W + col2W];
+  const itemsToRender: { icon: string; category: string; content: string; highlight: boolean }[] = [];
 
-  const headH = (hasPhoto && h < 1350) ? 50 : 62;
-  const headers = [
-    { label: 'Role / Vị trí', icon: '💼' },
-    { label: 'Kinh nghiệm', icon: '⚙️' },
-    { label: 'Kỹ năng / Stack', icon: '💬' },
-    { label: 'Địa điểm', icon: '📍' }
-  ];
+  if (salaryHighlight) {
+    itemsToRender.push({
+      icon: '💰',
+      category: isEn ? 'OFFER & REWARDS' : 'ĐÃI NGỘ & LƯƠNG',
+      content: salaryHighlight,
+      highlight: true,
+    });
+  }
 
-  headers.forEach((hItem, i) => {
-    ctx.save();
-    ctx.font = (hasPhoto && h < 1350) ? '700 18px "Be Vietnam Pro", sans-serif' : '700 21px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = th.textPrimary;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${hItem.icon}  ${hItem.label}`, colX[i] + 24, tableY + headH / 2);
-    ctx.restore();
-  });
-
-  ctx.save();
-  ctx.strokeStyle = th.cardBorder;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(m, tableY + headH);
-  ctx.lineTo(m + contentW, tableY + headH);
-  ctx.stroke();
-  ctx.restore();
-
-  const rowCount = (hasPhoto && h < 1350) ? 3 : 4;
-  const rowH = (tableH - headH) / rowCount;
-
-  const expFact = cleanFacts.find(f => /năm|year|exp|kinh nghiệm/i.test(f)) || cleanFacts[0] || '3+ năm kinh nghiệm';
-  const stackFact = cleanFacts.find(f => /react|node|js|ts|python|system|kiến trúc|dev/i.test(f)) || cleanFacts[1] || 'Strong Skills';
-  const roleFact = cleanFacts.find(f => f !== expFact && f !== stackFact) || cleanFacts[2] || 'Production Software';
-
-  const rowsData = rowCount === 3 ? [
-    {
-      c0: { title: roleTitle, sub: '(Core Member, Product Team)' },
-      c1: expFact.length > 25 ? expFact.slice(0, 22) + '...' : expFact,
-      c2: stackFact.length > 28 ? stackFact.slice(0, 25) + '...' : stackFact,
-      c3: 'TP.HCM · Hybrid'
-    },
-    {
-      c0: { title: 'Kiến trúc & Hệ thống', sub: '(Engineering & Mentorship)' },
-      c1: 'Senior / Lead',
-      c2: roleFact.length > 30 ? roleFact.slice(0, 27) + '...' : roleFact,
-      c3: 'Full-time'
-    },
-    {
-      c0: { title: 'Đãi ngộ & Phúc lợi', sub: '(Thưởng dự án, KPI, Thiết bị)' },
-      c1: salaryHighlight || 'Cạnh tranh cao',
-      c2: 'Macbook & Bảo hiểm VIP',
-      c3: 'Gia nhập ngay'
+  for (const fact of cleanFacts) {
+    if (itemsToRender.length >= ((hasPhoto && h < 1350) ? 3 : 4)) break;
+    let icon = '⚡';
+    let category = isEn ? 'KEY REQUIREMENT' : 'TIÊU CHÍ TRỌNG TÂM';
+    if (/năm|year|exp|kinh nghiệm/i.test(fact)) {
+      icon = '⚙️';
+      category = isEn ? 'EXPERIENCE' : 'KINH NGHIỆM';
+    } else if (/react|node|js|ts|python|golang|java|cloud|aws|docker|k8s|tech|stack|sql/i.test(fact)) {
+      icon = '💻';
+      category = isEn ? 'TECH STACK' : 'KỸ NĂNG & CÔNG NGHỆ';
+    } else if (/tp\.hcm|hà nội|đà nẵng|remote|hybrid|hồ chí minh|toàn thời gian|full-time|on-site|location/i.test(fact)) {
+      icon = '📍';
+      category = isEn ? 'LOCATION & MODE' : 'ĐỊA ĐIỂM & CHẾ ĐỘ';
+    } else if (/debt|mentor|codebase|stakeholder|lead|team|quản lý|leadership/i.test(fact)) {
+      icon = '🎯';
+      category = isEn ? 'RESPONSIBILITIES' : 'TRÁCH NHIỆM CHÍNH';
     }
-  ] : [
-    {
-      c0: { title: roleTitle, sub: '(Core Member, Product Team)' },
-      c1: expFact.length > 25 ? expFact.slice(0, 22) + '...' : expFact,
-      c2: 'Production Standards',
-      c3: 'TP.HCM · Hybrid'
-    },
-    {
-      c0: { title: 'Kiến trúc & Hệ thống', sub: '(System Design, Reliability)' },
-      c1: 'Senior / Lead',
-      c2: stackFact.length > 28 ? stackFact.slice(0, 25) + '...' : stackFact,
-      c3: 'TP.HCM'
-    },
-    {
-      c0: { title: 'Năng lực cốt lõi', sub: '(Engineering & Mentorship)' },
-      c1: 'Chủ động',
-      c2: roleFact.length > 30 ? roleFact.slice(0, 27) + '...' : roleFact,
-      c3: 'Linh hoạt'
-    },
-    {
-      c0: { title: 'Đãi ngộ & Phúc lợi', sub: '(Thưởng dự án, KPI, Thiết bị)' },
-      c1: salaryHighlight || 'Cạnh tranh cao',
-      c2: 'Macbook & Bảo hiểm VIP',
-      c3: 'Full-time'
-    }
-  ];
+    itemsToRender.push({
+      icon,
+      category,
+      content: fact,
+      highlight: false,
+    });
+  }
 
-  rowsData.forEach((row, rIdx) => {
-    const ry = tableY + headH + rIdx * rowH;
+  if (itemsToRender.length === 0 && copy.subline) {
+    itemsToRender.push({
+      icon: '✨',
+      category: isEn ? 'OVERVIEW' : 'TỔNG QUAN',
+      content: copy.subline,
+      highlight: false,
+    });
+  }
 
+  const rowCount = Math.max(1, itemsToRender.length);
+  const cardGap = (hasPhoto && h < 1350) ? 12 : 16;
+  const rowH = Math.floor((tableH - (rowCount - 1) * cardGap) / rowCount);
+
+  itemsToRender.forEach((item, rIdx) => {
+    const ry = tableY + rIdx * (rowH + cardGap);
+    const cardCenterY = Math.round(ry + rowH / 2);
+
+    drawCard(
+      ctx,
+      m,
+      ry,
+      contentW,
+      rowH,
+      18,
+      item.highlight ? 'rgba(16, 185, 129, 0.16)' : th.cardBg,
+      item.highlight ? th.accent : th.cardBorder
+    );
+
+    const badgeFontSize = (hasPhoto && h < 1350) ? 12 : 13;
     ctx.save();
-    ctx.font = (hasPhoto && h < 1350) ? '700 19px "Be Vietnam Pro", sans-serif' : '700 22px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = th.textPrimary;
-    ctx.fillText(row.c0.title, colX[0] + 24, ry + rowH / 2 - 12);
+    ctx.font = `700 ${badgeFontSize}px "Be Vietnam Pro", sans-serif`;
+    const badgeText = `${item.icon}  ${item.category}`;
+    const badgeTextW = Math.round(ctx.measureText(badgeText).width);
+    const badgeW = badgeTextW + 28;
+    const badgeH = (hasPhoto && h < 1350) ? 32 : 36;
+    const badgeY = Math.round(cardCenterY - badgeH / 2);
 
-    ctx.font = (hasPhoto && h < 1350) ? '400 14px "Be Vietnam Pro", sans-serif' : '400 16px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = th.textSecondary;
-    ctx.fillText(row.c0.sub, colX[0] + 24, ry + rowH / 2 + 16);
+    drawBadgePill(
+      ctx,
+      badgeText,
+      m + 20,
+      badgeY,
+      item.highlight ? th.accent : th.badgeBg,
+      item.highlight ? th.accent : th.badgeBorder,
+      item.highlight ? th.accentText : th.accentLight
+    );
     ctx.restore();
 
-    ctx.save();
-    const isSalaryRow = (rIdx === rowCount - 1) && salaryHighlight;
-    ctx.font = isSalaryRow ? '700 21px "Be Vietnam Pro", sans-serif' : '600 20px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = isSalaryRow ? th.accent : th.textPrimary;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(row.c1, colX[1] + 24, ry + rowH / 2);
-    ctx.restore();
+    const textX = m + 20 + badgeW + 20;
+    const maxTextW = contentW - (textX - m + 24);
 
     ctx.save();
-    ctx.font = (hasPhoto && h < 1350) ? '500 17px "Be Vietnam Pro", sans-serif' : '500 19px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = th.textSecondary;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(row.c2, colX[2] + 24, ry + rowH / 2);
-    ctx.restore();
-
-    ctx.save();
-    ctx.font = (hasPhoto && h < 1350) ? '600 17px "Be Vietnam Pro", sans-serif' : '600 19px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = th.textPrimary;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(row.c3, colX[3] + 24, ry + rowH / 2);
-    ctx.restore();
-
-    if (rIdx < rowCount - 1) {
-      ctx.save();
-      ctx.strokeStyle = th.cardBorder;
-      ctx.lineWidth = 1;
-      ctx.globalAlpha = 0.35;
-      ctx.beginPath();
-      ctx.moveTo(m, ry + rowH);
-      ctx.lineTo(m + contentW, ry + rowH);
-      ctx.stroke();
-      ctx.restore();
-    }
-  });
-
-  ctx.save();
-  ctx.strokeStyle = th.cardBorder;
-  ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.22;
-  [colX[1], colX[2], colX[3]].forEach(vx => {
     ctx.beginPath();
-    ctx.moveTo(vx, tableY);
-    ctx.lineTo(vx, tableY + tableH);
-    ctx.stroke();
+    ctx.roundRect(m, ry, contentW, rowH, 18);
+    ctx.clip();
+
+    const maxFontSize = (hasPhoto && h < 1350) ? 19 : 22;
+    posterText(
+      ctx,
+      item.content,
+      textX,
+      ry + 12,
+      maxTextW,
+      rowH - 24,
+      maxFontSize,
+      item.highlight ? th.accentLight : th.textPrimary,
+      '600',
+      '"Be Vietnam Pro", sans-serif'
+    );
+    ctx.restore();
   });
-  ctx.restore();
 
   const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
   const phone = (source.match(/(?:0\d{9,10}|\+84\d{9,10})/i) || [])[0];
@@ -750,29 +750,30 @@ export function drawRecruitmentHero(
   ctx.font = '700 23px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentText;
   ctx.textBaseline = 'middle';
-  ctx.fillText('Send your CV', m + 68, footerY + 8 + btnH / 2);
+  ctx.fillText(isEn ? 'Apply Now' : 'Ứng tuyển ngay', m + 68, footerY + 8 + btnH / 2);
   ctx.restore();
 
   const infoX = m + btnW + 28;
   ctx.save();
   ctx.font = '500 17px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textSecondary;
-  ctx.fillText('✉  hoặc inbox để nhận JD đầy đủ!', infoX, footerY + 28);
+  ctx.fillText(isEn ? '✉ Or connect to receive the full JD!' : '✉  hoặc inbox để nhận JD đầy đủ!', infoX, footerY + 28);
 
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textPrimary;
-  const contactText = phone ? `📞  Zalo / Hotline: ${phone}` : (email ? `✉  Email: ${email}` : `📞  Zalo: ${marketing.brand || '0907124244'}`);
+  const contactText = phone ? `📞  Hotline: ${phone}` : (email ? `✉  Email: ${email}` : (marketing.brand ? `🏢  ${marketing.brand}` : (isEn ? '📩  Connect with us' : '📩  Inbox để ứng tuyển')));
   ctx.fillText(contactText, infoX, footerY + 58);
   ctx.restore();
 
-  drawHandwrittenSlogan(ctx, 'Same People\nBrighter Tomorrow', w - m, footerY + 52, 28, th.accentLight, -5);
+  drawHandwrittenSlogan(ctx, isEn ? 'Same Team\nBrighter Future' : 'Cùng Đội Ngũ\nVươn Xa Hơn', w - m, footerY + 52, 28, th.accentLight, -5);
 
   ctx.save();
   ctx.font = '600 12px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textMuted;
   ctx.textAlign = 'center';
   ctx.letterSpacing = '3px';
-  ctx.fillText('HO CHI MINH CITY   ·   GROW   ·   LEARN   ·   MAKE AN IMPACT', w / 2, h - 18);
+  const footerBrand = marketing.brand ? marketing.brand.toUpperCase() : 'INNOVATE';
+  ctx.fillText(`${footerBrand}   ·   GROW   ·   LEARN   ·   MAKE AN IMPACT`, w / 2, h - 18);
   ctx.restore();
 }
 
@@ -803,18 +804,34 @@ export function drawRecruitmentStory(
 
   const m = 60, contentW = w - m * 2;
 
-  drawBadgePill(ctx, marketing.brand || 'MIVY CAREERS', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
-  drawBadgePill(ctx, '02 / 03 · TIÊU CHÍ & YÊU CẦU', w - m - 300, 68, th.badgeBg, th.badgeBorder, th.accent);
+  const labels = getPosterLabels(marketing, copy.headline + ' ' + (copy.points?.join(' ') || ''));
+  const isEn = labels.isEn;
+
+  let allPoints = copy.points && copy.points.length ? copy.points : [copy.subline];
+  if (!allPoints[0]) allPoints = [isEn ? 'Hands-on production software experience.' : 'Kinh nghiệm làm việc thực tế với các dự án production.'];
+
+  const perPage = marketing.storyPerPage || 3;
+  const totalPages = Math.max(1, Math.ceil(allPoints.length / perPage));
+  const curPage = Math.min(totalPages - 1, Math.max(0, marketing.storyPage || 0));
+  const points = allPoints.slice(curPage * perPage, (curPage + 1) * perPage);
+  const startIdx = curPage * perPage;
+
+  const pageLabel = totalPages > 1 ? (isEn ? `PAGE ${curPage + 1}/${totalPages}` : `TRANG ${curPage + 1}/${totalPages}`) : '';
+  const badgeText = labels.storyTag(pageLabel);
+  const badgeW = totalPages > 1 ? 360 : 300;
+
+  drawBadgePill(ctx, marketing.brand || (isEn ? 'CAREERS' : 'TUYỂN DỤNG'), m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
+  drawBadgePill(ctx, badgeText, w - m - badgeW, 68, th.badgeBg, th.badgeBorder, th.accent);
 
   ctx.save();
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accent;
-  ctx.fillText('ĐIỀU CHÚNG EM TÌM KIẾM Ở ANH', m, 178);
+  ctx.fillText(labels.storySubtitle, m, 178);
   ctx.restore();
 
   const titleHeight = posterText(
     ctx,
-    copy.headline || 'Yêu cầu chuyên môn & kinh nghiệm',
+    copy.headline || (isEn ? 'Technical Criteria & Requirements' : 'Yêu cầu chuyên môn & kinh nghiệm'),
     m,
     215,
     contentW,
@@ -827,15 +844,15 @@ export function drawRecruitmentStory(
 
   const startY = 215 + titleHeight + 28;
   const footerY = h - 120;
-
   const availableH = footerY - startY - 20;
-  let points = copy.points && copy.points.length ? copy.points.slice(0, 3) : [copy.subline];
-  if (!points[0]) points = ['Kinh nghiệm làm việc thực tế với các dự án production.'];
 
   const cardH = (availableH - (points.length - 1) * 16) / points.length;
 
   points.forEach((point, i) => {
     const cy = startY + i * (cardH + 16);
+    const cardCenterY = cy + cardH / 2;
+    const globalIdx = startIdx + i + 1;
+    const numStr = (globalIdx < 10 ? '0' : '') + globalIdx;
 
     ctx.save();
     ctx.strokeStyle = th.cardBorder;
@@ -850,7 +867,8 @@ export function drawRecruitmentStory(
     ctx.save();
     ctx.font = `800 ${cardH > 140 ? '54px' : '42px'} "Be Vietnam Pro", monospace`;
     ctx.fillStyle = th.accent;
-    ctx.fillText('0' + (i + 1), m + 10, cy + (cardH > 140 ? 56 : 42));
+    ctx.textBaseline = 'middle';
+    ctx.fillText(numStr, m + 10, cardCenterY);
     ctx.restore();
 
     posterText(
@@ -870,7 +888,7 @@ export function drawRecruitmentStory(
   ctx.save();
   ctx.font = '600 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textSecondary;
-  ctx.fillText('Bước tiếp theo: Tìm hiểu quyền lợi & nộp hồ sơ ứng tuyển', m, footerY + 39);
+  ctx.fillText(labels.storyFooter, m, footerY + 39);
   drawArrowIcon(ctx, m + contentW - 45, footerY + 22, 20, th.accent);
   ctx.restore();
 }
@@ -902,18 +920,22 @@ export function drawRecruitmentAction(
 
   const m = 60, contentW = w - m * 2;
 
-  drawBadgePill(ctx, marketing.brand || 'MIVY CAREERS', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
-  drawBadgePill(ctx, '03 / 03 · KẾT NỐI & ỨNG TUYỂN', w - m - 310, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
+  const source = ((copy.points || []).join(' ') + ' ' + copy.subline + ' ' + marketing.details + ' ' + marketing.offer);
+  const labels = getPosterLabels(marketing, source);
+  const isEn = labels.isEn;
+
+  drawBadgePill(ctx, marketing.brand || (isEn ? 'CAREERS' : 'TUYỂN DỤNG'), m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
+  drawBadgePill(ctx, labels.actionTag, w - m - 310, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
 
   ctx.save();
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accent;
-  ctx.fillText('GIA NHẬP ĐỘI NGŨ', m, 178);
+  ctx.fillText(labels.actionSubtitle, m, 178);
   ctx.restore();
 
   const titleHeight = posterText(
     ctx,
-    copy.headline || 'Quy trình ứng tuyển nhanh gọn',
+    copy.headline || (isEn ? 'Application Process & How to Apply' : 'Quy trình ứng tuyển nhanh gọn'),
     m,
     215,
     contentW,
@@ -926,36 +948,54 @@ export function drawRecruitmentAction(
 
   let currentY = 215 + titleHeight + 25;
 
-  const source = ((copy.points || []).join(' ') + ' ' + copy.subline + ' ' + marketing.details + ' ' + marketing.offer);
   const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
 
   const contactH = h >= 1350 ? 250 : 200;
   drawCard(ctx, m, currentY, contentW, contactH, 24, th.cardHighlightBg, th.cardHighlightBorder, true);
 
-  drawBadgePill(ctx, 'CÁCH THỨC ỨNG TUYỂN TRỰC TIẾP', m + 32, currentY + 28, th.tagBg, th.cardHighlightBorder, th.tagText);
+  drawBadgePill(ctx, isEn ? 'DIRECT APPLICATION METHOD' : 'CÁCH THỨC ỨNG TUYỂN TRỰC TIẾP', m + 32, currentY + 28, th.tagBg, th.cardHighlightBorder, th.tagText);
 
   ctx.save();
   ctx.font = hasPhoto ? '800 36px "Be Vietnam Pro", sans-serif' : '800 42px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textPrimary;
-  const emailText = email || 'Gửi CV về ban tuyển dụng';
+  const emailText = email || (isEn ? 'Send resume to recruiting team' : 'Gửi CV về ban tuyển dụng');
   ctx.fillText(emailText.length > 28 ? emailText.slice(0, 25) + '...' : emailText, m + 32, currentY + 115);
 
   ctx.font = '500 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.textSecondary;
-  const subText = 'Tiêu đề: [Họ tên] - Ứng tuyển ' + (marketing.name || 'Vị trí');
+  const subText = isEn
+    ? 'Subject: [Full Name] - Application for ' + (marketing.name || 'Position')
+    : 'Tiêu đề: [Họ tên] - Ứng tuyển ' + (marketing.name || 'Vị trí');
   ctx.fillText(subText.length > 36 ? subText.slice(0, 33) + '...' : subText, m + 32, currentY + 160);
   if (contactH > 210 && marketing.offer) {
-    ctx.fillText('Ghi chú: ' + (marketing.offer.length > 38 ? marketing.offer.slice(0, 35) + '...' : marketing.offer), m + 32, currentY + 200);
+    const notePrefix = isEn ? 'Note: ' : 'Ghi chú: ';
+    ctx.fillText(notePrefix + (marketing.offer.length > 38 ? marketing.offer.slice(0, 35) + '...' : marketing.offer), m + 32, currentY + 200);
   }
   ctx.restore();
 
   currentY += contactH + 30;
 
-  const steps = [
-    { num: '01', title: 'Gửi Hồ Sơ', desc: 'CV & Portfolio các sản phẩm thực tế đã làm' },
-    { num: '02', title: 'Phỏng Vấn', desc: 'Trao đổi chuyên môn cùng Tech Lead' },
-    { num: '03', title: 'Nhận Offer', desc: 'Thống nhất đãi ngộ và bắt đầu đồng hành' }
-  ];
+  let steps: { num: string; title: string; desc: string }[] = [];
+  if (copy.points && copy.points.length >= 2) {
+    steps = copy.points.slice(0, 3).map((pt, i) => {
+      const parts = pt.split(/[:\-\–]/);
+      const title = parts[0]?.trim() || (isEn ? `Step ${i + 1}` : `Bước ${i + 1}`);
+      const desc = parts.slice(1).join(':').trim() || pt;
+      return { num: `0${i + 1}`, title, desc };
+    });
+  } else {
+    steps = isEn
+      ? [
+          { num: '01', title: 'Submit CV', desc: 'Send resume & portfolio of production projects' },
+          { num: '02', title: 'Interview', desc: 'Technical and architectural discussion with team' },
+          { num: '03', title: 'Offer', desc: 'Finalize compensation and onboarding schedule' },
+        ]
+      : [
+          { num: '01', title: 'Gửi Hồ Sơ', desc: 'CV & Portfolio các sản phẩm thực tế đã làm' },
+          { num: '02', title: 'Phỏng Vấn', desc: 'Trao đổi chuyên môn cùng Tech Lead' },
+          { num: '03', title: 'Nhận Offer', desc: 'Thống nhất đãi ngộ và bắt đầu đồng hành' },
+        ];
+  }
 
   const stepCardW = (contentW - 36) / 3;
   const stepCardH = Math.min(180, Math.max(120, h - currentY - 140));
@@ -965,26 +1005,43 @@ export function drawRecruitmentAction(
     drawCard(ctx, sx, currentY, stepCardW, stepCardH, 20, th.cardBg, th.cardBorder);
 
     ctx.save();
-    ctx.font = '800 30px "Be Vietnam Pro", monospace';
-    ctx.fillStyle = th.accent;
-    ctx.fillText(st.num, sx + 22, currentY + 44);
+    ctx.beginPath();
+    ctx.roundRect(sx, currentY, stepCardW, stepCardH, 20);
+    ctx.clip();
 
-    ctx.font = '700 22px "Be Vietnam Pro", sans-serif';
+    const pad = 18;
+    const headerH = 34;
+    const headerCenterY = currentY + pad + headerH / 2;
+
+    const badgeH = 28;
+    const badgeY = Math.round(headerCenterY - badgeH / 2);
+    const badgeW = drawBadgePill(ctx, st.num, sx + pad, badgeY, th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+
+    const titleX = sx + pad + badgeW + 12;
+    const maxTitleW = stepCardW - (pad + badgeW + 12 + pad);
+    ctx.save();
+    ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = th.textPrimary;
-    ctx.fillText(st.title, sx + 22, currentY + 84);
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText(st.title, titleX, headerCenterY, maxTitleW);
+    ctx.restore();
 
+    const descY = currentY + pad + headerH + 12;
+    const descH = stepCardH - (pad + headerH + 12 + pad);
     posterText(
       ctx,
       st.desc,
-      sx + 22,
-      currentY + 102,
-      stepCardW - 44,
-      stepCardH - 108,
+      sx + pad,
+      descY,
+      stepCardW - pad * 2,
+      descH,
       15,
       th.textSecondary,
       '400',
       '"Be Vietnam Pro", sans-serif'
     );
+
     ctx.restore();
   });
 
@@ -994,7 +1051,7 @@ export function drawRecruitmentAction(
   ctx.font = '700 24px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentText;
   ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || 'Gửi CV Ngay Hôm Nay', m + 32, footerY + 34);
+  ctx.fillText(copy.cta || (isEn ? 'Apply Now' : 'Gửi CV Ngay Hôm Nay'), m + 32, footerY + 34);
   drawArrowIcon(ctx, m + contentW - 55, footerY + 22, 24, th.accentText);
   ctx.restore();
 }
@@ -1278,10 +1335,14 @@ export function drawFullPhotoRecruitmentHero(
 
   const m = 54, contentW = w - m * 2;
 
-  // 3. Top Header: Brand Pill + Handwritten Slogan
+  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
+  const labels = getPosterLabels(marketing, source);
+  const isEn = labels.isEn;
+
+  // 3. Top Header: Brand Pill + Stage Badge
   const brandText = marketing.brand || 'MIVY STUDIO';
   drawBadgePill(ctx, brandText, m, 52, 'rgba(0, 0, 0, 0.72)', 'rgba(255, 255, 255, 0.25)', '#ffffff');
-  drawHandwrittenSlogan(ctx, 'Good People\nGreat Products', w - m, 68, 30, th.accentLight, -6);
+  drawBadgePill(ctx, labels.launchTag, w - m - 320, 52, 'rgba(0, 0, 0, 0.72)', 'rgba(255, 255, 255, 0.25)', th.accentLight);
 
   // 4. Hero Typography Overlaid on Photo
   ctx.save();
@@ -1315,11 +1376,10 @@ export function drawFullPhotoRecruitmentHero(
   ctx.shadowBlur = 8;
   ctx.font = '600 15px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('JOIN OUR CORE TEAM   ·   BUILD BETTER TOGETHER', m + 3, 308);
+  ctx.fillText(isEn ? 'JOIN OUR CORE TEAM   ·   BUILD BETTER TOGETHER' : 'GIA NHẬP ĐỘI NGŨ NÒNG CỐT   ·   CÙNG NHAU PHÁT TRIỂN', m + 3, 308);
   ctx.restore();
 
   // 5. Extract Facts and Highlights
-  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
   const allFacts = (copy.pointsEdited || (copy.points && copy.points.length >= 4))
     ? copy.points!
     : (marketing.details || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
@@ -1337,79 +1397,84 @@ export function drawFullPhotoRecruitmentHero(
     salaryHighlight = marketing.offer;
   }
 
-  const expFact = cleanFacts.find(f => /năm|year|exp|kinh nghiệm/i.test(f)) || cleanFacts[0] || '3+ Năm Kinh Nghiệm';
-  const stackFact = cleanFacts.find(f => /react|node|js|ts|python|system|kiến trúc|dev/i.test(f)) || cleanFacts[1] || 'Modern Tech Stack';
-  const locFact = cleanFacts.find(f => /tp\.hcm|hà nội|remote|hybrid|hồ chí minh|toàn thời gian|full-time/i.test(f)) || 'TP.HCM · Hybrid';
-
-  // 6. Floating Frosted Glass Bento Cards
+  // 6. Floating Frosted Glass Bento Cards (Strictly source facts)
   const isCompact = h <= 1080;
   const isTall = h >= 1920;
 
   const bentoY = isCompact ? 335 : (isTall ? 580 : 430);
   const bentoH = isCompact ? 104 : 124;
   const colGap = 16;
-  const colW = (contentW - colGap * 2) / 3;
 
-  const bentoCards = [
-    {
+  const bentoCards: { icon: string; tag: string; val: string; highlight: boolean }[] = [];
+  if (salaryHighlight) {
+    bentoCards.push({
       icon: '💰',
-      tag: 'ĐÃI NGỘ / LƯƠNG',
-      val: salaryHighlight || 'Cạnh Tranh Cao',
+      tag: isEn ? 'OFFER & REWARDS' : 'ĐÃI NGỘ / LƯƠNG',
+      val: salaryHighlight,
       highlight: true,
-    },
-    {
-      icon: '⚙️',
-      tag: 'KINH NGHIỆM',
-      val: expFact || '3+ Năm Kinh Nghiệm',
-      highlight: false,
-    },
-    {
-      icon: '📍',
-      tag: 'ĐỊA ĐIỂM & CHẾ ĐỘ',
-      val: locFact || 'TP.HCM · Hybrid',
-      highlight: false,
-    },
-  ];
+    });
+  }
 
-  bentoCards.forEach((card, idx) => {
-    const cx = m + idx * (colW + colGap);
-    const bgFill = card.highlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(15, 23, 42, 0.72)';
-    const bdStroke = card.highlight ? th.accent : 'rgba(255, 255, 255, 0.18)';
+  const usedBentoFacts = new Set<string>();
+  for (const fact of cleanFacts) {
+    if (bentoCards.length >= 3) break;
+    let icon = '⚡';
+    let tag = isEn ? 'REQUIREMENT' : 'TIÊU CHÍ';
+    if (/năm|year|exp|kinh nghiệm/i.test(fact)) {
+      icon = '⚙️'; tag = isEn ? 'EXPERIENCE' : 'KINH NGHIỆM';
+    } else if (/tp\.hcm|hà nội|đà nẵng|remote|hybrid|hồ chí minh|toàn thời gian|full-time|on-site|location/i.test(fact)) {
+      icon = '📍'; tag = isEn ? 'LOCATION & MODE' : 'ĐỊA ĐIỂM & CHẾ ĐỘ';
+    } else if (/react|node|js|ts|python|golang|java|cloud|aws|docker|k8s|tech|stack/i.test(fact)) {
+      icon = '💻'; tag = isEn ? 'TECH STACK' : 'CÔNG NGHỆ';
+    } else if (/lead|mentor|debt|codebase|stakeholder|team/i.test(fact)) {
+      icon = '🎯'; tag = isEn ? 'CORE FOCUS' : 'TRÁCH NHIỆM';
+    }
+    bentoCards.push({ icon, tag, val: fact, highlight: false });
+    usedBentoFacts.add(fact);
+  }
 
-    drawCard(ctx, cx, bentoY, colW, bentoH, 18, bgFill, bdStroke, true);
+  const cardCount = bentoCards.length;
+  if (cardCount > 0) {
+    const colW = (contentW - colGap * (cardCount - 1)) / cardCount;
+    bentoCards.forEach((card, idx) => {
+      const cx = m + idx * (colW + colGap);
+      const bgFill = card.highlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(15, 23, 42, 0.72)';
+      const bdStroke = card.highlight ? th.accent : 'rgba(255, 255, 255, 0.18)';
 
-    ctx.save();
-    // Clip to card bounds so text can never overflow to next card
-    ctx.beginPath();
-    ctx.roundRect(cx, bentoY, colW, bentoH, 18);
-    ctx.clip();
+      drawCard(ctx, cx, bentoY, colW, bentoH, 18, bgFill, bdStroke, true);
 
-    ctx.font = '600 13px "Be Vietnam Pro", sans-serif';
-    ctx.fillStyle = card.highlight ? th.accentLight : '#94a3b8';
-    ctx.fillText(`${card.icon}  ${card.tag}`, cx + 18, bentoY + (isCompact ? 28 : 34));
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(cx, bentoY, colW, bentoH, 18);
+      ctx.clip();
 
-    const maxTextW = colW - 36;
-    const textStartY = bentoY + (isCompact ? 48 : 56);
-    const availTextH = bentoH - (isCompact ? 52 : 62);
+      ctx.font = '600 13px "Be Vietnam Pro", sans-serif';
+      ctx.fillStyle = card.highlight ? th.accentLight : '#94a3b8';
+      ctx.fillText(`${card.icon}  ${card.tag}`, cx + 18, bentoY + (isCompact ? 28 : 34));
 
-    posterText(
-      ctx,
-      card.val,
-      cx + 18,
-      textStartY,
-      maxTextW,
-      availTextH,
-      isCompact ? 17 : 19,
-      card.highlight ? '#ffffff' : th.textPrimary,
-      '700',
-      '"Be Vietnam Pro", sans-serif'
-    );
+      const maxTextW = colW - 36;
+      const textStartY = bentoY + (isCompact ? 48 : 56);
+      const availTextH = bentoH - (isCompact ? 52 : 62);
 
-    ctx.restore();
-  });
+      posterText(
+        ctx,
+        card.val,
+        cx + 18,
+        textStartY,
+        maxTextW,
+        availTextH,
+        isCompact ? 17 : 19,
+        card.highlight ? '#ffffff' : th.textPrimary,
+        '700',
+        '"Be Vietnam Pro", sans-serif'
+      );
+
+      ctx.restore();
+    });
+  }
 
   // 7. Key Requirements Section
-  const reqY = bentoY + bentoH + 18;
+  const reqY = bentoY + (cardCount > 0 ? bentoH + 18 : 0);
   const footerH = 140;
   const footerY = h - footerH - 30;
   const reqH = footerY - reqY - 20;
@@ -1420,58 +1485,54 @@ export function drawFullPhotoRecruitmentHero(
     ctx.save();
     ctx.font = '700 15px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = th.accentLight;
-    ctx.fillText('⚡ YÊU CẦU & KỸ NĂNG THEN CHỐT', m + 28, reqY + 36);
+    ctx.fillText(isEn ? '⚡ KEY REQUIREMENTS & QUALIFICATIONS' : '⚡ YÊU CẦU & KỸ NĂNG THEN CHỐT', m + 28, reqY + 36);
     ctx.restore();
 
-    const pointsToShow = cleanFacts.filter(f => f !== expFact).slice(0, reqH > 220 ? 3 : 2);
+    // Use facts not already displayed in bento cards, or cleanFacts
+    let pointsToShow = cleanFacts.filter(f => !usedBentoFacts.has(f)).slice(0, reqH > 220 ? 3 : 2);
     if (pointsToShow.length === 0) {
-      pointsToShow.push(stackFact, 'Chủ động, tư duy giải quyết vấn đề và tinh thần đồng đội cao.');
+      pointsToShow = cleanFacts.slice(0, reqH > 220 ? 3 : 2);
+    }
+    if (pointsToShow.length === 0 && copy.subline) {
+      pointsToShow = [copy.subline];
     }
 
-    const availablePointH = reqH - 55;
-    const itemH = availablePointH / pointsToShow.length;
+    if (pointsToShow.length > 0) {
+      const availablePointH = reqH - 55;
+      const itemH = availablePointH / pointsToShow.length;
 
-    pointsToShow.forEach((pt, pIdx) => {
-      const centerY = reqY + 54 + pIdx * itemH + itemH / 2;
-      const fontSize = isCompact ? 17 : 20;
-      const lineH = Math.round(fontSize * 1.32);
-      const badgeH = 34;
+      pointsToShow.forEach((pt, pIdx) => {
+        const centerY = reqY + 54 + pIdx * itemH + itemH / 2;
+        const fontSize = isCompact ? 17 : 20;
+        const lineH = Math.round(fontSize * 1.32);
+        const badgeH = 34;
 
-      const badgeX = m + 24;
-      const badgeW = drawBadgePill(ctx, `0${pIdx + 1}`, badgeX, Math.round(centerY - badgeH / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+        const badgeX = m + 24;
+        const badgeW = drawBadgePill(ctx, `0${pIdx + 1}`, badgeX, Math.round(centerY - badgeH / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
 
-      const textX = badgeX + badgeW + 18;
-      const textMaxW = contentW - (badgeW + 24 + 18 + 24);
+        const textX = badgeX + badgeW + 18;
+        const textMaxW = contentW - (badgeW + 24 + 18 + 24);
 
-      ctx.save();
-      ctx.font = `600 ${fontSize}px "Be Vietnam Pro", sans-serif`;
-      const words = (pt || '').split(/\s+/);
-      const lines: string[] = [];
-      let currentLine = '';
-      for (const w of words) {
-        const test = currentLine ? currentLine + ' ' + w : w;
-        if (ctx.measureText(test).width > textMaxW && currentLine) {
-          lines.push(currentLine);
-          currentLine = w;
-        } else {
-          currentLine = test;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(m, reqY, contentW, reqH, 20);
+        ctx.clip();
 
-      ctx.fillStyle = '#f8fafc';
-      ctx.textBaseline = 'middle';
-
-      if (lines.length === 1) {
-        ctx.fillText(lines[0], textX, centerY);
-      } else {
-        const startY = centerY - ((lines.length - 1) * lineH) / 2;
-        lines.forEach((l, lIdx) => {
-          ctx.fillText(l, textX, Math.round(startY + lIdx * lineH));
-        });
-      }
-      ctx.restore();
-    });
+        posterText(
+          ctx,
+          pt,
+          textX,
+          Math.round(centerY - lineH / 2),
+          textMaxW,
+          lineH * 2.2,
+          fontSize,
+          '#f8fafc',
+          '600',
+          '"Be Vietnam Pro", sans-serif'
+        );
+        ctx.restore();
+      });
+    }
   }
 
   // 8. Bottom Action & Contact Footer
@@ -1486,7 +1547,7 @@ export function drawFullPhotoRecruitmentHero(
   ctx.font = '700 23px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentText;
   ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || 'Send your CV', m + 68, footerY + 8 + btnH / 2);
+  ctx.fillText(copy.cta || (isEn ? 'Apply Now' : 'Send your CV'), m + 68, footerY + 8 + btnH / 2);
   ctx.restore();
 
   const infoX = m + btnW + 28;
@@ -1495,11 +1556,11 @@ export function drawFullPhotoRecruitmentHero(
   ctx.shadowBlur = 8;
   ctx.font = '500 17px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('✉  hoặc inbox để nhận JD đầy đủ!', infoX, footerY + 28);
+  ctx.fillText(isEn ? '✉ Or connect to receive the full JD!' : '✉  hoặc inbox để nhận JD đầy đủ!', infoX, footerY + 28);
 
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#ffffff';
-  const contactText = phone ? `📞  Zalo / Hotline: ${phone}` : (email ? `✉  Email: ${email}` : `📞  Zalo: ${marketing.brand || '0907124244'}`);
+  const contactText = phone ? `📞  Hotline: ${phone}` : (email ? `✉  Email: ${email}` : (marketing.brand ? `🏢  ${marketing.brand}` : (isEn ? '📩  Connect with us' : '📩  Inbox để ứng tuyển')));
   ctx.fillText(contactText, infoX, footerY + 58);
   ctx.restore();
 
@@ -1510,7 +1571,8 @@ export function drawFullPhotoRecruitmentHero(
   ctx.fillStyle = '#94a3b8';
   ctx.textAlign = 'center';
   ctx.letterSpacing = '3px';
-  ctx.fillText('HO CHI MINH CITY   ·   GROW   ·   LEARN   ·   MAKE AN IMPACT', w / 2, h - 18);
+  const footerBrand = marketing.brand ? marketing.brand.toUpperCase() : 'INNOVATE';
+  ctx.fillText(`${footerBrand}   ·   GROW   ·   LEARN   ·   MAKE AN IMPACT`, w / 2, h - 18);
   ctx.restore();
 }
 
@@ -1542,20 +1604,36 @@ export function drawFullPhotoRecruitmentStory(
 
   const m = 60, contentW = w - m * 2;
 
-  drawBadgePill(ctx, marketing.brand || 'MIVY CAREERS', m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
-  drawBadgePill(ctx, '02 / 03 · TIÊU CHÍ & YÊU CẦU', w - m - 300, 68, th.badgeBg, th.badgeBorder, th.accent);
+  const labels = getPosterLabels(marketing, copy.headline + ' ' + (copy.points?.join(' ') || ''));
+  const isEn = labels.isEn;
+
+  let allPoints = copy.points && copy.points.length ? copy.points : [copy.subline];
+  if (!allPoints[0]) allPoints = [isEn ? 'Hands-on production software experience.' : 'Kinh nghiệm làm việc thực tế với các dự án production.'];
+
+  const perPage = marketing.storyPerPage || 3;
+  const totalPages = Math.max(1, Math.ceil(allPoints.length / perPage));
+  const curPage = Math.min(totalPages - 1, Math.max(0, marketing.storyPage || 0));
+  const points = allPoints.slice(curPage * perPage, (curPage + 1) * perPage);
+  const startIdx = curPage * perPage;
+
+  const pageLabel = totalPages > 1 ? (isEn ? `PAGE ${curPage + 1}/${totalPages}` : `TRANG ${curPage + 1}/${totalPages}`) : '';
+  const badgeText = labels.storyTag(pageLabel);
+  const badgeW = totalPages > 1 ? 360 : 300;
+
+  drawBadgePill(ctx, marketing.brand || (isEn ? 'CAREERS' : 'TUYỂN DỤNG'), m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
+  drawBadgePill(ctx, badgeText, w - m - badgeW, 68, th.badgeBg, th.badgeBorder, th.accent);
 
   ctx.save();
   ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
   ctx.shadowBlur = 10;
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentLight;
-  ctx.fillText('ĐIỀU CHÚNG EM TÌM KIẾM Ở ANH', m, 178);
+  ctx.fillText(labels.storySubtitle, m, 178);
   ctx.restore();
 
   const titleHeight = posterText(
     ctx,
-    copy.headline || 'Yêu cầu chuyên môn & kinh nghiệm',
+    copy.headline || (isEn ? 'Technical Criteria & Requirements' : 'Yêu cầu chuyên môn & kinh nghiệm'),
     m,
     215,
     contentW,
@@ -1570,14 +1648,13 @@ export function drawFullPhotoRecruitmentStory(
   const footerY = h - 120;
   const availableH = footerY - startY - 20;
 
-  let points = copy.points && copy.points.length ? copy.points.slice(0, 3) : [copy.subline];
-  if (!points[0]) points = ['Kinh nghiệm làm việc thực tế với các dự án production.'];
-
   const cardH = (availableH - (points.length - 1) * 18) / points.length;
 
   points.forEach((point, i) => {
     const cy = startY + i * (cardH + 18);
     const cardCenterY = cy + cardH / 2;
+    const globalIdx = startIdx + i + 1;
+    const numStr = (globalIdx < 10 ? '0' : '') + globalIdx;
 
     drawCard(ctx, m, cy, contentW, cardH, 20, 'rgba(15, 23, 42, 0.76)', 'rgba(255, 255, 255, 0.16)', true);
 
@@ -1586,8 +1663,8 @@ export function drawFullPhotoRecruitmentStory(
     ctx.font = `800 ${numFontSize}px "Be Vietnam Pro", sans-serif`;
     ctx.fillStyle = th.accent;
     ctx.textBaseline = 'middle';
-    ctx.fillText('0' + (i + 1), m + 28, cardCenterY);
-    const numW = ctx.measureText('0' + (i + 1)).width;
+    ctx.fillText(numStr, m + 28, cardCenterY);
+    const numW = ctx.measureText(numStr).width;
     ctx.restore();
 
     const textFontSize = cardH > 140 ? 22 : 18;
@@ -1628,7 +1705,7 @@ export function drawFullPhotoRecruitmentStory(
   ctx.save();
   ctx.font = '600 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('Bước tiếp theo: Tìm hiểu quyền lợi & nộp hồ sơ ứng tuyển', m, footerY + 39);
+  ctx.fillText(labels.storyFooter, m, footerY + 39);
   drawArrowIcon(ctx, m + contentW - 45, footerY + 22, 20, th.accent);
   ctx.restore();
 }
@@ -1661,20 +1738,24 @@ export function drawFullPhotoRecruitmentAction(
 
   const m = 60, contentW = w - m * 2;
 
-  drawBadgePill(ctx, marketing.brand || 'MIVY CAREERS', m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
-  drawBadgePill(ctx, '03 / 03 · KẾT NỐI & ỨNG TUYỂN', w - m - 310, 68, th.badgeBg, th.badgeBorder, th.accent);
+  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
+  const labels = getPosterLabels(marketing, source);
+  const isEn = labels.isEn;
+
+  drawBadgePill(ctx, marketing.brand || (isEn ? 'CAREERS' : 'TUYỂN DỤNG'), m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
+  drawBadgePill(ctx, labels.actionTag, w - m - 310, 68, th.badgeBg, th.badgeBorder, th.accent);
 
   ctx.save();
   ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
   ctx.shadowBlur = 10;
   ctx.font = '700 20px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentLight;
-  ctx.fillText('GIA NHẬP ĐỘI NGŨ NGAY HÔM NAY', m, 178);
+  ctx.fillText(labels.actionSubtitle, m, 178);
   ctx.restore();
 
   const titleHeight = posterText(
     ctx,
-    copy.headline || 'Quy trình kết nối & nhận offer',
+    copy.headline || (isEn ? 'How to Connect & Apply' : 'Quy trình kết nối & nhận offer'),
     m,
     215,
     contentW,
@@ -1693,7 +1774,7 @@ export function drawFullPhotoRecruitmentAction(
     ctx.save();
     ctx.font = '700 16px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = th.accentLight;
-    ctx.fillText('ĐÃI NGỘ DÀNH RIÊNG CHO BẠN', m + 30, curY + 36);
+    ctx.fillText(labels.actionPerkTitle, m + 30, curY + 36);
 
     ctx.font = '800 28px "Be Vietnam Pro", sans-serif';
     ctx.fillStyle = '#ffffff';
@@ -1703,7 +1784,7 @@ export function drawFullPhotoRecruitmentAction(
   }
 
   let points = copy.points && copy.points.length ? copy.points.slice(0, 3) : [copy.subline];
-  if (!points[0]) points = ['Gửi CV qua email hoặc inbox trực tiếp để nhận JD chi tiết.'];
+  if (!points[0]) points = [isEn ? 'Submit your CV or connect directly to receive full details.' : 'Gửi CV qua email hoặc inbox trực tiếp để nhận JD chi tiết.'];
 
   const stepCardH = 90;
   points.forEach((pt, i) => {
@@ -1712,7 +1793,7 @@ export function drawFullPhotoRecruitmentAction(
     const badgeH = 34;
     const badgeY = Math.round(stepCenterY - badgeH / 2);
 
-    const badgeW = drawBadgePill(ctx, `BƯỚC ${i + 1}`, m + 24, badgeY, th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+    const badgeW = drawBadgePill(ctx, `${labels.actionStepPrefix} ${i + 1}`, m + 24, badgeY, th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
     const stepTextX = m + 24 + badgeW + 18;
     const stepTextW = contentW - (24 + badgeW + 18 + 24);
 
@@ -1760,10 +1841,9 @@ export function drawFullPhotoRecruitmentAction(
   ctx.font = '700 24px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = th.accentText;
   ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || 'Ứng Tuyển Ngay', m + 78, footerY + btnH / 2);
+  ctx.fillText(copy.cta || (isEn ? 'Apply Now' : 'Ứng Tuyển Ngay'), m + 78, footerY + btnH / 2);
   ctx.restore();
 
-  const source = (marketing.details || '') + ' ' + (marketing.offer || '');
   const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
   const phone = (source.match(/(?:0\d{9,10}|\+84\d{9,10})/i) || [])[0];
 
@@ -1771,11 +1851,11 @@ export function drawFullPhotoRecruitmentAction(
   ctx.save();
   ctx.font = '500 17px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#cbd5e1';
-  ctx.fillText('Hotline / Zalo tư vấn 24/7:', infoX, footerY + 20);
+  ctx.fillText(labels.actionContactTitle, infoX, footerY + 20);
 
   ctx.font = '700 22px "Be Vietnam Pro", sans-serif';
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(phone ? `📞 ${phone}` : (email ? `✉ ${email}` : `📞 ${marketing.brand || '0907124244'}`), infoX, footerY + 52);
+  ctx.fillText(phone ? `📞  ${phone}` : (email ? `✉  ${email}` : (marketing.brand ? `🏢  ${marketing.brand}` : (isEn ? '📩  Connect with our team' : '📩  Liên hệ để kết nối ngay'))), infoX, footerY + 52);
   ctx.restore();
 }
 
@@ -1884,6 +1964,9 @@ export function drawIndustryPoster(
   const h = hMap[marketing.aspect] || 1350;
   canvas.width = 1080;
   canvas.height = h;
+
+  if (marketing.conceptId && drawIndustryConcept(canvas, marketing, kind, rawCopy, asset, bgImg)) return;
+  if (drawCatalogPoster(canvas, marketing, kind, rawCopy, asset, bgImg)) return;
 
   const th = POSTER_THEMES[marketing.theme] || POSTER_THEMES.emerald_pro;
   const copy = rawCopy;

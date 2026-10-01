@@ -1,0 +1,41 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -111,3 +111,3 @@
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
+@@ -124,3 +124,3 @@
+     const bodyY = ty + h * 0.18;
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
+@@ -137,3 +137,3 @@
+     const bodyY = ty + h * 0.18;
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => drawText(`✓ ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '400'));
+@@ -150,8 +150,8 @@
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.12);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
+     
+     ctx.fillStyle = ink; ctx.fillRect(m, h * 0.86, w - m * 2, h * 0.07);
+     const ctaText = copy.cta || (lang === 'en' ? 'CONTACT US' : 'LIÊN HỆ');
+-    drawText(ctaText, m, h * 0.86, w - m * 2, h * 0.07, w * 0.04, bgImg ? '#000000' : '#ffffff', '700');
++    drawText(ctaText, m + w * 0.025, h * 0.86 + h * 0.015, w - m * 2 - w * 0.05, h * 0.04, w * 0.04, bgImg ? '#000000' : '#ffffff', '700');
+     drawText(contact, m, h * 0.94, w - m * 2, h * 0.04, w * 0.03, brandInk, '400');
+@@ -169,3 +169,3 @@
+     const bodyY = ty + h * 0.18;
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => drawText(`• ${p}`, m, bodyY + i * pointH, w - m * 2, pointH * 0.9, w * 0.035, ink, '500'));
+@@ -183,3 +183,3 @@
+     const bodyH = (h * 0.83) - bodyY;
+-    const pointH = bodyH / Math.max(1, points.length);
++    const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
+     points.forEach((p, i) => {

@@ -10,7 +10,7 @@ export async function api<T = any>(url: string, options: RequestInit = {}): Prom
   try {
     response = await fetch(fullUrl, {
       ...options,
-      signal: options.signal || AbortSignal.timeout(30000),
+      signal: options.signal || AbortSignal.timeout(330000),
     });
   } catch (err: any) {
     if (err.name === 'TimeoutError') {

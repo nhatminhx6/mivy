@@ -1,0 +1,1 @@
+Error: invalid --json-schema: failed to read schema file "docs/template-v2/runs/20260928-noimage/01-NOIMAGE-gemini/schema.json": open docs/template-v2/runs/20260928-noimage/01-NOIMAGE-gemini/schema.json: no such file or directory
