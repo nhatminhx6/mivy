@@ -5,8 +5,6 @@ import {
   isAssetRef,
   AssetStoreOptions,
 } from './asset-store';
-import { CATEGORY_SAMPLES } from './category-samples';
-import { TEMPLATES } from './template-catalog';
 
 export const DEFAULT_DRAFT_KEY = 'mivy-industry-drafts-v2';
 
@@ -45,16 +43,14 @@ export function prepareDraftForMetadataStorage(state: MarketingState): Marketing
 }
 
 /**
- * Tạo trạng thái ban đầu mặc định cho một ngành khi chưa có bản nháp:
- * Sử dụng data mẫu từ CATEGORY_SAMPLES và ảnh nền mẫu tương ứng.
+ * Tạo trạng thái ban đầu sạch mặc định cho một ngành khi chưa có bản nháp:
+ * Trả về clean defaults, không tự động chèn sample preview vào campaign data mới.
  */
 export function createDefaultIndustryState(
   category: string,
   industry: MarketingState['industry'],
   current?: Partial<MarketingState>
 ): MarketingState {
-  const sample = CATEGORY_SAMPLES[category] || CATEGORY_SAMPLES.retail;
-  const defaultTemplateId = TEMPLATES.find((t) => (t.categories as readonly string[]).includes(category))?.id;
   const empty = { headline: '', subline: '', cta: '', caption: '', points: [] };
 
   return {
@@ -62,30 +58,24 @@ export function createDefaultIndustryState(
     categoryId: category,
     industry,
     conceptId: undefined,
-    templateId: defaultTemplateId,
+    templateId: undefined,
     industryFields: {},
-    name: sample?.name || '',
-    brand: sample?.brand || 'Mivy',
-    offer: sample?.offer || '',
-    details: sample?.details || '',
-    goal: sample?.goal || category,
+    name: '',
+    brand: current?.brand || 'Mivy',
+    offer: '',
+    details: '',
+    goal: category,
     image: '',
     cutout: '',
     backgroundImage: '',
-    bgUrl: `/backgrounds/${category}/a.jpg`,
+    bgUrl: '',
     facts: [],
     storyPage: 0,
-    copies: sample?.copies
-      ? {
-          launch: { ...sample.copies.launch },
-          story: { ...sample.copies.story },
-          action: { ...sample.copies.action },
-        }
-      : {
-          launch: { ...empty },
-          story: { ...empty },
-          action: { ...empty },
-        },
+    copies: {
+      launch: { ...empty },
+      story: { ...empty },
+      action: { ...empty },
+    },
   } as MarketingState;
 }
 
@@ -108,14 +98,16 @@ export function getAllDrafts(
 }
 
 /**
- * Lưu bản nháp cho một ngành vào storage (Metadata layer)
+ * Lưu bản nháp cho một ngành vào storage (Metadata layer).
+ * Nếu gặp lỗi QuotaExceeded: bảo toàn toàn bộ dữ liệu storage trước đó,
+ * tuyệt đối không xóa nháp ngành khác, trả về false để báo failure.
  */
 export function saveIndustryDraft(
   state: MarketingState,
   storage?: Pick<Storage, 'getItem' | 'setItem'> | null,
   storageKey: string = DEFAULT_DRAFT_KEY
-): void {
-  if (!storage || typeof storage.setItem !== 'function') return;
+): boolean {
+  if (!storage || typeof storage.setItem !== 'function') return false;
   const id = state.categoryId || (state.industry === 'general' ? 'retail' : state.industry);
   const drafts = getAllDrafts(storage, storageKey);
 
@@ -123,14 +115,11 @@ export function saveIndustryDraft(
 
   try {
     storage.setItem(storageKey, JSON.stringify(drafts));
+    return true;
   } catch (err) {
     console.warn('[Drafts] Lỗi lưu drafts vào storage (quota):', err);
-    try {
-      // Fallback: chỉ lưu nháp ngành hiện tại để giảm dung lượng
-      storage.setItem(storageKey, JSON.stringify({ [id]: drafts[id] }));
-    } catch {
-      // Bỏ qua an toàn nếu storage bị vô hiệu hóa hoàn toàn
-    }
+    // Bảo toàn storage cũ của các ngành khác, báo failure
+    return false;
   }
 }
 

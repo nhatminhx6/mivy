@@ -1,10 +1,10 @@
 import { AssetInfo, CopyItem, MarketingState, PosterKind } from '@/types';
 import { TEMPLATES } from './template-catalog';
 import { posterText } from './design-engine';
+import { fontFamilyById, contactLine } from './brand-presets';
 
-const FONT = '"Be Vietnam Pro", sans-serif';
+const DEFAULT_FONT = '"Be Vietnam Pro", sans-serif';
 
-// Độ sáng 0..1 của màu hex để chọn chữ tương phản (trắng/đen) đặt lên màu đó.
 function luminance(hex: string): number {
   const c = hex.replace('#', '');
   if (c.length < 6) return 0.5;
@@ -13,13 +13,19 @@ function luminance(hex: string): number {
 }
 const norm = (s?: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 
-// A single renderer powers both gallery previews and downloadable posters.
-export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingState, kind: PosterKind, copy: CopyItem, asset: AssetInfo | null, bgImg: CanvasImageSource | null = null) {
+export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingState, kind: PosterKind, copy: CopyItem, asset: AssetInfo | null, bgImg: CanvasImageSource | null = null, logoImg: CanvasImageSource | null = null) {
   const t = TEMPLATES.find(t => t.id === (state.templateId || (state.backgroundImage !== undefined ? "editorial" : undefined)));
   if (!t) return false;
   const ctx = canvas.getContext('2d')!;
   const w = canvas.width, h = canvas.height, m = w * .065, gap = w * .025;
-  const onAccent = luminance(t.accent) > 0.6 ? '#141414' : '#ffffff';
+
+  // Brand kit: dùng CẢ palette + font đôi.
+  const bk = state.brandKit;
+  const ACCENT = bk?.colorAccent || t.accent;
+  const SECONDARY = bk?.colorSecondary || t.accent;
+  const HEAD = bk ? fontFamilyById(bk.fontHeadingId) : DEFAULT_FONT;
+  const BODY = bk ? fontFamilyById(bk.fontBodyId) : DEFAULT_FONT;
+  const onAccent = luminance(ACCENT) > 0.6 ? '#141414' : '#ffffff';
 
   ctx.fillStyle = t.bg; ctx.fillRect(0, 0, w, h);
 
@@ -31,9 +37,7 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
       const scale = Math.max((w + bleed * 2) / sw, (h + bleed * 2) / sh);
       ctx.save(); ctx.filter = `blur(${blur}px)`;
       ctx.drawImage(im, (w - sw * scale) * (state.backgroundX ?? 50) / 100, (h - sh * scale) * (state.backgroundY ?? 50) / 100, sw * scale, sh * scale); ctx.restore();
-      // Làm tối nhẹ theo ý người dùng
       ctx.fillStyle = `rgba(0,0,0,${(state.backgroundDim ?? 35) / 100})`; ctx.fillRect(0, 0, w, h);
-      // Scrim gradient: tối ở trên (brand+title) và dưới (points+CTA) để chữ LUÔN đọc được
       const sc = ctx.createLinearGradient(0, 0, 0, h);
       sc.addColorStop(0, 'rgba(0,0,0,0.60)');
       sc.addColorStop(0.32, 'rgba(0,0,0,0.12)');
@@ -44,13 +48,13 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
   }
 
   const ink = bgImg ? '#ffffff' : t.ink;
-  const sub = bgImg ? 'rgba(255,255,255,0.88)' : t.ink;
+  const subColor = bgImg ? 'rgba(255,255,255,0.88)' : t.ink;
 
-  const text = (s: string, x: number, y: number, ww: number, hh: number, size: number, color: string = ink, weight = '700') => {
+  const text = (s: string, x: number, y: number, ww: number, hh: number, size: number, color: string = ink, weight = '700', face: string = BODY) => {
     if (!s) return;
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, ww, hh); ctx.clip();
     if (bgImg) { ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 1; }
-    posterText(ctx, s, x, y, ww, hh, size, color, weight, FONT);
+    posterText(ctx, s, x, y, ww, hh, size, color, weight, face);
     ctx.restore();
   };
 
@@ -72,55 +76,67 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
     ctx.restore();
   };
 
-  // Brand chip
-  text((state.brand || '').toUpperCase(), m, m, w - m * 2, 44, 24, bgImg ? 'rgba(255,255,255,0.95)' : t.accent);
+  // Brand: logo nếu có, không thì chip chữ; kèm slogan.
+  let brandBottom = m + 44;
+  if (logoImg) {
+    const li = logoImg as HTMLImageElement;
+    const lsw = li.naturalWidth || li.width, lsh = li.naturalHeight || li.height;
+    if (lsw && lsh) {
+      const lh = h * .05, lw = (lsw / lsh) * lh;
+      ctx.save(); if (bgImg) { ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; }
+      ctx.drawImage(li, m, m, Math.min(lw, w * .4), lh); ctx.restore();
+      brandBottom = m + lh;
+    }
+  } else {
+    text((state.brand || '').toUpperCase(), m, m, w - m * 2, 40, 24, bgImg ? 'rgba(255,255,255,0.95)' : ACCENT, '700', HEAD);
+    brandBottom = m + 34;
+  }
+  if (bk?.slogan) {
+    text(bk.slogan, m, brandBottom + 6, w * .6, 32, 18, bgImg ? 'rgba(255,255,255,0.8)' : SECONDARY, '500', BODY);
+  }
 
   const title = copy.headline || state.name;
-
-  // Tính points trước để bỏ subline trùng lặp
   const selected = state.facts?.filter(f => f.selected).map(f => f.text) || [];
   const allPts = copy.points?.length ? copy.points : selected.length ? selected : state.details.split('\n').filter(Boolean);
   const points = kind === 'story'
     ? allPts.slice((state.storyPage || 0) * (state.storyPerPage || 3), ((state.storyPage || 0) + 1) * (state.storyPerPage || 3))
     : allPts.slice(0, 3);
-  // Bỏ subline nếu gần trùng tiêu đề hoặc ý đầu
   const subline = (copy.subline && norm(copy.subline) !== norm(title) && norm(copy.subline) !== norm(points[0])) ? copy.subline : '';
 
   let bodyX = m, bodyY = h * .48, bodyW = w - m * 2, bodyH = h * .34;
   if (t.id === 'editorial') {
-    text(title, m, h * .13, w * .53, h * .24, 76);
-    text(subline, m, h * .39, w * .49, h * .13, 28, sub, '400');
+    text(title, m, h * .13, w * .53, h * .24, 76, ink, '800', HEAD);
+    text(subline, m, h * .39, w * .49, h * .13, 28, subColor, '400');
     photo(w * .64, h * .13, w * .295, h * .66);
     bodyW = w * .51; bodyY = h * .55; bodyH = h * .27;
   } else if (t.id === 'spotlight') {
-    text(title, m, h * .12, w - m * 2, h * .17, 76);
+    text(title, m, h * .12, w - m * 2, h * .17, 76, ink, '800', HEAD);
     photo(m, h * .31, w * .52, h * .46, true);
     bodyX = w * .62; bodyW = w - bodyX - m; bodyY = h * .34; bodyH = h * .43;
-    text(subline, m, h * .79, w - m * 2, h * .07, 26, sub, '400');
+    text(subline, m, h * .79, w - m * 2, h * .07, 26, subColor, '400');
   } else if (t.id === 'billboard') {
-    ctx.fillStyle = t.ink; ctx.fillRect(m, h * .13, w - m * 2, h * .33);
-    text(title, m + gap, h * .15, w - m * 2 - gap * 2, h * .29, 105, t.bg);
-    text(subline, m, h * .49, w - m * 2, h * .10, 30, sub, '400');
+    ctx.fillStyle = bk ? bk.colorPrimary : t.ink; ctx.fillRect(m, h * .13, w - m * 2, h * .33);
+    text(title, m + gap, h * .15, w - m * 2 - gap * 2, h * .29, 105, bk ? '#ffffff' : t.bg, '800', HEAD);
+    text(subline, m, h * .49, w - m * 2, h * .10, 30, subColor, '400');
     bodyY = h * .62; bodyH = h * .23;
     if (asset) { photo(w * .67, h * .49, w * .265, h * .36); bodyW = w * .56; }
   } else if (t.id === 'magazine') {
-    text(title, m, h * .12, w - m * 2, h * .16, 72);
+    text(title, m, h * .12, w - m * 2, h * .16, 72, ink, '800', HEAD);
     photo(m, h * .30, w - m * 2, h * .32);
-    text(subline, m, h * .65, w - m * 2, h * .08, 26, sub, '400');
+    text(subline, m, h * .65, w - m * 2, h * .08, 26, subColor, '400');
     bodyY = h * .75; bodyH = h * .12;
   } else if (t.id === 'agenda') {
-    text(title, m, h * .13, w - m * 2, h * .22, 84);
-    text(subline, m, h * .36, w - m * 2, h * .09, 28, sub, '400');
+    text(title, m, h * .13, w - m * 2, h * .22, 84, ink, '800', HEAD);
+    text(subline, m, h * .36, w - m * 2, h * .09, 28, subColor, '400');
     bodyY = h * .49; bodyH = h * .37;
     if (asset) { photo(w * .67, h * .49, w * .265, h * .37); bodyW = w * .56; }
   } else {
     photo(w * .48, h * .12, w * .455, h * .58);
-    text(title, m, h * .15, w * .38, h * .34, 68);
-    text(subline, m, h * .52, w * .36, h * .17, 27, sub, '400');
+    text(title, m, h * .15, w * .38, h * .34, 68, ink, '800', HEAD);
+    text(subline, m, h * .52, w * .36, h * .17, 27, subColor, '400');
     bodyY = h * .73; bodyH = h * .13;
   }
 
-  // Points: số trong pill tròn accent + đường kẻ mảnh
   const rowH = bodyH / Math.max(points.length, 1);
   points.forEach((p, i) => {
     const y = bodyY + i * rowH;
@@ -129,28 +145,32 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
     const r = Math.min(rowH * .3, 22, w * .028);
     const cx = bodyX + r, cy = centerY;
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = t.accent; ctx.fill();
-    ctx.fillStyle = onAccent; ctx.font = `700 ${Math.round(r * 1.05)}px ${FONT}`;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = ACCENT; ctx.fill();
+    ctx.fillStyle = onAccent; ctx.font = `700 ${Math.round(r * 1.05)}px ${HEAD}`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(String(i + 1), cx, cy + 1);
     ctx.restore();
     const textX = bodyX + r * 2 + gap;
-    text(p, textX, centerY - rowH * .36, bodyW - r * 2 - gap, rowH * .72, 28, ink, '500');
+    text(p, textX, centerY - rowH * .36, bodyW - r * 2 - gap, rowH * .72, 28, ink, '500', BODY);
   });
 
-  // CTA pill gọn + badge ưu đãi
+  // Dòng liên hệ (SĐT/Zalo/địa chỉ) ngay trên CTA
+  const cline = contactLine(bk?.contact);
   const ctaH = Math.min(h * .058, 76);
   const ctaY = h - m - ctaH;
-  ctx.save(); ctx.font = `700 ${Math.round(h * .024)}px ${FONT}`;
+  if (cline) {
+    text(cline, m, ctaY - h * .035, w - m * 2, h * .03, 19, bgImg ? 'rgba(255,255,255,0.9)' : t.ink, '500', BODY);
+  }
+
+  ctx.save(); ctx.font = `700 ${Math.round(h * .024)}px ${HEAD}`;
   const ctaLabel = copy.cta || '';
   const ctaW = Math.min(Math.max(ctx.measureText(ctaLabel).width + gap * 3.2, w * .32), w * .55);
   ctx.restore();
-  ctx.save(); ctx.beginPath(); ctx.roundRect(m, ctaY, ctaW, ctaH, ctaH / 2); ctx.fillStyle = t.accent; ctx.fill(); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.roundRect(m, ctaY, ctaW, ctaH, ctaH / 2); ctx.fillStyle = ACCENT; ctx.fill(); ctx.restore();
   ctx.save();
-  ctx.fillStyle = onAccent; ctx.font = `700 ${Math.round(h * .024)}px ${FONT}`;
+  ctx.fillStyle = onAccent; ctx.font = `700 ${Math.round(h * .024)}px ${HEAD}`;
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.fillText(ctaLabel, m + gap * 1.3, ctaY + ctaH / 2);
-  // mũi tên
   const ax = m + ctaW - gap * 1.6, ay = ctaY + ctaH / 2;
   ctx.strokeStyle = onAccent; ctx.lineWidth = Math.max(2, h * .003); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(ax - 10, ay); ctx.lineTo(ax, ay); ctx.moveTo(ax - 5, ay - 5); ctx.lineTo(ax, ay); ctx.lineTo(ax - 5, ay + 5); ctx.stroke();
@@ -158,16 +178,16 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
 
   if (state.offer) {
     ctx.save();
-    ctx.font = `700 ${Math.round(h * .021)}px ${FONT}`;
+    ctx.font = `700 ${Math.round(h * .021)}px ${BODY}`;
     const label = 'Ưu đãi: ' + state.offer;
     const ow = Math.min(ctx.measureText(label).width + gap * 2.4, w - m * 2 - ctaW - gap);
     const ox = m + ctaW + gap, oy = ctaY, oh = ctaH;
     ctx.beginPath(); ctx.roundRect(ox, oy, ow, oh, oh / 2);
-    ctx.fillStyle = bgImg ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.06)';
+    ctx.fillStyle = bk ? SECONDARY : (bgImg ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.06)');
     ctx.fill();
-    ctx.lineWidth = Math.max(1.5, h * .0016); ctx.strokeStyle = t.accent; ctx.stroke();
+    ctx.lineWidth = Math.max(1.5, h * .0016); ctx.strokeStyle = ACCENT; ctx.stroke();
     ctx.beginPath(); ctx.rect(ox, oy, ow, oh); ctx.clip();
-    ctx.fillStyle = bgImg ? '#ffffff' : t.ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = bk ? '#ffffff' : (bgImg ? '#ffffff' : t.ink); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillText(label, ox + gap * 1.1, oy + oh / 2);
     ctx.restore();
   }

@@ -169,7 +169,7 @@ async function runAllTests() {
 
     assert.strictEqual(metaB.categoryId, 'property', 'Switched to property');
     assert.strictEqual(metaB.image, '', 'Property should start with clean main image');
-    assert.ok(metaB.bgUrl.includes('property'), 'Property gets default property background');
+    assert.strictEqual(metaB.bgUrl, '', 'Property should start with clean empty background URL per clean defaults');
 
     // 2. Chuyển từ B quay lại A (recruitment)
     const { state: persistedB } = await persistStateAssets(metaB, { driver });

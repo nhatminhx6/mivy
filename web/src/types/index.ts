@@ -29,6 +29,31 @@ export interface PosterTheme {
   tagText: string;
 }
 
+export type BrandVoice = 'than-thien' | 'chuyen-nghiep' | 'nang-dong' | 'sang-trong';
+
+export interface BrandContact {
+  phone?: string;
+  zalo?: string;
+  address?: string;
+  website?: string;
+  facebook?: string;
+}
+
+export interface BrandKit {
+  name: string;
+  slogan?: string;
+  logo?: string;            // dataURL user upload
+  colorPrimary: string;     // màu chủ đạo (nền khối)
+  colorSecondary: string;   // màu phụ phối cùng
+  colorAccent: string;      // nhấn (CTA, số thứ tự, badge)
+  colorInk: string;         // chữ chính
+  colorSurface: string;     // nền sáng
+  fontHeadingId: string;    // font tiêu đề
+  fontBodyId: string;       // font nội dung
+  voice: BrandVoice;
+  contact?: BrandContact;
+}
+
 export interface FactItem {
   id: string;
   source_excerpt: string;
@@ -76,6 +101,7 @@ export interface MarketingState {
   facts?: FactItem[];
   storyPage?: number;
   storyPerPage?: number;
+  brandKit?: BrandKit;
   copies: Record<PosterKind, CopyItem>;
 }
 

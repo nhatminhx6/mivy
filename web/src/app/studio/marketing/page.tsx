@@ -11,8 +11,8 @@ import { IndustryForm } from '@/components/marketing/IndustryForm';
 import { TemplateLibrary } from '@/components/marketing/TemplateLibrary';
 import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
 import { CATEGORY_SAMPLES } from '@/lib/category-samples';
-import { persistStateAssets, resolveStateAssets } from '@/lib/asset-store';
-import { switchIndustry, saveIndustryDraft } from '@/lib/industry-drafts';
+import { loadBrand } from '@/lib/brand-presets';
+import { DraftController } from '@/lib/draft-controller';
 
 // Nền gen sẵn ĐÚNG NỘI DUNG theo từng ngành (offline, 1 lần) — chọn tức thì, không gọi AI mỗi lần.
 // Danh sách ảnh THỰC TẾ đã gen theo từng ngành (gen sẵn offline, không gọi AI mỗi lần).
@@ -140,124 +140,34 @@ export default function MarketingStudioPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [previewKind]);
 
-  const activeSwitchTokenRef = useRef(0);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Khởi tạo shared production controller quản lý persistence và concurrency
+  const controllerRef = useRef<DraftController | null>(null);
+  if (!controllerRef.current) {
+    controllerRef.current = new DraftController({
+      initialState: state,
+      onStateChange: (next) => setState(next),
+      onStatusText: (text) => setStatusText(text),
+    });
+  }
 
-  // Load initial state from localStorage & resolve durable assets
+  // Load initial state from localStorage & resolve durable assets on mount
   useEffect(() => {
     let active = true;
-    const loadInitialState = async () => {
-      try {
-        const raw = localStorage.getItem('mivy-marketing-v1');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          // 1. Nạp metadata tức thì để giao diện không bị giật
-          if (active) {
-            setState((prev) => ({
-              ...prev,
-              ...parsed,
-              layoutMode: parsed.layoutMode || 'full_photo',
-            }));
-          }
-
-          // 2. Bất đồng bộ giải mã asset references từ Asset Store (IndexedDB)
-          const resolved = await resolveStateAssets(parsed);
-          if (active) {
-            setState((prev) => ({
-              ...prev,
-              ...resolved,
-              layoutMode: resolved.layoutMode || 'full_photo',
-            }));
-          }
-        }
-      } catch (e) {
-        console.warn('Lỗi nạp bản nháp ban đầu:', e);
-      }
-    };
-    loadInitialState();
+    controllerRef.current?.loadInitialDraft();
+    const b = loadBrand();
+    if (active && b) setState((prev) => ({ ...prev, brandKit: b }));
     return () => {
       active = false;
     };
   }, []);
 
-  // Save state on change: cập nhật in-memory ngay lập tức, persist asset bền vững vào IndexedDB
+  // Save state on change
   const saveState = (newState: MarketingState) => {
-    setState(newState);
-
-    if (typeof window === 'undefined') return;
-
-    // Lưu metadata nhanh (nếu storage cho phép) để chống mất text nếu reload ngay
-    try {
-      localStorage.setItem('mivy-marketing-v1', JSON.stringify(newState));
-    } catch {
-      // Bỏ qua nếu dữ liệu in-memory tạm thời lớn, async persist bên dưới sẽ nén gọn thành asset ref
-    }
-
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        const { state: persistedState, failedFields } = await persistStateAssets(newState);
-        if (failedFields.length > 0) {
-          setStatusText('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
-        }
-
-        try {
-          localStorage.setItem('mivy-marketing-v1', JSON.stringify(persistedState));
-          saveIndustryDraft(persistedState, localStorage);
-        } catch (err) {
-          setStatusText('Bản nháp chưa lưu được vào trình duyệt. Anh giữ nguyên ngành hiện tại và tải nội dung trước.');
-        }
-      } catch (err) {
-        console.warn('[saveState] Lỗi lưu asset:', err);
-      }
-    }, 150);
+    controllerRef.current?.saveState(newState);
   };
 
-  const changeCategory = async (categoryId: string) => {
-    const category = CATEGORIES.find((c) => c.id === categoryId);
-    if (!category) return;
-    const currentCatId = state.categoryId || (state.industry === 'general' ? 'retail' : state.industry);
-    if (currentCatId === categoryId) return;
-
-    const token = ++activeSwitchTokenRef.current;
-    const storage = typeof window !== 'undefined' ? window.localStorage : undefined;
-
-    // 1. Lưu assets của ngành hiện tại vào Asset Store (IndexedDB)
-    let currentWithRefs = state;
-    try {
-      const persistRes = await persistStateAssets(state);
-      currentWithRefs = persistRes.state;
-      if (persistRes.failedFields.length > 0) {
-        setStatusText('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
-      }
-    } catch (err) {
-      console.warn('Lỗi persist assets trước khi chuyển ngành:', err);
-    }
-
-    // 2. Chuyển ngành metadata: lưu draft ngành cũ vào localStorage và đọc metadata ngành mới
-    const nextMeta = switchIndustry(currentWithRefs, category.id, category.industry, storage);
-
-    // 3. Phản hồi UI tức thì (Optimistic UI update)
-    setState(nextMeta);
-
-    // Lưu metadata mới nhất vào mivy-marketing-v1
-    try {
-      if (storage) {
-        storage.setItem('mivy-marketing-v1', JSON.stringify(nextMeta));
-      }
-    } catch {}
-
-    // 4. Bất đồng bộ giải mã asset references cho ngành mới (từ IndexedDB)
-    try {
-      const resolvedState = await resolveStateAssets(nextMeta);
-      // STALE GUARD: Nếu user đã click chuyển tiếp sang ngành khác trong thời gian giải mã, BỎ QUA!
-      if (activeSwitchTokenRef.current !== token) {
-        return;
-      }
-      setState(resolvedState);
-    } catch (err) {
-      console.warn('Lỗi giải mã asset cho ngành mới:', err);
-    }
+  const changeCategory = (categoryId: string) => {
+    controllerRef.current?.changeCategory(categoryId);
   };
 
   // Helper to load asset (image uploaded)
@@ -321,22 +231,23 @@ export default function MarketingStudioPage() {
     const version = ++renderVersion.current;
     await document.fonts.ready;
     const assetUrl = state.cutout || state.image || '';
-    const [asset, bgImg] = await Promise.all([
+    const [asset, bgImg, logoImg] = await Promise.all([
       loadAsset(assetUrl),
       loadBgImg(state.backgroundImage || state.bgUrl || ''),
+      loadBgImg(state.brandKit?.logo || ''),
     ]);
     if (version !== renderVersion.current) return;
     assetRef.current = asset;
     bgImgRef.current = bgImg;
 
     if (canvasLaunchRef.current) {
-      drawIndustryPoster(canvasLaunchRef.current, state, 'launch', state.copies.launch, asset, bgImg);
+      drawIndustryPoster(canvasLaunchRef.current, state, 'launch', state.copies.launch, asset, bgImg, logoImg);
     }
     if (canvasStoryRef.current) {
-      drawIndustryPoster(canvasStoryRef.current, state, 'story', state.copies.story, asset, bgImg);
+      drawIndustryPoster(canvasStoryRef.current, state, 'story', state.copies.story, asset, bgImg, logoImg);
     }
     if (canvasActionRef.current) {
-      drawIndustryPoster(canvasActionRef.current, state, 'action', state.copies.action, asset, bgImg);
+      drawIndustryPoster(canvasActionRef.current, state, 'action', state.copies.action, asset, bgImg, logoImg);
     }
   };
 
@@ -432,7 +343,7 @@ export default function MarketingStudioPage() {
   // Trigger render on visual state changes
   useEffect(() => {
     renderAllCanvases();
-  }, [state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage]);
+  }, [state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit]);
 
   // Handle Form Submission (Generate copies via AI)
   const handleGenerate = async (e: React.FormEvent) => {
@@ -511,9 +422,10 @@ export default function MarketingStudioPage() {
     await document.fonts.ready;
     const assetUrl = snapshot.cutout || snapshot.image || '';
     const bgUrl = snapshot.backgroundImage || snapshot.bgUrl || '';
-    const [asset, bgImg] = await Promise.all([
+    const [asset, bgImg, logoImg] = await Promise.all([
       loadAsset(assetUrl),
       loadBgImg(bgUrl),
+      loadBgImg(snapshot.brandKit?.logo || ''),
     ]);
     if (assetUrl && !asset) throw new Error('Không thể tải ảnh chính. Vui lòng kiểm tra lại.');
     if (bgUrl && !bgImg) throw new Error('Không thể tải ảnh nền. Vui lòng kiểm tra lại.');
@@ -522,7 +434,7 @@ export default function MarketingStudioPage() {
       const c = document.createElement('canvas');
       c.width = 1080;
       c.height = snapshot.aspect === '1:1' ? 1080 : snapshot.aspect === '9:16' ? 1920 : 1350;
-      drawIndustryPoster(c, { ...snapshot, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg);
+      drawIndustryPoster(c, { ...snapshot, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg);
       return c;
     };
     return { snapshot, asset, bgImg, draw };

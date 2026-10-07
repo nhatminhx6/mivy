@@ -1958,7 +1958,8 @@ export function drawIndustryPoster(
   kind: PosterKind,
   rawCopy: CopyItem,
   asset: AssetInfo | null,
-  bgImg: CanvasImageSource | null = null
+  bgImg: CanvasImageSource | null = null,
+  logoImg: CanvasImageSource | null = null
 ) {
   const hMap: Record<AspectRatio, number> = { '1:1': 1080, '4:5': 1350, '9:16': 1920 };
   const h = hMap[marketing.aspect] || 1350;
@@ -1966,7 +1967,7 @@ export function drawIndustryPoster(
   canvas.height = h;
 
   if (marketing.conceptId && drawIndustryConcept(canvas, marketing, kind, rawCopy, asset, bgImg)) return;
-  if (drawCatalogPoster(canvas, marketing, kind, rawCopy, asset, bgImg)) return;
+  if (drawCatalogPoster(canvas, marketing, kind, rawCopy, asset, bgImg, logoImg)) return;
 
   const th = POSTER_THEMES[marketing.theme] || POSTER_THEMES.emerald_pro;
   const copy = rawCopy;

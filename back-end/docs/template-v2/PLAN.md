@@ -44,3 +44,6 @@ Contract và 6 concept đợt 1 đã có triển khai, nhưng chưa đạt nghi�
 - Ưu tiên sửa: PROPERTY_EDGE_REPAIR.md (nội dung ít/dài ở bất động sản), sau đó CONTACT_MIGRATION_QC.md (liên hệ trong bản nháp cũ).
 - QC còn lại: đối chiếu preview/PNG/ZIP cho concept mới, phân trang và hai lớp ảnh độc lập. ZIP legacy và PNG property VI/EN 4:5 mới được kiểm tra phạm vi hẹp.
 - Không chạy production build vào .next đang phục vụ dev; cache cũ đã được giữ khi khôi phục runtime.
+
+
+Checkpoint 2026-10-07 14:45 UTC: prioritize outstanding draft persistence races/durability before renderer expansion. Gemini follow-up active; see DRAFT_ASSET_REVIEW.md revision section and IMPLEMENTATION_STATUS.md. Overall acceptance unchanged.

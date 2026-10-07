@@ -49,6 +49,24 @@ function generateAssetId(): string {
   return `${ASSET_REF_PREFIX}${time}_${rand}`;
 }
 
+// Bộ nhớ đệm các asset đã được persist bền vững thành công (tránh nhân bản khi sửa chữ)
+const immutableAssetCache = new Map<string, string>();
+
+export function clearAssetCache(): void {
+  immutableAssetCache.clear();
+}
+
+function computeContentHash(data: string): string {
+  let h = 5381;
+  const len = data.length;
+  const step = Math.max(1, Math.floor(len / 128));
+  for (let i = 0; i < len; i += step) {
+    h = ((h << 5) + h) + data.charCodeAt(i);
+    h = h & h;
+  }
+  return `hash_${len}_${Math.abs(h).toString(36)}`;
+}
+
 // Mở IndexedDB an toàn
 function openDB(dbName: string = DEFAULT_ASSET_DB): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -72,6 +90,7 @@ function openDB(dbName: string = DEFAULT_ASSET_DB): Promise<IDBDatabase> {
 /**
  * Lưu chuỗi data URI vào Asset Store (IndexedDB).
  * Nếu đã là URL thông thường hoặc asset ref, trả về nguyên dạng.
+ * Tái sử dụng asset reference nếu cùng nội dung đã được persist thành công (tránh nhân bản khi sửa text).
  */
 export async function saveAsset(
   dataUri: string,
@@ -84,39 +103,42 @@ export async function saveAsset(
     return dataUri;
   }
 
+  const contentHash = computeContentHash(dataUri);
+  const cachedRef = immutableAssetCache.get(contentHash);
+  if (cachedRef && !customId) {
+    // Tái sử dụng ref đã persist thành công trước đó
+    return cachedRef;
+  }
+
   const id = customId || generateAssetId();
   const dbName = options?.dbName || DEFAULT_ASSET_DB;
 
   if (options?.driver) {
     await options.driver.set(id, dataUri);
+    // Chỉ cache khi driver đã lưu thành công
+    immutableAssetCache.set(contentHash, id);
     return id;
   }
 
-  try {
-    const db = await openDB(dbName);
-    return await new Promise<string>((resolve, reject) => {
-      try {
-        const tx = db.transaction(ASSET_STORE_NAME, 'readwrite');
-        const store = tx.objectStore(ASSET_STORE_NAME);
-        const record: AssetRecord = { id, data: dataUri, updatedAt: Date.now() };
-        const req = store.put(record);
+  const db = await openDB(dbName);
+  return await new Promise<string>((resolve, reject) => {
+    try {
+      const tx = db.transaction(ASSET_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(ASSET_STORE_NAME);
+      const record: AssetRecord = { id, data: dataUri, updatedAt: Date.now() };
+      store.put(record);
 
-        req.onsuccess = () => resolve(id);
-        req.onerror = () => reject(req.error || new Error('Lỗi ghi IndexedDB'));
-        tx.onabort = () => reject(tx.error || new Error('Transaction IndexedDB bị hủy'));
-      } catch (err) {
-        reject(err);
-      }
-    });
-  } catch (err) {
-    // Nếu môi trường không hỗ trợ IndexedDB, thử lưu vào in-memory fallback
-    if (typeof window === 'undefined' || !window.indexedDB) {
-      await inMemoryDriver.set(id, dataUri);
-      return id;
+      // RESOLVE TRÊN TRANSACTION COMPLETE (Lỗi 5): Đảm bảo dữ liệu đã thực sự commit vào đĩa
+      tx.oncomplete = () => {
+        immutableAssetCache.set(contentHash, id);
+        resolve(id);
+      };
+      tx.onerror = () => reject(tx.error || new Error('Lỗi transaction IndexedDB'));
+      tx.onabort = () => reject(tx.error || new Error('Transaction IndexedDB bị hủy'));
+    } catch (err) {
+      reject(err);
     }
-    // Ném lỗi để caller biết lưu thất bại, không tự nhận lưu thành công
-    throw err;
-  }
+  });
 }
 
 /**
@@ -156,13 +178,12 @@ export async function getAsset(
       }
     });
   } catch (err) {
-    if (typeof window === 'undefined' || !window.indexedDB) {
-      return await inMemoryDriver.get(refOrUrl);
-    }
     console.warn(`[AssetStore] Không thể đọc asset ${refOrUrl}:`, err);
     return null;
   }
 }
+
+export const IMAGE_FIELDS: (keyof MarketingState)[] = ['image', 'cutout', 'backgroundImage', 'bgUrl'];
 
 /**
  * Lưu toàn bộ các trường ảnh data URI trong state sang Asset Store.
@@ -176,9 +197,7 @@ export async function persistStateAssets(
   const result: MarketingState = { ...state };
   const failedFields: string[] = [];
 
-  const fields: (keyof MarketingState)[] = ['image', 'cutout', 'backgroundImage'];
-
-  for (const field of fields) {
+  for (const field of IMAGE_FIELDS) {
     const val = state[field];
     if (typeof val === 'string' && val.startsWith('data:')) {
       try {
@@ -205,10 +224,9 @@ export async function resolveStateAssets(
   options?: AssetStoreOptions
 ): Promise<MarketingState> {
   const result: MarketingState = { ...state };
-  const fields: (keyof MarketingState)[] = ['image', 'cutout', 'backgroundImage'];
 
   await Promise.all(
-    fields.map(async (field) => {
+    IMAGE_FIELDS.map(async (field) => {
       const val = state[field];
       if (typeof val === 'string' && isAssetRef(val)) {
         try {

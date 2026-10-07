@@ -2,19 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, Shapes } from 'lucide-react';
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const navItems = [
     { label: 'Tổng quan', href: '/studio', icon: LayoutDashboard },
+    { label: 'Thương hiệu', href: '/studio/brand', icon: Palette },
+    { label: 'Tạo logo', href: '/studio/logo', icon: Shapes },
     { label: 'Tạo quảng cáo', href: '/studio/marketing', icon: Sparkles },
     { label: 'Tạo ảnh', href: '/studio/image', icon: ImageIcon },
     { label: 'Chiến dịch', href: '/studio/drafts', icon: BookmarkCheck },
   ];
 
   const getBreadcrumb = () => {
+    if (pathname.includes('/logo')) return 'Tạo logo';
+    if (pathname.includes('/brand')) return 'Thương hiệu';
     if (pathname.includes('/marketing')) return 'Tạo quảng cáo';
     if (pathname.includes('/image')) return 'Tạo ảnh';
     if (pathname.includes('/drafts')) return 'Chiến dịch đã lưu';
