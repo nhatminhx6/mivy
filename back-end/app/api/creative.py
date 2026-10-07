@@ -19,8 +19,19 @@ from app.services.text_service import TextGenerationError
 
 router = APIRouter(prefix="/v1/creative", tags=["creative"])
 
-# Deterministic product backgrounds; creative scenes remain unavailable until validated.
-BACKGROUND_PRESETS = {"studio_white": "White background", "gradient": "Pastel gradient"}
+# Deterministic product backgrounds. These are text-to-image scenes generated
+# independently of the product, then the real product cutout is composited on top —
+# so the scene must stay empty (no objects) to avoid hallucinated clutter.
+BACKGROUND_PRESETS = {
+    "studio_white": (
+        "clean seamless white studio backdrop, soft gentle floor shadow, "
+        "smooth professional product photography lighting, empty scene, no objects"
+    ),
+    "gradient": (
+        "smooth soft pastel gradient studio backdrop, subtle floor shadow, "
+        "clean professional product photography lighting, empty scene, no objects"
+    ),
+}
 ASPECT_RATIOS = {"1:1", "4:5", "9:16"}
 
 

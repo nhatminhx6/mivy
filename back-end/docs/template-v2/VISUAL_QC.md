@@ -97,3 +97,117 @@ No local print job. Read only the known Antigravity conversation DB for attempt0
 
 ### 2026-09-30 03:11 UTC — recovered Gemini completion
 Resumed existing conversation3c674fcc-e683-4c19-886d-c4110f7c1faf, explicitly permitted provider finish while prohibiting new coding/tool work. Completed exit0/SUCCESS with full structured response and no timeout stderr, saved resume-completion/response.json. No duplicate job. Provider passed:true is self-report, NOT test evidence. Prior candidate03 visual rejection still applies; no integration or raster rerun. Remote completion uncertainty resolved; next bounded repair can proceed with finish-permitted prompt and existing contact/sparse QC findings. Product unchanged; overall NOT ACCEPTED.
+
+### 2026-10-04 03:00 UTC — completed recovered contact batch
+Recovered bounded Gemini patch runs/20260930-contact/change.patch, already integrated after source equality check in interrupted run. That run passed TypeScript and216 renderer cases and rendered/viewed recruitment-edge sheet: long contact now wraps legibly in square/4:5/9:16 without hiding cue. This heartbeat confirmed patch present, no active agent; regenerated/viewed normal VI/EN six-ratio sheet. No overlap in tested normal fixtures. Footer expands from .82 to .78 and contact box .04 to .10h; only no-image announcement branch affected. No duplicate model call or repeated tests. Evidence reports/recruitment-edge-20260929 and recruitment-ratios-20260929 now current. Available through /studio/marketing/review with Không dùng ảnh checked. Limitations: sparse design still weak, salary long-text readability unresolved, native font substitution/browser PNG-ZIP parity pending. Overall NOT ACCEPTED. Next prioritize property composition or actual browser parity; do not reissue contact patch.
+
+### 2026-10-04 09:58 UTC — property no-image architecture layout
+Gemini authored scoped replacement (runs/20261004-property/change.patch contains full source, not diff). Reviewed diff, source equality checked, integrated only property-architecture branch; prefix/suffix equality asserts other branches unchanged. Reviewer corrected amenities splitting to source newline contract and removed duplicate subline when equal to price. TypeScript/216 renderer cases passed; rendered/viewed six native VI/EN ratios in reports/property-ratios-20261004. Dedicated area/bedrooms tiles, address, price band and two amenities now visible, with remainder count and contact. No overlap in normal fixtures. Existing review route with Không dùng ảnh uses this layout. Limitations: edited copy.points not used in new field-based layout; needs explicit preservation QC/fix before acceptance, sparse/long data and browser export parity pending; native font substitution persists. Overall NOT ACCEPTED. Next prioritize edited point preservation, then sparse property coverage rather than additional palettes. No new assets/paid service.
+
+
+### 2026-10-04 10:59 UTC — property manual copy preservation
+Gemini authored bounded fix in runs/20261004-property-edits; integrated with source-snapshot equality and unique-hunk checks. Property architecture no-image now respects copy.pointsEdited, including an intentionally empty array, instead of repopulating source amenities. Reviewer scopes CONTENT/NỘI DUNG label to edited points; unedited source retains AMENITIES/TIỆN ÍCH. TypeScript and 216 renderer cases pass. Rendered and visually inspected six native PNGs via web/render-property-edits-qc.cjs, reports/property-edits-20261004: VI empty override removes amenities, EN three edited points displays two plus accurate one-item continuation in all three ratios. No overlap observed. Same renderer is used by /studio/marketing/review; exact override fixtures are script-based, not review-page presets. No new assets or paid API. Overall NOT ACCEPTED: native font substitution, sparse/long property input and real browser preview/PNG/ZIP parity remain unverified. Next bounded batch: property sparse/long visual audit before expanding scope.
+
+
+### 2026-10-05 01:52 UTC — recovered property edge audit
+Completed checkpoint for interrupted 2026-10-04 batch. Six actual native PNGs were rendered and visually inspected in reports/property-edge-20261004 using web/render-property-edge-qc.cjs. Sparse VI (title/contact only) FAIL: fixed slots leave most of canvas empty, especially 9:16. Long EN FAIL: area/bedroom values, amenities and contact become too small in square/4:5; no overlap observed, but readability is not acceptable. Source review confirms fixed fractional boxes and shrink-to-fit cause these failures. No active local Gemini print job; no implementation or model call this audit, no redundant unit rerun. Next scoped Gemini repair requirements saved in PROPERTY_EDGE_REPAIR.md. Existing review route uses same production renderer, but these exact edge fixtures are script-only, not UI presets. Overall NOT ACCEPTED; native Arial substitution and real browser export parity remain limitations. No new assets or paid services.
+
+
+### 2026-10-05 02:53 UTC — property repair provider timeout
+Dispatched one bounded Gemini PROPERTY_EDGE task through Antigravity, source and prompt saved in runs/20261005-property-edge. CLI reached 180-second print timeout with turn still in progress; response text empty despite SUCCESS envelope. No valid patch, no integration, no new test/render claims. Do not equate envelope status with completed work. No retry this batch and no fallback to Claude/paid API/Codex implementation. Existing property-edge raster failures remain current. Next check existing conversation completion before another dispatch to avoid duplicate remote work. Overall NOT ACCEPTED.
+
+
+### 2026-10-05 03:53 UTC — completion recovery still blocked
+No local agy print job before recovery. Resumed only existing conversation 72646388-8d38-4cba-bbac-a41e86279809 with finish-only request, explicitly disallowing new implementation. Again hit 180-second timeout; empty response despite SUCCESS envelope, exit0. Evidence in runs/20261005-property-edge/resume-completion. Completion remains unconfirmed; no patch to review, production unchanged, no new render/test claims. Do not repeatedly resume or dispatch duplicate property jobs while this state persists. Next requires provider health/completion evidence; retain current QC failures and prepared repair specification. No Claude/paid fallback. Overall NOT ACCEPTED.
+
+
+### 2026-10-05 04:54 UTC — blocker unchanged, no retry
+Read current plan/QC/checkpoint and inspected saved original/recovery responses: both still empty, no structured patch. No local agy print process. No new provider call or duplicate job; no product edits or repeated raster/tests. Previous visual failures remain current. Await independent provider recovery/completion evidence before dispatching implementation. User already notified; no additional action requested this heartbeat.
+
+
+### 2026-10-05 05:54 UTC — read-only provider inspection
+Inspected only the known conversation SQLite DB in read-only mode; recorded recent numeric step metadata and payload lengths in runs/20261005-property-edge/provider-check.json. Status enum is undocumented, so no completion claim or duplicate dispatch. Saved CLI responses remain empty; no patch available for integration. No provider invocation, product edits, or new visual/test claims. Existing raster QC failures stand. Blocker already reported to anh; keep retries backed off until a reliable completion/recovery signal.
+
+
+### 2026-10-05 06:56 UTC — incomplete provider artifact located
+Read-only inspection of the known conversation payload found a diff start in step4, but no complete fenced diff could be extracted. No candidate file saved or applied; this does not establish provider completion. Stop further payload inspection/retry this batch. Existing source and six edge-raster findings remain unchanged. No new model call, tests or aesthetic claims. Next implementation requires a complete returned artifact; avoid interpreting partial provider output as usable code.
+
+
+### 2026-10-05 07:56 UTC — implementation blocked; font-QC prerequisite checked
+No local Gemini print job; no new dispatch/resume or partial patch integration. Checked web/public and web/src for bundled woff/ttf/otf files: none found, so native Arial-alias raster evidence cannot be upgraded to actual-font parity from those project paths. Did not download assets, alter fonts or rerun identical renders. Existing property edge failures remain current. Await complete provider artifact; browser font/export verification remains independent outstanding work. Overall NOT ACCEPTED; blocker already notified, no new user action requested.
+
+
+### 2026-10-05 08:56 UTC — browser QC found missing Next assets
+Independent browser QC on /studio/marketing/review: HTTP200 document, but actual browser screenshot shows unstyled HTML and cards stuck at Đang render. Direct read-only requests for asset URLs from returned HTML confirm layout.css, main-app.js and app-pages-internals.js return404; webpack.js and review/page.js return200. Thus browser visual/export checks blocked by inconsistent served assets, not evidence that native renderer tests passed in browser. No server restart/cache deletion while process ownership is unverified; no product changes or Gemini retry. Next inspect dev-server ownership/configuration before safe recovery, then browser QC. Existing provider blocker remains. Overall NOT ACCEPTED.
+
+
+### 2026-10-05 09:58 UTC — dev/build cache conflict evidence
+Port3009 owned by next dev process26773 (parent26764/npm26728), cwd mivy/web, attached to user terminal ttys003. No next build or Gemini print process observed. Rechecked HTML-referenced assets: layout.css, main-app.js, app-pages-internals.js and app/studio/layout.js404; webpack.js/review page chunk200. .next/static/chunks contains production hashed main-app/webpack alongside dev webpack.js, while configuration uses default shared .next. This supports a mixed build/dev cache diagnosis (inference, not proof of the writer). Did not stop the user-terminal server or delete cache. Next safe recovery: coordinate exclusive server/cache ownership, preserve cache via rename, restart dev and recheck referenced assets; future build QC should use isolated output. No implementation/test/visual acceptance claimed. Provider blocker unchanged.
+
+
+### 2026-10-05 10:59 UTC — review runtime recovered
+Recovered broken dev runtime under existing authorization for reversible local fixes: verified sole MIVY dev process/no build job, stopped parent26764 gracefully, confirmed port free, renamed .next to .next-recovery-20261005-1059 without deleting it. npm unavailable in tool PATH; restarted using installed Node20.19.4 and Next CLI, session62715, port3009. All eight HTML-referenced CSS/JS requests now200. Real in-app browser review verified styled UI and all six cards marked Đã render · chưa duyệt thẩm mỹ; screenshot visually confirms recruitment/property canvases populated. No product source edit or Gemini retry. This resolves runtime blocker only: aesthetics NOT ACCEPTED, sparse/long property repair and actual PNG/ZIP parity remain outstanding. Backup cache retained; avoid running production build into live dev .next.
+
+
+### 2026-10-05 13:34 UTC — browser PNG sample inspected
+Opened real /studio/marketing/review; six cards rendered. Clicked property architecture PNG control. Browser automation download event timed out (no console errors), but expected qc-property-architecture-4x5.png was present in Downloads afterward; copied to reports/browser-png-20261005/property-vi-4x5.png and visually inspected. PNG1080x1350, Vietnamese accents, price/spec/address/amenity continuation/contact visible without overlap. File timestamp recorded by tool as 2026-10-05 21:11:23 local; no pre-click file baseline, so this is inspected browser-output evidence, not proof of download-event reliability or exact pixel parity. No product edits/model retry. ZIP, English, other ratios and long/sparse browser checks remain outstanding; overall NOT ACCEPTED. Existing provider timeout persists.
+
+
+### 2026-10-05 14:34 UTC — PNG download confirmed against baseline
+Saved Downloads pre-click metadata, then clicked property PNG on real review page. New qc-property-architecture-4x5 (1).png appeared,1080x1350/147836 bytes; saved confirmed PNG plus download-baseline.json/download-result.json in reports/browser-png-20261005. Byte-identical to previously visually inspected property-vi-4x5.png, so no redundant image inspection necessary. Confirms real download for this VI4:5 review fixture despite automation download-event timeout in prior run. Does not establish general preview pixel parity, main-studio export or ZIP. No product changes/Gemini retry; overall aesthetics NOT ACCEPTED. Next independent QC: main-studio export or English/long review fixture.
+
+
+### 2026-10-05 15:36 UTC — English browser PNG checked
+On real review page selected English (checked state verified), took pre-download baseline, exported property architecture4:5. New Downloads file (2).png copied to reports/browser-png-20261005/property-en-4x5.png and visually inspected: headline wraps into two lines; AREA/BEDROOMS/LOCATION/AMENITIES/contact and +2 continuation all visible, no overlap. Review sample brand remains Vietnamese by fixture design; this is not automatic brand translation. Confirms bounded EN browser render/download, not general pixel parity or ZIP. Product unchanged; Gemini not retried. Overall NOT ACCEPTED; long/sparse failures and provider completion issue remain.
+
+
+### 2026-10-05 16:42 UTC — real main-studio ZIP smoke check
+Opened main studio with existing local draft; did not edit fields or change template. Saved Downloads ZIP baseline, clicked Tải cả bộ ZIP; UI confirmed created/requested download. New mivy-marketing-pack-4x5.zip verified with zipfile.testzip(): no CRC errors,8 entries (three PNGs1080x1350, three captions, manifest, source). Metadata evidence saved reports/browser-png-20261005/zip-result.json. This draft had neither new concept selected, so this validates legacy current-draft ZIP delivery only, not six-concept export matrix, multi-page completeness, image-role parity or aesthetic approval. No visual inspection of ZIP PNGs yet. No implementation/provider retry. Overall NOT ACCEPTED.
+
+
+### 2026-10-05 22:29 UTC — actual ZIP images visually reviewed
+Extracted only the three known PNG entries from prior browser-downloaded ZIP into reports/browser-zip-20261005; viewed all three actual images. Text legible with Vietnamese accents and no visible overlap, but visual FAIL: all three repeat the same oversized title/list/CTA structure, substantial empty vertical space, and action image has no visible email/phone even though prior source input included recruitment email. Existing structured contact field was empty, so this needs source-to-contact mapping review rather than assuming export lost the field. ZIP integrity pass does not imply commercial usability. Legacy draft evidence only; no new-concept regression claim. No source edits, paid calls or provider retry. Next Gemini task after provider recovery should preserve explicit contact from source through mapping and action composition without overwriting manual copy; priority property repair remains pending. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 00:14 UTC — contact migration narrowed by source review
+IndustryForm.tsx initial recruitment mapping transfers legacy details wholesale into requirements and does not initialize contact. Matches observed empty contact warning despite email in raw JD; not proof of export dropping contact. Prepared CONTACT_MIGRATION_QC.md with conservative explicit-contact migration, existing/manual/clear preservation cases and required raster/export validation. No implementation or model dispatch while prior provider completion is unresolved. Existing ZIP raster evidence applies; no redundant tests. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 01:37 UTC — checkpoint consolidated
+Read current plan/status/QC; no local agy print process. Read-only known-conversation numeric metadata unchanged from prior baseline, so no new completion evidence and no retry. Updated obsolete PLAN current-step paragraph to reflect implemented-but-unaccepted six concepts, blocked property repair, queued contact migration and remaining export/image-role QC. No product edits, no repeated renders/tests; existing reports remain evidence. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 02:37 UTC — pagination source audit
+Read plan/checkpoints and traced main-studio page counts. For populated points, balancedPages and UI ceil use the same page count; different distribution is not a defect. Potential legacy fallback gap: ZIP totalStoryPages reads copies.story.points only, whereas catalog-renderer falls back to selected source facts/state.details when points empty. Thus a source-only draft may render fallback content but ZIP enumerate only one page. Static finding, not reproduced; do not claim verified loss. Next focused fixture: empty story.points with >3 source lines, compare UI/page enumeration/export before proposing Gemini fix. No source edits/provider retry or new raster claim; existing visual rejection remains.
+
+
+### 2026-10-06 03:38 UTC — fallback page-count discrepancy reproduced
+Added focused QC script web/verify-fallback-pages-qc.cjs. With legacy agenda template, empty copy.points and five source lines, actual extracted ZIP count code returns1 instead of2. Actual renderer manually given page2 renders lines4/5; viewed that PNG. Evidence reports/fallback-pages-20261006 (two native PNGs,result.json). Confirms count/renderer inconsistency at code-and-raster level, not an end-to-end browser ZIP reproduction. UI count uses same empty points length, so also needs unified content resolution. No production change/provider retry. Proposed Gemini repair: share resolved story items across renderer/UI/export, preserving intentional clears/manual edits and concept pagination. Overall NOT ACCEPTED; existing provider blocker remains.
+
+
+### 2026-10-06 04:38 UTC — export repair contract prepared
+No active local Gemini print process; did not resume unresolved provider job. Added STORY_SOURCE_REPAIR.md from confirmed fallback count discrepancy, defining shared source resolution, explicit-clear preservation, snapshot consistency, page clamping and focused acceptance cases. No additional product edits or repeated tests; prior raster evidence remains current. Prepared specification is not dispatched or implemented. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 14:17 UTC — Antigravity UI context recovered
+Read-only Antigravity app inspection shows Mivy Studio conversation3f16b73d-1489-49c4-a5a4-08346785b3e0 idle, Subagents0/Background Tasks0; selected model visibly Gemini3.8 Flash High. This is a DIFFERENT conversation from blocked CLI72646388, so it does not prove CLI completion. UI reports another user-requested category/localStorage fix on Oct5 affecting industry-drafts.ts and marketing/page.tsx, including dropping base64 images on save. Treat that report as unverified other-agent work; inspect diff before any integration. No prompt sent, no model/settings change, no restart/update. New next step: review existing draft persistence changes for image loss before further implementation; do not overwrite them. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 15:17 UTC — image draft loss confirmed
+Reviewed existing other-agent industry-drafts.ts change. sanitizeDraftState removes EVERY data URI, irrespective of size, both when saving current and reading saved drafts. Ran actual switchIndustry with in-memory storage (no user localStorage touched): recruitment with tiny main/background data URIs -> property -> recruitment loses both images, text preserved. Evidence reports/draft-image-loss-20261006.json. Functional regression against independent image/draft preservation; no need raster rerun to establish state loss. Do not revert unrelated category/quota fix. Required Gemini follow-up: retain assets in durable separate storage (e.g. IndexedDB) with references, preserve both image roles, surface storage failure instead of silently dropping; quota-safe switching and restore tests. No production edits/provider dispatch. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 16:20 UTC — asset persistence repair scoped
+Read main saveState as well as switchIndustry: main draft persistence also strips data URIs, so repair must cover reload and category roundtrip. Prepared DRAFT_ASSET_REPAIR.md with durable asset references, atomic migration, failure visibility, stale-restore guards and isolated browser QC. No implementation or dispatch; preserve other-agent changes. Previous state-loss reproduction remains valid; no redundant tests/renders. Overall NOT ACCEPTED.
+
+
+### 2026-10-06 23:45 UTC — UI delegation blocked by locked Mac
+Read checkpoint and attempted to inspect existing Antigravity window before dispatching independent draft-asset task (separate scope from stalled property renderer). Computer-use tool reports Mac locked and automatic unlock unavailable. No prompt sent, no new Gemini job, no source changes. Need unlocked Mac to verify selected Gemini/idle state and dispatch through authorized UI. Do not bypass lock or switch provider. Existing prepared DRAFT_ASSET_REPAIR.md remains undispatched; aesthetic/QC status unchanged.
+
+
+### 2026-10-07 01:48 UTC — Gemini UI asset task dispatched
+Mac unlocked. Verified Antigravity Mivy Studio conversation3f16b73d-1489-49c4-a5a4-08346785b3e0 idle, Gemini3.8 Flash High selected, zero subagents/background tasks. Sent bounded DRAFT_ASSET_REPAIR.md task through UI; user-message entry and Working/Cancel state confirm dispatch. Scope exclusively asset persistence/test, explicitly excludes stalled property renderer and production build into live .next. Requested DRAFT_ASSET_RESULT.md with actual tests/limitations; no paid API/Claude/destructive actions. Do not dispatch duplicate while this job runs. No completed implementation or QC claim yet; next inspect result/diff then isolated persistence/browser QC. Overall NOT ACCEPTED.
+
+
+### 2026-10-07 02:49 UTC — Gemini asset implementation review rejected
+DRAFT_ASSET_RESULT.md and source now present. Reviewed asset-store, industry-drafts and page lifecycle. Blocking findings in DRAFT_ASSET_REVIEW.md: guards too late for category switch; initial restore can overwrite edits; in-flight saves can commit stale state; fresh campaigns get sample content; quota fallback discards other drafts; legacy bgUrl excluded from asset persistence. Gemini-reported mock tests not independently accepted. Attempt to inspect UI before sending repair feedback blocked by locked Mac, so NO follow-up sent. No Codex source edits or render success claim; avoid treating implementation as integrated/approved. Overall NOT ACCEPTED.

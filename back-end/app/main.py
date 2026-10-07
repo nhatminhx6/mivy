@@ -1,13 +1,11 @@
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from app.api.creative import router as creative_router
 from app.api.generations import router as generations_router
@@ -107,12 +105,6 @@ def create_app(
     app.include_router(health_router)
     app.include_router(creative_router)
     app.include_router(generations_router)
-    web_dir = Path(__file__).parent.parent / "web"
-    app.mount("/ui", StaticFiles(directory=web_dir, html=True), name="ui")
-
-    @app.get("/", include_in_schema=False)
-    async def web_ui() -> RedirectResponse:
-        return RedirectResponse(url="/ui/")
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(_request: Request, exc: HTTPException) -> JSONResponse:

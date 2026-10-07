@@ -39,4 +39,8 @@ Preview thư viện không lấy JD tuyển dụng đang mở để minh họa b
 5. Không công bố đạt thương mại chỉ vì TypeScript hoặc canvas tests pass. Anh duyệt chất lượng hình ở bước cuối.
 
 ## Bước đang giao Gemini
-Thiết kế contract/schema và specification 6 concept đợt 1 trước. Sau đó code từng ngành theo contract, không sửa tất cả trong một patch khổng lồ.
+Contract và 6 concept đợt 1 đã có triển khai, nhưng chưa đạt nghiệm thu thẩm mỹ. Không mở đợt 2.
+- Đang chặn: phiên Gemini property-edge chưa trả artifact hoàn chỉnh; không dispatch trùng. Xem IMPLEMENTATION_STATUS.md.
+- Ưu tiên sửa: PROPERTY_EDGE_REPAIR.md (nội dung ít/dài ở bất động sản), sau đó CONTACT_MIGRATION_QC.md (liên hệ trong bản nháp cũ).
+- QC còn lại: đối chiếu preview/PNG/ZIP cho concept mới, phân trang và hai lớp ảnh độc lập. ZIP legacy và PNG property VI/EN 4:5 mới được kiểm tra phạm vi hẹp.
+- Không chạy production build vào .next đang phục vụ dev; cache cũ đã được giữ khi khôi phục runtime.

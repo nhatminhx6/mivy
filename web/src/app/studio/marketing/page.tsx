@@ -8,13 +8,38 @@ import { marketingZip } from '@/lib/marketing-zip';
 import { balancedPages } from '@/lib/balanced-pages';
 import { api } from '@/lib/api';
 import { IndustryForm } from '@/components/marketing/IndustryForm';
-import { CONCEPTS } from '@/lib/industry-concepts';
-import { switchIndustry } from '@/lib/industry-drafts';
 import { TemplateLibrary } from '@/components/marketing/TemplateLibrary';
-import { CATEGORIES } from '@/lib/template-catalog';
+import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
+import { CATEGORY_SAMPLES } from '@/lib/category-samples';
+import { persistStateAssets, resolveStateAssets } from '@/lib/asset-store';
+import { switchIndustry, saveIndustryDraft } from '@/lib/industry-drafts';
+
+// Nền gen sẵn ĐÚNG NỘI DUNG theo từng ngành (offline, 1 lần) — chọn tức thì, không gọi AI mỗi lần.
+// Danh sách ảnh THỰC TẾ đã gen theo từng ngành (gen sẵn offline, không gọi AI mỗi lần).
+const BG_FILES: Record<string, string[]> = {
+  recruitment: ['a', 'b', 'c', 'd'],
+  education: ['a', 'b', 'c', 'd'],
+  event: ['a', 'b', 'c', 'd'],
+  food: ['a', 'b', 'c'],
+  beauty: ['a', 'b', 'c', 'd'],
+  property: ['a', 'b', 'c', 'd'],
+  travel: ['a', 'b', 'c', 'd'],
+  retail: ['a', 'b', 'c', 'd'],
+  fitness: ['a', 'b', 'c', 'd'],
+  technology: ['a', 'b', 'c', 'd'],
+  personal: ['a', 'b', 'c', 'd'],
+  service: ['a', 'b', 'c', 'd'],
+};
+const INDUSTRY_BACKGROUNDS: Record<string, string[]> = Object.fromEntries(
+  Object.entries(BG_FILES).map(([k, arr]) => [k, arr.map((s) => `/backgrounds/${k}/${s}.jpg`)])
+);
+const bgsFor = (categoryId?: string): string[] =>
+  INDUSTRY_BACKGROUNDS[categoryId || 'retail'] || INDUSTRY_BACKGROUNDS.retail;
 
 const DEFAULT_MARKETING: MarketingState = {
   industry: 'recruitment',
+  categoryId: 'recruitment',
+  bgUrl: '/backgrounds/recruitment/a.jpg',
   name: 'Lead Fullstack Developer',
   goal: 'recruitment',
   details: '5+ năm kinh nghiệm kiến trúc hệ thống lớn\nLương 25 - 35 triệu + Thưởng dự án KPI\nLàm việc TP.HCM · Hybrid\nThành thạo ReactJS, Node.js, Python, PostgreSQL\nEmail: tuyendung@mivy.vn',
@@ -63,7 +88,6 @@ const DEFAULT_MARKETING: MarketingState = {
 export default function MarketingStudioPage() {
   const [state, setState] = useState<MarketingState>(DEFAULT_MARKETING);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isBgLoading, setIsBgLoading] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [copied, setCopied] = useState(false);
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
@@ -116,36 +140,124 @@ export default function MarketingStudioPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [previewKind]);
 
-  // Load initial state from localStorage
+  const activeSwitchTokenRef = useRef(0);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load initial state from localStorage & resolve durable assets
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mivy-marketing-v1');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setState((prev) => ({
-          ...prev,
-          ...parsed,
-          layoutMode: parsed.layoutMode || 'full_photo',
-        }));
+    let active = true;
+    const loadInitialState = async () => {
+      try {
+        const raw = localStorage.getItem('mivy-marketing-v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          // 1. Nạp metadata tức thì để giao diện không bị giật
+          if (active) {
+            setState((prev) => ({
+              ...prev,
+              ...parsed,
+              layoutMode: parsed.layoutMode || 'full_photo',
+            }));
+          }
+
+          // 2. Bất đồng bộ giải mã asset references từ Asset Store (IndexedDB)
+          const resolved = await resolveStateAssets(parsed);
+          if (active) {
+            setState((prev) => ({
+              ...prev,
+              ...resolved,
+              layoutMode: resolved.layoutMode || 'full_photo',
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn('Lỗi nạp bản nháp ban đầu:', e);
       }
-    } catch (e) {}
+    };
+    loadInitialState();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Save state on change
+  // Save state on change: cập nhật in-memory ngay lập tức, persist asset bền vững vào IndexedDB
   const saveState = (newState: MarketingState) => {
     setState(newState);
+
+    if (typeof window === 'undefined') return;
+
+    // Lưu metadata nhanh (nếu storage cho phép) để chống mất text nếu reload ngay
     try {
       localStorage.setItem('mivy-marketing-v1', JSON.stringify(newState));
     } catch {
-      setStatusText('Bản nháp chưa lưu được vào trình duyệt. Anh tải nội dung trước khi đóng trang hoặc giảm dung lượng ảnh.');
+      // Bỏ qua nếu dữ liệu in-memory tạm thời lớn, async persist bên dưới sẽ nén gọn thành asset ref
     }
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { state: persistedState, failedFields } = await persistStateAssets(newState);
+        if (failedFields.length > 0) {
+          setStatusText('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
+        }
+
+        try {
+          localStorage.setItem('mivy-marketing-v1', JSON.stringify(persistedState));
+          saveIndustryDraft(persistedState, localStorage);
+        } catch (err) {
+          setStatusText('Bản nháp chưa lưu được vào trình duyệt. Anh giữ nguyên ngành hiện tại và tải nội dung trước.');
+        }
+      } catch (err) {
+        console.warn('[saveState] Lỗi lưu asset:', err);
+      }
+    }, 150);
   };
 
-  const changeCategory = (categoryId:string) => {
-    const category=CATEGORIES.find(c=>c.id===categoryId);
-    if(!category) return;
-    try { const next=switchIndustry(state,category.id,category.industry,localStorage); saveState({...next,conceptId:next.conceptId || CONCEPTS.find(c=>c.category===category.id)?.id}); }
-    catch { setStatusText('Chưa lưu được bản nháp. Anh giữ nguyên ngành hiện tại và tải nội dung trước.'); }
+  const changeCategory = async (categoryId: string) => {
+    const category = CATEGORIES.find((c) => c.id === categoryId);
+    if (!category) return;
+    const currentCatId = state.categoryId || (state.industry === 'general' ? 'retail' : state.industry);
+    if (currentCatId === categoryId) return;
+
+    const token = ++activeSwitchTokenRef.current;
+    const storage = typeof window !== 'undefined' ? window.localStorage : undefined;
+
+    // 1. Lưu assets của ngành hiện tại vào Asset Store (IndexedDB)
+    let currentWithRefs = state;
+    try {
+      const persistRes = await persistStateAssets(state);
+      currentWithRefs = persistRes.state;
+      if (persistRes.failedFields.length > 0) {
+        setStatusText('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
+      }
+    } catch (err) {
+      console.warn('Lỗi persist assets trước khi chuyển ngành:', err);
+    }
+
+    // 2. Chuyển ngành metadata: lưu draft ngành cũ vào localStorage và đọc metadata ngành mới
+    const nextMeta = switchIndustry(currentWithRefs, category.id, category.industry, storage);
+
+    // 3. Phản hồi UI tức thì (Optimistic UI update)
+    setState(nextMeta);
+
+    // Lưu metadata mới nhất vào mivy-marketing-v1
+    try {
+      if (storage) {
+        storage.setItem('mivy-marketing-v1', JSON.stringify(nextMeta));
+      }
+    } catch {}
+
+    // 4. Bất đồng bộ giải mã asset references cho ngành mới (từ IndexedDB)
+    try {
+      const resolvedState = await resolveStateAssets(nextMeta);
+      // STALE GUARD: Nếu user đã click chuyển tiếp sang ngành khác trong thời gian giải mã, BỎ QUA!
+      if (activeSwitchTokenRef.current !== token) {
+        return;
+      }
+      setState(resolvedState);
+    } catch (err) {
+      console.warn('Lỗi giải mã asset cho ngành mới:', err);
+    }
   };
 
   // Helper to load asset (image uploaded)
@@ -358,25 +470,9 @@ export default function MarketingStudioPage() {
         },
       };
 
-      // If no photo uploaded yet, generate AI background
+      // Nền dùng template có sẵn (không gọi AI realtime). Chưa có nền nào thì gán mặc định.
       if (!state.image && !state.backgroundImage && !state.bgUrl) {
-        setStatusText('Đang tạo ảnh nền Visual AI…');
-        try {
-          const bgRes = await api('/v1/creative/background', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              industry: state.industry,
-              theme: state.theme,
-              aspect_ratio: state.aspect,
-            }),
-          });
-          if (bgRes?.url) {
-            updatedState.bgUrl = bgRes.url;
-          }
-        } catch (err) {
-          console.warn('Background generation fallback:', err);
-        }
+        updatedState.bgUrl = bgsFor(state.categoryId)[0] || '/backgrounds/recruitment/a.jpg';
       }
 
       saveState(updatedState);
@@ -390,27 +486,12 @@ export default function MarketingStudioPage() {
   };
 
   // Handle Visual AI Refresh
-  const handleRefreshBg = async () => {
-    setIsBgLoading(true);
-    try {
-      const res = await api('/v1/creative/background', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          industry: state.industry,
-          theme: state.theme,
-          aspect_ratio: state.aspect,
-          seed: Math.floor(Math.random() * 999999),
-        }),
-      });
-      if (res?.url) {
-        saveState({ ...state, bgUrl: res.url, backgroundImage: '', templateId: state.templateId || 'editorial' });
-      }
-    } catch (e: any) {
-      alert('Chưa đổi được nền AI: ' + e.message);
-    } finally {
-      setIsBgLoading(false);
-    }
+  // Đổi nền = xoay vòng qua ảnh có sẵn CỦA NGÀNH hiện tại (không gọi AI).
+  const handleRefreshBg = () => {
+    const bgs = bgsFor(state.categoryId);
+    const cur = bgs.indexOf(state.bgUrl || '');
+    const next = bgs[(cur + 1) % bgs.length] || bgs[0];
+    saveState({ ...state, bgUrl: next, backgroundImage: '', templateId: state.templateId || 'editorial' });
   };
 
   // Handle Image Upload
@@ -652,11 +733,10 @@ export default function MarketingStudioPage() {
           <button
             type="button"
             onClick={handleRefreshBg}
-            disabled={isBgLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isBgLoading ? 'animate-spin' : ''}`} />
-            <span>Đổi Nền AI</span>
+            <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Đổi nền</span>
           </button>
 
           {/* Aspect Ratio */}
@@ -762,12 +842,22 @@ export default function MarketingStudioPage() {
             <div className="space-y-4">
               <div className="rounded-xl border border-white/10 p-3 space-y-2">
                 <p className="font-bold text-white">Ảnh nền</p>
-                <p className="text-slate-400">Phủ phía sau để tạo không khí và chiều sâu.</p>
+                <p className="text-slate-400">Chọn nền mẫu có sẵn, hoặc tải ảnh của anh (sẽ tự làm mờ cho chữ nổi).</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {bgsFor(state.categoryId).map((url, i) => (
+                    <button key={url} type="button" title={`Nền ${i + 1}`}
+                      onClick={() => saveState({ ...state, bgUrl: url, backgroundImage: '' })}
+                      className={`aspect-video rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-emerald-500' : 'border-white/10 hover:border-white/30'}`}>
+                      <img src={url} alt={`Nền ${i + 1}`} className="w-full h-full object-cover"
+                        onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
+                    </button>
+                  ))}
+                </div>
                 {(state.backgroundImage || state.bgUrl) && <img src={state.backgroundImage || state.bgUrl} alt="Ảnh nền của anh" className="w-full h-24 object-cover rounded-lg" />}
                 <label className="block cursor-pointer text-emerald-400 py-2">Tải ảnh nền
                   <input aria-label="Tải ảnh nền" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => {
                     const file=e.target.files?.[0]; if(!file) return;
-                    const reader=new FileReader(); reader.onload=()=>saveState({...state,backgroundImage:reader.result as string,templateId:state.templateId || 'editorial'});reader.readAsDataURL(file);e.target.value='';
+                    const reader=new FileReader(); reader.onload=()=>saveState({...state,backgroundImage:reader.result as string,backgroundDim: state.backgroundDim ?? 45, backgroundBlur: state.backgroundBlur ?? 8, templateId:state.templateId || 'editorial'});reader.readAsDataURL(file);e.target.value='';
                   }} />
                 </label>
                 {(state.backgroundImage || state.bgUrl) && <>

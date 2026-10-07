@@ -1,0 +1,1 @@
+Finish the existing task now. Do not start new implementation, delegate, or access files/terminal. Return existing patch if already completed; otherwise patch empty and explain incomplete status. passed must be false since tests were not run. You may and should invoke provider finish tool to end this turn; this is the only permitted tool. Return the required JSON schema.

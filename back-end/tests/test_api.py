@@ -35,12 +35,6 @@ def test_health(client: TestClient) -> None:
     assert response.json() == {"status": "ok", "service": "mivy-backend"}
 
 
-def test_web_ui(client: TestClient) -> None:
-    response = client.get("/ui/")
-    assert response.status_code == 200
-    assert "Mivy Studio" in response.text
-
-
 def test_successful_image_upload(client: TestClient) -> None:
     response = client.post(
         "/v1/generations/images",

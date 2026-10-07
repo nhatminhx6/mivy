@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     product_model: str = "birefnet-general"
     visual_engine: str = "pollinations"
     pollinations_base_url: str = "https://image.pollinations.ai"
+    # Token cho provider gen ảnh (Pollinations/fal/Replicate/OpenAI/Google). Để trống = free tier.
+    image_gen_token: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

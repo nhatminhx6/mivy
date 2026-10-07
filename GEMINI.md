@@ -11,3 +11,24 @@
 - Chạy lệnh tự động trong sandbox, không hỏi xác nhận làm mất thời gian.
 - Backend chạy port 8000, Web chạy port 3009.
 - Không dùng API tính phí bên ngoài (0đ chi phí vận hành).
+
+## 3. Lệnh Chạy Dự Án (Run Commands)
+
+### Terminal 1 — Backend (Port 8000)
+```bash
+# Cách 1 (Khuyên dùng): Tự động bật Ollama + ComfyUI + Backend API
+cd back-end && sh scripts/run-local.sh
+
+# Cách 2: Chỉ chạy FastAPI Backend (nhẹ & reload khi sửa code)
+cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+- API Docs: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/health`
+
+### Terminal 2 — Frontend Next.js (Port 3009)
+```bash
+cd web && npm run dev
+```
+- Studio Marketing (giao diện chính): `http://localhost:3009/studio/marketing`
+- Studio Image: `http://localhost:3009/studio/image`
+

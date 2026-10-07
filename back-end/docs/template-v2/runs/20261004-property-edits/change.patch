@@ -1,0 +1,28 @@
+--- web/src/lib/industry-renderer.ts
++++ web/src/lib/industry-renderer.ts
+@@ -254,15 +254,16 @@
+       if (addr) {
+         drawText(lang === 'en' ? 'LOCATION' : 'VỊ TRÍ', m, h * 0.52, w - m * 2, h * 0.03, w * 0.03, forest, '600');
+         drawText(addr, m, h * 0.55, w - m * 2, h * 0.05, w * 0.04, forest, '700');
+       }
+       
+-      if (fields.amenities) {
+-        drawText(lang === 'en' ? 'AMENITIES' : 'TIỆN ÍCH', m, h * 0.63, w - m * 2, h * 0.03, w * 0.03, forest, '600');
+-        const amns = fields.amenities.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
++      const amns = copy.pointsEdited ? (copy.points || []) : (fields.amenities ? fields.amenities.split(/\r?\n/).map(s => s.trim()).filter(Boolean) : []);
++      if (amns.length > 0) {
++        drawText(lang === 'en' ? 'CONTENT' : 'NỘI DUNG', m, h * 0.63, w - m * 2, h * 0.03, w * 0.03, forest, '600');
+         const amnsY = h * 0.67;
+         const amnsH = h * 0.035;
+         amns.slice(0, 2).forEach((am, i) => {
+           drawText(`• ${am}`, m, amnsY + i * amnsH, w - m * 2, amnsH * 0.9, w * 0.035, forest, '500');
+         });
+         if (amns.length > 2) {
+           const extra = amns.length - 2;
+-          const msg = lang === 'en' ? `+${extra} MORE...` : `+${extra} TIỆN ÍCH KHÁC...`;
++          const msg = lang === 'en' ? `+${extra} MORE IN DETAILS` : `+${extra} NỘI DUNG Ở TRANG CHI TIẾT`;
+           drawText(msg, m, amnsY + 2 * amnsH + h * 0.005, w - m * 2, amnsH * 0.9, w * 0.03, forest, '700');
+         }
+       }
+       
+       ctx.fillStyle = forest;

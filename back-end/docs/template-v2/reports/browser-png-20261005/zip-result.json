@@ -1,0 +1,30 @@
+[
+  {
+    "file": "mivy-marketing-pack-4x5.zip",
+    "crc_error": null,
+    "entries": [
+      "01-hero-poster.png",
+      "01-hero-caption.txt",
+      "02-story-poster.png",
+      "02-story-caption.txt",
+      "03-action-poster.png",
+      "03-action-caption.txt",
+      "manifest.json",
+      "source.txt"
+    ],
+    "pngs": {
+      "01-hero-poster.png": [
+        1080,
+        1350
+      ],
+      "02-story-poster.png": [
+        1080,
+        1350
+      ],
+      "03-action-poster.png": [
+        1080,
+        1350
+      ]
+    }
+  }
+]

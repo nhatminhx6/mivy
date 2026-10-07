@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-10-05T05:54:40Z",
+  "conversation_id": "72646388-8d38-4cba-bbac-a41e86279809",
+  "recent_step_metadata": [
+    [
+      4,
+      15,
+      3,
+      31947,
+      null
+    ],
+    [
+      3,
+      101,
+      3,
+      1176,
+      null
+    ],
+    [
+      2,
+      14,
+      3,
+      8588,
+      null
+    ],
+    [
+      1,
+      15,
+      3,
+      31362,
+      null
+    ],
+    [
+      0,
+      14,
+      3,
+      64583,
+      null
+    ]
+  ],
+  "interpretation": "Numeric status values undocumented; not evidence of completion. No payload or unrelated conversations read."
+}
