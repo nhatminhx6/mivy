@@ -47,3 +47,5 @@ Contract và 6 concept đợt 1 đã có triển khai, nhưng chưa đạt nghi�
 
 
 Checkpoint 2026-10-07 14:45 UTC: prioritize outstanding draft persistence races/durability before renderer expansion. Gemini follow-up active; see DRAFT_ASSET_REVIEW.md revision section and IMPLEMENTATION_STATUS.md. Overall acceptance unchanged.
+
+Checkpoint 2026-10-07 15:40 UTC: controller revision reviewed, asset cache integrity reproduction failed; follow-up pending unlocked Antigravity. See DRAFT_ASSET_REVIEW.md. No expansion.

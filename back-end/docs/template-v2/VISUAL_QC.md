@@ -219,3 +219,15 @@ Antigravity accessible; closed settings overlay without changing settings, verif
 
 ### 2026-10-07 14:45 UTC — revision reviewed, follow-up dispatched
 Independently ran verify-draft-asset-lifecycle-qc.cjs: 6/6 pass, but cases4–6 simulate copied handlers rather than executing production lifecycle; not acceptance evidence. Source review found cross-operation races (save→switch and edit→resolve), ignored outgoing quota failure, initial text edit leaving unresolved image refs, IDB request-success before transaction commit, implicit non-durable fallback and duplicated assets on each text save. Added detailed revision review to DRAFT_ASSET_REVIEW.md. Verified existing Antigravity conversation idle, Gemini3.8 Flash High, Background Tasks0; sent bounded persistence-only follow-up and observed Working/Cancel. Preserve concurrent brand/logo edits. No renderer changes, no new raster/PNG/ZIP or aesthetic acceptance this batch; prior visual failures remain. Next inspect Gemini result and actual production-path tests before isolated browser IDB/render QC. Do not duplicate active job. Overall NOT ACCEPTED.
+
+
+### 2026-10-07 15:40 UTC — controller revision still fails asset integrity
+Read revised production DraftController/asset-store/page integration. Reproduced sampled-hash collision (distinct input restores wrong image) and cross-driver cached reference missing in destination store using actual production functions; evidence reports/asset-cache-review-20261007.json. Source review also finds stale disk draft preferred over newer quota recovery, text edits abort target image resolution, brandKit state divergence, no dispose cleanup. Appended actionable review. Antigravity inspection blocked by locked Mac; no follow-up sent, no duplicate job, no source edits. No new render claim: persistence gate fails before browser/raster acceptance. Overall NOT ACCEPTED. Next dispatch review once UI accessible, then verify actual production-path tests and isolated browser rendering.
+
+
+### 2026-10-07 16:47 UTC — unchanged UI blocker
+Read PLAN, IMPLEMENTATION_STATUS and VISUAL_QC. One Antigravity availability check still reports locked Mac; no follow-up dispatched, no duplicate job or provider fallback. Controller review from15:40 remains pending. No product changes, redundant tests or new render evidence; overall NOT ACCEPTED. Resume by dispatching existing review after UI becomes accessible.
+
+
+### 2026-10-08 00:54 UTC — locked Mac, review pending
+Checkpoint read; single UI availability check still reports locked Mac. Existing controller review remains undispatched. No retry loop, new job, source edits, tests or render claims. Resume existing Gemini feedback when unlocked; overall NOT ACCEPTED.

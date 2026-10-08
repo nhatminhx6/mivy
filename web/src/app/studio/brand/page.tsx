@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import { Check, Upload, X, Palette, Phone, MessageCircle, MapPin, Globe, Facebook } from 'lucide-react';
 import { BrandKit } from '@/types';
 import { COLOR_PRESETS, FONT_PRESETS, VOICE_OPTIONS, DEFAULT_BRAND, fontFamilyById, contactLine, loadBrand, saveBrand } from '@/lib/brand-presets';
+import LogoMakerPage from '../logo/page';
 
 export default function BrandKitPage() {
   const [brand, setBrand] = useState<BrandKit>(DEFAULT_BRAND);
   const [saved, setSaved] = useState(false);
+  const [tab, setTab] = useState<'kit' | 'logo'>('kit');
 
   useEffect(() => { const b = loadBrand(); if (b) setBrand(b); }, []);
 
@@ -46,8 +48,14 @@ export default function BrandKitPage() {
         <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">THƯƠNG HIỆU</span>
         <h1 className="text-2xl font-black text-white mt-2">Bộ nhận diện thương hiệu</h1>
         <p className="text-slate-400 text-xs mt-1">Nhập một lần — mọi poster và ảnh sẽ tự dùng màu, font, logo, slogan và liên hệ của anh.</p>
+        <div className="flex gap-2 mt-4">
+          <button type="button" onClick={() => setTab('kit')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'kit' ? 'bg-emerald-500 text-slate-950' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>Nhận diện</button>
+          <button type="button" onClick={() => setTab('logo')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'logo' ? 'bg-emerald-500 text-slate-950' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>Tạo logo</button>
+        </div>
       </div>
 
+      {tab === 'logo' && <LogoMakerPage />}
+      {tab === 'kit' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Form */}
         <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-6 text-xs">
@@ -169,6 +177,7 @@ export default function BrandKitPage() {
           <p className="text-[11px] text-slate-500">Màu, font, logo, slogan và liên hệ này sẽ tự áp vào poster ở mục Tạo quảng cáo.</p>
         </div>
       </div>
+      )}
     </div>
   );
 }

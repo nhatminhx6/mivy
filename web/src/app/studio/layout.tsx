@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, Shapes } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette } from 'lucide-react';
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,7 +10,6 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
   const navItems = [
     { label: 'Tổng quan', href: '/studio', icon: LayoutDashboard },
     { label: 'Thương hiệu', href: '/studio/brand', icon: Palette },
-    { label: 'Tạo logo', href: '/studio/logo', icon: Shapes },
     { label: 'Tạo quảng cáo', href: '/studio/marketing', icon: Sparkles },
     { label: 'Tạo ảnh', href: '/studio/image', icon: ImageIcon },
     { label: 'Chiến dịch', href: '/studio/drafts', icon: BookmarkCheck },

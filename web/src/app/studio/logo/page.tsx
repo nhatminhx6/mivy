@@ -33,7 +33,8 @@ export default function LogoMakerPage() {
 
   useEffect(() => { const b = loadBrand(); if (b) setBrand(b); }, []);
 
-  // Tải icon AI thành dataURL (để preview + export không bị chặn).
+  // Gói đơn sắc → nhuộm theo màu thương hiệu; gói màu (emoji) giữ nguyên.
+  const MONO = ['carbon', 'tabler', 'fluentf', 'iconoir', 'phfill', 'majestic', 'solarbold'];
   useEffect(() => {
     if (iconStyle === 'line') { setIconDataUrl(''); return; }
     let active = true;
@@ -41,14 +42,13 @@ export default function LogoMakerPage() {
       try {
         const res = await fetch(aiIconPath(iconStyle, aiConcept));
         if (!res.ok) throw new Error();
-        const blob = await res.blob();
-        const r = new FileReader();
-        r.onload = () => { if (active) setIconDataUrl(r.result as string); };
-        r.readAsDataURL(blob);
+        let txt = await res.text();
+        if (MONO.includes(iconStyle)) txt = txt.replace(/#1f2937/gi, brand.colorPrimary);
+        if (active) setIconDataUrl('data:image/svg+xml;utf8,' + encodeURIComponent(txt));
       } catch { if (active) setIconDataUrl(''); }
     })();
     return () => { active = false; };
-  }, [iconStyle, aiConcept]);
+  }, [iconStyle, aiConcept, brand.colorPrimary]);
 
   const head = fontFamilyById(brand.fontHeadingId);
   const body = fontFamilyById(brand.fontBodyId);

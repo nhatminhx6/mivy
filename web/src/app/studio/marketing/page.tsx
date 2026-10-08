@@ -89,6 +89,7 @@ export default function MarketingStudioPage() {
   const [state, setState] = useState<MarketingState>(DEFAULT_MARKETING);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusText, setStatusText] = useState('');
+  const [step, setStep] = useState(1); // 1 chọn ngành · 2 nội dung · 3 xem & tải
   const [copied, setCopied] = useState(false);
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -168,6 +169,7 @@ export default function MarketingStudioPage() {
 
   const changeCategory = (categoryId: string) => {
     controllerRef.current?.changeCategory(categoryId);
+    setStep(2); // chọn ngành xong → sang bước nội dung
   };
 
   // Helper to load asset (image uploaded)
@@ -388,6 +390,7 @@ export default function MarketingStudioPage() {
 
       saveState(updatedState);
       setStatusText('');
+      setStep(3); // tạo xong → sang bước xem & tải
     } catch (err: any) {
       alert(err.message || 'Chưa tạo được nội dung. Anh thử lại nhé.');
     } finally {
@@ -570,7 +573,19 @@ export default function MarketingStudioPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      {/* Top Banner / Config Bar */}
+      {/* Stepper 3 bước */}
+      <div className="flex items-center gap-2 glass-panel p-2 rounded-2xl">
+        {[{ n: 1, t: 'Chọn ngành' }, { n: 2, t: 'Nội dung' }, { n: 3, t: 'Xem & tải' }].map((s) => (
+          <button key={s.n} type="button" onClick={() => setStep(s.n)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${step === s.n ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:bg-white/5'}`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? 'bg-slate-950/20' : 'bg-white/10'}`}>{s.n}</span>
+            <span className="hidden sm:inline">{s.t}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tinh chỉnh hiển thị (bước 3) */}
+      {step === 3 && (
       <div className="glass-panel p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -663,13 +678,20 @@ export default function MarketingStudioPage() {
           </select>
         </div>
       </div>
+      )}
 
-      <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
+      {step === 1 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-black text-white">Chọn ngành của anh</h2>
+          <p className="text-slate-400 text-sm">Bấm một ngành — Mivy điền sẵn nội dung mẫu, anh chỉ việc chỉnh.</p>
+          <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
+        </div>
+      )}
 
-      {/* Main Workspace Grid: Left Form + Center Canvases + Right Editor */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Brief Input Form (4 cols) */}
-        <div className="lg:col-span-4 glass-card p-6 rounded-2xl border border-white/10 space-y-5">
+      {/* Workspace: nội dung (bước 2) + xem & chỉnh (bước 3) */}
+      <div className="space-y-8">
+        {step === 2 && (
+        <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-5 max-w-2xl mx-auto">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Layers className="w-4 h-4 text-emerald-400" />
@@ -894,8 +916,10 @@ export default function MarketingStudioPage() {
           </div>
         </div>
 
-        {/* Center & Right Column: Posters Preview + Interactive Editor (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
+        )}
+
+        {step === 3 && (
+        <div className="space-y-6">
           {/* Canvases Selection Bar */}
           <div className="grid grid-cols-3 gap-4">
             {(['launch', 'story', 'action'] as PosterKind[]).map((kind) => (
@@ -1131,6 +1155,7 @@ export default function MarketingStudioPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Lightbox Fullscreen Preview Modal */}

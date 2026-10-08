@@ -1,0 +1,6 @@
+{
+  "differentInputs": true,
+  "sameReference": true,
+  "secondAssetRestoresWrongContent": true,
+  "crossDriverRefMissing": true
+}
