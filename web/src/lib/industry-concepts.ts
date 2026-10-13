@@ -66,13 +66,14 @@ export const EXAMPLES: Record<string, Record<string, string>> = {
 export function makeIndustryCopy(category: string, fields: Record<string, string>): CopyItem {
   const { __notes, ...visibleFields } = fields;
   const caption = Object.values(visibleFields).filter(Boolean).join('\n');
+  const splitLines = (s?: string) => (s ? s.split(/\r?\n|\r/).map((l) => l.trim()).filter(Boolean) : []);
   switch (category) {
     case 'recruitment': return { 
       headline: fields.role || '', 
       subline: fields.salary || '', 
       cta: '', 
       caption, 
-      points: (fields.requirements ? fields.requirements.split('\n') : []).concat(fields.benefits ? fields.benefits.split('\n') : []), 
+      points: splitLines(fields.requirements).concat(splitLines(fields.benefits)), 
       pointsEdited: false 
     };
     case 'property': return { 
@@ -80,7 +81,7 @@ export function makeIndustryCopy(category: string, fields: Record<string, string
       subline: fields.price || '', 
       cta: '', 
       caption, 
-      points: [fields.area,fields.address,fields.bedrooms,...(fields.amenities || '').split('\n')].filter(Boolean), 
+      points: [fields.area, fields.address, fields.bedrooms, ...splitLines(fields.amenities)].map((s) => (s || '').trim()).filter(Boolean), 
       pointsEdited: false 
     };
     case 'food': return { 
@@ -88,7 +89,7 @@ export function makeIndustryCopy(category: string, fields: Record<string, string
       subline: fields.price || '', 
       cta: '', 
       caption, 
-      points: [...(fields.description || '').split('\n'),fields.offer].filter(Boolean), 
+      points: [...splitLines(fields.description), fields.offer].map((s) => (s || '').trim()).filter(Boolean), 
       pointsEdited: false 
     };
     default: return { headline: '', subline: '', cta: '', caption: '', points: [], pointsEdited: false };

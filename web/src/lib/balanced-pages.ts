@@ -1,3 +1,14 @@
+import type { CopyItem, FactItem, MarketingState } from '../types';
+
+export const VALID_CONCEPT_IDS = [
+  'recruitment-announcement',
+  'recruitment-team',
+  'property-architecture',
+  'property-brochure',
+  'food-hero',
+  'food-menu',
+] as const;
+
 export function balancedPages<T>(items: readonly T[], maxPerPage: number = 3): T[][] {
   if (!Number.isFinite(maxPerPage) || maxPerPage <= 0 || !Number.isInteger(maxPerPage)) {
     throw new RangeError("maxPerPage must be a positive integer.");
@@ -40,3 +51,213 @@ export function pageAt<T>(pages: T[][], index: number): { items: T[]; index: num
     offset
   };
 }
+
+export function normalizePointList(input?: readonly (string | null | undefined)[] | string | null): string[] {
+  if (!input) return [];
+  const rawList = typeof input === 'string' ? [input] : Array.isArray(input) ? input : [];
+  const out: string[] = [];
+  for (const entry of rawList) {
+    if (typeof entry !== 'string') continue;
+    const lines = entry.split(/\r?\n|\r/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.length > 0) {
+        out.push(trimmed);
+      }
+    }
+  }
+  return out;
+}
+
+export function normalizePerPage(maxPerPage?: number | null): number {
+  const n = Number(maxPerPage);
+  if (Number.isInteger(n) && n > 0) return n;
+  return 3;
+}
+
+export function slicePages<T>(items: readonly T[], maxPerPage: number = 3): T[][] {
+  const perPage = normalizePerPage(maxPerPage);
+  if (items.length === 0) {
+    return [[]];
+  }
+  const pages: T[][] = [];
+  for (let i = 0; i < items.length; i += perPage) {
+    pages.push(items.slice(i, i + perPage));
+  }
+  return pages;
+}
+
+export function isValidIndustryConcept(
+  state?: Pick<MarketingState, 'conceptId' | 'categoryId'> | null
+): boolean {
+  const cId = state?.conceptId;
+  if (!cId || !(VALID_CONCEPT_IDS as readonly string[]).includes(cId)) {
+    return false;
+  }
+  if (state?.categoryId && !cId.startsWith(state.categoryId + '-')) {
+    return false;
+  }
+  return true;
+}
+
+export interface StorySourceStateLike {
+  conceptId?: string;
+  categoryId?: string;
+  details?: string;
+  facts?: readonly FactItem[] | null;
+  storyPage?: number;
+  storyPerPage?: number;
+  copies?: {
+    story?: CopyItem;
+    [key: string]: CopyItem | undefined;
+  };
+}
+
+export interface ResolvedStorySource {
+  isConcept: boolean;
+  items: string[];
+  perPage: number;
+  pages: string[][];
+  totalPages: number;
+  pageIndex: number;
+  pageItems: string[];
+  pageOffset: number;
+}
+
+const SNAPSHOT_ITEMS_KEY = '__resolvedStoryItems';
+
+export function resolveStoryPoints(
+  state?: StorySourceStateLike | null,
+  copy?: CopyItem | null
+): string[] {
+  const targetCopy = copy ?? state?.copies?.story ?? null;
+
+  if (targetCopy && Array.isArray((targetCopy as any)[SNAPSHOT_ITEMS_KEY])) {
+    return [...(targetCopy as any)[SNAPSHOT_ITEMS_KEY]];
+  }
+  if (!copy && state && Array.isArray((state as any)[SNAPSHOT_ITEMS_KEY])) {
+    return [...(state as any)[SNAPSHOT_ITEMS_KEY]];
+  }
+
+  // 1. Explicit manual points (including intentionally empty pointsEdited === true) take precedence.
+  if (targetCopy?.pointsEdited === true) {
+    return normalizePointList(targetCopy.points);
+  }
+
+  // 2. Industry-concept mode uses concept points without legacy details/facts fallback.
+  if (isValidIndustryConcept(state)) {
+    return normalizePointList(targetCopy?.points);
+  }
+
+  // 3. Unmigrated legacy drafts: nonempty copy.points -> selected facts -> nonblank details lines.
+  const copyPoints = normalizePointList(targetCopy?.points);
+  if (copyPoints.length > 0) {
+    return copyPoints;
+  }
+
+  const selectedFacts = Array.isArray(state?.facts)
+    ? normalizePointList(
+        state.facts
+          .filter((f): f is FactItem => Boolean(f && f.selected && typeof f.text === 'string'))
+          .map((f) => f.text)
+      )
+    : [];
+  if (selectedFacts.length > 0) {
+    return selectedFacts;
+  }
+
+  return normalizePointList(state?.details);
+}
+
+export function resolveStorySource(
+  state?: StorySourceStateLike | null,
+  copy?: CopyItem | null
+): ResolvedStorySource {
+  const targetCopy = copy ?? state?.copies?.story ?? null;
+  const isConcept = isValidIndustryConcept(state);
+  const items = resolveStoryPoints(state, targetCopy);
+  const perPage = normalizePerPage(state?.storyPerPage);
+  const pages = isConcept ? balancedPages(items, perPage) : slicePages(items, perPage);
+  const totalPages = pages.length;
+  const current = pageAt(pages, state?.storyPage ?? 0);
+
+  return {
+    isConcept,
+    items,
+    perPage,
+    pages,
+    totalPages,
+    pageIndex: current.index,
+    pageItems: current.items,
+    pageOffset: current.offset,
+  };
+}
+
+export function clampStoryPageInState<T extends StorySourceStateLike>(state: T): T {
+  if (!state || typeof state !== 'object') return state;
+  const resolved = resolveStorySource(state, state.copies?.story);
+  if ((state.storyPage ?? 0) === resolved.pageIndex) {
+    return state;
+  }
+  return {
+    ...state,
+    storyPage: resolved.pageIndex,
+  };
+}
+
+export function snapshotStoryState<T extends StorySourceStateLike>(snapshot: T): ResolvedStorySource {
+  const resolved = resolveStorySource(snapshot, snapshot?.copies?.story);
+  const frozenItems = Object.freeze([...resolved.items]);
+  if (snapshot && typeof snapshot === 'object') {
+    Object.defineProperty(snapshot, SNAPSHOT_ITEMS_KEY, {
+      value: frozenItems,
+      enumerable: false,
+      configurable: true,
+      writable: false,
+    });
+    if (snapshot.copies?.story) {
+      const nextStoryCopy: CopyItem = {
+        ...snapshot.copies.story,
+        points: [...resolved.items],
+      };
+      Object.defineProperty(nextStoryCopy, SNAPSHOT_ITEMS_KEY, {
+        value: frozenItems,
+        enumerable: false,
+        configurable: true,
+        writable: false,
+      });
+      snapshot.copies = {
+        ...snapshot.copies,
+        story: nextStoryCopy,
+      };
+    }
+  }
+  return resolved;
+}
+
+export function createExportSnapshot<T extends StorySourceStateLike>(liveState: T): {
+  snapshot: T;
+  storySource: ResolvedStorySource;
+} {
+  const snapshot = structuredClone(liveState);
+  const storySource = snapshotStoryState(snapshot);
+  return {
+    snapshot,
+    storySource,
+  };
+}
+
+export interface BalancedPagesFn {
+  <T>(items: readonly T[], maxPerPage?: number): T[][];
+  resolveStorySource: typeof resolveStorySource;
+  resolveStoryPoints: typeof resolveStoryPoints;
+  snapshotStory: typeof snapshotStoryState;
+  clampStoryPageInState: typeof clampStoryPageInState;
+  createExportSnapshot: typeof createExportSnapshot;
+}
+
+(balancedPages as BalancedPagesFn).resolveStorySource = resolveStorySource;
+(balancedPages as BalancedPagesFn).resolveStoryPoints = resolveStoryPoints;
+(balancedPages as BalancedPagesFn).snapshotStory = snapshotStoryState;
+(balancedPages as BalancedPagesFn).clampStoryPageInState = clampStoryPageInState;
+(balancedPages as BalancedPagesFn).createExportSnapshot = createExportSnapshot;

@@ -1,4 +1,4 @@
-import { balancedPages, pageAt } from './balanced-pages';
+import { resolveStorySource } from './balanced-pages';
 import { MarketingState, PosterKind, CopyItem, AssetInfo } from '../types';
 import { posterText } from './design-engine';
 import { POSTER_FONT } from './poster-font';
@@ -58,10 +58,11 @@ export function drawIndustryConcept(
     ctx.restore();
   };
 
-  const allPoints = copy.points || [];
+  const resolved = resolveStorySource(state, copy);
+  const allPoints = resolved.items;
   const isStory = kind === 'story';
-  const pages = balancedPages(allPoints, state.storyPerPage || 3);
-  const currentPage = pageAt(pages, state.storyPage || 0);
+  const pages = resolved.pages;
+  const currentPage = { items: resolved.pageItems, index: resolved.pageIndex, offset: resolved.pageOffset };
   const points = isStory ? currentPage.items : allPoints.slice(0,3);
   
   if (cId === 'food-menu' && !asset && !bgImg && kind !== 'story') {

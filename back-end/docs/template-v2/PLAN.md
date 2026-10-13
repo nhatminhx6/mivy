@@ -63,3 +63,9 @@ Checkpoint 2026-10-08 07:00 UTC: Gemini preparing isolated dev browser QC harnes
 Checkpoint 2026-10-08 07:58 UTC: native-browser harness exposed missing QC schema and false-positive inline fallback checks; Gemini repairing harness before further acceptance.
 
 Checkpoint 2026-10-08 09:01 UTC: isolated native IDB6/6 and actual page reload verified; restored main/background PNG inspected. Narrow persistence milestone only; aesthetic/VI-EN/export gates remain.
+
+Checkpoint 2026-10-13 06:40 UTC: provider reports prior story repair interrupted by server restart without edits. One bounded Gemini resume dispatched; await result and independent export QC, no scope expansion.
+
+Checkpoint 2026-10-13 09:46 UTC: legacy agenda source recovery confirmed in actual two-page ZIP PNGs ; standalone PNG byte parity failed and needs investigation;10 focused tests pass. Overall visual acceptance remains open.
+
+Checkpoint 2026-10-13 15:03 UTC: bounded preview/ZIP font-parity investigation dispatched to Gemini; await result and independent cold-browser QC. No scope expansion.

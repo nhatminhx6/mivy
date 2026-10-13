@@ -1,0 +1,14 @@
+{
+  "tests": "9/9 independently passed",
+  "browserConceptPages": [
+    3,
+    3,
+    2,
+    2
+  ],
+  "legacyStoryPngCount": 2,
+  "conceptStoryPngCount": 4,
+  "conceptPage4PngZipBytesEqual": false,
+  "visualFinding": "Concept page4 contains items9/10. Legacy page2 renders generic hero without details4/5; FAIL.",
+  "overallAccepted": false
+}

@@ -13,6 +13,7 @@ import {
   createDefaultIndustryState,
   DEFAULT_DRAFT_KEY,
 } from './industry-drafts';
+import { clampStoryPageInState } from './balanced-pages';
 
 export interface DraftControllerConfig {
   storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
@@ -163,8 +164,9 @@ export class DraftController {
    * Tách biệt Transition Ownership và Field-level Edits:
    * Không tăng activeSwitchToken ở đây để không làm gián đoạn resolution của target assets.
    */
-  public saveState(newState: MarketingState, delayMs = 150): void {
+  public saveState(rawNewState: MarketingState, delayMs = 150): void {
     if (this.isDisposed) return;
+    const newState = clampStoryPageInState(rawNewState);
     this.stateRevision++;
     const saveSeq = ++this.activeSaveSeq;
 

@@ -2,7 +2,9 @@ import { drawIndustryConcept } from './industry-renderer';
 import { drawCatalogPoster } from './catalog-renderer';
 import { drawSaleSticker } from './sticker-engine';
 import { drawSeasonDecor } from './season-engine';
-import { POSTER_FONT, setPosterFontFromState } from './poster-font';
+import { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady } from './poster-font';
+export { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady } from './poster-font';
+import { resolveStorySource } from './balanced-pages';
 import { AssetInfo, AspectRatio, CopyItem, IndustryId, MarketingState, PosterKind, PosterTheme, ThemeId } from '@/types';
 
 export const POSTER_THEMES: Record<ThemeId, PosterTheme> = {
@@ -807,17 +809,15 @@ export function drawRecruitmentStory(
 
   const m = 60, contentW = w - m * 2;
 
-  const labels = getPosterLabels(marketing, copy.headline + ' ' + (copy.points?.join(' ') || ''));
+  const resolved = resolveStorySource(marketing, copy);
+  const allPoints = resolved.items;
+  const labels = getPosterLabels(marketing, [copy.headline, copy.subline, ...allPoints, marketing.details].filter(Boolean).join(' '));
   const isEn = labels.isEn;
 
-  let allPoints = copy.points && copy.points.length ? copy.points : [copy.subline];
-  if (!allPoints[0]) allPoints = [isEn ? 'Hands-on production software experience.' : 'Kinh nghiệm làm việc thực tế với các dự án production.'];
-
-  const perPage = marketing.storyPerPage || 3;
-  const totalPages = Math.max(1, Math.ceil(allPoints.length / perPage));
-  const curPage = Math.min(totalPages - 1, Math.max(0, marketing.storyPage || 0));
-  const points = allPoints.slice(curPage * perPage, (curPage + 1) * perPage);
-  const startIdx = curPage * perPage;
+  const totalPages = resolved.totalPages;
+  const curPage = resolved.pageIndex;
+  const points = resolved.pageItems;
+  const startIdx = resolved.pageOffset;
 
   const pageLabel = totalPages > 1 ? (isEn ? `PAGE ${curPage + 1}/${totalPages}` : `TRANG ${curPage + 1}/${totalPages}`) : '';
   const badgeText = labels.storyTag(pageLabel);
@@ -849,7 +849,7 @@ export function drawRecruitmentStory(
   const footerY = h - 120;
   const availableH = footerY - startY - 20;
 
-  const cardH = (availableH - (points.length - 1) * 16) / points.length;
+  const cardH = points.length > 0 ? (availableH - (points.length - 1) * 16) / points.length : 0;
 
   points.forEach((point, i) => {
     const cy = startY + i * (cardH + 16);
@@ -1102,8 +1102,9 @@ export function drawEducationPoster(
   }
 
   const cardAreaH = footerY - currentY - 20;
-  const points = copy.points && copy.points.length ? copy.points.slice(0, 3) : ['Thông tin chi tiết khóa học.'];
-  const cardH = (cardAreaH - (points.length - 1) * 16) / points.length;
+  const resolvedEdu = resolveStorySource(marketing, copy);
+  const points = kind === 'story' ? resolvedEdu.pageItems : resolvedEdu.items.slice(0, 3);
+  const cardH = points.length > 0 ? (cardAreaH - (points.length - 1) * 16) / points.length : 0;
 
   points.forEach((pt, i) => {
     const cy = currentY + i * (cardH + 16);
@@ -1182,9 +1183,10 @@ export function drawServicePoster(
     currentY += subH + 20;
   }
 
-  const points = copy.points && copy.points.length ? copy.points.slice(0, 3) : ['Cam kết chất lượng dịch vụ chuẩn mực.'];
+  const resolvedSvc = resolveStorySource(marketing, copy);
+  const points = kind === 'story' ? resolvedSvc.pageItems : resolvedSvc.items.slice(0, 3);
   const cardAreaH = footerY - currentY - 20;
-  const cardH = (cardAreaH - (points.length - 1) * 16) / points.length;
+  const cardH = points.length > 0 ? (cardAreaH - (points.length - 1) * 16) / points.length : 0;
 
   points.forEach((pt, i) => {
     const cy = currentY + i * (cardH + 16);
@@ -1222,6 +1224,58 @@ export function drawGeneralModernPoster(
   const ctx = canvas.getContext('2d')!;
   drawBackground(ctx, w, h, th, bgImg);
   const m = 60, contentW = w - m * 2;
+
+  if (kind === 'story') {
+    const resolved = resolveStorySource(marketing, copy);
+    const points = resolved.pageItems;
+    const isEn = (marketing.outputLanguage === 'en') || isMostlyEnglish(copy.headline || marketing.details || '');
+    const badgeText = isEn
+      ? (resolved.totalPages > 1 ? `PAGE ${resolved.pageIndex + 1}/${resolved.totalPages} · HIGHLIGHTS` : 'HIGHLIGHTS')
+      : (resolved.totalPages > 1 ? `TRANG ${resolved.pageIndex + 1}/${resolved.totalPages} · ĐIỂM NỔI BẬT` : 'ĐIỂM NỔI BẬT');
+    const badgeW = 60 + badgeText.length * 11;
+    drawBadgePill(ctx, marketing.brand || marketing.name || 'MIVY STUDIO', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
+    drawBadgePill(ctx, badgeText, w - m - badgeW, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
+
+    const titleHeight = posterText(
+      ctx,
+      copy.headline || marketing.name || (isEn ? 'Key Highlights' : 'Điểm nổi bật'),
+      m,
+      180,
+      contentW,
+      h * 0.16,
+      h >= 1350 ? 56 : 44,
+      th.textPrimary,
+      '800',
+      `${POSTER_FONT()}`
+    );
+
+    const currentY = 180 + titleHeight + 20;
+    const footerY = h - 130;
+
+    if (points.length > 0) {
+      drawCheckCards(ctx, points, m, contentW, currentY, footerY - 20, th);
+    }
+
+    drawCard(ctx, m, footerY, 320, 80, 22, th.accent, null, true);
+    ctx.save();
+    ctx.font = `700 25px ${POSTER_FONT()}`;
+    ctx.fillStyle = th.accentText;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(copy.cta || (isEn ? 'Learn More' : 'Khám phá ngay'), m + 32, footerY + 40);
+    drawArrowIcon(ctx, m + 270, footerY + 28, 24, th.accentText);
+    ctx.restore();
+
+    if (marketing.offer) {
+      drawCard(ctx, m + 340, footerY, contentW - 340, 80, 22, th.cardHighlightBg, th.cardHighlightBorder);
+      ctx.save();
+      ctx.font = `700 24px ${POSTER_FONT()}`;
+      ctx.fillStyle = th.textPrimary;
+      ctx.textBaseline = 'middle';
+      ctx.fillText((isEn ? 'Offer: ' : 'Ưu đãi: ') + marketing.offer, m + 365, footerY + 40);
+      ctx.restore();
+    }
+    return;
+  }
 
   drawBadgePill(ctx, marketing.brand || marketing.name || 'MIVY STUDIO', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
   drawBadgePill(ctx, 'FEATURED CAMPAIGN', w - m - 260, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
@@ -1598,17 +1652,15 @@ export function drawFullPhotoRecruitmentStory(
 
   const m = 60, contentW = w - m * 2;
 
-  const labels = getPosterLabels(marketing, copy.headline + ' ' + (copy.points?.join(' ') || ''));
+  const resolved = resolveStorySource(marketing, copy);
+  const allPoints = resolved.items;
+  const labels = getPosterLabels(marketing, [copy.headline, copy.subline, ...allPoints, marketing.details].filter(Boolean).join(' '));
   const isEn = labels.isEn;
 
-  let allPoints = copy.points && copy.points.length ? copy.points : [copy.subline];
-  if (!allPoints[0]) allPoints = [isEn ? 'Hands-on production software experience.' : 'Kinh nghiệm làm việc thực tế với các dự án production.'];
-
-  const perPage = marketing.storyPerPage || 3;
-  const totalPages = Math.max(1, Math.ceil(allPoints.length / perPage));
-  const curPage = Math.min(totalPages - 1, Math.max(0, marketing.storyPage || 0));
-  const points = allPoints.slice(curPage * perPage, (curPage + 1) * perPage);
-  const startIdx = curPage * perPage;
+  const totalPages = resolved.totalPages;
+  const curPage = resolved.pageIndex;
+  const points = resolved.pageItems;
+  const startIdx = resolved.pageOffset;
 
   const pageLabel = totalPages > 1 ? (isEn ? `PAGE ${curPage + 1}/${totalPages}` : `TRANG ${curPage + 1}/${totalPages}`) : '';
   const badgeText = labels.storyTag(pageLabel);
@@ -1642,7 +1694,7 @@ export function drawFullPhotoRecruitmentStory(
   const footerY = h - 120;
   const availableH = footerY - startY - 20;
 
-  const cardH = (availableH - (points.length - 1) * 18) / points.length;
+  const cardH = points.length > 0 ? (availableH - (points.length - 1) * 18) / points.length : 0;
 
   points.forEach((point, i) => {
     const cy = startY + i * (cardH + 18);
@@ -1944,13 +1996,12 @@ export function drawFullPhotoGeneral(
   ctx.fillRect(0, 0, w, h);
 
   const m = 60, contentW = w - m * 2;
-  const isEn = marketing.outputLanguage === 'en';
+  const resolved = resolveStorySource(marketing, copy);
+  const labels = getPosterLabels(marketing, [copy.headline, copy.subline, ...resolved.items, marketing.details].filter(Boolean).join(' '));
+  const isEn = labels.isEn;
 
-  // Nội dung points (ưu tiên copy.points, fallback details)
-  let points = (copy.points || []).map((p) => (p || '').trim()).filter(Boolean);
-  if (!points.length && marketing.details) {
-    points = marketing.details.split('\n').map((s) => s.trim()).filter(Boolean);
-  }
+  // Nội dung points (đồng bộ qua shared story resolver)
+  const points = kind === 'story' ? resolved.pageItems : resolved.items;
 
   // Header: brand (trái) + nhãn loại poster (phải)
   drawBadgePill(ctx, marketing.brand || 'MIVY STUDIO', m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
@@ -1961,7 +2012,7 @@ export function drawFullPhotoGeneral(
   drawBadgePill(ctx, kindTag, w - m - tagW, 68, th.badgeBg, th.badgeBorder, th.accent);
 
   // ===== STORY: tiêu đề trên + danh sách điểm nổi bật =====
-  if (kind === 'story' && points.length) {
+  if (kind === 'story') {
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
     ctx.font = `700 20px ${POSTER_FONT()}`;
@@ -1975,7 +2026,7 @@ export function drawFullPhotoGeneral(
       h >= 1350 ? 52 : 42, '#ffffff', '800', `${POSTER_FONT()}`);
     ctx.restore();
 
-    drawCheckCards(ctx, points.slice(0, 4), m, contentW, 205 + titleH + 28, h - 120, th);
+    drawCheckCards(ctx, points, m, contentW, 205 + titleH + 28, h - 120, th);
     return;
   }
 

@@ -5,7 +5,7 @@ import { Sparkles, Download, Copy, FileText, RefreshCw, Upload, Check, Layers, I
 import { AssetInfo, AspectRatio, IndustryId, MarketingState, PosterKind, ThemeId, OutputLanguage, FactItem } from '@/types';
 import { POSTER_THEMES, drawIndustryPoster } from '@/lib/design-engine';
 import { marketingZip } from '@/lib/marketing-zip';
-import { balancedPages } from '@/lib/balanced-pages';
+import { balancedPages, resolveStorySource, clampStoryPageInState, normalizePointList } from '@/lib/balanced-pages';
 import { IndustryForm } from '@/components/marketing/IndustryForm';
 import { makeIndustryCopy } from '@/lib/industry-concepts';
 import { STICKER_PRESETS, getPreset } from '@/lib/sticker-engine';
@@ -174,7 +174,7 @@ export default function MarketingStudioPage() {
 
   // Save state on change
   const saveState = (newState: MarketingState) => {
-    getController().saveState(newState);
+    getController().saveState(clampStoryPageInState(newState));
   };
 
   const changeCategory = (categoryId: string) => {
@@ -344,6 +344,7 @@ export default function MarketingStudioPage() {
   const checkFactInPoster = (factText: string): boolean => {
     if (!factText) return false;
     const clean = factText.toLowerCase();
+    const resolvedStoryPts = resolveStorySource(state, state.copies.story).items;
     const searchCorpus = [
       state.copies.launch.headline,
       state.copies.launch.subline,
@@ -351,7 +352,7 @@ export default function MarketingStudioPage() {
       state.copies.launch.caption,
       state.copies.story.headline,
       state.copies.story.subline,
-      ...(state.copies.story.points || []),
+      ...resolvedStoryPts,
       state.copies.story.caption,
       state.copies.action.headline,
       state.copies.action.subline,
@@ -419,7 +420,7 @@ export default function MarketingStudioPage() {
           subline: state.offer || '',
           cta: 'Liên hệ ngay',
           caption: state.details || '',
-          points: (state.details || '').split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 3),
+          points: (state.details || '').split(/\r?\n|\r/).map((s) => s.trim()).filter(Boolean).slice(0, 3),
         };
         copies = { launch: { ...base }, story: { ...base }, action: { ...base } };
       }
@@ -465,6 +466,9 @@ export default function MarketingStudioPage() {
 
   const prepareExport = async () => {
     const snapshot = structuredClone(state);
+    const storySource = typeof balancedPages !== 'undefined' && (balancedPages as any).snapshotStory
+      ? (balancedPages as any).snapshotStory(snapshot)
+      : null;
     await document.fonts.ready;
     const assetUrl = snapshot.cutout || snapshot.image || '';
     const bgUrl = snapshot.backgroundImage || snapshot.bgUrl || '';
@@ -483,7 +487,7 @@ export default function MarketingStudioPage() {
       drawIndustryPoster(c, { ...snapshot, aspect, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg);
       return c;
     };
-    return { snapshot, asset, bgImg, draw };
+    return { snapshot, storySource, asset, bgImg, draw };
   };
 
   // Khổ xuất cho từng sàn (tên file dễ nhận biết)
@@ -497,10 +501,11 @@ export default function MarketingStudioPage() {
   const handleDownloadAllSizes = async () => {
     try {
       setStatusText('Đang xuất đủ 3 khổ...');
-      const { snapshot, draw } = await prepareExport();
+      const { snapshot, storySource, draw } = await prepareExport();
+      const targetPage = snapshot.selected === 'story' && storySource ? storySource.pageIndex : (snapshot.storyPage || 0);
       const files = [];
       for (const { aspect, label } of EXPORT_SIZES) {
-        const c = draw(snapshot.selected, snapshot.storyPage || 0, aspect);
+        const c = draw(snapshot.selected, targetPage, aspect);
         const blob = await new Promise<Blob | null>((r) => c.toBlob(r));
         if (!blob) throw new Error(`Lỗi xuất khổ ${aspect}.`);
         files.push({ name: `mivy-${snapshot.selected}-${label}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
@@ -526,8 +531,9 @@ export default function MarketingStudioPage() {
   const handleDownloadSingle = async () => {
     try {
       setStatusText('Đang xử lý ảnh...');
-      const { snapshot, draw } = await prepareExport();
-      const canvas = draw(snapshot.selected, snapshot.storyPage || 0);
+      const { snapshot, storySource, draw } = await prepareExport();
+      const targetPage = snapshot.selected === 'story' && storySource ? storySource.pageIndex : (snapshot.storyPage || 0);
+      const canvas = draw(snapshot.selected, targetPage);
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r));
       if (!blob) throw new Error('Không thể tạo ảnh PNG.');
       const url = URL.createObjectURL(blob);
@@ -563,9 +569,11 @@ export default function MarketingStudioPage() {
       });
 
       // 2. Story Carousel
-      const allStoryPoints = snapshot.copies.story.points || [];
+      const allStoryPoints = snapshot.copies.story.points
+        ? (balancedPages as any).resolveStorySource(snapshot, snapshot.copies.story).items
+        : (balancedPages as any).resolveStorySource(snapshot, snapshot.copies.story).items;
       const storyPerPage = snapshot.storyPerPage || 3;
-      const totalStoryPages = snapshot.conceptId ? balancedPages(allStoryPoints, storyPerPage).length : Math.max(1, Math.ceil(allStoryPoints.length / storyPerPage));
+      const totalStoryPages = (balancedPages as any).resolveStorySource(snapshot, snapshot.copies.story).totalPages;
 
       for (let p = 0; p < totalStoryPages; p++) {
         const canvasStory = draw('story', p);
@@ -1207,35 +1215,36 @@ export default function MarketingStudioPage() {
 
             {/* Carousel Pagination Controls for Story Poster */}
             {state.selected === 'story' && (() => {
-              const totalStoryPoints = state.copies.story.points?.length || 0;
-              const storyPerPage = state.storyPerPage || 3;
-              const totalStoryPages = Math.max(1, Math.ceil(totalStoryPoints / storyPerPage));
+              const storyResolved = resolveStorySource(state, state.copies.story);
+              const totalStoryPoints = storyResolved.items.length;
+              const totalStoryPages = storyResolved.totalPages;
+              const currentStoryPage = storyResolved.pageIndex;
               if (totalStoryPages <= 1) return null;
               return (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-emerald-400">Carousel Phân Trang:</span>
                     <span className="text-xs text-slate-300">
-                      Trang {(state.storyPage || 0) + 1} / {totalStoryPages} · ({totalStoryPoints} yêu cầu chuyên môn)
+                      Trang {currentStoryPage + 1} / {totalStoryPages} · ({totalStoryPoints} yêu cầu chuyên môn)
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      disabled={(state.storyPage || 0) <= 0}
-                      onClick={() => saveState({ ...state, storyPage: (state.storyPage || 0) - 1 })}
+                      disabled={currentStoryPage <= 0}
+                      onClick={() => saveState({ ...state, storyPage: Math.max(0, currentStoryPage - 1) })}
                       className="p-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-white disabled:opacity-40 transition-colors"
                       title="Trang trước"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <span className="text-xs font-mono font-bold text-white px-2">
-                      {(state.storyPage || 0) + 1} / {totalStoryPages}
+                      {currentStoryPage + 1} / {totalStoryPages}
                     </span>
                     <button
                       type="button"
-                      disabled={(state.storyPage || 0) >= totalStoryPages - 1}
-                      onClick={() => saveState({ ...state, storyPage: (state.storyPage || 0) + 1 })}
+                      disabled={currentStoryPage >= totalStoryPages - 1}
+                      onClick={() => saveState({ ...state, storyPage: Math.min(totalStoryPages - 1, currentStoryPage + 1) })}
                       className="p-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-white disabled:opacity-40 transition-colors"
                       title="Trang sau"
                     >
@@ -1257,7 +1266,7 @@ export default function MarketingStudioPage() {
                     value={currentCopy.headline}
                     onChange={(e) => {
                       const updated = { ...state.copies };
-                      updated[state.selected].headline = e.target.value;
+                      updated[state.selected] = { ...updated[state.selected], headline: e.target.value };
                       saveState({ ...state, copies: updated });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
@@ -1271,7 +1280,7 @@ export default function MarketingStudioPage() {
                     value={currentCopy.subline}
                     onChange={(e) => {
                       const updated = { ...state.copies };
-                      updated[state.selected].subline = e.target.value;
+                      updated[state.selected] = { ...updated[state.selected], subline: e.target.value };
                       saveState({ ...state, copies: updated });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
@@ -1285,25 +1294,28 @@ export default function MarketingStudioPage() {
                     value={currentCopy.cta}
                     onChange={(e) => {
                       const updated = { ...state.copies };
-                      updated[state.selected].cta = e.target.value;
+                      updated[state.selected] = { ...updated[state.selected], cta: e.target.value };
                       saveState({ ...state, copies: updated });
                     }}
                     className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
-                {state.selected !== 'launch' && currentCopy.points && (
+                {state.selected !== 'launch' && (
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">
                       Các tiêu chí (mỗi dòng một ý)
                     </label>
                     <textarea
                       rows={4}
-                      value={currentCopy.points.join('\n')}
+                      value={(state.selected === 'story' ? resolveStorySource(state, currentCopy).items : (currentCopy.points || [])).join('\n')}
                       onChange={(e) => {
                         const updated = { ...state.copies };
-                        updated[state.selected].pointsEdited = true;
-                        updated[state.selected].points = e.target.value.split('\n').filter(Boolean);
+                        updated[state.selected] = {
+                          ...updated[state.selected],
+                          pointsEdited: true,
+                          points: normalizePointList(e.target.value),
+                        };
                         saveState({ ...state, copies: updated });
                       }}
                       className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500 font-sans leading-relaxed"
@@ -1398,7 +1410,7 @@ export default function MarketingStudioPage() {
 
           {/* Central Image View with Navigation */}
           <div
-            className="relative flex-1 w-full max-w-5xl flex items-center justify-center my-3 overflow-hidden"
+            className="relative flex-1 w-full flex items-center justify-center my-3 min-h-0"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Prev Button */}
@@ -1415,7 +1427,7 @@ export default function MarketingStudioPage() {
             <img
               src={previewUrl}
               alt={posterNames[previewKind]}
-              className="max-h-[78vh] max-w-[85vw] object-contain rounded-2xl shadow-2xl border border-white/10 ring-1 ring-white/10 select-none"
+              className="max-h-full max-w-[82vw] object-contain rounded-2xl shadow-2xl border border-white/10 ring-1 ring-white/10 select-none"
             />
 
             {/* Next Button */}

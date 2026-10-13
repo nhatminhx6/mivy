@@ -443,3 +443,59 @@ Read required checkpoints. A single Antigravity availability check reports the M
 
 ### 2026-10-12 23:57 UTC — unchanged lock blocker
 Read required checkpoints; one Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, product edits or repeated tests/renders. Evidence unchanged; overall NOT ACCEPTED. Next action remains verifying an idle Gemini session after native access returns.
+
+
+### 2026-10-13 02:36 UTC — dispatched Gemini turn ended without a result
+Read required checkpoint files. Antigravity Mivy Studio shows the 08:33 local story-source request, an empty agent response marked Worked for 18s, idle composer, Gemini 3.8 Flash High and Background Tasks 0. STORY_SOURCE_RESULT.md is absent. Current files also no longer contain the prior 01:32 dispatch checkpoint, and STORY_SOURCE_REPAIR.md again says prepared; preserve this observed external workspace state rather than assuming prior edits survived. Git status includes marketing/layout/merch changes of unverified ownership; none modified in this batch. No usable repair or new test/render evidence verified. No automatic re-dispatch or provider fallback. Overall NOT ACCEPTED. Next: establish why the provider returned no result and reconcile current marketing changes before authorizing a narrow retry.
+
+
+### 2026-10-13 03:35 UTC — no provider result; workspace diff reconciled read-only
+Required checkpoints read. Mivy Studio still shows the same empty 18-second response, idle Gemini 3.8 Flash High and Background Tasks 0; no new provider outcome. Read-only diff review identifies existing marketing changes as preview sizing CSS and studio layout changes as merch navigation, not story-source repair. Additional mockup assets are present; all preserved. No repair re-dispatch, fallback, product edits or redundant tests/renders. Story-source repair remains unverified; overall NOT ACCEPTED. Provider failure cause remains unknown.
+
+
+### 2026-10-13 04:40 UTC — bounded provider diagnostic requested
+Required checkpoints read. Existing Gemini session was idle with Background Tasks 0 and unchanged empty repair response. Sent one diagnostic-only request to identify known tool/quota/context failure and whether prior tools or edits ran; explicitly prohibited implementation, file edits, model changes and retry loops. UI confirmed Working. Await diagnostic response; no repair retry or new QC evidence, overall NOT ACCEPTED.
+
+
+### 2026-10-13 05:35 UTC — diagnostic outcome inaccessible
+Read required checkpoints. One native Antigravity observation reports the Mac locked; diagnostic response and current job state cannot be verified. Do not duplicate the diagnostic or retry implementation. No product edits, new tests or render evidence; overall NOT ACCEPTED. Next action: read the existing diagnostic response after native access returns.
+
+
+### 2026-10-13 06:40 UTC — diagnostic received; one bounded resume
+Gemini diagnostic reports the prior repair ran read-only tools, changed zero files, then was interrupted by server/stream restart; underlying cause unknown. This is provider-reported diagnosis, not independently verified infrastructure evidence. Current session idle, Gemini 3.8 Flash High, Background Tasks 0. Authorized one bounded resume of STORY_SOURCE_REPAIR, explicitly preserving preview-sizing/merch/other changes and excluding old CLI property job; UI confirmed Working. No further retry if interrupted. Await STORY_SOURCE_RESULT.md, then independent tests and actual browser ZIP/PNG QC. Overall NOT ACCEPTED; no new render evidence.
+
+
+### 2026-10-13 07:42 UTC — independent tests pass, browser fixture fails
+Received STORY_SOURCE_RESULT.md. Independently ran verify-story-source-qc.cjs: 8/8 pass. Actual browser /studio/marketing/review/story-source shows legacy five lines as 3/2 and intentional clear as zero items/one page. Concept card uses invalid recruitment-editorial and visibly resolves legacy-sliced 3/3/3/1 instead of balanced 3/3/2/2. Source confirmed invalid fixture ID; report also has inaccurate concept IDs. Sent narrow fixture/report consistency correction to idle Gemini session (send clicked; execution state not yet confirmed). Do not duplicate; check response next. No PNG/ZIP acceptance or aesthetic acceptance yet. Overall NOT ACCEPTED.
+
+
+### 2026-10-13 08:42 UTC — browser PNG exposes missing legacy content
+Independent updated suite 9/9 passed; browser concept fixture now balanced 3/3/2/2. Downloaded real legacy/concept ZIPs and concept page4 PNG; saved archives, extracted images and qc.json under reports/story-browser-20261013. Inspected actual PNGs: concept page4 has items9/10; legacy Story page2 instead displays generic hero, no details4/5 despite correct two-page ZIP filenames. Fixture lacks templateId and uses general/event; sent narrow production-dispatch/fixture regression repair to idle Gemini, confirmed Working. ZIP count alone is insufficient. Overall NOT ACCEPTED; no commercial aesthetic/VI-EN acceptance. Next inspect Gemini result and repeat only failing raster path.
+
+
+### 2026-10-13 09:46 UTC — legacy content recovery verified in real ZIP PNGs
+Independent suite 10/10 passed, including production drawIndustryPoster agenda/generic content assertions. Browser agenda fixture downloaded again: both real ZIP Story PNGs visually inspected, page1 contains01–03, page2 contains04–05, no missing/duplicated source lines. Standalone page2 PNG byte-equals ZIP page2: False. Evidence: reports/story-browser-fixed-20261013 (ZIP, PNGs, qc.json). Narrow content/export recovery milestone only: sparse vertical spacing and page-local decorative numbering remain; no full aesthetics/VI-EN/ratio acceptance. Overall NOT ACCEPTED. Next: browser generic-path/intentional-clear confirmation, then return to priority concept visual gaps; preserve concurrent brand-assets/pricelist/merch work.
+
+
+### 2026-10-13 10:54 UTC — PNG mismatch is real typography, not encoding only
+Inspected standalone legacy page2 raster against prior ZIP raster. Headline width/body weight visibly differ. Decoded RGBA comparison via installed canvas runtime: 43,209 / 1,458,000 pixels differ, same1080x1350; saved pixel-parity.json. Font readiness/first-draw timing is a hypothesis, not confirmed root cause. Prepared STORY_FONT_PARITY_REPAIR.md. Native Antigravity check reports locked Mac, so no dispatch or duplicate job. Overall NOT ACCEPTED; no code edits or repeated suites. Next dispatch narrow font-parity investigation once idle Gemini is accessible.
+
+
+### 2026-10-13 12:04 UTC — unchanged lock blocker
+Required checkpoints read. Single native Antigravity check still reports locked Mac. STORY_FONT_PARITY_REPAIR.md remains prepared, not dispatched. No duplicate job, retry loop, product edits or redundant tests/renders. Existing pixel mismatch evidence remains unresolved; overall NOT ACCEPTED. Resume only after idle Gemini session can be verified.
+
+
+### 2026-10-13 13:07 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity observation still reports locked Mac. Font-parity repair remains undispatched. No duplicate job, provider fallback, product edits or repeated tests/renders. Pixel mismatch evidence and overall NOT ACCEPTED status unchanged. Next: verify idle Gemini after native access returns, then dispatch prepared repair.
+
+
+### 2026-10-13 14:08 UTC — unchanged lock blocker
+Required checkpoints read. Single Antigravity observation still reports locked Mac; prepared font-parity repair remains undispatched. No retry loop, duplicate job, provider fallback, product edits or redundant tests/renders. Existing pixel mismatch remains unresolved; overall NOT ACCEPTED. Next action unchanged: verify idle Gemini after native access returns and dispatch STORY_FONT_PARITY_REPAIR.md.
+
+
+### 2026-10-13 15:03 UTC — font parity repair dispatched
+Required checkpoints read. Native access restored; existing Gemini 3.8 Flash High session idle, Background Tasks 0. Dispatched one bounded STORY_FONT_PARITY_REPAIR investigation/fix with existing pixel evidence, preservation of concurrent work, snapshot-before-async and no external spending/build/deploy. UI confirmed Working. Await STORY_FONT_PARITY_RESULT.md then independent cold-browser pixel/raster QC. No new acceptance; overall NOT ACCEPTED; do not duplicate active job.
+
+
+### 2026-10-13 16:05 UTC — font repair outcome unavailable
+Required checkpoints read; STORY_FONT_PARITY_RESULT.md not present. One native Antigravity status observation timed out (Computer Use -10005), so current execution state is unknown. No duplicate dispatch, retry loop, provider fallback or product edits. Do not test partial work as a completed repair. Await accessible existing session/result before focused cold-browser QC. Overall NOT ACCEPTED; evidence unchanged.

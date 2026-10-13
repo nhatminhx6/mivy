@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, ShoppingBag, PanelTop, ListOrdered, Wand2, Package } from 'lucide-react';
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -10,15 +10,25 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
   const navItems = [
     { label: 'Tổng quan', href: '/studio', icon: LayoutDashboard },
     { label: 'Thương hiệu', href: '/studio/brand', icon: Palette },
+    { label: 'Bộ nhận diện', href: '/studio/brandpack', icon: Package },
+    { label: 'Banner sản phẩm', href: '/studio/product', icon: Wand2 },
     { label: 'Tạo quảng cáo', href: '/studio/marketing', icon: Sparkles },
+    { label: 'Vật phẩm', href: '/studio/merch', icon: ShoppingBag },
+    { label: 'Bìa & Avatar', href: '/studio/brand-assets', icon: PanelTop },
+    { label: 'Bảng giá', href: '/studio/pricelist', icon: ListOrdered },
     { label: 'Tạo ảnh', href: '/studio/image', icon: ImageIcon },
     { label: 'Chiến dịch', href: '/studio/drafts', icon: BookmarkCheck },
   ];
 
   const getBreadcrumb = () => {
     if (pathname.includes('/logo')) return 'Tạo logo';
+    if (pathname.includes('/brand-assets')) return 'Bìa & Avatar';
+    if (pathname.includes('/brandpack')) return 'Bộ nhận diện';
+    if (pathname.includes('/product')) return 'Banner sản phẩm';
+    if (pathname.includes('/pricelist')) return 'Bảng giá';
     if (pathname.includes('/brand')) return 'Thương hiệu';
     if (pathname.includes('/marketing')) return 'Tạo quảng cáo';
+    if (pathname.includes('/merch')) return 'Vật phẩm';
     if (pathname.includes('/image')) return 'Tạo ảnh';
     if (pathname.includes('/drafts')) return 'Chiến dịch đã lưu';
     if (pathname.includes('/lab')) return 'Phòng thử ảnh API';

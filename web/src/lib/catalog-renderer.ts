@@ -2,6 +2,7 @@ import { AssetInfo, CopyItem, MarketingState, PosterKind } from '@/types';
 import { TEMPLATES } from './template-catalog';
 import { posterText } from './design-engine';
 import { fontFamilyById, contactLine } from './brand-presets';
+import { resolveStorySource } from './balanced-pages';
 
 const DEFAULT_FONT = '"Be Vietnam Pro", sans-serif';
 
@@ -96,10 +97,10 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
   }
 
   const title = copy.headline || state.name;
-  const selected = state.facts?.filter(f => f.selected).map(f => f.text) || [];
-  const allPts = copy.points?.length ? copy.points : selected.length ? selected : state.details.split('\n').filter(Boolean);
+  const resolved = resolveStorySource(state, copy);
+  const allPts = resolved.items;
   const points = kind === 'story'
-    ? allPts.slice((state.storyPage || 0) * (state.storyPerPage || 3), ((state.storyPage || 0) + 1) * (state.storyPerPage || 3))
+    ? resolved.pageItems
     : allPts.slice(0, 3);
   const subline = (copy.subline && norm(copy.subline) !== norm(title) && norm(copy.subline) !== norm(points[0])) ? copy.subline : '';
 

@@ -1,0 +1,15 @@
+{
+  "independentTests": "10/10 passed",
+  "legacyStoryPages": 2,
+  "rasterInspected": [
+    "page1 items01-03",
+    "page2 items04-05"
+  ],
+  "singlePngEqualsZipPage2": false,
+  "aestheticAccepted": false,
+  "limitations": [
+    "large vertical gaps",
+    "page2 decorative numbering restarts1/2",
+    "VI 4:5 fixture only; generic path browser pending"
+  ]
+}
