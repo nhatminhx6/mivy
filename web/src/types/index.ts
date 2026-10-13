@@ -102,7 +102,22 @@ export interface MarketingState {
   storyPage?: number;
   storyPerPage?: number;
   brandKit?: BrandKit;
+  sticker?: StickerConfig;
+  season?: string; // id trong SEASON_PRESETS, 'none' = không trang trí
+  headingFontId?: string; // id trong FONT_PRESETS; override font cho poster
+  bodyFontId?: string;
+  borderWidth?: number; // px viền khung (0 = tắt). undefined = mặc định theo mẫu
+  borderRadius?: number; // px bo góc viền khung
+  borderColor?: string;
   copies: Record<PosterKind, CopyItem>;
+}
+
+export type StickerCorner = 'tl' | 'tr' | 'bl' | 'br';
+
+export interface StickerConfig {
+  preset: string; // id trong STICKER_PRESETS, 'none' = không dán
+  text: string;
+  corner: StickerCorner;
 }
 
 export interface AssetInfo {

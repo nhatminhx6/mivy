@@ -4,6 +4,22 @@ Hệ thống AI Visual Marketing & Studio Poster Design (0đ chi phí vận hàn
 
 ---
 
+## ⚡ Chạy Nhanh (2 Lệnh)
+
+```bash
+# 1) Frontend — đủ để dùng Studio Marketing (tạo poster 100% bằng code, KHÔNG cần backend/Ollama)
+cd web && npm run dev
+```
+
+```bash
+# 2) Backend — chỉ cần khi dùng Studio Image (gen ảnh sản phẩm qua ComfyUI)
+cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+→ Mở [http://localhost:3009/studio/marketing](http://localhost:3009/studio/marketing)
+
+---
+
 ## 🚀 Hướng Dẫn Chạy Dự Án (2 Terminal Riêng Biệt)
 
 ### Terminal 1 — Backend (Port 8000)

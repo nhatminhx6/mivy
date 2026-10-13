@@ -1,6 +1,7 @@
 import { balancedPages, pageAt } from './balanced-pages';
 import { MarketingState, PosterKind, CopyItem, AssetInfo } from '../types';
 import { posterText } from './design-engine';
+import { POSTER_FONT } from './poster-font';
 
 export function drawIndustryConcept(
   canvas: HTMLCanvasElement, 
@@ -96,7 +97,7 @@ export function drawIndustryConcept(
     const ctaText = copy.cta || (lang === 'en' ? 'VIEW MENU' : 'XEM THỰC ĐƠN');
 
     const measureWrap = (text: string, size: number, maxWidth: number) => {
-      ctx.font = `500 ${size}px "Be Vietnam Pro"`;
+      ctx.font = `500 ${size}px ${POSTER_FONT()}`;
       const paragraphs = text.split('\n');
       let lines: string[] = [];
       for (const p of paragraphs) {
@@ -142,7 +143,7 @@ export function drawIndustryConcept(
     const listBottom = h * 0.83;
     
     for (const size of sizes) {
-      ctx.font = `500 ${size}px "Be Vietnam Pro"`;
+      ctx.font = `500 ${size}px ${POSTER_FONT()}`;
       const lineHeight = size * 1.4;
       const padding = size * 1.0;
       
@@ -202,13 +203,10 @@ export function drawIndustryConcept(
     
     ctx.textBaseline = 'top';
     finalLayout.forEach((item, i) => {
-      if (i > 0) { 
-        currentY += finalSize * 0.5; 
-        ctx.fillStyle = 'rgba(38,58,44,0.15)'; 
-        ctx.fillRect(inset * 2, currentY, w - inset * 4, 1); 
-        currentY += finalSize * 0.5; 
+      if (i > 0) {
+        currentY += finalSize;
       }
-      ctx.font = `500 ${finalSize}px "Be Vietnam Pro"`;
+      ctx.font = `500 ${finalSize}px ${POSTER_FONT()}`;
       ctx.fillStyle = paperInk;
       item.lines.forEach((line) => {
         ctx.fillText(line, inset * 2, currentY);
@@ -219,7 +217,7 @@ export function drawIndustryConcept(
     if (hiddenCount > 0) {
       currentY += finalSize * 0.8;
       const cue = lang === 'en' ? `+${hiddenCount} MORE ON DETAIL PAGE` : `+${hiddenCount} NỘI DUNG Ở TRANG CHI TIẾT`;
-      ctx.font = `700 ${finalSize * 0.9}px "Be Vietnam Pro"`;
+      ctx.font = `700 ${finalSize * 0.9}px ${POSTER_FONT()}`;
       ctx.fillStyle = paperRust;
       ctx.fillText(cue, inset * 2, currentY);
       currentY += finalSize * 1.5;
@@ -280,8 +278,6 @@ export function drawIndustryConcept(
       const pointH = bodyH / Math.max(1, points.length);
       points.forEach((p, i) => {
         const py = bodyY + i * pointH;
-        ctx.fillStyle = brandInk; ctx.fillRect(m, py, w - m * 2, 1);
-        if (i === points.length - 1) ctx.fillRect(m, py + pointH * 0.95, w - m * 2, 1);
         drawText(p, m, py + pointH * 0.1, w - m * 2, pointH * 0.75, w * 0.04, ink, '500');
       });
     } else {
@@ -500,7 +496,6 @@ export function drawIndustryConcept(
     const bodyH = (h * 0.83) - bodyY;
     const pointH = asset ? bodyH / Math.max(1, points.length) : Math.min(bodyH / Math.max(1, points.length), h * 0.08);
     points.forEach((p, i) => {
-      ctx.fillStyle = brandInk; ctx.fillRect(m, bodyY + i * pointH, w - m * 2, 1);
       drawText(p, m, bodyY + i * pointH + h * 0.01, w - m * 2, pointH * 0.8, w * 0.035, ink, '600');
     });
     

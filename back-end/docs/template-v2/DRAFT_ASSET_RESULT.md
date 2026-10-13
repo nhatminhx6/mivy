@@ -1,87 +1,91 @@
-# Draft Asset Persistence Repair Result (Final Revision Review)
+# Draft Asset Persistence Repair Result (Revision 2026-10-08 03:59 UTC)
 
-## 1. Summary of 6 Blocking Paths Addressed (Revision 2026-10-07 14:45 UTC)
+## 1. Summary of Issues Addressed
 
-1. **Lỗi 1 (save→switch race condition)**:
-   - Trong `changeCategory`, ngay khi bắt đầu chuyển ngành: lập tức `clearTimeout(this.saveTimer)` và tăng `activeSaveSeq++`.
-   - Bất kỳ debounced save nào của ngành cũ đang chờ hoặc in-flight đều bị hủy bỏ ngay lập tức, không thể ghi đè metadata của ngành cũ vào `mivy-marketing-v1` sau khi ngành mới đã active.
+### A. Đợt Sửa Lỗi Outgoing Save Timer Stale Write (2026-10-08 03:59 UTC)
+1. **Nguyên Nhân Ghi Nhận Tại `reports/outgoing-save-review-20261008.json`**:
+   - Khi chuyển ngành A→B (`changeCategory('property', 50)`), trong lúc outgoing persist của A đang pending await (50ms), người dùng gọi `saveState({ name: 'Latest edit' }, 100)`.
+   - `saveState` tạo ra một `saveTimer` mới với delay 100ms.
+   - Khi `changeCategory` hoàn tất bước 5 (chuyển sang B, ghi `property` vào `mivy-marketing-v1`), `saveTimer` cũ 100ms vẫn sống sót. Sau 100ms, timer callback thức dậy và ghi đè `recruitment` vào `mivy-marketing-v1` trên storage.
+   - Hậu quả: UI hiển thị ngành B (`property`), nhưng `mivy-marketing-v1` trên disk lại là `recruitment`, khiến reload trang mở sai ngành.
 
-2. **Lỗi 2 (edit→switch restore race & revision ownership)**:
-   - Trong `saveState`: mỗi lần user edit hoặc xóa ảnh, lập tức tăng `activeSwitchToken++`.
-   - Khi `resolveStateAssets` của switch ngành hoàn tất: thực hiện **merge thông minh**, chỉ gán resolved asset vào trường ảnh nếu trường ảnh đó chưa bị user gỡ hoặc sửa (`activeCurrent[field] === nextMeta[field]`).
-   - Mọi thao tác edit text và gỡ ảnh có chủ đích (`image: ''`, `backgroundImage: ''`) của user trong lúc resolve đang in-flight được bảo toàn 100%, không bị đè bẹp.
+2. **Giải Pháp Phòng Thủ Kép (Transition Commit Invalidation & Active Category Ownership)**:
+   - **Phòng thủ 1 (Transition Commit Invalidation)**: Trong `changeCategory`, ngay tại thời điểm commit transition (ngay trước khi chuyển sang `nextMeta`), controller lập tức hủy bỏ và vô hiệu hóa toàn bộ save timers tạo trong lúc outgoing persist:
+     ```ts
+     if (this.saveTimer) {
+       clearTimeout(this.saveTimer);
+       this.saveTimer = null;
+     }
+     this.activeSaveSeq++;
+     ```
+   - **Phòng thủ 2 (Active Category Ownership Guard)**: Trong `saveState`, cả ở bước ghi nhanh metadata đồng bộ và bước debounced commit bất đồng bộ, controller kiểm tra quyền sở hữu active category:
+     ```ts
+     const currentActiveCat = currentActive.categoryId || (currentActive.industry === 'general' ? 'retail' : currentActive.industry);
+     const saveCat = newState.categoryId || (newState.industry === 'general' ? 'retail' : newState.industry);
+     if (currentActiveCat === saveCat) {
+       this.storage?.setItem(this.storageKey, JSON.stringify(persistedState));
+     }
+     ```
+     Nếu controller không còn ở ngành của bản save đó nữa, tuyệt đối không được ghi vào main active key (`mivy-marketing-v1`).
+   - Cả bản edit mới nhất của ngành cũ (`inMemoryDrafts` và `saveIndustryDraft`) và target edits/untouched images của ngành mới đều được bảo toàn trọn vẹn 100%.
 
-3. **Lỗi 3 (quota khi switch làm mất bản chưa lưu)**:
-   - Xây dựng cơ chế **Recoverable In-Memory Per-Category Drafts** (`this.inMemoryDrafts`): bản nháp của ngành cũ luôn được lưu trọn vẹn vào bộ nhớ in-memory trước khi switch.
-   - Khi `saveIndustryDraft` trả về `false` (LocalStorage bị lỗi quota):
-     - Visibly surface failure qua `setStatusText`: thông báo rõ ràng cho người dùng bộ nhớ trình duyệt đã đầy.
-     - Khi user chuyển quay lại ngành cũ trong phiên đó: `changeCategory` khôi phục trọn vẹn dữ liệu từ `inMemoryDrafts`, bảo toàn 100% công sức của user dù LocalStorage bị chặn/đầy.
-
-4. **Lỗi 4 (text edit khiến ảnh initial restore không giải mã)**:
-   - Trong `loadInitialDraft`: khi `resolveStateAssets` hoàn tất, không còn logic abort mù quáng khi có text edit.
-   - Thực hiện merge trường ảnh: chỉ cập nhật `resolved[field]` nếu trường ảnh trong state hiện tại vẫn đang giữ đúng ref gốc (`cur[field] === parsed[field]`).
-   - Text edits người dùng vừa nhập được giữ nguyên vẹn 100%, và ảnh vẫn được giải mã thành data URI thành công lên canvas.
-
-5. **Lỗi 5 (IDB transaction commit & no implicit memory-only success)**:
-   - Trong `saveAsset`: `tx.oncomplete` là điểm duy nhất resolve `id`, đảm bảo dữ liệu thực sự đã commit vào cơ sở dữ liệu. Mọi lỗi hoặc `tx.onabort` sau request success đều reject Promise đúng chuẩn.
-   - Loại bỏ hoàn toàn fallback in-memory giả vờ thành công bền vững khi IndexedDB không khả dụng; surface error để `persistStateAssets` giữ nguyên data URI in-memory và báo lỗi rõ ràng.
-
-6. **Lỗi 6 (Tránh nhân bản asset mỗi lần sửa chữ)**:
-   - Bổ sung `immutableAssetCache` và `computeContentHash` trong `asset-store.ts`.
-   - Khi cùng một raw data URI được gửi vào persist nhiều lần (do user sửa text), `saveAsset` tái sử dụng ngay asset ref đã commit trước đó, không ghi thêm bản ghi mới vào IndexedDB.
-   - Chỉ ghi cache khi transaction đã commit thành công (`tx.oncomplete`).
-
-7. **Shared Production Controller**:
-   - Trích xuất toàn bộ state machine và lifecycle logic thành `DraftController` tại [`web/src/lib/draft-controller.ts`](file:///Users/minh.nn1/Projects/personal/mivy/web/src/lib/draft-controller.ts).
-   - `page.tsx` sử dụng trực tiếp production controller này.
-   - Bộ kiểm thử lifecycle chạy trực tiếp trên instance của `DraftController`, không dùng logic copy mô phỏng.
+3. **Mở Rộng Test 9 (Để Timer Settle trong B & Assert Main Storage Category B)**:
+   - Trong `verify-draft-asset-lifecycle-qc.cjs`, Test 9 được cấu hình:
+     - `saveState` có delay 100ms trong lúc `changeCategory('property', 50)` đang await.
+     - Sau khi switch sang property hoàn tất, test đợi 150ms để timer 100ms hoàn toàn settle trong khi B vẫn đang active (không gọi dispose hay switch back sớm).
+     - Khẳng định: `persistedMain.categoryId === 'property'` (kiểm tra disk active draft không bị recruitment đè bẹp).
+     - Khẳng định: `controller.getState().image` giải mã thành công thành data URI.
+     - Sau đó switch quay lại recruitment: khẳng định `name === 'Latest edit'` được khôi phục trọn vẹn.
 
 ---
 
 ## 2. Files Changed
+* `web/src/lib/draft-controller.ts`:
+  - `saveState`: kiểm tra `currentActiveCat === saveCat` trước mọi lần ghi vào `this.storageKey` (ở cả fast sync save và debounced commit).
+  - `changeCategory`: hủy `this.saveTimer` và tăng `this.activeSaveSeq++` tại thời điểm transition commit trước khi ghi `nextMeta`.
 * `web/src/lib/asset-store.ts`:
-  - `saveAsset`: Resolve chỉ trên `tx.oncomplete`, reject trên `tx.onabort`/`tx.onerror`.
-  - Loại bỏ silent memory fallback giả thành công bền vững.
-  - Tích hợp `immutableAssetCache` chống nhân bản asset khi sửa chữ.
-* `web/src/lib/draft-controller.ts` *(Mới)*:
-  - Shared production controller quản lý toàn bộ vòng đời persistence, race conditions, debounced saves và out-of-order switches.
-* `web/src/lib/industry-drafts.ts`:
-  - `createDefaultIndustryState`: trả về clean defaults rỗng, không chèn samples vào campaign mới.
-  - `saveIndustryDraft`: bảo toàn dữ liệu storage cũ khi gặp lỗi quota, trả về boolean status.
-* `web/src/app/studio/marketing/page.tsx`:
-  - Ủy quyền toàn bộ persistence và category switching cho `DraftController`.
-  - Giữ nguyên 100% các tích hợp `brandKit`, `loadBrand()`, và renderer với `logoImg`.
+  - So sánh equality `existingData === dataUri` trước khi tái sử dụng cache, phân tán FNV-1a kép chuẩn ASCII.
 * `web/verify-draft-asset-lifecycle-qc.cjs`:
-  - Viết lại toàn bộ 6 test cases chạy trực tiếp trên instance của production `DraftController`.
-* `web/verify-draft-asset-qc.cjs`:
-  - Bộ kiểm thử cơ sở 9 ca kiểm thử persistence và asset store.
+  - Mở rộng **Test 9**: đợi pending timer settle trong B (150ms), assert `mivy-marketing-v1` duy trì đúng `property`, assert untouched target image resolve, rồi switch về `recruitment` kiểm tra khôi phục `Latest edit`.
+  - Giữ nguyên **Test 10**: cache equality comparison on candidate data.
+* `web/src/app/studio/marketing/page.tsx`:
+  - Giữ nguyên tích hợp production controller, brandKit sync và dispose. Không chạm renderer canvas.
 
 ---
 
 ## 3. Test Thực Chạy & Kết Quả
 
-### Bộ Test 1: Production DraftController Lifecycle (`node verify-draft-asset-lifecycle-qc.cjs`)
-* **Test 1 (Đường 1 — save→switch race)**: PASSED. Switch sang B lập tức hủy save in-flight của A, B sở hữu storage và state, reload không mở nhầm A.
-* **Test 2 (Đường 2 — edit→switch restore race)**: PASSED. Sửa tiêu đề và gỡ ảnh nền trong lúc target assets đang resolve; khi resolve hoàn tất, tiêu đề và trạng thái gỡ ảnh của user được bảo toàn 100%.
-* **Test 3 (Đường 3 — Quota error during switch)**: PASSED. Khi storage ném QuotaExceededError, failure được thông báo tới user, bản nháp A được bảo vệ qua in-memory fallback và khôi phục trọn vẹn khi switch lại A.
-* **Test 4 (Đường 4 — Text edit during initial restore)**: PASSED. User gõ tiêu đề mới trong lúc mount; tiêu đề mới được giữ VÀ ảnh vẫn được giải mã thành công vào state.
-* **Test 5 (Đường 5 — IDB transaction failure & no fake durability)**: PASSED. Transaction abort reject đúng chuẩn, không giả thành công, dữ liệu raw được giữ in-memory.
-* **Test 6 (Đường 6 — Asset deduplication cache)**: PASSED. Sửa text 5 lần với cùng ảnh; số lượng bản ghi ghi vào database giữ nguyên là 1, tái sử dụng asset ref an toàn.
-* **Kết quả: 6/6 tests PASSED 100% trên production controller thật.**
+### Bộ Test 1: Production DraftController Lifecycle & Identity QC (`node verify-draft-asset-lifecycle-qc.cjs`)
+1. **Test 1 (Full-content identity differ at index 101)**: PASSED.
+2. **Test 2 (Store-scoped cache without manual clear)**: PASSED.
+3. **Test 3 (Pre-existing stale disk draft vs newer in-memory draft on quota A→B→A)**: PASSED.
+4. **Test 4 (Untouched image resolves while text edited + 1 image cleared)**: PASSED.
+5. **Test 5 (Synchronized BrandKit state owner)**: PASSED.
+6. **Test 6 (Lifecycle Dispose & Unmount Cancellation)**: PASSED.
+7. **Test 7 (save→switch race condition)**: PASSED.
+8. **Test 8 (IDB transaction error handling)**: PASSED.
+9. **Test 9 (Outgoing save timer settlement & main storage ownership)**: PASSED. Timer 100ms của edit ngành cũ thức dậy khi B active bị vô hiệu hóa hoàn toàn, `mivy-marketing-v1` duy trì `property`, untouched target image resolve thành công, switch back khôi phục trọn vẹn `Latest edit`.
+10. **Test 10 (Cache equality comparison prevents collision reuse)**: PASSED.
 
-### Bộ Test 2: Asset Store & Persistence Suite (`node verify-draft-asset-qc.cjs`)
-* **Test 1 đến Test 9**: PASSED 100%.
+**Kết quả: 10/10 tests PASSED 100% trên production controller thật.**
+
+### Bộ Test 2: Base Asset Store QC (`node verify-draft-asset-qc.cjs`)
+* **9/9 tests PASSED 100%**.
 
 ### TypeScript Compilation:
-* `npx tsc --noEmit` tại `web/`: Exit code 0, không có lỗi type error nào.
+* `npx tsc --noEmit` tại `web/`: PASSED (exit code 0, không có lỗi type error).
 
 ---
 
-## 4. Giới Hạn & Tuân Thủ Phạm Vi
-* Không can thiệp vào renderer (`catalog-renderer.ts`, `industry-renderer.ts`) hay `property-edge`.
-* Giữ nguyên vẹn mọi thay đổi của agent khác (`brandKit`, `logoImg`, `loadBrand`, `studio/logo`, `@phosphor-icons/react`).
-* Không chạy `next build` / production build đè vào `.next` đang chạy dev.
-* Không sử dụng API tính phí bên ngoài hay Claude.
-* Không chạm vào hoặc ghi đè localStorage bản nháp thật của anh.
-* **Limitation về Browser IDB**: Trong môi trường Node/CLI sandbox không có sẵn DOM/headless browser nên automated tests sử dụng `AssetStoreDriver` (mock driver với full transaction completion, latency, và aborts). Khi chạy trên browser thật (port 3009), `openDB` gọi trực tiếp `window.indexedDB` (`mivy-assets-v1`) với transaction `tx.oncomplete`.
-* Không tự đánh giá hay tự nhận đạt tính thẩm mỹ của poster.
+## 4. Báo Cáo Giới Hạn & Tuân Thủ Phạm Vi Thực Tế
+* **Driver Testing vs Native IDB (Báo cáo trung thực)**:
+  - Toàn bộ suite kiểm thử tự động trong Node/CLI sandbox sử dụng `AssetStoreDriver` (mock driver).
+  - Test 8 kiểm tra nhánh reject khi transaction gặp lỗi, **không phải** native IndexedDB transaction abort-after-request-success trên trình duyệt thực tế.
+  - Kiểm thử native IDB vòng tròn trên trình duyệt thực tế (port 3009) vẫn là một hạng mục mở cần chạy trực tiếp trên browser.
+* **Phạm vi an toàn**:
+  - Không can thiệp vào renderer canvas (`catalog-renderer.ts`, `industry-renderer.ts`) hay `property-edge`.
+  - Giữ nguyên vẹn 100% thay đổi của anh và agent khác (`brandKit`, `logoImg`, `loadBrand`, `studio/logo`, icons, backgrounds).
+  - Không chạy `next build` đè vào dev server `.next` đang chạy.
+  - Không sử dụng Claude hoặc API tính phí bên ngoài.
+  - Không chạm vào hay ghi đè `localStorage` thật của anh.
+  - Không tự nhận đạt tính thẩm mỹ của poster.

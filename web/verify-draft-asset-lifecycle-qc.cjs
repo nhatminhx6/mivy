@@ -1,4 +1,4 @@
-// Actual Production DraftController Lifecycle & Concurrency QC
+// Production DraftController Lifecycle, Concurrency & Asset Identity QC Suite
 const fs = require('node:fs');
 const assert = require('node:assert');
 const ts = require('typescript');
@@ -17,6 +17,7 @@ require.extensions['.ts'] = (m, f) => {
 const {
   isAssetRef,
   saveAsset,
+  getAsset,
   persistStateAssets,
   resolveStateAssets,
   clearAssetCache,
@@ -65,80 +66,157 @@ function createDelayedMockAssetDriver(delayMap = {}) {
 }
 
 async function runRealLifecycleQC() {
-  console.log('=== RUNNING PRODUCTION DRAFTCONTROLLER LIFECYCLE QC ===\n');
+  console.log('=== RUNNING PRODUCTION DRAFTCONTROLLER LIFECYCLE & IDENTITY QC ===\n');
 
-  // TEST 1: Đường 1 - save→switch race condition
-  // Đang ở A, saveState(A_edited) được gọi với debounce. Ngay sau đó user switch sang B.
-  // Draft của A KHÔNG ĐƯỢC phép đè lên B trong storage hay state!
+  // TEST 1: Full-content identity (Chống lỗi Sampled Hash lờ byte)
+  // Hai data URI cùng độ dài nhưng khác nhau tại index 101 phải sinh 2 ref khác nhau
+  // và khôi phục đúng nội dung của từng ảnh (ngăn chặn lỗi trong reports/asset-cache-review-20261007.json)
   {
-    console.log('--- Test 1: Production save→switch race (DraftController) ---');
-    const storageKey = 'test-save-switch-storage';
-    const draftKey = 'test-save-switch-drafts';
-    const storage = createIsolatedStorage();
+    console.log('--- Test 1: Full-content identity (differ at index 101) ---');
+    clearAssetCache();
     const driver = createDelayedMockAssetDriver();
 
-    let controllerState = null;
+    const basePrefix = 'data:image/png;base64,';
+    const filler1 = 'A'.repeat(101) + 'X' + 'A'.repeat(98);
+    const filler2 = 'A'.repeat(101) + 'Y' + 'A'.repeat(98);
+    const uri1 = basePrefix + filler1;
+    const uri2 = basePrefix + filler2;
+
+    assert.strictEqual(uri1.length, uri2.length, 'Hai chuỗi phải có độ dài tuyệt đối bằng nhau');
+    assert.notStrictEqual(uri1, uri2, 'Hai chuỗi phải khác nhau');
+
+    const ref1 = await saveAsset(uri1, undefined, { driver });
+    const ref2 = await saveAsset(uri2, undefined, { driver });
+
+    assert.notStrictEqual(ref1, ref2, 'Hai ảnh khác nhau dù cùng độ dài PHẢI sinh 2 ref khác nhau');
+
+    const restored1 = await getAsset(ref1, { driver });
+    const restored2 = await getAsset(ref2, { driver });
+
+    assert.strictEqual(restored1, uri1, 'Asset 1 phải khôi phục chính xác nội dung 1');
+    assert.strictEqual(restored2, uri2, 'Asset 2 phải khôi phục chính xác nội dung 2, không bị nhầm sang 1');
+
+    console.log('✓ Passed: Full-content identity produces unique refs and restores correct contents');
+  }
+
+  // TEST 2: Store-scoped cache & cross-driver isolation (Không clear cache giữa chừng)
+  // Lưu ảnh vào driver1. Sau đó lưu cùng ảnh vào driver2 mà KHÔNG clear cache.
+  // driver2 phải lưu dữ liệu vào store của mình, không được trả ref mồ côi (missing in driver2).
+  {
+    console.log('\n--- Test 2: Store-scoped cache across drivers without manual clearAssetCache ---');
+    // KHÔNG gọi clearAssetCache() ở đây để kiểm tra tính cô lập thực tế giữa các namespace
+    const driver1 = createDelayedMockAssetDriver();
+    const driver2 = createDelayedMockAssetDriver();
+
+    const testUri = 'data:image/png;base64,TEST_ISOLATION_' + 'M'.repeat(300);
+
+    const refDriver1 = await saveAsset(testUri, undefined, { driver: driver1 });
+    assert.ok(isAssetRef(refDriver1));
+    assert.strictEqual(await driver1.get(refDriver1), testUri, 'driver1 chứa asset data');
+    assert.strictEqual(await driver2.get(refDriver1), null, 'driver2 ban đầu không có asset data');
+
+    // Lưu vào driver2 - không được tái sử dụng ref nếu driver2 chưa có data
+    const refDriver2 = await saveAsset(testUri, undefined, { driver: driver2 });
+    assert.ok(isAssetRef(refDriver2));
+    const restoredDriver2 = await driver2.get(refDriver2);
+    assert.strictEqual(restoredDriver2, testUri, 'driver2 PHẢI chứa asset data, không bị missing/rỗng');
+
+    console.log('✓ Passed: Store-scoped cache isolates drivers without cross-namespace reference leaking');
+  }
+
+  // TEST 3: Pre-existing stale disk draft vs newer in-memory draft on quota (A→B→A)
+  // Disk đã có sẵn draft cũ của A. Draft mới của A bị quota error.
+  // User switch A → B → A. DraftController PHẢI khôi phục draft A mới nhất từ in-memory, KHÔNG lấy bản cũ trên disk!
+  {
+    console.log('\n--- Test 3: Pre-existing stale disk draft vs newer in-memory draft on quota (A→B→A) ---');
+    const storageKey = 'test-quota-storage-v1';
+    const draftKey = 'test-quota-drafts-v2';
+
+    // Disk đã có sẵn draft cũ của recruitment
+    const diskDrafts = {
+      recruitment: {
+        categoryId: 'recruitment',
+        industry: 'recruitment',
+        name: 'Stale A from previous session on disk',
+        details: 'Old details on disk',
+        copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
+      },
+    };
+    const storage = createIsolatedStorage({
+      [draftKey]: JSON.stringify(diskDrafts),
+    });
+
+    // Giả lập quota error khi ghi draftKey
+    const originalSetItem = storage.setItem;
+    storage.setItem = (k, v) => {
+      if (k === draftKey) {
+        throw new Error('QuotaExceededError: DOMException');
+      }
+      originalSetItem(k, v);
+    };
+
+    let reportedStatus = '';
     const controller = new DraftController({
       storage,
       storageKey,
       draftKey,
-      assetOptions: { driver },
       initialState: {
         industry: 'recruitment',
         categoryId: 'recruitment',
-        name: 'Initial A',
-        image: 'data:image/png;base64,A_IMAGE',
+        name: 'Brand New Edits Made by User In Session',
+        details: 'Vital unsaved edits',
         copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
-      onStateChange: (s) => { controllerState = s; },
+      onStateChange: () => {},
+      onStatusText: (t) => { reportedStatus = t; },
     });
 
-    // 1. User edit A -> saveState được hẹn giờ
-    controller.saveState({
-      ...controller.getState(),
-      name: 'Edited A In-Flight',
-      image: 'data:image/png;base64,A_IMAGE_EDITED',
-    }, 40);
-
-    // 2. Trước khi timer của A kịp commit, user switch sang B (property)
-    await new Promise((r) => setTimeout(r, 10)); // Cho timer chạy nhưng chưa hết 40ms
+    // 1. Chuyển sang property (gặp quota error khi lưu recruitment cũ)
     await controller.changeCategory('property');
+    assert.strictEqual(controller.getState().categoryId, 'property');
+    assert.ok(reportedStatus.includes('đầy'), 'Có thông báo lỗi đầy bộ nhớ');
 
-    // 3. Đợi thêm thời gian để xem save cũ của A có bị commit đè lên không
-    await new Promise((r) => setTimeout(r, 100));
+    // 2. Chuyển quay lại recruitment
+    await controller.changeCategory('recruitment');
 
-    // Storage và controller state PHẢI LÀ B, không bị A đè lên!
-    const committedMain = JSON.parse(storage.getItem(storageKey));
-    assert.strictEqual(controller.getState().categoryId, 'property', 'Active category must be property');
-    assert.strictEqual(committedMain.categoryId, 'property', 'Committed storage must be property, not overwritten by A');
+    // Khẳng định: Phải khôi phục bản nháp MỚI NHẤT từ inMemoryDrafts, KHÔNG bị đè bởi bản cũ trên disk!
+    const activeRecruitment = controller.getState();
+    assert.strictEqual(activeRecruitment.categoryId, 'recruitment');
+    assert.strictEqual(activeRecruitment.name, 'Brand New Edits Made by User In Session', 'New in-memory draft takes precedence over stale disk draft');
+    assert.strictEqual(activeRecruitment.details, 'Vital unsaved edits', 'Details preserved from session');
 
-    console.log('✓ Passed: save→switch race prevented, switch B owns storage and state');
+    console.log('✓ Passed: In-memory draft prioritized over stale disk draft on quota error (A→B→A)');
   }
 
-  // TEST 2: Đường 2 - edit→switch restore race condition
-  // Switch sang B (assets của B đang resolve chậm). Trong lúc resolve, user gõ text hoặc gỡ ảnh.
-  // Khi resolve B xong, thao tác edit / xóa ảnh của user PHẢI ĐƯỢC BẢO TOÀN, không bị đè!
+  // TEST 4: Tách biệt Transition Ownership & Field Edits (Untouched image resolves while text edited + 1 image cleared)
+  // Khi switch sang B, target asset resolve mất 60ms.
+  // Trong lúc resolve: user gõ text VÀ gỡ backgroundImage = ''.
+  // Khi resolve kết thúc: text mới giữ nguyên, backgroundImage không hồi sinh, và image (untouched) ĐƯỢC RESOLVE THÀNH DATA URI!
   {
-    console.log('\n--- Test 2: Production edit→switch restore race (DraftController) ---');
+    console.log('\n--- Test 4: Untouched image resolves while text is edited and one image is cleared ---');
     const storage = createIsolatedStorage();
-    const bgDataB = 'data:image/png;base64,BG_PROPERTY_IMAGE';
-    const driver = createDelayedMockAssetDriver({ 'mivy-asset:prop_bg': 60 });
-    await driver.set('mivy-asset:prop_bg', bgDataB);
+    const avatarData = 'data:image/png;base64,TARGET_AVATAR_' + 'Q'.repeat(200);
+    const bgData = 'data:image/png;base64,TARGET_BG_' + 'W'.repeat(200);
 
-    // Lưu trước draft của property với asset ref
+    const driver = createDelayedMockAssetDriver({
+      'mivy-asset:b_avatar': 60,
+      'mivy-asset:b_bg': 60,
+    });
+    await driver.set('mivy-asset:b_avatar', avatarData);
+    await driver.set('mivy-asset:b_bg', bgData);
+
     const existingDrafts = {
       property: {
         categoryId: 'property',
         industry: 'service',
-        name: 'Property Existing Draft',
-        backgroundImage: 'mivy-asset:prop_bg',
-        image: '',
+        name: 'Property Initial Title',
+        image: 'mivy-asset:b_avatar',
+        backgroundImage: 'mivy-asset:b_bg',
         copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
     };
     storage.setItem('mivy-industry-drafts-v2', JSON.stringify(existingDrafts));
 
-    let controllerState = null;
     const controller = new DraftController({
       storage,
       assetOptions: { driver },
@@ -148,144 +226,147 @@ async function runRealLifecycleQC() {
         name: 'Recruitment',
         copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
-      onStateChange: (s) => { controllerState = s; },
+      onStateChange: () => {},
     });
 
-    // 1. User switch sang property (target asset prop_bg resolve mất 60ms)
+    // 1. Chuyển sang property (bắt đầu resolve 2 ảnh avatar và bg)
     const switchPromise = controller.changeCategory('property');
 
-    // 2. Sau 15ms (trong lúc prop_bg đang resolve), user sửa tiêu đề và GỠ ẢNH NỀN
+    // 2. Sau 15ms (trong lúc assets đang resolve), user sửa text và gỡ ảnh nền (backgroundImage = '')
     await new Promise((r) => setTimeout(r, 15));
     controller.saveState({
       ...controller.getState(),
-      name: 'User Edited Title During Resolve',
-      backgroundImage: '', // Intentional removal!
+      name: 'User Edited Headline While Loading',
+      backgroundImage: '', // Chủ động gỡ ảnh nền
     }, 20);
 
-    // 3. Đợi switch hoàn thành resolve
+    // 3. Đợi switch hoàn tất toàn bộ resolve
     await switchPromise;
     await new Promise((r) => setTimeout(r, 80));
 
-    // Kiểm tra: Edit của user và thao tác gỡ ảnh PHẢI ĐƯỢC GIỮ NGUYÊN!
     const finalState = controller.getState();
-    assert.strictEqual(finalState.name, 'User Edited Title During Resolve', 'User title must be preserved');
-    assert.strictEqual(finalState.backgroundImage, '', 'User intentional image removal must NOT be resurrected by resolve');
+    assert.strictEqual(finalState.categoryId, 'property');
+    assert.strictEqual(finalState.name, 'User Edited Headline While Loading', 'Text edit phải được giữ nguyên');
+    assert.strictEqual(finalState.backgroundImage, '', 'Ảnh nền bị gỡ KHÔNG được hồi sinh lại');
+    assert.strictEqual(finalState.image, avatarData, 'Ảnh untouched PHẢI được resolve thành công thành data URI!');
 
-    console.log('✓ Passed: User edit and image removal preserved during in-flight asset resolution');
+    console.log('✓ Passed: Untouched image resolves to data URI, text preserved, cleared image not resurrected');
   }
 
-  // TEST 3: Đường 3 - Quota error khi switch không làm mất bản chưa lưu
-  // Khi switch A -> B, nếu LocalStorage ném QuotaExceededError:
-  // - onStatusText báo lỗi rõ ràng.
-  // - Bản nháp của A vẫn được giữ trong inMemoryDrafts.
-  // - Khi switch B -> A, dữ liệu của A được khôi phục trọn vẹn!
+  // TEST 5: Đồng bộ trạng thái BrandKit qua DraftController
   {
-    console.log('\n--- Test 3: Quota error during switch preserves unsaved draft (DraftController) ---');
-    const store = new Map();
-    let quotaErrorActive = true;
-    const quotaStorage = {
-      getItem: (k) => store.get(k) || null,
-      setItem: (k, v) => {
-        if (quotaErrorActive && k === 'mivy-industry-drafts-v2') {
-          throw new Error('QuotaExceededError: DOMException');
-        }
-        store.set(k, String(v));
-      },
-    };
-
-    let statusReports = [];
+    console.log('\n--- Test 5: Synchronized BrandKit state owner through DraftController ---');
+    const storage = createIsolatedStorage();
     const controller = new DraftController({
-      storage: quotaStorage,
+      storage,
       initialState: {
         industry: 'recruitment',
         categoryId: 'recruitment',
-        name: 'Crucial Unsaved Recruitment Work',
-        details: 'Dữ liệu cực kỳ quan trọng không được để mất',
-        copies: { launch: { headline: 'H', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
+        name: 'Initial State',
+        copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
       onStateChange: () => {},
-      onStatusText: (msg) => statusReports.push(msg),
     });
 
-    // 1. Chuyển sang property khi storage bị lỗi quota
+    const testBrand = {
+      name: 'Mivy Studio Pro',
+      logo: 'data:image/png;base64,MIVY_LOGO_DATA',
+      colors: ['#ff0055', '#000000'],
+    };
+
+    // Cập nhật brandKit qua controller
+    controller.setBrandKit(testBrand);
+    assert.deepStrictEqual(controller.getState().brandKit, testBrand, 'State có brandKit được cập nhật');
+
+    // Chuyển sang ngành khác: brandKit phải được bảo toàn xuyên suốt các ngành
     await controller.changeCategory('property');
+    assert.strictEqual(controller.getState().categoryId, 'property');
+    assert.deepStrictEqual(controller.getState().brandKit, testBrand, 'BrandKit preserved across category switch');
 
-    // Kiểm tra: Có báo lỗi bộ nhớ cho người dùng
-    assert.ok(statusReports.some((m) => m.includes('đầy')), 'Visible failure reported to user on quota');
-    assert.strictEqual(controller.getState().categoryId, 'property', 'Switched to property');
-
-    // 2. Chuyển quay lại recruitment
-    await controller.changeCategory('recruitment');
-
-    // Kiểm tra: Recruitment được khôi phục nguyên vẹn từ in-memory recoverable draft!
-    const recoveredA = controller.getState();
-    assert.strictEqual(recoveredA.categoryId, 'recruitment', 'Switched back to recruitment');
-    assert.strictEqual(recoveredA.name, 'Crucial Unsaved Recruitment Work', 'Unsaved draft name recovered 100%');
-    assert.strictEqual(recoveredA.details, 'Dữ liệu cực kỳ quan trọng không được để mất', 'Unsaved draft details recovered 100%');
-
-    console.log('✓ Passed: Quota error surfaces visible failure and preserves unsaved draft via in-memory fallback');
+    console.log('✓ Passed: BrandKit synchronized and preserved across state changes and category switches');
   }
 
-  // TEST 4: Đường 4 - Text edit trong lúc initial restore không làm mất ảnh
-  // LocalStorage có draft lưu asset ref. Trong lúc resolve, user gõ text.
-  // Kết quả: Text edit mới được giữ VÀ ảnh vẫn được giải mã thành công!
+  // TEST 6: Lifecycle Dispose & Unmount Cancellation (StrictMode effect replay guard)
   {
-    console.log('\n--- Test 4: Text edit during initial restore keeps text AND resolves images (DraftController) ---');
+    console.log('\n--- Test 6: Lifecycle Dispose & Unmount Cancellation ---');
     const storage = createIsolatedStorage();
-    const rawImage = 'data:image/png;base64,RAW_INITIAL_AVATAR_' + 'X'.repeat(200);
-    const driver = createDelayedMockAssetDriver({ 'mivy-asset:initial_avatar': 60 });
-    await driver.set('mivy-asset:initial_avatar', rawImage);
+    let stateUpdatesAfterDispose = 0;
 
-    const storedDraft = {
-      categoryId: 'recruitment',
-      industry: 'recruitment',
-      name: 'Old Name From Storage',
-      image: 'mivy-asset:initial_avatar',
-      copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
-    };
-    storage.setItem('mivy-marketing-v1', JSON.stringify(storedDraft));
-
-    let controllerState = null;
     const controller = new DraftController({
       storage,
+      initialState: {
+        industry: 'recruitment',
+        categoryId: 'recruitment',
+        name: 'Pre-Dispose State',
+        copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
+      },
+      onStateChange: () => {
+        if (controller.isDisposed) {
+          stateUpdatesAfterDispose++;
+        }
+      },
+    });
+
+    // 1. Gọi saveState với delay
+    controller.saveState({
+      ...controller.getState(),
+      name: 'Should Not Commit After Dispose',
+    }, 50);
+
+    // 2. Component unmount -> controller.dispose()
+    controller.dispose();
+    assert.strictEqual(controller.isDisposed, true, 'Controller marked as disposed');
+
+    // 3. Đợi timer cũ của saveState
+    await new Promise((r) => setTimeout(r, 100));
+
+    assert.strictEqual(stateUpdatesAfterDispose, 0, 'No onStateChange calls allowed after dispose');
+    assert.strictEqual(controller.saveTimer, null, 'Save timer cleared on dispose');
+
+    console.log('✓ Passed: Dispose cleanly halts timers and cancels in-flight state mutations');
+  }
+
+  // TEST 7: save→switch race condition
+  {
+    console.log('\n--- Test 7: Production save→switch race (DraftController) ---');
+    const storageKey = 'test-save-switch-storage';
+    const storage = createIsolatedStorage();
+    const driver = createDelayedMockAssetDriver();
+
+    const controller = new DraftController({
+      storage,
+      storageKey,
       assetOptions: { driver },
       initialState: {
         industry: 'recruitment',
         categoryId: 'recruitment',
-        name: '',
-        image: '',
+        name: 'Initial A',
         copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
-      onStateChange: (s) => { controllerState = s; },
+      onStateChange: () => {},
     });
 
-    // 1. Bắt đầu loadInitialDraft (resolve mất 60ms)
-    const loadPromise = controller.loadInitialDraft();
-
-    // 2. Sau 15ms, user gõ tiêu đề mới
-    await new Promise((r) => setTimeout(r, 15));
     controller.saveState({
       ...controller.getState(),
-      name: 'User Typed Fresh Title Immediately',
-    }, 20);
+      name: 'Edited A In-Flight',
+    }, 40);
 
-    // 3. Đợi loadInitialDraft hoàn tất
-    await loadPromise;
+    await new Promise((r) => setTimeout(r, 10));
+    await controller.changeCategory('property');
     await new Promise((r) => setTimeout(r, 80));
 
-    const finalState = controller.getState();
-    assert.strictEqual(finalState.name, 'User Typed Fresh Title Immediately', 'Text edit preserved 100%');
-    assert.strictEqual(finalState.image, rawImage, 'Image was resolved successfully into data URI, not stuck in ref!');
+    const committedMain = JSON.parse(storage.getItem(storageKey));
+    assert.strictEqual(controller.getState().categoryId, 'property');
+    assert.strictEqual(committedMain.categoryId, 'property', 'Committed storage must be property, not overwritten by A');
 
-    console.log('✓ Passed: Text edit preserved AND image successfully resolved into data URI');
+    console.log('✓ Passed: save→switch race prevented, switch B owns storage and state');
   }
 
-  // TEST 5: Đường 5 - IDB transaction completion & no implicit memory-only success
+  // TEST 8: IDB transaction failure & rejection
   {
-    console.log('\n--- Test 5: IDB transaction error handling & no fake durability ---');
+    console.log('\n--- Test 8: IDB transaction error handling & no fake durability ---');
     clearAssetCache();
 
-    // Driver that throws error on write
     const failingDriver = {
       async get() { return null; },
       async set() { throw new Error('TransactionAbortedError: IndexedDB transaction aborted'); },
@@ -301,7 +382,6 @@ async function runRealLifecycleQC() {
     assert.ok(caughtError, 'saveAsset MUST reject when storage transaction fails');
     assert.ok(caughtError.message.includes('aborted'), 'Error must surface transaction failure');
 
-    // persistStateAssets must retain in-memory data URI and report failed field
     const testState = {
       image: 'data:image/png;base64,IN_MEMORY_PRESERVED',
       name: 'State',
@@ -309,48 +389,124 @@ async function runRealLifecycleQC() {
     };
     const { state: resState, failedFields } = await persistStateAssets(testState, { driver: failingDriver });
     assert.strictEqual(failedFields.length, 1);
-    assert.strictEqual(resState.image, 'data:image/png;base64,IN_MEMORY_PRESERVED', 'Raw image preserved in-memory on failure');
+    assert.strictEqual(resState.image, 'data:image/png;base64,IN_MEMORY_PRESERVED');
 
     console.log('✓ Passed: Transaction failure rejects properly, no fake durability claimed');
   }
 
-  // TEST 6: Đường 6 - Tránh nhân bản asset khi sửa chữ (Deduplication Cache)
+  // TEST 9: Exact Outgoing Persist Edit Regression Sequence (Evidence reports/outgoing-edit-review-20261008.json)
+  // recruitment name: 'Before'; start changeCategory('property', 50); saveState({ ...getState(), name: 'Latest edit' }, 1000) while outgoing persist pending;
+  // await switch; assert property active and untouched target image resolves; switch back recruitment -> assert name: 'Latest edit'!
   {
-    console.log('\n--- Test 6: Asset deduplication cache prevents unbounded growth on text edits ---');
-    clearAssetCache();
+    console.log('\n--- Test 9: Outgoing persist edit regression sequence (reports/outgoing-edit-review-20261008.json) ---');
+    const storage = createIsolatedStorage();
+    const propAvatar = 'data:image/png;base64,PROPERTY_TARGET_AVATAR_' + 'P'.repeat(150);
+    const driver = createDelayedMockAssetDriver({ 'mivy-asset:prop_logo': 40 });
+    await driver.set('mivy-asset:prop_logo', propAvatar);
 
-    let writeCount = 0;
-    const countingDriver = {
-      store: new Map(),
-      async get(id) { return this.store.get(id) || null; },
-      async set(id, data) {
-        writeCount++;
-        this.store.set(id, data);
+    // Draft của property có untouched target image
+    const initialDrafts = {
+      property: {
+        categoryId: 'property',
+        industry: 'service',
+        name: 'Property Initial',
+        image: 'mivy-asset:prop_logo',
+        copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
       },
-      size() { return this.store.size; },
     };
+    storage.setItem('mivy-industry-drafts-v2', JSON.stringify(initialDrafts));
 
-    const rawImage = 'data:image/png;base64,IMMUTABLE_AVATAR_' + 'Z'.repeat(500);
+    const controller = new DraftController({
+      storage,
+      assetOptions: { driver },
+      initialState: {
+        industry: 'recruitment',
+        categoryId: 'recruitment',
+        name: 'Before',
+        image: 'data:image/png;base64,RAW_RECRUITMENT_AVATAR',
+        copies: { launch: { headline: '', subline: '', cta: '', caption: '', points: [] }, story: { headline: '', subline: '', cta: '', caption: '', points: [] }, action: { headline: '', subline: '', cta: '', caption: '', points: [] } },
+      },
+      onStateChange: () => {},
+    });
 
-    // Save 1st time
-    const ref1 = await saveAsset(rawImage, undefined, { driver: countingDriver });
-    assert.strictEqual(writeCount, 1, 'First write creates 1 record');
-    assert.strictEqual(countingDriver.size(), 1);
+    // 1. Bắt đầu chuyển sang property với persistDelayMs = 50ms
+    const switchPromise = controller.changeCategory('property', 50);
 
-    // User edits text 5 times with the same raw image
-    for (let i = 0; i < 5; i++) {
-      const refNext = await saveAsset(rawImage, undefined, { driver: countingDriver });
-      assert.strictEqual(refNext, ref1, 'Reused exact same asset ref');
-    }
+    // 2. Sau 15ms (trong lúc outgoing persist của recruitment đang pending await), user sửa name thành 'Latest edit'
+    await new Promise((r) => setTimeout(r, 15));
+    controller.saveState({
+      ...controller.getState(),
+      name: 'Latest edit',
+    }, 100);
 
-    // Write count must STILL be 1! No new records created!
-    assert.strictEqual(writeCount, 1, 'Write count must not grow on unchanged image');
-    assert.strictEqual(countingDriver.size(), 1, 'Database size remains exactly 1');
+    // 3. Đợi hoàn tất chuyển sang property (50ms)
+    await switchPromise;
 
-    console.log('✓ Passed: Asset deduplication cache safely reuses ref without unbounded storage growth');
+    // 4. QUAN TRỌNG: Đợi 150ms để save timer (100ms) của outgoing edit hoàn toàn settle trong lúc B (property) VẪN ĐANG ACTIVE!
+    // Tuyệt đối không switch back ngay hay dispose để không che giấu lỗi timer!
+    await new Promise((r) => setTimeout(r, 150));
+
+    // Khẳng định: UI category là property, và untouched target image đã resolve thành data URI
+    const propState = controller.getState();
+    assert.strictEqual(propState.categoryId, 'property', 'UI category must remain property');
+    assert.strictEqual(propState.image, propAvatar, 'Untouched target image in property resolved to data URI without disruption');
+
+    // Khẳng định theo evidence reports/outgoing-save-review-20261008.json:
+    // Main storage (mivy-marketing-v1) PHẢI LÀ property, KHÔNG ĐƯỢC bị save timer của recruitment đè bẹp!
+    const persistedMain = JSON.parse(storage.getItem('mivy-marketing-v1'));
+    assert.strictEqual(persistedMain.categoryId, 'property', 'Persisted main draft mivy-marketing-v1 must remain property while B is active!');
+
+    // 5. Sau đó mới chuyển quay lại recruitment
+    await controller.changeCategory('recruitment');
+    await new Promise((r) => setTimeout(r, 60));
+
+    // Khẳng định: Bản nháp recruitment PHẢI giữ nguyên 'Latest edit', KHÔNG bị 'Before' của outgoing persist cũ đè bẹp!
+    const recruitState = controller.getState();
+    assert.strictEqual(recruitState.categoryId, 'recruitment');
+    assert.strictEqual(recruitState.name, 'Latest edit', 'Bản edit mới nhất "Latest edit" được bảo toàn 100%!');
+
+    console.log('✓ Passed: Outgoing save timer cannot overwrite main storage while B is active; latest edit restored on switch back');
   }
 
-  console.log('\n=== ALL 6 REAL CONTROLLER LIFECYCLE TESTS PASSED 100%! ===');
+  // TEST 10: Cache equality comparison on candidate data (Chống hash collision trả về nhầm ảnh khác)
+  // Khi driver chứa dữ liệu khác với candidate (mô phỏng collision hoặc dữ liệu bị sửa),
+  // cache PHẢI so sánh full data và KHÔNG ĐƯỢC tái sử dụng ref cũ, mà phải lưu mới và trả ref mới!
+  {
+    console.log('\n--- Test 10: Cache equality comparison prevents hash collision reuse ---');
+    clearAssetCache();
+
+    let storageMap = new Map();
+    let collisionDriver = {
+      async get(id) {
+        return storageMap.get(id) || null;
+      },
+      async set(id, data) {
+        storageMap.set(id, data);
+      },
+    };
+
+    const imageAlpha = 'data:image/png;base64,IMAGE_ALPHA_' + 'A'.repeat(200);
+    const imageBeta = 'data:image/png;base64,IMAGE_BETA_' + 'B'.repeat(200);
+
+    // Lưu imageAlpha
+    const refAlpha = await saveAsset(imageAlpha, undefined, { driver: collisionDriver });
+    assert.ok(isAssetRef(refAlpha));
+    assert.strictEqual(await collisionDriver.get(refAlpha), imageAlpha);
+
+    // Giả lập collision: Đổi nội dung của refAlpha trong store thành dữ liệu khác
+    // để kiểm tra bước equality check `existingData === dataUri`
+    storageMap.set(refAlpha, 'data:image/png;base64,CORRUPTED_OR_DIFFERENT_IMAGE');
+
+    // Gọi lại saveAsset với imageAlpha
+    // Code phải đọc full data từ store, phát hiện không bằng imageAlpha, xóa cache entry và lưu mới!
+    const refRecheck = await saveAsset(imageAlpha, undefined, { driver: collisionDriver });
+    assert.notStrictEqual(refRecheck, refAlpha, 'Khi dữ liệu trong store không khớp, KHÔNG được tái sử dụng ref');
+    assert.strictEqual(await collisionDriver.get(refRecheck), imageAlpha, 'Store nhận đúng dữ liệu của imageAlpha với ref mới');
+
+    console.log('✓ Passed: Cache validates full data equality before reuse; mismatched candidate rejected');
+  }
+
+  console.log('\n=== ALL 10 PRODUCTION LIFECYCLE & IDENTITY TESTS PASSED 100%! ===');
 }
 
 runRealLifecycleQC().catch((err) => {

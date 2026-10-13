@@ -1,0 +1,184 @@
+{
+  "timestamp": "2026-10-08T09:02:04.202Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "nativeIndexedDBAvailable": true,
+  "namespace": {
+    "storageKey": "mivy-qc-marketing-v1",
+    "draftKey": "mivy-qc-industry-drafts-v2",
+    "dbName": "mivy-qc-assets-v1"
+  },
+  "currentIDBRecordCount": 10,
+  "actualReloadVerified": false,
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "tests": {
+    "test1": {
+      "id": "test1",
+      "name": "1. Native IndexedDB Persist & Resolve Roundtrip",
+      "status": "pass",
+      "durationMs": 110,
+      "logs": [
+        "Khởi động Test 1: Kiểm tra native IndexedDB persist & resolve...",
+        "State ban đầu: image len=19270, bg len=444398",
+        "Persist thành công: image ref=mivy-asset:muzb4wg6_9ofaxtm, bg ref=mivy-asset:muzb4whx_nvay4ph",
+        "Native IndexedDB [mivy-qc-assets-v1] hiện có 2 records. Keys: mivy-asset:muzb4wg6_9ofaxtm, mivy-asset:muzb4whx_nvay4ph",
+        "Resolve thành công: Cả main và background khớp 100% từng byte dữ liệu gốc từ native IDB!",
+        "Đã render poster thật lên canvas từ restored state."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph"
+      ],
+      "stateDump": {
+        "imageRef": "mivy-asset:muzb4wg6_9ofaxtm",
+        "bgRef": "mivy-asset:muzb4whx_nvay4ph"
+      }
+    },
+    "test2": {
+      "id": "test2",
+      "name": "2. A→B→A Category Switch Persistence",
+      "status": "pass",
+      "durationMs": 83,
+      "logs": [
+        "Khởi động Test 2: Chuyển đổi ngành A→B→A trên DraftController production...",
+        "Chuyển từ recruitment sang property...",
+        "Xác minh: Ngành A đã persist thành công ref mivy-asset:muzb4wim_l3fxxe5 vào native IDB!",
+        "Đã chuyển sang property và lưu tiêu đề: Sky Villa Penthouse B",
+        "Chuyển ngược lại recruitment...",
+        "Thành công: Ngành A phục hồi 100% tiêu đề và ảnh chính từ native IDB/drafts!",
+        "Đã render canvas thật của ngành A sau phục hồi."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5"
+      ],
+      "stateDump": {
+        "restoredCategory": "recruitment",
+        "restoredName": "Lead Cloud Engineer A"
+      }
+    },
+    "test3": {
+      "id": "test3",
+      "name": "3. Reload State & Restore Assets from Native IDB",
+      "status": "pass",
+      "durationMs": 34,
+      "logs": [
+        "Khởi động Test 3: Chuẩn bị state & nạp lại từ localStorage + native IDB...",
+        "Đã ghi bản nháp ngành food có refs vào [mivy-qc-marketing-v1] và native IDB.",
+        "Gọi reloadedController.loadInitialDraft()...",
+        "Thành công: Nạp metadata tức thì và giải mã 100% data URI từ native IndexedDB!",
+        "Đã render poster thật từ state sau reload."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5",
+        "mivy-asset:muzb4wl7_ta3klm1",
+        "mivy-asset:muzb4wla_wlsgro2"
+      ],
+      "stateDump": {
+        "category": "food",
+        "name": "Signature Wagyu Steak Set"
+      }
+    },
+    "test4": {
+      "id": "test4",
+      "name": "4. Intentional Clear Image Preservation during Resolve",
+      "status": "pass",
+      "durationMs": 106,
+      "logs": [
+        "Khởi động Test 4: Chủ động gỡ ảnh trong lúc resolve không bị hồi sinh...",
+        "Thành công: Thao tác gỡ ảnh nền được bảo toàn (không hồi sinh), ảnh chính giải mã thành công!",
+        "Đã render canvas thật kiểm tra không có background image."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5",
+        "mivy-asset:muzb4wl7_ta3klm1",
+        "mivy-asset:muzb4wla_wlsgro2",
+        "mivy-asset:muzb4wm3_2g6n5fk",
+        "mivy-asset:muzb4wm6_4kriu7n"
+      ],
+      "stateDump": {
+        "bg": "",
+        "mainLen": 21122
+      }
+    },
+    "test5": {
+      "id": "test5",
+      "name": "5. Edited Text Preservation with Untouched Image Resolve",
+      "status": "pass",
+      "durationMs": 92,
+      "logs": [
+        "Khởi động Test 5: Gõ text trong lúc target resolve không làm mất text và resolve ảnh còn lại...",
+        "Thành công: Tiêu đề gõ mới được giữ 100%, ảnh chính untouched giải mã thành công!",
+        "Đã render canvas thật hiển thị tiêu đề gõ mới cùng ảnh chính."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5",
+        "mivy-asset:muzb4wl7_ta3klm1",
+        "mivy-asset:muzb4wla_wlsgro2",
+        "mivy-asset:muzb4wm3_2g6n5fk",
+        "mivy-asset:muzb4wm6_4kriu7n",
+        "mivy-asset:muzb4wot_bb2pska"
+      ],
+      "stateDump": {
+        "name": "Realtime Edited Headline by User",
+        "imageLen": 21094
+      }
+    },
+    "test6": {
+      "id": "test6",
+      "name": "6. Delayed Outgoing Save Timer Settlement & Active Draft Ownership",
+      "status": "pass",
+      "durationMs": 218,
+      "logs": [
+        "Khởi động Test 6: Delayed outgoing save timer settle không ghi đè active draft B...",
+        "Bắt đầu chuyển ngành sang property (delay 50ms)...",
+        "Đã kích hoạt saveState(\"Late Outgoing Edit Name\", delay 100ms) trong lúc outgoing persist await.",
+        "Switch sang property đã hoàn tất. Đang chờ 150ms để timer 100ms settle trong lúc B active...",
+        "Kiểm tra chính xác: Main storage key [mivy-qc-marketing-v1] duy trì đúng \"property\"!",
+        "Chuyển quay lại recruitment...",
+        "Thành công: Bản edit ngành cũ \"Late Outgoing Edit Name\" được bảo toàn 100%!",
+        "Đã render canvas thật của ngành property (B)."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5",
+        "mivy-asset:muzb4wl7_ta3klm1",
+        "mivy-asset:muzb4wla_wlsgro2",
+        "mivy-asset:muzb4wm3_2g6n5fk",
+        "mivy-asset:muzb4wm6_4kriu7n",
+        "mivy-asset:muzb4wot_bb2pska",
+        "mivy-asset:muzb4wx4_78ltbvf"
+      ],
+      "stateDump": {
+        "storageCategory": "property",
+        "restoredName": "Late Outgoing Edit Name"
+      }
+    }
+  },
+  "consoleLogs": [
+    "[09:01:41] HOÀN TẤT: 6/6 NATIVE BROWSER QC TESTS ĐÃ PASS 100%!",
+    "[09:01:41] Đang chạy Test 6: Delayed Outgoing Save Settlement...",
+    "[09:01:41] Đang chạy Test 5: Edited Text during Resolve...",
+    "[09:01:41] Đang chạy Test 4: Intentional Clear during Resolve...",
+    "[09:01:40] Đang chạy Test 3: Reload State from Native IDB...",
+    "[09:01:40] Đang chạy Test 2: A→B→A Switch Persistence...",
+    "[09:01:40] Đang chạy Test 1: Native IndexedDB Persist & Resolve...",
+    "[09:01:40] BẮT ĐẦU CHẠY TOÀN BỘ 6 TESTS QC TRÌNH DUYỆT THẬT (NATIVE IDB)..."
+  ]
+}

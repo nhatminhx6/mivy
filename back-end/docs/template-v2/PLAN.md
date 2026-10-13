@@ -49,3 +49,17 @@ Contract và 6 concept đợt 1 đã có triển khai, nhưng chưa đạt nghi�
 Checkpoint 2026-10-07 14:45 UTC: prioritize outstanding draft persistence races/durability before renderer expansion. Gemini follow-up active; see DRAFT_ASSET_REVIEW.md revision section and IMPLEMENTATION_STATUS.md. Overall acceptance unchanged.
 
 Checkpoint 2026-10-07 15:40 UTC: controller revision reviewed, asset cache integrity reproduction failed; follow-up pending unlocked Antigravity. See DRAFT_ASSET_REVIEW.md. No expansion.
+
+Checkpoint 2026-10-08 01:54 UTC: Antigravity unlocked; controller integrity review dispatched to Gemini, now working. Await revision; no expansion.
+
+Checkpoint 2026-10-08 02:55 UTC: outgoing edit regression reproduced despite8 passing tests; Gemini bounded follow-up running. Persistence gate still open.
+
+Checkpoint 2026-10-08 03:59 UTC: late outgoing-save timer changes reload category; reproduced and assigned bounded Gemini fix.19 tests/tsc pass but not acceptance.
+
+Checkpoint 2026-10-08 05:02 UTC: outgoing timer repro now passes; browser/native-IDB and raster QC pending locked Mac. No scope expansion.
+
+Checkpoint 2026-10-08 07:00 UTC: Gemini preparing isolated dev browser QC harness under marketing/review; next native-IDB/reload and restored-canvas verification.
+
+Checkpoint 2026-10-08 07:58 UTC: native-browser harness exposed missing QC schema and false-positive inline fallback checks; Gemini repairing harness before further acceptance.
+
+Checkpoint 2026-10-08 09:01 UTC: isolated native IDB6/6 and actual page reload verified; restored main/background PNG inspected. Narrow persistence milestone only; aesthetic/VI-EN/export gates remain.

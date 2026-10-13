@@ -6,8 +6,12 @@ import { AssetInfo, AspectRatio, IndustryId, MarketingState, PosterKind, ThemeId
 import { POSTER_THEMES, drawIndustryPoster } from '@/lib/design-engine';
 import { marketingZip } from '@/lib/marketing-zip';
 import { balancedPages } from '@/lib/balanced-pages';
-import { api } from '@/lib/api';
 import { IndustryForm } from '@/components/marketing/IndustryForm';
+import { makeIndustryCopy } from '@/lib/industry-concepts';
+import { STICKER_PRESETS, getPreset } from '@/lib/sticker-engine';
+import { SEASON_PRESETS } from '@/lib/season-engine';
+import { FONT_PRESETS } from '@/lib/brand-presets';
+import { StickerCorner } from '@/types';
 import { TemplateLibrary } from '@/components/marketing/TemplateLibrary';
 import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
 import { CATEGORY_SAMPLES } from '@/lib/category-samples';
@@ -17,18 +21,18 @@ import { DraftController } from '@/lib/draft-controller';
 // Nền gen sẵn ĐÚNG NỘI DUNG theo từng ngành (offline, 1 lần) — chọn tức thì, không gọi AI mỗi lần.
 // Danh sách ảnh THỰC TẾ đã gen theo từng ngành (gen sẵn offline, không gọi AI mỗi lần).
 const BG_FILES: Record<string, string[]> = {
-  recruitment: ['a', 'b', 'c', 'd'],
-  education: ['a', 'b', 'c', 'd'],
-  event: ['a', 'b', 'c', 'd'],
-  food: ['a', 'b', 'c'],
-  beauty: ['a', 'b', 'c', 'd'],
-  property: ['a', 'b', 'c', 'd'],
-  travel: ['a', 'b', 'c', 'd'],
-  retail: ['a', 'b', 'c', 'd'],
-  fitness: ['a', 'b', 'c', 'd'],
-  technology: ['a', 'b', 'c', 'd'],
-  personal: ['a', 'b', 'c', 'd'],
-  service: ['a', 'b', 'c', 'd'],
+  recruitment: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  education: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  event: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  food: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  beauty: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  property: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  travel: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  retail: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  fitness: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  technology: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  personal: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  service: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
 };
 const INDUSTRY_BACKGROUNDS: Record<string, string[]> = Object.fromEntries(
   Object.entries(BG_FILES).map(([k, arr]) => [k, arr.map((s) => `/backgrounds/${k}/${s}.jpg`)])
@@ -90,6 +94,7 @@ export default function MarketingStudioPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [step, setStep] = useState(1); // 1 chọn ngành · 2 nội dung · 3 xem & tải
+  const [devFill, setDevFill] = useState(true); // DEV: tự điền nội dung mẫu, tắt để nhập tay
   const [copied, setCopied] = useState(false);
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -143,34 +148,79 @@ export default function MarketingStudioPage() {
 
   // Khởi tạo shared production controller quản lý persistence và concurrency
   const controllerRef = useRef<DraftController | null>(null);
-  if (!controllerRef.current) {
-    controllerRef.current = new DraftController({
-      initialState: state,
-      onStateChange: (next) => setState(next),
-      onStatusText: (text) => setStatusText(text),
-    });
-  }
+  const getController = () => {
+    if (!controllerRef.current || controllerRef.current.isDisposed) {
+      controllerRef.current = new DraftController({
+        initialState: state,
+        onStateChange: (next) => setState(next),
+        onStatusText: (text) => setStatusText(text),
+      });
+    }
+    return controllerRef.current;
+  };
 
   // Load initial state from localStorage & resolve durable assets on mount
   useEffect(() => {
-    let active = true;
-    controllerRef.current?.loadInitialDraft();
+    const controller = getController();
+    controller.loadInitialDraft();
     const b = loadBrand();
-    if (active && b) setState((prev) => ({ ...prev, brandKit: b }));
+    if (b) {
+      controller.setBrandKit(b);
+    }
     return () => {
-      active = false;
+      controller.dispose();
     };
   }, []);
 
   // Save state on change
   const saveState = (newState: MarketingState) => {
-    controllerRef.current?.saveState(newState);
+    getController().saveState(newState);
   };
 
   const changeCategory = (categoryId: string) => {
-    controllerRef.current?.changeCategory(categoryId);
-    setStep(2); // chọn ngành xong → sang bước nội dung
+    getController().changeCategory(categoryId);
   };
+
+  // DEV: điền sẵn toàn bộ nội dung mẫu cho ngành đang chọn
+  const EMPTY_COPY = { headline: '', subline: '', cta: '', caption: '', points: [] };
+  const catOf = (s: MarketingState) => s.categoryId || (s.industry === 'general' ? 'retail' : s.industry);
+  const applySample = (base: MarketingState) => {
+    const smp = CATEGORY_SAMPLES[catOf(base)];
+    if (!smp) return base;
+    return { ...base, name: smp.name, brand: smp.brand, offer: smp.offer, details: smp.details, goal: smp.goal, copies: smp.copies, industryFields: smp.fields ? { ...smp.fields } : {} };
+  };
+  const clearSample = (base: MarketingState) => ({
+    ...base, name: '', offer: '', details: '', industryFields: {},
+    copies: { launch: { ...EMPTY_COPY }, story: { ...EMPTY_COPY }, action: { ...EMPTY_COPY } },
+  });
+  // Sticker sale: chọn preset / sửa chữ / đổi góc
+  const setStickerPreset = (presetId: string) => {
+    if (presetId === 'none') { saveState({ ...state, sticker: { preset: 'none', text: '', corner: state.sticker?.corner || 'tr' } }); return; }
+    const p = getPreset(presetId);
+    saveState({ ...state, sticker: { preset: presetId, text: p?.defaultText || '', corner: state.sticker?.corner || 'tr' } });
+  };
+  const setStickerText = (text: string) => saveState({ ...state, sticker: { preset: state.sticker?.preset || 'none', text, corner: state.sticker?.corner || 'tr' } });
+  const setStickerCorner = (corner: StickerCorner) => saveState({ ...state, sticker: { preset: state.sticker?.preset || 'none', text: state.sticker?.text || '', corner } });
+  const setSeason = (seasonId: string) => saveState({ ...state, season: seasonId });
+  const setFont = (id: string) => saveState({ ...state, headingFontId: id === 'default' ? undefined : id, bodyFontId: id === 'default' ? undefined : id });
+  const setBorder = (v: number) => saveState({ ...state, borderWidth: v });
+  const setRadius = (v: number) => saveState({ ...state, borderRadius: v });
+  const setBorderColor = (c?: string) => saveState({ ...state, borderColor: c });
+
+  const toggleDevFill = () => {
+    const next = !devFill;
+    setDevFill(next);
+    saveState(next ? applySample(state) : clearSample(state));
+  };
+
+  // Vào bước 2 hoặc đổi ngành: nếu bật DEV fill và form còn trống thì tự điền mẫu
+  useEffect(() => {
+    if (!devFill || step !== 2) return;
+    if (!state.name && CATEGORY_SAMPLES[catOf(state)]) {
+      saveState(applySample(state));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, state.categoryId, devFill]);
 
   // Helper to load asset (image uploaded)
   const loadAsset = async (url: string): Promise<AssetInfo | null> => {
@@ -342,57 +392,50 @@ export default function MarketingStudioPage() {
     saveState({ ...state, copies: updatedCopies, storyPage: 0, facts: currentFacts });
   };
 
-  // Trigger render on visual state changes
+  // Trigger render on visual state changes (step: vẽ lại khi canvas vừa mount ở bước 3)
   useEffect(() => {
     renderAllCanvases();
-  }, [state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit]);
+  }, [step, state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit, state.sticker, state.season, state.headingFontId, state.bodyFontId, state.borderWidth, state.borderRadius, state.borderColor]);
 
   // Handle Form Submission (Generate copies via AI)
+  // Dựng nội dung 100% bằng CODE từ data có sẵn — KHÔNG gọi AI realtime (đúng kiến trúc Mivy).
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
-    setStatusText('Đang phân tích thông tin và viết nội dung…');
+    setStatusText('Đang dựng nội dung…');
 
     try {
-      const res = await api('/v1/creative/marketing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          industry: state.industry,
-          name: state.name,
-          details: `[${CATEGORIES.find(c => c.id === state.categoryId)?.name || state.industry}]\n${state.details}`,
-          brand: state.brand,
-          goal: state.goal,
-          offer: state.offer,
-          output_language: state.outputLanguage || 'preserve',
-        }),
-      });
-
-      const extractedFacts = res.facts && res.facts.length > 0
-        ? res.facts
+      const cat = catOf(state);
+      const facts = state.facts && state.facts.length > 0
+        ? state.facts
         : extractFactsFromDetails(state.details, state.offer);
 
-      let updatedState: MarketingState = {
-        ...state,
-        facts: extractedFacts,
-        storyPage: 0,
-        copies: {
-          launch: { ...state.copies.launch, ...res.launch },
-          story: { ...state.copies.story, ...res.story },
-          action: { ...state.copies.action, ...res.action },
-        },
-      };
+      // Copies: ưu tiên nội dung sẵn có (mẫu/đã sửa tay). Nếu trống → dựng local từ field ngành / name-offer-details.
+      let copies = state.copies;
+      if (!copies?.launch?.headline) {
+        const auto = makeIndustryCopy(cat, state.industryFields || {});
+        const base = auto.headline ? auto : {
+          headline: state.name || state.brand || 'Tiêu đề của anh',
+          subline: state.offer || '',
+          cta: 'Liên hệ ngay',
+          caption: state.details || '',
+          points: (state.details || '').split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 3),
+        };
+        copies = { launch: { ...base }, story: { ...base }, action: { ...base } };
+      }
 
-      // Nền dùng template có sẵn (không gọi AI realtime). Chưa có nền nào thì gán mặc định.
+      const updatedState: MarketingState = { ...state, facts, storyPage: 0, copies };
+
+      // Nền dùng template có sẵn. Chưa chọn nền nào thì gán mặc định của ngành.
       if (!state.image && !state.backgroundImage && !state.bgUrl) {
-        updatedState.bgUrl = bgsFor(state.categoryId)[0] || '/backgrounds/recruitment/a.jpg';
+        updatedState.bgUrl = bgsFor(cat)[0] || '/backgrounds/recruitment/a.jpg';
       }
 
       saveState(updatedState);
       setStatusText('');
-      setStep(3); // tạo xong → sang bước xem & tải
+      setStep(3); // xong → sang bước xem & tải
     } catch (err: any) {
-      alert(err.message || 'Chưa tạo được nội dung. Anh thử lại nhé.');
+      alert(err.message || 'Chưa dựng được nội dung. Anh thử lại nhé.');
     } finally {
       setIsGenerating(false);
       setStatusText('');
@@ -433,14 +476,50 @@ export default function MarketingStudioPage() {
     if (assetUrl && !asset) throw new Error('Không thể tải ảnh chính. Vui lòng kiểm tra lại.');
     if (bgUrl && !bgImg) throw new Error('Không thể tải ảnh nền. Vui lòng kiểm tra lại.');
 
-    const draw = (kind: PosterKind, page: number = 0) => {
+    const draw = (kind: PosterKind, page: number = 0, aspect: AspectRatio = snapshot.aspect) => {
       const c = document.createElement('canvas');
       c.width = 1080;
-      c.height = snapshot.aspect === '1:1' ? 1080 : snapshot.aspect === '9:16' ? 1920 : 1350;
-      drawIndustryPoster(c, { ...snapshot, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg);
+      c.height = aspect === '1:1' ? 1080 : aspect === '9:16' ? 1920 : 1350;
+      drawIndustryPoster(c, { ...snapshot, aspect, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg);
       return c;
     };
     return { snapshot, asset, bgImg, draw };
+  };
+
+  // Khổ xuất cho từng sàn (tên file dễ nhận biết)
+  const EXPORT_SIZES: { aspect: AspectRatio; label: string }[] = [
+    { aspect: '4:5', label: 'post-1080x1350' },   // FB/IG feed
+    { aspect: '9:16', label: 'story-reels-1080x1920' }, // Story/Reels/TikTok
+    { aspect: '1:1', label: 'vuong-1080x1080' },  // Shopee/vuông
+  ];
+
+  // #1 Xuất poster đang chọn ở CẢ 3 khổ trong 1 file ZIP
+  const handleDownloadAllSizes = async () => {
+    try {
+      setStatusText('Đang xuất đủ 3 khổ...');
+      const { snapshot, draw } = await prepareExport();
+      const files = [];
+      for (const { aspect, label } of EXPORT_SIZES) {
+        const c = draw(snapshot.selected, snapshot.storyPage || 0, aspect);
+        const blob = await new Promise<Blob | null>((r) => c.toBlob(r));
+        if (!blob) throw new Error(`Lỗi xuất khổ ${aspect}.`);
+        files.push({ name: `mivy-${snapshot.selected}-${label}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
+      }
+      files.push({
+        name: 'caption.txt',
+        data: new TextEncoder().encode(snapshot.copies[snapshot.selected]?.caption || ''),
+      });
+      const zipBlob = marketingZip(files);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mivy-${snapshot.selected}-du-kho.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setStatusText('Đã xuất đủ 3 khổ (post · story · vuông).');
+    } catch (err: any) {
+      setStatusText(err.message || 'Lỗi xuất đủ khổ.');
+    }
   };
 
   // Download single PNG
@@ -586,26 +665,24 @@ export default function MarketingStudioPage() {
 
       {/* Tinh chỉnh hiển thị (bước 3) */}
       {step === 3 && (
-      <div className="glass-panel p-6 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            MARKETING STUDIO 2.0
-          </span>
-          <div className="flex items-center gap-4 mt-2">
-            <h1 className="text-2xl font-black text-white">Tạo Bộ 3 Poster Quảng Cáo</h1>
-            <a href="/studio/marketing/review" className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
-              Xem bộ mẫu kiểm tra
-            </a>
+      <div className="glass-panel p-5 rounded-2xl space-y-4">
+        <div className="flex items-start justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="text-xl font-black text-white">Tuỳ chỉnh &amp; Tải poster</h1>
+            <p className="text-slate-400 text-xs mt-0.5">Chỉnh kiểu, chữ, khung, trang trí — preview cập nhật ngay.</p>
           </div>
-          <p className="text-slate-400 text-xs mt-1">
-            Chọn chủ đề, tỷ lệ và kiểm tra visual render theo thời gian thực chuẩn studio.
-          </p>
+          <a href="/studio/marketing/review" className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
+            Xem bộ mẫu kiểm tra
+          </a>
         </div>
 
-        {/* Controls: Mode, Theme, Background, Aspect */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Layout Mode Selector: Full Photo vs Matrix */}
+        {/* Nhóm điều khiển có nhãn cho dễ tìm */}
+        <div className="space-y-2.5 border-t border-white/10 pt-4">
+          {/* ===== Nhóm 1: KIỂU (layout + theme) ===== */}
           {!state.conceptId && (
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Kiểu</span>
+            <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
             <button
               type="button"
@@ -634,10 +711,6 @@ export default function MarketingStudioPage() {
               <span>Bảng Ma Trận</span>
             </button>
           </div>
-          )}
-
-          {/* Theme Selector */}
-          {!state.conceptId && (
           <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
             {Object.values(POSTER_THEMES).map((th) => (
               <button
@@ -654,9 +727,14 @@ export default function MarketingStudioPage() {
               </button>
             ))}
           </div>
+            </div>
+          </div>
           )}
 
-          {/* AI Background Refresh */}
+          {/* ===== Nhóm 2: NỀN & KHỔ ===== */}
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Nền &amp; khổ</span>
+            <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handleRefreshBg}
@@ -665,8 +743,6 @@ export default function MarketingStudioPage() {
             <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
             <span>Đổi nền</span>
           </button>
-
-          {/* Aspect Ratio */}
           <select
             value={state.aspect}
             onChange={(e) => saveState({ ...state, aspect: e.target.value as AspectRatio })}
@@ -676,15 +752,115 @@ export default function MarketingStudioPage() {
             <option value="4:5">Dọc 4:5 (1080×1350)</option>
             <option value="9:16">Story 9:16 (1080×1920)</option>
           </select>
+            </div>
+          </div>
+
+          {/* ===== Nhóm 3: CHỮ & KHUNG ===== */}
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Chữ &amp; khung</span>
+            <div className="flex items-center gap-2 flex-wrap">
+          {/* Font chữ */}
+          <select
+            value={state.headingFontId || 'default'}
+            onChange={(e) => setFont(e.target.value)}
+            title="Đổi font chữ poster"
+            className="px-3 py-1.5 rounded-xl bg-black/40 border border-indigo-500/40 text-xs font-bold text-indigo-300 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="default">🔤 Font: Mặc định</option>
+            {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>🔤 {f.name}</option>)}
+          </select>
+
+          {/* Viền + Bo góc (slider) */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+            <span>Viền</span>
+            <input type="range" min={0} max={24} value={state.borderWidth ?? 0}
+              onChange={(e) => setBorder(Number(e.target.value))}
+              className="w-20 accent-emerald-500 cursor-pointer" />
+            <span className="w-6 text-right text-slate-400">{state.borderWidth ?? 0}</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+            <span>Bo góc</span>
+            <input type="range" min={0} max={80} value={state.borderRadius ?? 0}
+              onChange={(e) => setRadius(Number(e.target.value))}
+              className="w-20 accent-emerald-500 cursor-pointer" />
+            <span className="w-6 text-right text-slate-400">{state.borderRadius ?? 0}</span>
+          </div>
+
+          {/* Màu viền */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+            <span>Màu viền</span>
+            <input type="color" value={state.borderColor || '#ffffff'}
+              onChange={(e) => setBorderColor(e.target.value)}
+              title="Chọn màu viền"
+              className="w-7 h-6 rounded cursor-pointer bg-transparent border border-white/20 p-0" />
+            {state.borderColor && (
+              <button type="button" onClick={() => setBorderColor(undefined)} title="Về màu mặc định"
+                className="text-slate-400 hover:text-white">↺</button>
+            )}
+          </div>
+            </div>
+          </div>
+
+          {/* ===== Nhóm 4: TRANG TRÍ ===== */}
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Trang trí</span>
+            <div className="flex items-center gap-2 flex-wrap">
+          {/* Mùa sale VN */}
+          <select
+            value={state.season || 'none'}
+            onChange={(e) => setSeason(e.target.value)}
+            title="Trang trí theo mùa sale"
+            className="px-3 py-1.5 rounded-xl bg-black/40 border border-amber-500/40 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
+          >
+            {SEASON_PRESETS.map((s) => <option key={s.id} value={s.id}>{s.id === 'none' ? '🎉 Mùa: Không' : `Mùa: ${s.label}`}</option>)}
+          </select>
+
+          {/* Sticker sale */}
+          <select
+            value={state.sticker?.preset || 'none'}
+            onChange={(e) => setStickerPreset(e.target.value)}
+            title="Dán sticker sale lên poster"
+            className="px-3 py-1.5 rounded-xl bg-black/40 border border-rose-500/40 text-xs font-bold text-rose-300 focus:outline-none focus:border-rose-500"
+          >
+            {STICKER_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.id === 'none' ? '🏷️ Sticker: Không' : `🏷️ ${p.label}`}</option>)}
+          </select>
+          {state.sticker && state.sticker.preset !== 'none' && (
+            <>
+              <input
+                type="text"
+                value={state.sticker.text}
+                onChange={(e) => setStickerText(e.target.value)}
+                placeholder="Chữ trên sticker"
+                className="px-3 py-1.5 w-40 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-rose-500"
+              />
+              <div className="flex gap-1">
+                {(['tl', 'tr', 'bl', 'br'] as StickerCorner[]).map((c) => (
+                  <button key={c} type="button" onClick={() => setStickerCorner(c)}
+                    title={{ tl: 'Trên trái', tr: 'Trên phải', bl: 'Dưới trái', br: 'Dưới phải' }[c]}
+                    className={`w-7 h-7 rounded-lg border text-[10px] font-bold ${state.sticker?.corner === c ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                    {{ tl: '↖', tr: '↗', bl: '↙', br: '↘' }[c]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+            </div>
+          </div>
         </div>
       </div>
       )}
 
       {step === 1 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-black text-white">Chọn ngành của anh</h2>
-          <p className="text-slate-400 text-sm">Bấm một ngành — Mivy điền sẵn nội dung mẫu, anh chỉ việc chỉnh.</p>
+          <h2 className="text-xl font-black text-white">Chọn ngành &amp; mẫu thiết kế</h2>
+          <p className="text-slate-400 text-sm">Chọn ngành (có sẵn nội dung mẫu) và một mẫu thiết kế, rồi bấm Tiếp.</p>
           <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
+          <div className="flex justify-end">
+            <button type="button" onClick={() => setStep(2)}
+              className="px-6 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20">
+              Tiếp → Nhập nội dung
+            </button>
+          </div>
         </div>
       )}
 
@@ -697,13 +873,20 @@ export default function MarketingStudioPage() {
               <Layers className="w-4 h-4 text-emerald-400" />
               <span>Thông Tin Chiến Dịch</span>
             </h2>
-            <select
-              value={state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)}
-              onChange={(e) => { changeCategory(e.target.value); }}
-              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-400 focus:outline-none"
-            >
-              {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={toggleDevFill}
+                title="DEV: tự điền nội dung mẫu / xoá trắng"
+                className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all ${devFill ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                {devFill ? '⚡ Fill mẫu: BẬT' : '⚡ Fill mẫu: TẮT'}
+              </button>
+              <select
+                value={state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)}
+                onChange={(e) => { changeCategory(e.target.value); }}
+                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-400 focus:outline-none"
+              >
+                {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
           </div>
 
           <form onSubmit={handleGenerate} className="space-y-4 text-xs">
@@ -1001,6 +1184,15 @@ export default function MarketingStudioPage() {
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Tải ảnh PNG</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadAllSizes}
+                  title="Xuất ảnh đang chọn ở cả 3 khổ: Post 1080×1350 · Story/Reels 1080×1920 · Vuông 1080×1080"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/20 border border-sky-500 text-sky-300 font-bold text-xs hover:bg-sky-500/30 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Tải đủ 3 khổ</span>
                 </button>
                 <button
                   type="button"

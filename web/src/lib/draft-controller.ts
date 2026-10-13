@@ -1,4 +1,4 @@
-import { MarketingState } from '@/types';
+import { MarketingState, BrandKit } from '@/types';
 import { CATEGORIES } from './template-catalog';
 import {
   persistStateAssets,
@@ -39,6 +39,9 @@ export class DraftController {
   private onStateChange: (state: MarketingState) => void;
   private onStatusText?: (text: string) => void;
 
+  // Lifecycle & Cancellation
+  public isDisposed = false;
+
   // Concurrency & Revision Management
   public activeSwitchToken = 0;
   public activeSaveSeq = 0;
@@ -63,8 +66,32 @@ export class DraftController {
   }
 
   public setState(next: MarketingState): void {
+    if (this.isDisposed) return;
     this.state = next;
     this.onStateChange(next);
+  }
+
+  /**
+   * Hủy bỏ toàn bộ timer, token và ngăn chặn rò rỉ bộ nhớ / StrictMode race conditions.
+   */
+  public dispose(): void {
+    this.isDisposed = true;
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    this.activeSwitchToken++;
+    this.activeSaveSeq++;
+  }
+
+  /**
+   * Đồng bộ duy nhất trạng thái BrandKit qua controller (tránh React setState ngoài controller ghi đè).
+   */
+  public setBrandKit(brandKit?: BrandKit): void {
+    if (this.isDisposed) return;
+    const current = this.getState();
+    const next = { ...current, brandKit };
+    this.setState(next);
   }
 
   /**
@@ -73,6 +100,7 @@ export class DraftController {
    * giữ nguyên text edit và vẫn giải mã ảnh thành công vào canvas.
    */
   public async loadInitialDraft(): Promise<void> {
+    if (this.isDisposed) return;
     const initialRev = this.stateRevision;
     if (!this.storage) return;
 
@@ -82,16 +110,22 @@ export class DraftController {
       const parsed = JSON.parse(raw);
 
       // Nạp metadata ngay lập tức nếu chưa có thao tác người dùng nào
-      if (this.stateRevision === initialRev) {
-        this.setState({
+      if (!this.isDisposed && this.stateRevision === initialRev) {
+        const curBrand = this.getState().brandKit;
+        const initialMeta = {
           ...this.getState(),
           ...parsed,
           layoutMode: parsed.layoutMode || 'full_photo',
-        });
+        };
+        if (curBrand) {
+          initialMeta.brandKit = curBrand;
+        }
+        this.setState(initialMeta);
       }
 
       // Bất đồng bộ giải mã asset references từ IndexedDB
       const resolved = await resolveStateAssets(parsed, this.assetOptions);
+      if (this.isDisposed) return;
 
       // MERGE THÔNG MINH: Giữ nguyên text edits của người dùng, giải mã các trường ảnh chưa bị thay đổi
       const cur = this.getState();
@@ -106,13 +140,17 @@ export class DraftController {
 
       for (const field of IMAGE_FIELDS) {
         // Nếu trường ảnh trong state hiện tại vẫn khớp với ref ban đầu được load từ metadata
-        if (cur[field] === parsed[field]) {
+        if (cur[field] === parsed[field] && resolved[field] && resolved[field] !== parsed[field]) {
           (merged as any)[field] = resolved[field];
           updatedImages = true;
         }
       }
 
-      if (updatedImages) {
+      if (cur.brandKit) {
+        merged.brandKit = cur.brandKit;
+      }
+
+      if (updatedImages && !this.isDisposed) {
         this.setState(merged);
       }
     } catch (e) {
@@ -122,14 +160,13 @@ export class DraftController {
 
   /**
    * Lưu state với debounce.
-   * Khắc phục Lỗi 2: Invalidate activeSwitchToken để resolve cũ không đè edit mới.
-   * Khắc phục Lỗi 3: In-memory drafts lưu trước, báo lỗi rõ ràng nếu LocalStorage đầy.
+   * Tách biệt Transition Ownership và Field-level Edits:
+   * Không tăng activeSwitchToken ở đây để không làm gián đoạn resolution của target assets.
    */
   public saveState(newState: MarketingState, delayMs = 150): void {
+    if (this.isDisposed) return;
     this.stateRevision++;
     const saveSeq = ++this.activeSaveSeq;
-    // Invalidate bất kỳ in-flight target asset resolution nào của switch cũ
-    this.activeSwitchToken++;
 
     this.setState(newState);
 
@@ -139,29 +176,40 @@ export class DraftController {
 
     if (!this.storage) return;
 
-    // Lưu metadata nhanh (nếu storage cho phép)
-    try {
-      this.storage.setItem(this.storageKey, JSON.stringify(newState));
-    } catch {}
+    // Lưu metadata nhanh (nếu storage cho phép và đúng active category)
+    const activeCat = this.getState().categoryId || (this.getState().industry === 'general' ? 'retail' : this.getState().industry);
+    if (activeCat === currentCat) {
+      try {
+        this.storage.setItem(this.storageKey, JSON.stringify(newState));
+      } catch {}
+    }
 
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(async () => {
-      if (this.activeSaveSeq !== saveSeq) return;
+      if (this.isDisposed || this.activeSaveSeq !== saveSeq) return;
 
       try {
         const { state: persistedState, failedFields } = await persistStateAssets(newState, this.assetOptions);
 
-        // GUARD SAU AWAIT: Nếu có save mới hơn đã được gọi, hủy bỏ commit cũ ngay!
-        if (this.activeSaveSeq !== saveSeq) return;
+        // GUARD SAU AWAIT: Nếu có save mới hơn hoặc controller đã dispose, hủy bỏ commit cũ ngay!
+        if (this.isDisposed || this.activeSaveSeq !== saveSeq) return;
 
         if (failedFields.length > 0) {
           this.onStatusText?.('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
         }
 
-        if (this.activeSaveSeq !== saveSeq) return;
+        if (this.isDisposed || this.activeSaveSeq !== saveSeq) return;
 
         try {
-          this.storage?.setItem(this.storageKey, JSON.stringify(persistedState));
+          const currentActive = this.getState();
+          const currentActiveCat = currentActive.categoryId || (currentActive.industry === 'general' ? 'retail' : currentActive.industry);
+          const saveCat = newState.categoryId || (newState.industry === 'general' ? 'retail' : newState.industry);
+
+          // OWNERSHIP GUARD: Chỉ ghi vào main storage key nếu controller vẫn đang active ở đúng ngành này!
+          if (currentActiveCat === saveCat) {
+            this.storage?.setItem(this.storageKey, JSON.stringify(persistedState));
+          }
+
           const savedOk = saveIndustryDraft(persistedState, this.storage, this.draftKey);
           if (!savedOk) {
             this.onStatusText?.('Bản nháp chưa lưu được vào trình duyệt do đầy bộ nhớ. Bản nháp được lưu tạm trong bộ nhớ phiên này.');
@@ -170,7 +218,7 @@ export class DraftController {
           this.onStatusText?.('Bản nháp chưa lưu được vào trình duyệt. Anh giữ nguyên ngành hiện tại và tải nội dung trước.');
         }
       } catch (err) {
-        if (this.activeSaveSeq !== saveSeq) return;
+        if (this.isDisposed || this.activeSaveSeq !== saveSeq) return;
         console.warn('[DraftController] Lỗi saveState:', err);
       }
     }, delayMs);
@@ -179,17 +227,18 @@ export class DraftController {
   /**
    * Chuyển đổi ngành an toàn với bảo vệ đa tầng.
    * Khắc phục Lỗi 1: Clear timer và invalidate activeSaveSeq để save A không đè lên B.
-   * Khắc phục Lỗi 2: Guard sau mỗi await, bảo toàn thao tác edit/xóa ảnh của người dùng.
-   * Khắc phục Lỗi 3: In-memory per-category fallback bảo vệ bản nháp chưa lưu khi LocalStorage quota error.
+   * Khắc phục Lỗi 2: Guard sau mỗi await, bảo toàn thao tác edit/xóa ảnh của người dùng và giải mã ảnh còn lại.
+   * Khắc phục Lỗi 3: Ưu tiên in-memory drafts trước storage để bảo vệ bản nháp mới hơn đĩa khi quota error.
    */
   public async changeCategory(categoryId: string, persistDelayMs = 0): Promise<void> {
+    if (this.isDisposed) return;
     const category = CATEGORIES.find((c) => c.id === categoryId);
     if (!category) return;
     const currentState = this.getState();
     const currentCatId = currentState.categoryId || (currentState.industry === 'general' ? 'retail' : currentState.industry);
     if (currentCatId === categoryId) return;
 
-    // 1. HỦY TOÀN BỘ SAVE IN-FLIGHT CỦA NGÀNH CŨ (Lỗi 1)
+    // 1. HỦY TOÀN BỘ SAVE IN-FLIGHT CỦA NGÀNH CŨ
     if (this.saveTimer) {
       clearTimeout(this.saveTimer);
       this.saveTimer = null;
@@ -208,43 +257,70 @@ export class DraftController {
       const persistRes = await persistStateAssets(currentState, this.assetOptions);
 
       // GUARD SAU AWAIT 1
-      if (this.activeSwitchToken !== token) return;
+      if (this.isDisposed || this.activeSwitchToken !== token) return;
 
       currentWithRefs = persistRes.state;
       if (persistRes.failedFields.length > 0) {
         this.onStatusText?.('Không thể lưu ảnh vào bộ nhớ trình duyệt (hết dung lượng). Ảnh vẫn hiển thị trong phiên này.');
       }
     } catch (err) {
-      if (this.activeSwitchToken !== token) return;
+      if (this.isDisposed || this.activeSwitchToken !== token) return;
       console.warn('[DraftController] Lỗi persist assets trước switch:', err);
     }
 
-    if (this.activeSwitchToken !== token) return;
+    if (this.isDisposed || this.activeSwitchToken !== token) return;
 
-    // 3. Lưu bản nháp ngành cũ vào In-Memory Drafts (Lỗi 3)
-    this.inMemoryDrafts[currentCatId] = currentWithRefs;
+    // 3. Lưu bản nháp ngành cũ vào In-Memory Drafts & LocalStorage
+    // BẢO VỆ EDIT MỚI TRONG OUTGOING PERSIST:
+    // Nếu người dùng đã edit ngành cũ trong lúc outgoing persist đang await (qua saveState),
+    // bản draft mới nhất của ngành cũ nằm trong this.inMemoryDrafts[currentCatId].
+    // Ta lấy bản mới đó làm gốc để không làm mất edit của người dùng!
+    const latestOutgoing = this.inMemoryDrafts[currentCatId] || currentState;
+    const mergedOutgoing = { ...latestOutgoing };
+
+    for (const field of IMAGE_FIELDS) {
+      // Chỉ gán ref nếu trường ảnh trong latestOutgoing chưa bị người dùng thay đổi so với currentState ban đầu
+      if (latestOutgoing[field] === currentState[field] && currentWithRefs[field]) {
+        (mergedOutgoing as any)[field] = currentWithRefs[field];
+      }
+    }
+
+    this.inMemoryDrafts[currentCatId] = mergedOutgoing;
 
     // Lưu vào LocalStorage
     if (this.storage) {
-      const savedOk = saveIndustryDraft(currentWithRefs, this.storage, this.draftKey);
+      const savedOk = saveIndustryDraft(mergedOutgoing, this.storage, this.draftKey);
       if (!savedOk) {
         this.onStatusText?.('Bộ nhớ trình duyệt đã đầy. Bản nháp ngành cũ được lưu tạm trong bộ nhớ phiên này. Anh nên tải nội dung về máy trước khi đóng trang.');
       }
     }
 
-    // 4. Lấy metadata của ngành mới (Ưu tiên storage, fallback sang in-memory drafts)
+    // 4. Lấy metadata của ngành mới: ƯU TIÊN IN-MEMORY TRƯỚC STORAGE (Bảo vệ dữ liệu mới hơn đĩa khi quota)
     const storageDrafts = getAllDrafts(this.storage, this.draftKey);
     let nextMeta: MarketingState;
 
-    if (storageDrafts[category.id]) {
-      nextMeta = { ...storageDrafts[category.id], categoryId: category.id, industry: category.industry };
-    } else if (this.inMemoryDrafts[category.id]) {
+    if (this.inMemoryDrafts[category.id]) {
       nextMeta = { ...this.inMemoryDrafts[category.id], categoryId: category.id, industry: category.industry };
+    } else if (storageDrafts[category.id]) {
+      nextMeta = { ...storageDrafts[category.id], categoryId: category.id, industry: category.industry };
     } else {
-      nextMeta = createDefaultIndustryState(category.id, category.industry, currentWithRefs);
+      nextMeta = createDefaultIndustryState(category.id, category.industry, mergedOutgoing);
     }
 
-    if (this.activeSwitchToken !== token) return;
+    // Bảo toàn BrandKit xuyên suốt các ngành
+    if (currentState.brandKit) {
+      nextMeta.brandKit = currentState.brandKit;
+    }
+
+    if (this.isDisposed || this.activeSwitchToken !== token) return;
+
+    // HỦY VÀ VÔ HIỆU HÓA TOÀN BỘ SAVE TIMERS ĐÃ TẠO TRONG LÚC OUTGOING PERSIST
+    // Đảm bảo không có save timer cũ nào có thể commit đè lên active draft của ngành mới!
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    this.activeSaveSeq++;
 
     // 5. Optimistic UI update
     this.setState(nextMeta);
@@ -259,25 +335,31 @@ export class DraftController {
     try {
       const resolvedState = await resolveStateAssets(nextMeta, this.assetOptions);
 
-      // GUARD SAU AWAIT 2 (Lỗi 2)
-      if (this.activeSwitchToken !== token) return;
+      // GUARD SAU AWAIT 2
+      if (this.isDisposed || this.activeSwitchToken !== token) return;
 
-      // Merge thông minh: Nếu người dùng đã edit hoặc gỡ ảnh trong lúc giải mã, bảo toàn thao tác của user
+      // Merge thông minh: Nếu người dùng đã edit text hoặc gỡ 1 ảnh trong lúc giải mã, bảo toàn thao tác của user
       const activeCurrent = this.getState();
       const activeCurrentCat = activeCurrent.categoryId || (activeCurrent.industry === 'general' ? 'retail' : activeCurrent.industry);
       if (activeCurrentCat !== category.id) return;
 
       const merged = { ...activeCurrent };
+      let updatedImages = false;
+
       for (const field of IMAGE_FIELDS) {
         // Chỉ cập nhật nếu trường ảnh trong activeCurrent vẫn khớp với nextMeta (chưa bị user gỡ hoặc sửa)
-        if (activeCurrent[field] === nextMeta[field]) {
+        // và resolvedState có kết quả giải mã khác với ref ban đầu
+        if (activeCurrent[field] === nextMeta[field] && resolvedState[field] && resolvedState[field] !== nextMeta[field]) {
           (merged as any)[field] = resolvedState[field];
+          updatedImages = true;
         }
       }
 
-      this.setState(merged);
+      if (updatedImages && !this.isDisposed) {
+        this.setState(merged);
+      }
     } catch (err) {
-      if (this.activeSwitchToken !== token) return;
+      if (this.isDisposed || this.activeSwitchToken !== token) return;
       console.warn('[DraftController] Lỗi giải mã asset ngành mới:', err);
     }
   }

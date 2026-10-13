@@ -1,0 +1,130 @@
+{
+  "timestamp": "2026-10-08T07:59:27.570Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "nativeIndexedDBAvailable": true,
+  "namespace": {
+    "storageKey": "mivy-qc-marketing-v1",
+    "draftKey": "mivy-qc-industry-drafts-v2",
+    "dbName": "mivy-qc-assets-v1"
+  },
+  "currentIDBRecordCount": 0,
+  "summary": {
+    "total": 6,
+    "passed": 5,
+    "failed": 1
+  },
+  "tests": {
+    "test1": {
+      "id": "test1",
+      "name": "1. Native IndexedDB Persist & Resolve Roundtrip",
+      "status": "fail",
+      "durationMs": 485,
+      "logs": [
+        "Khởi động Test 1: Kiểm tra native IndexedDB persist & resolve...",
+        "State ban đầu: image len=19494, bg len=444398",
+        "LỖI: Lưu thất bại các trường: image, backgroundImage"
+      ],
+      "error": "Lưu thất bại các trường: image, backgroundImage"
+    },
+    "test2": {
+      "id": "test2",
+      "name": "2. A→B→A Category Switch Persistence",
+      "status": "pass",
+      "durationMs": 93,
+      "logs": [
+        "Khởi động Test 2: Chuyển đổi ngành A→B→A trên DraftController production...",
+        "Chuyển từ recruitment sang property...",
+        "Đã chuyển sang property và lưu tiêu đề: Sky Villa Penthouse B",
+        "Chuyển ngược lại recruitment...",
+        "Thành công: Ngành A phục hồi 100% tiêu đề và ảnh chính từ native IDB/drafts!",
+        "Đã render canvas thật của ngành A sau phục hồi."
+      ],
+      "idbKeys": [],
+      "stateDump": {
+        "restoredCategory": "recruitment",
+        "restoredName": "Lead Cloud Engineer A"
+      }
+    },
+    "test3": {
+      "id": "test3",
+      "name": "3. Reload State & Restore Assets from Native IDB",
+      "status": "pass",
+      "durationMs": 109,
+      "logs": [
+        "Khởi động Test 3: Mô phỏng Browser Reload (F5) nạp lại từ localStorage + native IDB...",
+        "Đã lưu dữ liệu ngành food vào storage key [mivy-qc-marketing-v1].",
+        "Gọi reloadedController.loadInitialDraft()...",
+        "Thành công: Reload nạp metadata tức thì và giải mã 100% data URI từ native IndexedDB!",
+        "Đã render poster thật từ state sau reload."
+      ],
+      "idbKeys": [],
+      "stateDump": {
+        "category": "food",
+        "name": "Signature Wagyu Steak Set"
+      }
+    },
+    "test4": {
+      "id": "test4",
+      "name": "4. Intentional Clear Image Preservation during Resolve",
+      "status": "pass",
+      "durationMs": 119,
+      "logs": [
+        "Khởi động Test 4: Chủ động gỡ ảnh trong lúc resolve không bị hồi sinh...",
+        "Thành công: Thao tác gỡ ảnh nền được bảo toàn (không hồi sinh), ảnh chính giải mã thành công!",
+        "Đã render canvas thật kiểm tra không có background image."
+      ],
+      "idbKeys": [],
+      "stateDump": {
+        "bg": "",
+        "mainLen": 21358
+      }
+    },
+    "test5": {
+      "id": "test5",
+      "name": "5. Edited Text Preservation with Untouched Image Resolve",
+      "status": "pass",
+      "durationMs": 95,
+      "logs": [
+        "Khởi động Test 5: Gõ text trong lúc target resolve không làm mất text và resolve ảnh còn lại...",
+        "Thành công: Tiêu đề gõ mới được giữ 100%, ảnh chính untouched giải mã thành công!",
+        "Đã render canvas thật hiển thị tiêu đề gõ mới cùng ảnh chính."
+      ],
+      "idbKeys": [],
+      "stateDump": {
+        "name": "Realtime Edited Headline by User",
+        "imageLen": 21298
+      }
+    },
+    "test6": {
+      "id": "test6",
+      "name": "6. Delayed Outgoing Save Timer Settlement & Active Draft Ownership",
+      "status": "pass",
+      "durationMs": 227,
+      "logs": [
+        "Khởi động Test 6: Delayed outgoing save timer settle không ghi đè active draft B...",
+        "Bắt đầu chuyển ngành sang property (delay 50ms)...",
+        "Đã kích hoạt saveState(\"Late Outgoing Edit Name\", delay 100ms) trong lúc outgoing persist await.",
+        "Switch sang property đã hoàn tất. Đang chờ 150ms để timer 100ms settle trong lúc B active...",
+        "Kiểm tra chính xác: Main storage key [mivy-qc-marketing-v1] duy trì đúng \"property\"!",
+        "Chuyển quay lại recruitment...",
+        "Thành công: Bản edit ngành cũ \"Late Outgoing Edit Name\" được bảo toàn 100%!",
+        "Đã render canvas thật của ngành property (B)."
+      ],
+      "idbKeys": [],
+      "stateDump": {
+        "storageCategory": "property",
+        "restoredName": "Late Outgoing Edit Name"
+      }
+    }
+  },
+  "consoleLogs": [
+    "[07:59:05] CÓ TEST THẤT BẠI.",
+    "[07:59:05] Đang chạy Test 6: Delayed Outgoing Save Settlement...",
+    "[07:59:05] Đang chạy Test 5: Edited Text during Resolve...",
+    "[07:59:05] Đang chạy Test 4: Intentional Clear during Resolve...",
+    "[07:59:05] Đang chạy Test 3: Reload State from Native IDB...",
+    "[07:59:04] Đang chạy Test 2: A→B→A Switch Persistence...",
+    "[07:59:04] Đang chạy Test 1: Native IndexedDB Persist & Resolve...",
+    "[07:59:04] BẮT ĐẦU CHẠY TOÀN BỘ 6 TESTS QC TRÌNH DUYỆT THẬT (NATIVE IDB)..."
+  ]
+}

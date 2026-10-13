@@ -9,6 +9,8 @@ export type CategorySample = {
   details: string;
   goal: string;
   copies: MarketingState['copies'];
+  // Field riêng theo ngành (recruitment/property/food) để điền đủ, không còn cảnh báo thiếu
+  fields?: Record<string, string>;
 };
 
 export const CATEGORY_SAMPLES: Record<string, CategorySample> = {
@@ -19,6 +21,14 @@ export const CATEGORY_SAMPLES: Record<string, CategorySample> = {
     goal: 'recruitment',
     details:
       '5+ năm kinh nghiệm kiến trúc hệ thống lớn\nLương 25 - 35 triệu + Thưởng dự án KPI\nLàm việc TP.HCM · Hybrid\nThành thạo ReactJS, Node.js, Python, PostgreSQL\nEmail: tuyendung@mivy.vn',
+    fields: {
+      role: 'Lead Fullstack Developer',
+      salary: 'Lương 25 - 35 triệu',
+      location: 'TP.HCM · Hybrid',
+      requirements: '5+ năm kinh nghiệm kiến trúc hệ thống lớn\nThành thạo ReactJS, Node.js, Python, PostgreSQL',
+      benefits: 'Thưởng dự án KPI\nLàm việc Hybrid linh hoạt',
+      contact: 'tuyendung@mivy.vn',
+    },
     copies: {
       launch: { headline: 'Lead Fullstack Developer', subline: 'Gia nhập đội ngũ sản phẩm công nghệ cao', cta: 'Gửi CV ngay', caption: '🚀 MIVY TECH TUYỂN LEAD FULLSTACK DEVELOPER\n\n📌 Đãi ngộ: 25 - 35 triệu + thưởng KPI\n📌 Địa điểm: TP.HCM · Hybrid\n\nỨng tuyển: tuyendung@mivy.vn' },
       story: { headline: 'Yêu Cầu Chuyên Môn', subline: 'Tiêu chuẩn cho core member', cta: 'Tìm hiểu thêm', caption: '🎯 TIÊU CHÍ ỨNG VIÊN\n\n- 5+ năm kinh nghiệm production\n- Làm chủ ReactJS, Node, Python\n- Tư duy kiến trúc & dẫn dắt team', points: ['5+ năm kinh nghiệm hệ thống high-traffic', 'Thành thạo ReactJS, TypeScript, Node/Python', 'Tư duy Clean Code và tối ưu hiệu năng'] },
@@ -58,6 +68,13 @@ export const CATEGORY_SAMPLES: Record<string, CategorySample> = {
     goal: 'food',
     details:
       'Hương vị Huế chuẩn gốc, nước dùng ninh 8 tiếng\nTopping đầy đủ: giò, chả, bò, huyết\nKhông gian sạch sẽ, phục vụ nhanh\nMở cửa 6h–21h hàng ngày\nĐịa chỉ: 45 Nguyễn Trãi, Quận 1',
+    fields: {
+      item: 'Bún Bò Huế O Xuân',
+      price: '45.000đ',
+      description: 'Nước dùng ninh 8 tiếng\nTopping đầy đủ: giò, chả, bò, huyết',
+      offer: 'Khai trương giảm 20% tuần đầu',
+      booking: '45 Nguyễn Trãi, Quận 1 · 6h–21h',
+    },
     copies: {
       launch: { headline: 'Bún Bò Huế O Xuân', subline: 'Chuẩn vị Huế giữa lòng Sài Gòn', cta: 'Ghé ngay', caption: '🍜 BÚN BÒ HUẾ O XUÂN KHAI TRƯƠNG\n\n📌 Nước dùng ninh 8 tiếng\n📌 Khai trương giảm 20% tuần đầu\n\n45 Nguyễn Trãi, Quận 1 · 6h–21h' },
       story: { headline: 'Vì Sao Nên Thử', subline: 'Hương vị làm nên tên tuổi', cta: 'Xem thực đơn', caption: '🎯 ĐIỂM NHẤN\n\n- Nước dùng ninh 8 tiếng\n- Topping đầy đủ giò, chả, bò, huyết\n- Không gian sạch, phục vụ nhanh', points: ['Nước dùng ninh 8 tiếng đậm vị', 'Topping đầy đủ giò, chả, bò, huyết', 'Không gian sạch, phục vụ nhanh'] },
@@ -84,6 +101,15 @@ export const CATEGORY_SAMPLES: Record<string, CategorySample> = {
     goal: 'property',
     details:
       'Căn 2 phòng ngủ, 68m², view sông\nBàn giao full nội thất cao cấp\nTiện ích hồ bơi, gym, công viên nội khu\nGần trung tâm Quận 7, kết nối nhanh\nHỗ trợ vay 70%, ân hạn gốc 24 tháng',
+    fields: {
+      type: 'Căn hộ 2 phòng ngủ',
+      price: 'Chiết khấu 5% cho 20 khách đầu',
+      area: '68m²',
+      address: 'Quận 7, TP.HCM',
+      bedrooms: '2 phòng ngủ · 2 WC',
+      amenities: 'Hồ bơi, gym, công viên nội khu\nFull nội thất cao cấp',
+      contact: '0900 000 000',
+    },
     copies: {
       launch: { headline: 'Căn Hộ The Sun Riverside', subline: 'Sống chuẩn view sông Quận 7', cta: 'Nhận bảng giá', caption: '🏙️ THE SUN RIVERSIDE\n\n📌 2PN · 68m² · view sông\n📌 Chiết khấu 5% cho 20 khách đầu\n\nĐể lại thông tin nhận bảng giá!' },
       story: { headline: 'Vì Sao Chọn Dự Án', subline: 'Vị trí, tiện ích và chính sách', cta: 'Xem chi tiết', caption: '🎯 ĐIỂM NHẤN DỰ ÁN\n\n- Full nội thất cao cấp\n- Hồ bơi, gym, công viên nội khu\n- Gần trung tâm Quận 7', points: ['Bàn giao full nội thất cao cấp', 'Tiện ích hồ bơi, gym, công viên', 'Gần trung tâm Quận 7'] },

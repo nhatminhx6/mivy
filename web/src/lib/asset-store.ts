@@ -49,48 +49,92 @@ function generateAssetId(): string {
   return `${ASSET_REF_PREFIX}${time}_${rand}`;
 }
 
-// Bộ nhớ đệm các asset đã được persist bền vững thành công (tránh nhân bản khi sửa chữ)
-const immutableAssetCache = new Map<string, string>();
+// Bộ nhớ đệm asset scoped theo từng store/db/driver namespace
+const storeScopedCaches = new Map<string, Map<string, string>>();
+const driverScopeIds = new WeakMap<AssetStoreDriver, string>();
+let nextDriverId = 1;
 
-export function clearAssetCache(): void {
-  immutableAssetCache.clear();
-}
-
-function computeContentHash(data: string): string {
-  let h = 5381;
-  const len = data.length;
-  const step = Math.max(1, Math.floor(len / 128));
-  for (let i = 0; i < len; i += step) {
-    h = ((h << 5) + h) + data.charCodeAt(i);
-    h = h & h;
+function getStoreScopeKey(options?: AssetStoreOptions): string {
+  if (options?.driver) {
+    const anyDriver = options.driver as any;
+    if (anyDriver.__storeId) return `driver:${anyDriver.__storeId}`;
+    let id = driverScopeIds.get(options.driver);
+    if (!id) {
+      id = `driver_inst_${nextDriverId++}`;
+      driverScopeIds.set(options.driver, id);
+    }
+    return `${id}:${options.dbName || 'default'}`;
   }
-  return `hash_${len}_${Math.abs(h).toString(36)}`;
+  return `idb:${options?.dbName || DEFAULT_ASSET_DB}`;
 }
 
-// Mở IndexedDB an toàn
-function openDB(dbName: string = DEFAULT_ASSET_DB): Promise<IDBDatabase> {
+export function clearAssetCache(scopeKey?: string): void {
+  if (scopeKey) {
+    storeScopedCaches.delete(scopeKey);
+  } else {
+    storeScopedCaches.clear();
+  }
+}
+
+/**
+ * Băm 100% toàn bộ chuỗi nội dung theo FNV-1a kép (duyệt từng ký tự, không lấy mẫu).
+ * Kết hợp dịch bit và vị trí để cả 2 hàm băm phân tán tốt trên tập ký tự ASCII.
+ */
+function computeFullContentHash(data: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x84222325;
+  const len = data.length;
+  for (let i = 0; i < len; i++) {
+    const code = data.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 16777619);
+    h2 = Math.imul(h2 ^ ((code << 1) ^ (i & 0xff)), 16777619);
+  }
+  return `full_${len}_${(h1 >>> 0).toString(36)}_${(h2 >>> 0).toString(36)}`;
+}
+
+// Mở IndexedDB an toàn với cơ chế tự phục hồi schema nếu database bị mở rỗng trước đó
+export function openAssetDB(dbName: string = DEFAULT_ASSET_DB): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined' || !window.indexedDB) {
       reject(new Error('IndexedDB không khả dụng trong môi trường hiện tại'));
       return;
     }
 
-    const req = window.indexedDB.open(dbName, 1);
+    const req = window.indexedDB.open(dbName);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(ASSET_STORE_NAME)) {
         db.createObjectStore(ASSET_STORE_NAME, { keyPath: 'id' });
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(ASSET_STORE_NAME)) {
+        // Schema bị poison từ trước: tăng version để kích hoạt onupgradeneeded tạo store assets
+        const nextVersion = db.version + 1;
+        db.close();
+        const upgradeReq = window.indexedDB.open(dbName, nextVersion);
+        upgradeReq.onupgradeneeded = () => {
+          const udb = upgradeReq.result;
+          if (!udb.objectStoreNames.contains(ASSET_STORE_NAME)) {
+            udb.createObjectStore(ASSET_STORE_NAME, { keyPath: 'id' });
+          }
+        };
+        upgradeReq.onsuccess = () => resolve(upgradeReq.result);
+        upgradeReq.onerror = () => reject(upgradeReq.error || new Error('Không thể nâng cấp IndexedDB schema'));
+        return;
+      }
+      resolve(db);
+    };
     req.onerror = () => reject(req.error || new Error('Không thể mở IndexedDB'));
   });
 }
+const openDB = openAssetDB;
 
 /**
  * Lưu chuỗi data URI vào Asset Store (IndexedDB).
  * Nếu đã là URL thông thường hoặc asset ref, trả về nguyên dạng.
- * Tái sử dụng asset reference nếu cùng nội dung đã được persist thành công (tránh nhân bản khi sửa text).
+ * Tái sử dụng asset reference nếu cùng nội dung đã được persist thành công TRONG CÙNG STORE SCOPE.
  */
 export async function saveAsset(
   dataUri: string,
@@ -103,11 +147,33 @@ export async function saveAsset(
     return dataUri;
   }
 
-  const contentHash = computeContentHash(dataUri);
-  const cachedRef = immutableAssetCache.get(contentHash);
+  const scopeKey = getStoreScopeKey(options);
+  let scopeCache = storeScopedCaches.get(scopeKey);
+  if (!scopeCache) {
+    scopeCache = new Map<string, string>();
+    storeScopedCaches.set(scopeKey, scopeCache);
+  }
+
+  const contentHash = computeFullContentHash(dataUri);
+  const cachedRef = scopeCache.get(contentHash);
   if (cachedRef && !customId) {
-    // Tái sử dụng ref đã persist thành công trước đó
-    return cachedRef;
+    // Lấy full data từ store và so sánh chính xác tuyệt đối trước khi tái sử dụng
+    // Triệt tiêu 100% rủi ro hash collision trả về nhầm ảnh khác
+    let existingData: string | null = null;
+    try {
+      if (options?.driver) {
+        existingData = await options.driver.get(cachedRef);
+      } else if (typeof window !== 'undefined' && window.indexedDB) {
+        existingData = await getAsset(cachedRef, options);
+      }
+    } catch {}
+
+    if (existingData !== null && existingData === dataUri) {
+      return cachedRef;
+    } else {
+      // Nếu không tồn tại hoặc dữ liệu khác nhau (collision), xóa cache entry đó
+      scopeCache.delete(contentHash);
+    }
   }
 
   const id = customId || generateAssetId();
@@ -115,8 +181,8 @@ export async function saveAsset(
 
   if (options?.driver) {
     await options.driver.set(id, dataUri);
-    // Chỉ cache khi driver đã lưu thành công
-    immutableAssetCache.set(contentHash, id);
+    // Chỉ cache vào scope này khi driver đã lưu thành công
+    scopeCache.set(contentHash, id);
     return id;
   }
 
@@ -130,7 +196,7 @@ export async function saveAsset(
 
       // RESOLVE TRÊN TRANSACTION COMPLETE (Lỗi 5): Đảm bảo dữ liệu đã thực sự commit vào đĩa
       tx.oncomplete = () => {
-        immutableAssetCache.set(contentHash, id);
+        scopeCache?.set(contentHash, id);
         resolve(id);
       };
       tx.onerror = () => reject(tx.error || new Error('Lỗi transaction IndexedDB'));

@@ -237,3 +237,215 @@ Read PLAN, IMPLEMENTATION_STATUS and VISUAL_QC. One Antigravity availability che
 
 ### 2026-10-08 00:54 UTC — locked Mac, review pending
 Checkpoint read; single UI availability check still reports locked Mac. Existing controller review remains undispatched. No retry loop, new job, source edits, tests or render claims. Resume existing Gemini feedback when unlocked; overall NOT ACCEPTED.
+
+
+### 2026-10-08 01:54 UTC — controller integrity follow-up dispatched
+Read checkpoints; Antigravity accessible again. Verified Gemini3.8 Flash High, idle composer and Background Tasks0; sent existing15:40 controller review (asset collision/store isolation, stale quota recovery, field restore, brand state ownership, disposal). Observed Working/Cancel confirming dispatch. No duplicate job or Codex product edits. Await revised result and independently verify production tests before isolated browser/raster QC. No new visual evidence; overall NOT ACCEPTED.
+
+
+### 2026-10-08 02:55 UTC — outgoing edit regression reproduced, fix dispatched
+Independently ran latest production controller suite:8/8 pass. Additional actual-controller sequence (edit during outgoing persistence, switch back) loses Latest edit and restores Before; evidence reports/outgoing-edit-review-20261008.json. Appended review requesting outgoing ownership fix without regressing target field merge, plus exact cached-content comparison. Verified Gemini3.8 Flash High idle/Background Tasks0 and sent bounded follow-up; Working/Cancel confirmed. No product edits or new raster acceptance. Native IDB/browser preview remains unverified; mock driver abort is not native transaction coverage. Overall NOT ACCEPTED; await revision, no duplicate job.
+
+
+### 2026-10-08 03:59 UTC — checks pass, delayed outgoing save still regresses reload
+Independently verified10 lifecycle tests,9 base tests and tsc --noEmit exit0. Additional actual-controller test lets outgoing-edit save timer settle after switching: active property but persisted main draft recruitment. Saved reports/outgoing-save-review-20261008.json; reviewed cause: switch entry cancellation misses saves scheduled during outgoing await. Added narrow review and dispatched to idle Gemini3.8 Flash High (Background Tasks0), Working/Cancel confirmed. Await fix; no duplicate job, no product edits, no browser/raster acceptance this batch. Persistence gate remains open; overall NOT ACCEPTED.
+
+
+### 2026-10-08 05:02 UTC — outgoing timer regression passes focused verification
+Reviewed transition-commit timer cancellation/sequence invalidation. Independently ran10 production lifecycle tests successfully, including delayed timer settling while B remains active. Separate original reproduction now reports active property, persisted property, restored Latest edit; evidence reports/outgoing-save-fixed-20261008.json. Browser/native-IDB and actual render checks still pending: one computer-use check reports locked Mac, so no browser interactions, no duplicate Gemini job or new product edits. This is narrow functional verification, not full persistence or aesthetic acceptance; overall NOT ACCEPTED. Next isolated browser real-IDB/image roundtrip and render QC when accessible.
+
+
+### 2026-10-08 06:02 UTC — browser QC still blocked
+Read required checkpoints; one UI availability check still reports locked Mac. Prior focused regression pass unchanged (TypeScript check also completed exit0 last batch). No repeated tests, new job, product edits or new visual claims. Browser real-IDB and render QC remain pending; overall NOT ACCEPTED.
+
+
+### 2026-10-08 07:00 UTC — isolated native-browser QC harness dispatched
+UI accessible; verified idle Gemini3.8 Flash High and Background Tasks0. Dispatched bounded dev-only harness linked from /studio/marketing/review, using production controller/asset-store and dedicated mivy-qc storage/draft/DB namespace. Requested native IndexedDB roundtrip/reload/clear/races plus actual renderer restored-state canvas, self-created main/background fixtures, downloadable evidence and DRAFT_BROWSER_QC_RESULT.md. No real-user draft manipulation, renderer edits, dependencies or build allowed. Observed Working/Cancel. Await harness then Codex browser interaction and visual inspection; no acceptance claim or duplicate job. Overall NOT ACCEPTED.
+
+
+### 2026-10-08 07:58 UTC — first real-browser harness run fails
+Ran isolated persistence route through IAB UI. Actual report1FAIL/5PASS, native IDB0records; saved downloaded report to reports/browser-idb-first-20261008.json. Console NotFoundError confirms missing assets store. Harness inspectNativeIDB opens DBv1 without upgrade schema before production initialization; remaining passes accept inline fallback, not evidence of native durability. Screenshot capture failed, so no visual acceptance. Sent idle Gemini3.8 Flash High bounded harness repair: safe QC schema initialization/recovery, mandatory refs/native keys/failedFields checks, actual page reload without reseeding, downloadable canvas PNG and enforced dev-only access. Working/Cancel confirmed. No real draft or renderer edits, no duplicate job. Overall NOT ACCEPTED; next rerun corrected browser harness and inspect PNGs.
+
+
+### 2026-10-08 09:01 UTC — native IDB and actual reload verified narrowly
+Ran corrected isolated browser harness:6/6 pass with10 native records. Downloaded run-all JSON. Clicked actual page reload; new document verified existing QC data without reseeding, actualReloadVerified true,11 records. Downloaded reload JSON and individual canvas PNG; inspected PNG: main circular red fixture and separate grid background both restored, headline legible. Fixture contains mixed-language sample text and is not commercial aesthetic acceptance or VI/EN/ZIP parity. Bulk PNG download yielded no files; individual test3 download worked. Evidence reports/browser-idb-20261008/{run-all.json,actual-reload.json,reload-canvas.png}. No real-user draft changes. Overall NOT ACCEPTED; next focused template visual failures/property edge and wider preview/export checks remain.
+
+
+### 2026-10-08 10:01 UTC — next bounded export repair pending UI access
+Read required checkpoints and STORY_SOURCE_REPAIR.md. Native-IDB milestone remains as verified; next independent scope is confirmed story source/page-count mismatch (five legacy details lines render two pages but ZIP counts one), preserving manual clear and concept semantics. One Antigravity check reports locked Mac; no dispatch, duplicate job or code changes. Existing property CLI task remains unresolved and must not be duplicated. No redundant tests or render claims. Overall NOT ACCEPTED. Resume idle/model verification before dispatching bounded story repair; its old prepared-status wording must be updated when actually dispatched.
+
+
+### 2026-10-08 11:05 UTC — unchanged lock blocker
+Read required checkpoints. Single Antigravity availability check still reports locked Mac; story-source repair remains undispatched. No retry loop, duplicate job, product edits or repeated tests/renders. Prior native-IDB verification unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 12:09 UTC — unchanged UI blocker
+Required checkpoints read. One availability check still reports locked Mac. Story-source repair remains undispatched; no provider fallback, duplicate job, source edits, redundant tests or new visual claims. Resume through existing Gemini session when unlocked; overall NOT ACCEPTED.
+
+
+### 2026-10-08 13:20 UTC — unchanged lock blocker
+Read required checkpoints; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate jobs, source changes, or repeated verification. Prior native-IDB milestone unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 14:25 UTC — unchanged lock blocker
+Required checkpoints read; single UI check still reports locked Mac. Existing story-source repair pending dispatch. No duplicate job, provider fallback, code changes, repeated tests or new render claims. Prior native-IDB milestone unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 15:26 UTC — unchanged UI blocker
+Required checkpoints read; one Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, product edits, redundant tests or new visual claims. Prior verified persistence milestone unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 16:27 UTC — unchanged lock blocker
+Read required checkpoints; single Antigravity availability check still reports locked Mac. Story-source repair remains pending dispatch. No retry loop, new job, source edits or repeated tests/renders. Native-IDB evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 17:44 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity availability check still reports locked Mac. Existing story-source repair remains undispatched. No new jobs, source edits, repeated tests or visual acceptance claims. Resume existing Gemini workflow when unlocked; overall NOT ACCEPTED.
+
+
+### 2026-10-08 20:33 UTC — unchanged lock blocker
+Read required checkpoints; one UI availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, product edits or repeated tests/renders. Existing verified persistence evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 21:56 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, new job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-08 23:09 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, product edits or repeated tests/renders. Previous evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 02:31 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Existing story-source repair remains undispatched. No duplicate job, provider fallback, product edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 03:51 UTC — unchanged lock blocker
+Required checkpoints read; one UI check still reports locked Mac. Story-source repair remains undispatched. No retry loop, new job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 04:51 UTC — unchanged lock blocker
+Read required checkpoints; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated verification. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 05:53 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, new job, provider fallback, source edits or repeated tests/renders. Previous evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 07:12 UTC — unchanged lock blocker
+Read required checkpoints; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 09:57 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 17:02 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-09 19:03 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 01:04 UTC — unchanged lock blocker
+Read required checkpoints; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 03:30 UTC — unchanged lock blocker
+Required checkpoints read; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 05:25 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 06:33 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 07:43 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 11:00 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 12:01 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 14:03 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 15:11 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 19:24 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-10 22:54 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 00:04 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 04:35 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 06:20 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 07:37 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 10:40 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 11:42 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 12:58 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 13:58 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 15:09 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 20:36 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 22:52 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity availability check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, code edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-11 23:55 UTC — unchanged lock blocker
+Required checkpoints read; single Antigravity check still reports locked Mac. Story-source repair remains undispatched. No duplicate job, provider fallback, source edits or repeated tests/renders. Prior evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-12 15:46 UTC — Antigravity availability check timed out
+Read PLAN, IMPLEMENTATION_STATUS and VISUAL_QC checkpoints. One native Antigravity connection attempt returned Computer Use server error -10005 (timeoutReached); current lock/model/job state could not be verified. Story-source repair remains undispatched. Stopped this bounded batch without retry, duplicate job, provider fallback or product edits. No new tests/render evidence; prior QC remains unchanged and overall NOT ACCEPTED. Next: verify Antigravity availability and idle Gemini session before dispatching STORY_SOURCE_REPAIR.md.
+
+
+### 2026-10-12 16:43 UTC — lock blocker confirmed
+Read required checkpoints. A single Antigravity availability check reports the Mac is locked and automatic unlock failed. Story-source repair remains undispatched; no duplicate job, provider fallback or product edits. No new test/render evidence; overall NOT ACCEPTED. Resume the prepared repair only after native access returns and the Gemini session is verified idle.
+
+
+### 2026-10-12 23:57 UTC — unchanged lock blocker
+Read required checkpoints; one Antigravity check still reports locked Mac. Story-source repair remains undispatched. No retry loop, duplicate job, provider fallback, product edits or repeated tests/renders. Evidence unchanged; overall NOT ACCEPTED. Next action remains verifying an idle Gemini session after native access returns.

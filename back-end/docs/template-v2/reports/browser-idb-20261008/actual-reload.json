@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-10-08T09:02:17.893Z",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "nativeIndexedDBAvailable": true,
+  "namespace": {
+    "storageKey": "mivy-qc-marketing-v1",
+    "draftKey": "mivy-qc-industry-drafts-v2",
+    "dbName": "mivy-qc-assets-v1"
+  },
+  "currentIDBRecordCount": 11,
+  "actualReloadVerified": true,
+  "summary": {
+    "total": 6,
+    "passed": 1,
+    "failed": 0
+  },
+  "tests": {
+    "test1": {
+      "id": "test1",
+      "name": "1. Native IndexedDB Persist & Resolve Roundtrip",
+      "status": "idle",
+      "durationMs": 0,
+      "logs": []
+    },
+    "test2": {
+      "id": "test2",
+      "name": "2. A→B→A Category Switch Persistence",
+      "status": "idle",
+      "durationMs": 0,
+      "logs": []
+    },
+    "test3": {
+      "id": "test3",
+      "name": "3. Reload State & Restore Assets from Native IDB",
+      "status": "pass",
+      "durationMs": 7,
+      "logs": [
+        "=== BẮT ĐẦU XÁC MINH SAU KHI ACTUAL BROWSER RELOAD (F5 THẬT) ===",
+        "Đọc dữ liệu có sẵn từ localStorage: category=food, name=Signature Wagyu Steak Set",
+        "Native IndexedDB có 11 records. Keys: mivy-asset:muzb4wg6_9ofaxtm, mivy-asset:muzb4whx_nvay4ph, mivy-asset:muzb4wim_l3fxxe5, mivy-asset:muzb4wjy_8nbmbt5, mivy-asset:muzb4wl7_ta3klm1, mivy-asset:muzb4wla_wlsgro2, mivy-asset:muzb4wm3_2g6n5fk, mivy-asset:muzb4wm6_4kriu7n, mivy-asset:muzb4wot_bb2pska, mivy-asset:muzb4wx4_78ltbvf, mivy-asset:muzb5g2m_7otzyg0",
+        "Gọi controller.loadInitialDraft() nạp dữ liệu có sẵn...",
+        "XÁC MINH THÀNH CÔNG: Dữ liệu QC có sẵn được khôi phục 100% từ storage và native IndexedDB sau reload thật!",
+        "Đã render canvas thật của Test 3 sau actual reload."
+      ],
+      "idbKeys": [
+        "mivy-asset:muzb4wg6_9ofaxtm",
+        "mivy-asset:muzb4whx_nvay4ph",
+        "mivy-asset:muzb4wim_l3fxxe5",
+        "mivy-asset:muzb4wjy_8nbmbt5",
+        "mivy-asset:muzb4wl7_ta3klm1",
+        "mivy-asset:muzb4wla_wlsgro2",
+        "mivy-asset:muzb4wm3_2g6n5fk",
+        "mivy-asset:muzb4wm6_4kriu7n",
+        "mivy-asset:muzb4wot_bb2pska",
+        "mivy-asset:muzb4wx4_78ltbvf",
+        "mivy-asset:muzb5g2m_7otzyg0"
+      ],
+      "stateDump": {
+        "category": "food",
+        "name": "Signature Wagyu Steak Set",
+        "actualReloadVerified": true
+      }
+    },
+    "test4": {
+      "id": "test4",
+      "name": "4. Intentional Clear Image Preservation during Resolve",
+      "status": "idle",
+      "durationMs": 0,
+      "logs": []
+    },
+    "test5": {
+      "id": "test5",
+      "name": "5. Edited Text Preservation with Untouched Image Resolve",
+      "status": "idle",
+      "durationMs": 0,
+      "logs": []
+    },
+    "test6": {
+      "id": "test6",
+      "name": "6. Delayed Outgoing Save Timer Settlement & Active Draft Ownership",
+      "status": "idle",
+      "durationMs": 0,
+      "logs": []
+    }
+  },
+  "consoleLogs": [
+    "[09:02:07] Phát hiện trình duyệt vừa F5 Reload thật! Bắt đầu kiểm tra dữ liệu QC có sẵn (KHÔNG reseed)..."
+  ]
+}
