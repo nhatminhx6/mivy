@@ -41,7 +41,7 @@ function createTestState(overrides: Partial<MarketingState> = {}): MarketingStat
     brand: 'MIVY · QC STUDIO',
     offer: 'Quyền lợi hấp dẫn',
     aspect: '4:5',
-    theme: 'emerald_pro',
+    theme: 'tech_dark',
     selected: 'launch',
     copies: {
       launch: {
@@ -1028,7 +1028,7 @@ export default function BrowserPersistenceQCHarness() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <Link href="/studio/marketing/review" className="text-emerald-400 hover:text-emerald-300 text-sm font-medium">
+              <Link href="/studio/marketing/review" className="text-white hover:text-zinc-300 text-sm font-medium">
                 ← So sánh Concept
               </Link>
               <span className="text-slate-600">|</span>
@@ -1038,12 +1038,12 @@ export default function BrowserPersistenceQCHarness() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
               Native IndexedDB Browser QC Harness
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/20 text-zinc-300 border border-white/30">
                 Enforced Dev-Only
               </span>
             </h1>
             <p className="text-xs text-slate-400">
-              Kiểm thử runtime thực tế với <code className="text-emerald-300">window.indexedDB</code> và production <code className="text-emerald-300">DraftController</code>.
+              Kiểm thử runtime thực tế với <code className="text-zinc-300">window.indexedDB</code> và production <code className="text-zinc-300">DraftController</code>.
               Namespace cô lập hoàn toàn: <code className="text-amber-300">{QC_STORAGE_KEY}</code>, <code className="text-amber-300">{QC_ASSET_DB}</code>. Tuyệt đối không đụng draft thật.
             </p>
           </div>
@@ -1056,8 +1056,8 @@ export default function BrowserPersistenceQCHarness() {
               onClick={handleRunAll}
               className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition ${
                 isRunning
-                  ? 'bg-emerald-600/50 text-emerald-200 cursor-not-allowed animate-pulse'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30'
+                  ? 'bg-zinc-400/50 text-zinc-200 cursor-not-allowed animate-pulse'
+                  : 'bg-zinc-400 hover:bg-indigo-400 text-white shadow-lg shadow-emerald-900/30'
               }`}
             >
               {isRunning ? `Đang chạy (${activeStep})...` : '▶ Chạy Tất Cả (Run All QC)'}
@@ -1106,7 +1106,7 @@ export default function BrowserPersistenceQCHarness() {
           <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
             <div className="text-xs text-slate-400 font-medium">Kết Quả Hiện Tại</div>
             <div className="text-2xl font-bold mt-1 flex items-center gap-2">
-              <span className="text-emerald-400">{passCount} PASS</span>
+              <span className="text-white">{passCount} PASS</span>
               {failCount > 0 && <span className="text-rose-400">/ {failCount} FAIL</span>}
             </div>
           </div>
@@ -1118,7 +1118,7 @@ export default function BrowserPersistenceQCHarness() {
             <div className="text-xs text-slate-400 font-medium">Actual F5 Reload Status</div>
             <div className="text-sm font-bold mt-2 flex items-center gap-2">
               {actualReloadDetected ? (
-                <span className="text-emerald-400 flex items-center gap-1.5 font-mono">
+                <span className="text-white flex items-center gap-1.5 font-mono">
                   ✓ F5 Verified (No Reseed)
                 </span>
               ) : (
@@ -1136,7 +1136,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 1</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test1.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test1.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test1.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test1.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1157,7 +1157,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef1.current, 'qc-canvas-test1-roundtrip.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1170,7 +1170,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 2</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test2.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test2.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test2.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test2.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1191,7 +1191,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef2.current, 'qc-canvas-test2-aba-switch.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1204,7 +1204,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 3</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test3.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test3.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test3.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test3.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1225,7 +1225,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef3.current, 'qc-canvas-test3-reload-restore.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1238,7 +1238,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 4</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test4.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test4.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test4.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test4.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1259,7 +1259,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef4.current, 'qc-canvas-test4-clear-image.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1272,7 +1272,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 5</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test5.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test5.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test5.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test5.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1293,7 +1293,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef5.current, 'qc-canvas-test5-edited-text.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1306,7 +1306,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 6</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test6.status === 'pass' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                  testResults.test6.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
                   testResults.test6.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test6.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1327,7 +1327,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef6.current, 'qc-canvas-test6-delayed-save.png')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+                className="text-xs text-white hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1346,7 +1346,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="text-slate-600 italic">Chưa có log. Bấm &quot;Chạy Tất Cả&quot; để thực thi kiểm thử native IDB.</div>
             ) : (
               consoleLogs.map((log, idx) => (
-                <div key={idx} className={log.includes('LỖI') ? 'text-rose-400 font-bold' : log.includes('HOÀN TẤT') || log.includes('XÁC MINH THÀNH CÔNG') ? 'text-emerald-400 font-bold' : ''}>
+                <div key={idx} className={log.includes('LỖI') ? 'text-rose-400 font-bold' : log.includes('HOÀN TẤT') || log.includes('XÁC MINH THÀNH CÔNG') ? 'text-white font-bold' : ''}>
                   {log}
                 </div>
               ))

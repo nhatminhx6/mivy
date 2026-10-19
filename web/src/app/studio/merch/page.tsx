@@ -5,6 +5,7 @@ import { Download, Upload, X } from 'lucide-react';
 import { MERCH_ITEMS, drawMerch, hasPhoto } from '@/lib/merch-engine';
 import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
 import { marketingZip } from '@/lib/marketing-zip';
+import { PageHeader } from '@/components/PageHeader';
 
 const PRODUCT_COLORS = ['#111827', '#ffffff', '#ef4444', '#10b981', '#2563eb', '#f59e0b', '#8b5cf6', '#f472b6', '#64748b', '#0f766e'];
 const BG_COLORS = ['#f1f5f9', '#ffffff', '#fef3c7', '#e0f2fe', '#111827', '#1e293b'];
@@ -15,7 +16,7 @@ export default function MerchPage() {
   const [bgColor, setBgColor] = useState('#f1f5f9');
   const [brandName, setBrandName] = useState('MIVY');
   const [slogan, setSlogan] = useState('');
-  const [accent, setAccent] = useState('#10b981');
+  const [accent, setAccent] = useState('#1f2937');
   const [fontId, setFontId] = useState('be-vietnam');
   const [contact, setContact] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -32,7 +33,7 @@ export default function MerchPage() {
     if (b) {
       setBrandName(b.name || 'MIVY');
       setSlogan(b.slogan || '');
-      setAccent(b.colorAccent || '#10b981');
+      setAccent(b.colorAccent || '#1f2937');
       setProductColor(b.colorPrimary || '#111827');
       setFontId(b.fontHeadingId || 'be-vietnam');
       setContact(contactLine(b.contact) || '');
@@ -78,7 +79,7 @@ export default function MerchPage() {
 
   const downloadOne = () => {
     const c = document.createElement('canvas');
-    drawMerch(c, opts());
+    drawMerch(c, { ...opts(), scale: 2 });
     c.toBlob((b) => {
       if (!b) return;
       const url = URL.createObjectURL(b);
@@ -92,7 +93,7 @@ export default function MerchPage() {
     for (const it of MERCH_ITEMS) {
       const c = document.createElement('canvas');
       const mk = mode === 'photo' && hasPhoto(it.id) ? await loadImg(`/mockups/${it.id}.jpg`) : null;
-      drawMerch(c, { ...opts(), item: it.id, mockupImg: mk });
+      drawMerch(c, { ...opts(), item: it.id, mockupImg: mk, scale: 2 });
       const blob = await new Promise<Blob | null>((res) => c.toBlob(res));
       if (blob) files.push({ name: `mivy-${it.id}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
     }
@@ -103,55 +104,54 @@ export default function MerchPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-black text-white">Vật phẩm thương hiệu</h1>
-        <p className="text-slate-400 text-sm mt-1">Đặt logo/brand lên áo, nón, ly, túi, name card... — xem trước &amp; tải để đi in. Lấy sẵn từ Brand Kit.</p>
-      </div>
+    <div className="max-w-6xl mx-auto">
+      <PageHeader
+        title="Vật phẩm thương hiệu"
+        sub="Đặt logo/brand lên áo, nón, ly, túi, name card... — xem trước & tải để đi in. Lấy sẵn từ Brand Kit."
+        actions={<button onClick={downloadAll} className="mv-btn mv-btn-primary"><Download className="w-4 h-4" /> Tải cả bộ</button>}
+      />
 
-      <div className="grid lg:grid-cols-[1fr_340px] gap-6">
-        {/* Preview */}
-        <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center">
-          <canvas ref={canvasRef} className="w-full max-w-md rounded-xl border border-white/10" />
-          <div className="flex gap-3 mt-4">
-            <button onClick={downloadOne} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400">
-              <Download className="w-4 h-4" /> Tải PNG
-            </button>
-            <button onClick={downloadAll} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-white font-semibold text-xs hover:bg-white/10">
-              <Download className="w-4 h-4 text-emerald-400" /> Tải cả bộ (ZIP)
-            </button>
+      <div className="grid lg:grid-cols-[1fr_340px] gap-7 items-start">
+        {/* Preview stage */}
+        <div className="glass-card p-6 flex flex-col items-center lg:sticky lg:top-4 self-start">
+          <div className="w-full rounded-xl bg-black/25 border border-white/[0.05] p-5 flex items-center justify-center min-h-[420px]">
+            <canvas ref={canvasRef} className="w-full max-w-md rounded-lg shadow-2xl" />
+          </div>
+          <div className="w-full flex items-center justify-end mt-4">
+            <button onClick={downloadOne} className="mv-btn mv-btn-ghost"><Download className="w-4 h-4" /> Tải khổ này</button>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="space-y-5">
+        <div className="glass-card p-5 space-y-6">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Kiểu hiển thị</p>
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
-              <button onClick={() => setMode('photo')}
-                className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${mode === 'photo' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>📷 Ảnh thật</button>
-              <button onClick={() => setMode('vector')}
-                className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold transition-all ${mode === 'vector' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-white'}`}>▲ Vector</button>
+            <div className="mv-label mb-2.5">Kiểu hiển thị</div>
+            <div className="mv-seg w-full">
+              <button onClick={() => setMode('photo')} data-active={mode === 'photo'} className="mv-seg-btn flex-1 text-center">Ảnh thật</button>
+              <button onClick={() => setMode('vector')} data-active={mode === 'vector'} className="mv-seg-btn flex-1 text-center">Vector</button>
             </div>
             {mode === 'photo' && !hasPhoto(item) && (
-              <p className="text-[11px] text-amber-400 mt-1.5">Món này chưa có ảnh thật — đang hiện vector. (Ảnh thật: áo thun, nón, ly, ly giữ nhiệt, túi tote, túi giấy)</p>
+              <p className="text-xs text-amber-400 mt-2">Món này chưa có ảnh thật — đang hiện vector. (Ảnh thật: áo thun, nón, ly, ly giữ nhiệt, túi tote, túi giấy)</p>
             )}
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Vật phẩm</p>
-            <div className="grid grid-cols-2 gap-2">
-              {MERCH_ITEMS.map((m) => (
-                <button key={m.id} onClick={() => setItem(m.id)}
-                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${item === m.id ? 'bg-emerald-500 text-slate-950 border-emerald-500' : 'bg-black/40 text-slate-300 border-white/10 hover:border-white/30'}`}>
-                  {m.label}
-                </button>
-              ))}
+            <div className="mv-label mb-2.5">Vật phẩm</div>
+            <div className="mv-seg w-full flex-wrap">
+              {MERCH_ITEMS.map((m) => {
+                const active = item === m.id;
+                return (
+                  <button key={m.id} onClick={() => setItem(m.id)} data-active={active}
+                    className="mv-seg-btn flex-[1_1_45%] text-center">
+                    {m.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Logo</p>
+            <div className="mv-label mb-2.5">Logo</div>
             <div className="flex items-center gap-2">
               {logoUrl ? (
                 <div className="relative">
@@ -159,7 +159,7 @@ export default function MerchPage() {
                   <button onClick={() => setLogoUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button>
                 </div>
               ) : <span className="text-xs text-slate-500">Chưa có — sẽ dùng tên brand</span>}
-              <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-emerald-400 cursor-pointer">
+              <label className="mv-btn mv-btn-ghost cursor-pointer">
                 <Upload className="w-3.5 h-3.5" /> Tải logo
                 <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" onChange={onUpload} />
               </label>
@@ -167,41 +167,39 @@ export default function MerchPage() {
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Tên &amp; slogan</p>
-            <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Tên thương hiệu"
-              className="w-full mb-2 px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
-            <input value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="Slogan (tuỳ chọn)"
-              className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
-            {item === 'namecard' && (
-              <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Liên hệ (SĐT / email)"
-                className="w-full mt-2 px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
-            )}
+            <div className="mv-label mb-2.5">Tên &amp; slogan</div>
+            <div className="space-y-2.5">
+              <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Tên thương hiệu" className="mv-input" />
+              <input value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="Slogan (tuỳ chọn)" className="mv-input" />
+              {item === 'namecard' && (
+                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Liên hệ (SĐT / email)" className="mv-input" />
+              )}
+            </div>
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Màu sản phẩm</p>
+            <div className="mv-label mb-2.5">Màu sản phẩm</div>
             <div className="flex flex-wrap gap-2 items-center">
               {PRODUCT_COLORS.map((c) => (
                 <button key={c} onClick={() => setProductColor(c)} style={{ background: c }}
-                  className={`w-7 h-7 rounded-full border-2 ${productColor === c ? 'border-emerald-400 scale-110' : 'border-white/20'} transition-all`} />
+                  className={`w-7 h-7 rounded-full border-2 ${productColor === c ? 'border-indigo-500 scale-110' : 'border-white/20'} transition-all`} />
               ))}
-              <input type="color" value={productColor} onChange={(e) => setProductColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer bg-transparent border border-white/20 p-0" />
+              <input type="color" value={productColor} onChange={(e) => setProductColor(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" />
             </div>
           </div>
 
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Nền &amp; nhấn &amp; font</p>
-            <div className="flex flex-wrap gap-2 items-center mb-2">
+            <div className="mv-label mb-2.5">Nền &amp; nhấn &amp; font</div>
+            <div className="flex flex-wrap gap-2 items-center mb-2.5">
               {BG_COLORS.map((c) => (
                 <button key={c} onClick={() => setBgColor(c)} style={{ background: c }}
-                  className={`w-6 h-6 rounded-full border-2 ${bgColor === c ? 'border-emerald-400' : 'border-white/20'}`} />
+                  className={`w-6 h-6 rounded-full border-2 ${bgColor === c ? 'border-indigo-500' : 'border-white/20'}`} />
               ))}
-              <span className="text-[10px] text-slate-500 ml-1">nền</span>
+              <span className="text-xs text-slate-400 ml-1">nền</span>
               <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} title="Màu nhấn" className="w-6 h-6 rounded cursor-pointer bg-transparent border border-white/20 p-0 ml-2" />
-              <span className="text-[10px] text-slate-500">nhấn</span>
+              <span className="text-xs text-slate-400">nhấn</span>
             </div>
-            <select value={fontId} onChange={(e) => setFontId(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500">
+            <select value={fontId} onChange={(e) => setFontId(e.target.value)} className="mv-chip-select w-full">
               {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
           </div>

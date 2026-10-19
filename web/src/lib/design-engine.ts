@@ -2,34 +2,14 @@ import { drawIndustryConcept } from './industry-renderer';
 import { drawCatalogPoster } from './catalog-renderer';
 import { drawSaleSticker } from './sticker-engine';
 import { drawSeasonDecor } from './season-engine';
-import { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady } from './poster-font';
-export { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady } from './poster-font';
-import { resolveStorySource } from './balanced-pages';
+import { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady, extractPrimaryFontFamily, collectGlyphsFromState, normalizeCanvasContext } from './poster-font';
+export { POSTER_FONT, setPosterFontFromState, ensurePosterFontsReady, extractPrimaryFontFamily, collectGlyphsFromState, normalizeCanvasContext } from './poster-font';
+import { resolveStorySource, stripLeadingEnumeration } from './balanced-pages';
+export { stripLeadingEnumeration } from './balanced-pages';
+import { qcBox } from './qc-capture';
 import { AssetInfo, AspectRatio, CopyItem, IndustryId, MarketingState, PosterKind, PosterTheme, ThemeId } from '@/types';
 
 export const POSTER_THEMES: Record<ThemeId, PosterTheme> = {
-  emerald_pro: {
-    id: 'emerald_pro',
-    name: 'Emerald Pro',
-    bg: '#041d13',
-    bgGrad: ['#03140d', '#082f20', '#020f09'],
-    glow: 'rgba(16, 185, 129, 0.22)',
-    accent: '#10b981',
-    accentLight: '#6ee7b7',
-    accentText: '#041d13',
-    textPrimary: '#f0fdf4',
-    textSecondary: '#a7f3d0',
-    textMuted: '#6ee7b7',
-    cardBg: 'rgba(8, 47, 32, 0.72)',
-    cardBorder: 'rgba(52, 211, 153, 0.22)',
-    cardHighlightBg: 'rgba(16, 185, 129, 0.16)',
-    cardHighlightBorder: 'rgba(52, 211, 153, 0.45)',
-    badgeBg: 'rgba(16, 185, 129, 0.18)',
-    badgeBorder: 'rgba(52, 211, 153, 0.35)',
-    badgeText: '#6ee7b7',
-    tagBg: 'rgba(4, 29, 19, 0.85)',
-    tagText: '#a7f3d0',
-  },
   tech_dark: {
     id: 'tech_dark',
     name: 'Tech Dark',
@@ -162,30 +142,40 @@ export function posterText(
   weight: string = '700',
   family: string = `${POSTER_FONT()}`
 ): number {
+  normalizeCanvasContext(ctx);
+  const words = (text || '').split(/\s+/).filter(Boolean);
+  // greedy wrap theo bề rộng w
+  const greedy = (w: number): string[] => {
+    const out: string[] = []; let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (ctx.measureText(next).width > w && line) { out.push(line); line = word; } else line = next;
+    }
+    if (line) out.push(line);
+    return out;
+  };
   let size = start;
   let lines: string[] = [];
   do {
     ctx.font = `${weight} ${size}px ${family}`;
-    lines = [];
-    let line = '';
-    for (const word of (text || '').split(/\s+/)) {
-      const next = line ? line + ' ' + word : word;
-      if (ctx.measureText(next).width > width && line) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = next;
-      }
-    }
-    if (line) lines.push(line);
-    if (lines.length * size * 1.2 <= maxHeight && lines.every(l => ctx.measureText(l).width <= width)) {
-      break;
-    }
+    lines = greedy(width);
+    if (lines.length * size * 1.2 <= maxHeight && lines.every(l => ctx.measureText(l).width <= width)) break;
     size -= 2;
   } while (size > 12);
+  // Ngắt CÂN BẰNG: nếu >1 dòng, tìm bề rộng nhỏ nhất vẫn giữ nguyên số dòng
+  // → các dòng đều hơn, tránh ngắt kỳ kiểu "Hội / An".
+  ctx.font = `${weight} ${size}px ${family}`;
+  if (lines.length > 1) {
+    const L = lines.length;
+    let lo = Math.max(1, ...words.map((wd) => ctx.measureText(wd).width)), hi = width, best = width;
+    for (let i = 0; i < 20; i++) { const mid = (lo + hi) / 2; if (greedy(mid).length <= L) { best = mid; hi = mid; } else lo = mid + 0.5; }
+    const balanced = greedy(best);
+    if (balanced.length === L) lines = balanced;
+  }
 
   ctx.fillStyle = color;
   ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
   lines.forEach((l, i) => ctx.fillText(l, x, y + i * size * 1.2));
   return lines.length * size * 1.2;
 }
@@ -201,6 +191,7 @@ export function drawCard(
   stroke: string | null = null,
   shadow: boolean = false
 ) {
+  qcBox('content', x, y, w, h, 'card');
   ctx.save();
   if (shadow) {
     ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
@@ -268,11 +259,7 @@ export function drawBackground(
       ctx.drawImage(bgImg, 0, 0, w, h);
       ctx.save();
       const tint = ctx.createLinearGradient(0, 0, 0, h);
-      if (th.id === 'emerald_pro') {
-        tint.addColorStop(0, 'rgba(8, 35, 24, 0.72)');
-        tint.addColorStop(0.35, 'rgba(8, 35, 24, 0.58)');
-        tint.addColorStop(1, 'rgba(5, 26, 17, 0.92)');
-      } else if (th.id === 'tech_dark') {
+      if (th.id === 'tech_dark') {
         tint.addColorStop(0, 'rgba(12, 15, 23, 0.75)');
         tint.addColorStop(0.35, 'rgba(12, 15, 23, 0.60)');
         tint.addColorStop(1, 'rgba(10, 13, 20, 0.94)');
@@ -338,11 +325,13 @@ export function drawBadgePill(
   customH: number = 38
 ): number {
   ctx.save();
+  normalizeCanvasContext(ctx);
   const h = customH;
   ctx.font = h <= 34 ? `700 16px ${POSTER_FONT()}` : `600 19px ${POSTER_FONT()}`;
   const padX = h <= 34 ? 14 : 20;
   const metrics = ctx.measureText(text);
   const w = Math.round(metrics.width + padX * 2 + (dotColor ? 16 : 0));
+  qcBox('content', x, y, w, h, 'badge');
 
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, h / 2);
@@ -381,7 +370,7 @@ export function drawAssetShowcase(
 ) {
   if (!asset || !asset.im) return;
 
-  const th = options.theme || POSTER_THEMES.emerald_pro;
+  const th = options.theme || POSTER_THEMES.tech_dark;
   const imW = asset.im.naturalWidth || asset.im.width || 1;
   const imH = asset.im.naturalHeight || asset.im.height || 1;
   const boxW = asset.w || imW;
@@ -559,7 +548,7 @@ export function drawRecruitmentHero(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
   const hasPhoto = Boolean(asset && asset.im);
   if (hasPhoto && asset?.im) {
@@ -790,7 +779,7 @@ export function drawRecruitmentStory(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
   const hasPhoto = Boolean(asset && asset.im);
 
@@ -867,7 +856,7 @@ export function drawRecruitmentStory(
 
     posterText(
       ctx,
-      point,
+      stripLeadingEnumeration(point),
       m + 115,
       cy + (cardH > 140 ? 18 : 10),
       contentW - 135,
@@ -895,7 +884,7 @@ export function drawRecruitmentAction(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
   const hasPhoto = Boolean(asset && asset.im);
 
@@ -1059,7 +1048,7 @@ export function drawEducationPoster(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
   drawBackground(ctx, w, h, th, bgImg);
   const m = 60, contentW = w - m * 2;
@@ -1111,7 +1100,7 @@ export function drawEducationPoster(
     drawCard(ctx, m, cy, contentW, cardH, 20, th.cardBg, th.cardBorder);
     drawBadgePill(ctx, 'CHẶNG 0' + (i + 1), m + 24, cy + 20, th.tagBg, th.cardHighlightBorder, th.tagText);
 
-    posterText(ctx, pt, m + 160, cy + 18, contentW - 190, cardH - 36, cardH > 100 ? 25 : 21, th.textPrimary, '600');
+    posterText(ctx, stripLeadingEnumeration(pt), m + 160, cy + 18, contentW - 190, cardH - 36, cardH > 100 ? 25 : 21, th.textPrimary, '600');
   });
 
   drawCard(ctx, m, footerY, 340, 80, 22, th.accent, null, true);
@@ -1144,7 +1133,7 @@ export function drawServicePoster(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
   drawBackground(ctx, w, h, th, bgImg);
   const m = 60, contentW = w - m * 2;
@@ -1198,7 +1187,7 @@ export function drawServicePoster(
     ctx.fillText('0' + (i + 1), m + 28, cy + cardH / 2 + 8);
     ctx.restore();
 
-    posterText(ctx, pt, m + 80, cy + 22, contentW - 110, cardH - 44, cardH > 100 ? 25 : 21, th.textPrimary, '600');
+    posterText(ctx, stripLeadingEnumeration(pt), m + 80, cy + 22, contentW - 110, cardH - 44, cardH > 100 ? 25 : 21, th.textPrimary, '600');
   });
 
   drawCard(ctx, m, footerY, contentW, 80, 22, th.accent, null, true);
@@ -1220,126 +1209,125 @@ export function drawGeneralModernPoster(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
-  drawBackground(ctx, w, h, th, bgImg);
-  const m = 60, contentW = w - m * 2;
+  const source = [copy.headline, copy.subline, marketing.details, marketing.offer].filter(Boolean).join(' ');
+  const labels = getPosterLabels(marketing, source);
+  const isEn = labels.isEn;
+  const isTall = h >= 1600;
+  const isCompact = h <= 1100;
+  const resolved = resolveStorySource(marketing, copy);
 
-  if (kind === 'story') {
-    const resolved = resolveStorySource(marketing, copy);
-    const points = resolved.pageItems;
-    const isEn = (marketing.outputLanguage === 'en') || isMostlyEnglish(copy.headline || marketing.details || '');
-    const badgeText = isEn
-      ? (resolved.totalPages > 1 ? `PAGE ${resolved.pageIndex + 1}/${resolved.totalPages} · HIGHLIGHTS` : 'HIGHLIGHTS')
-      : (resolved.totalPages > 1 ? `TRANG ${resolved.pageIndex + 1}/${resolved.totalPages} · ĐIỂM NỔI BẬT` : 'ĐIỂM NỔI BẬT');
-    const badgeW = 60 + badgeText.length * 11;
-    drawBadgePill(ctx, marketing.brand || marketing.name || 'MIVY STUDIO', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
-    drawBadgePill(ctx, badgeText, w - m - badgeW, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
+  const fitLine = (t: string, maxW: number, startPx: number, weight: string): number => {
+    let fs = startPx; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`;
+    while (ctx.measureText(t).width > maxW && fs > 18) { fs -= 2; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`; }
+    return fs;
+  };
 
-    const titleHeight = posterText(
-      ctx,
-      copy.headline || marketing.name || (isEn ? 'Key Highlights' : 'Điểm nổi bật'),
-      m,
-      180,
-      contentW,
-      h * 0.16,
-      h >= 1350 ? 56 : 44,
-      th.textPrimary,
-      '800',
-      `${POSTER_FONT()}`
-    );
+  // ===== Nền màu đặc theo theme =====
+  const grad = (th.bgGrad && th.bgGrad.length >= 3) ? th.bgGrad : [th.bg, th.bg, th.bg];
+  const bgG = ctx.createLinearGradient(0, 0, w * 0.45, h);
+  bgG.addColorStop(0, grad[0]); bgG.addColorStop(0.55, grad[1]); bgG.addColorStop(1, grad[2]);
+  ctx.fillStyle = bgG; ctx.fillRect(0, 0, w, h);
+  const glowG = ctx.createRadialGradient(w * 0.1, 0, 20, w * 0.1, 0, w * 0.8);
+  glowG.addColorStop(0, th.glow); glowG.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowG; ctx.fillRect(0, 0, w, h);
 
-    const currentY = 180 + titleHeight + 20;
-    const footerY = h - 130;
+  const m = 64, contentW = w - m * 2, cw = contentW;
 
-    if (points.length > 0) {
-      drawCheckCards(ctx, points, m, contentW, currentY, footerY - 20, th);
-    }
+  // ===== Top: brand + kicker =====
+  let y = 60;
+  drawBadgePill(ctx, (marketing.brand || marketing.name || 'MIVY STUDIO'), m, y, th.badgeBg, th.badgeBorder, th.badgeText);
+  const kicker = kind === 'launch' ? (isEn ? 'Featured' : 'Nổi bật')
+    : kind === 'story' ? (isEn ? 'Why choose us' : 'Vì sao nên chọn')
+      : (isEn ? 'Offer & contact' : 'Ưu đãi & liên hệ');
 
-    drawCard(ctx, m, footerY, 320, 80, 22, th.accent, null, true);
-    ctx.save();
-    ctx.font = `700 25px ${POSTER_FONT()}`;
-    ctx.fillStyle = th.accentText;
-    ctx.textBaseline = 'middle';
-    ctx.fillText(copy.cta || (isEn ? 'Learn More' : 'Khám phá ngay'), m + 32, footerY + 40);
-    drawArrowIcon(ctx, m + 270, footerY + 28, 24, th.accentText);
-    ctx.restore();
-
-    if (marketing.offer) {
-      drawCard(ctx, m + 340, footerY, contentW - 340, 80, 22, th.cardHighlightBg, th.cardHighlightBorder);
-      ctx.save();
-      ctx.font = `700 24px ${POSTER_FONT()}`;
-      ctx.fillStyle = th.textPrimary;
-      ctx.textBaseline = 'middle';
-      ctx.fillText((isEn ? 'Offer: ' : 'Ưu đãi: ') + marketing.offer, m + 365, footerY + 40);
-      ctx.restore();
-    }
-    return;
-  }
-
-  drawBadgePill(ctx, marketing.brand || marketing.name || 'MIVY STUDIO', m, 68, th.badgeBg, th.badgeBorder, th.badgeText);
-  drawBadgePill(ctx, 'FEATURED CAMPAIGN', w - m - 260, 68, th.tagBg, th.cardHighlightBorder, th.tagText);
-
-  const titleHeight = posterText(
-    ctx,
-    copy.headline,
-    m,
-    180,
-    contentW,
-    h * 0.18,
-    h >= 1350 ? 68 : 52,
-    th.textPrimary,
-    '800',
-    `${POSTER_FONT()}`
-  );
-
-  let currentY = 180 + titleHeight + 20;
-  const footerY = h - 130;
-
-  const frameH = Math.min(h * 0.42, footerY - currentY - 140);
-
-  if (asset) {
-    drawAssetShowcase(ctx, asset, m, currentY, contentW, frameH, 24, {
-      theme: th,
-      isCutout: Boolean(marketing.cutout),
-    });
-  } else {
-    drawCard(ctx, m, currentY, contentW, frameH, 24, th.cardBg, th.cardBorder, true);
-    posterText(
-      ctx,
-      marketing.name || 'Sản phẩm nổi bật',
-      m + 40,
-      currentY + frameH * 0.38,
-      contentW - 80,
-      frameH * 0.4,
-      48,
-      th.textSecondary,
-      '700'
-    );
-  }
-
-  currentY += frameH + 20;
-
-  if (copy.subline) {
-    posterText(ctx, copy.subline, m, currentY, contentW, h * 0.08, 24, th.textSecondary, '500');
-  }
-
-  drawCard(ctx, m, footerY, 320, 80, 22, th.accent, null, true);
+  // ===== Hero (kicker chỉ hiện 1 lần dạng script, tránh lặp) =====
+  y = isCompact ? 150 : 178;
   ctx.save();
-  ctx.font = `700 25px ${POSTER_FONT()}`;
-  ctx.fillStyle = th.accentText;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || 'Khám phá ngay', m + 32, footerY + 40);
-  drawArrowIcon(ctx, m + 270, footerY + 28, 24, th.accentText);
+  ctx.font = `italic 700 ${isCompact ? 34 : 42}px "Caveat", "Dancing Script", cursive, sans-serif`;
+  ctx.fillStyle = th.accent; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(kicker, m, y);
   ctx.restore();
 
+  const bigTitle = (copy.headline || marketing.name || (isEn ? 'Our product' : 'Sản phẩm & dịch vụ')).toUpperCase();
+  const bigPx = fitLine(bigTitle, cw, isCompact ? 56 : (isTall ? 88 : 72), '900');
+  const titleH = posterText(ctx, bigTitle, m, y + 18, cw, isTall ? 260 : 210, bigPx, th.textPrimary, '900', `${POSTER_FONT()}`);
+  y = y + 18 + titleH + 6;
+
+  if (copy.subline) {
+    const sH = posterText(ctx, copy.subline, m, y, cw, 64, isTall ? 22 : 18, th.textSecondary, '500', `${POSTER_FONT()}`);
+    y += sH + 4;
+  }
+
+  // ===== Ảnh sản phẩm (nếu có) trong khung =====
+  const hasAsset = Boolean(asset && asset.im);
+  const bandH = Math.round(h * (isTall ? 0.26 : (isCompact ? 0.20 : 0.24)));
+  if (hasAsset) {
+    const bandY = y + 20;
+    drawAssetShowcase(ctx, asset!, m, bandY, cw, bandH, 22, { theme: th, isCutout: Boolean(marketing.cutout) });
+    y = bandY + bandH;
+  }
+
+  // ===== Ưu đãi + điểm nổi bật =====
+  const points = (kind === 'story' ? resolved.pageItems : resolved.items).filter(Boolean);
+  const footerY = h - (isTall ? 160 : 132);
+  let ry = y + 26;
+
   if (marketing.offer) {
-    drawCard(ctx, m + 340, footerY, contentW - 340, 80, 22, th.cardHighlightBg, th.cardHighlightBorder);
-    ctx.save();
-    ctx.font = `700 24px ${POSTER_FONT()}`;
-    ctx.fillStyle = th.textPrimary;
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Ưu đãi: ' + marketing.offer, m + 365, footerY + 40);
+    const chipH = 58;
+    drawCard(ctx, m, ry, cw, chipH, 14, th.accent, null, false);
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, ry, cw, chipH, 14); ctx.clip();
+    ctx.font = `700 12px ${POSTER_FONT()}`; ctx.fillStyle = th.accentText; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(isEn ? 'OFFER' : 'ƯU ĐÃI', m + 18, ry + 22);
+    posterText(ctx, marketing.offer, m + 18, ry + 30, cw - 36, 22, 17, th.accentText, '700', `${POSTER_FONT()}`);
+    ctx.restore();
+    ry += chipH + 18;
+  }
+
+  if (points.length > 0 && footerY - ry - 20 > 70) {
+    ctx.save(); ctx.font = `700 14px ${POSTER_FONT()}`; ctx.fillStyle = th.accentLight; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(isEn ? 'HIGHLIGHTS' : 'ĐIỂM NỔI BẬT', m + 14, ry);
+    ctx.restore();
+    ry += 24;
+    const maxN = hasAsset ? (isTall ? 4 : 3) : (isTall ? 6 : 4);
+    const show = points.slice(0, maxN);
+    const n = show.length;
+    const rowFs = isTall ? 20 : 18;
+    const availH = footerY - 24 - ry;
+    // thẻ cao, dàn đều LẤP khoảng trống (tránh card nhỏ trôi nổi) — ưu tiên thẻ to, gap nhỏ
+    const gap = n > 1 ? 16 : 0;
+    let cardH = Math.floor((availH - gap * (n - 1)) / n);
+    cardH = Math.max(66, Math.min(cardH, isTall ? 240 : 200));
+    const blockH = n * cardH + (n - 1) * gap;
+    const startY = ry + Math.max(0, Math.floor((availH - blockH) / 2));
+    const badgeH = 30;
+    show.forEach((pt, i) => {
+      const cardY = startY + i * (cardH + gap);
+      drawCard(ctx, m, cardY, cw, cardH, 14, th.cardBg, th.cardBorder, false);
+      ctx.save(); ctx.beginPath(); ctx.roundRect(m, cardY + 14, 4, cardH - 28, 2); ctx.fillStyle = th.accent; ctx.fill(); ctx.restore();
+      const badgeW = drawBadgePill(ctx, `0${i + 1}`, m + 22, Math.round(cardY + (cardH - badgeH) / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+      const tx = m + 22 + badgeW + 16;
+      posterText(ctx, stripLeadingEnumeration(pt), tx, cardY + Math.round((cardH - rowFs * 1.3) / 2), cw - (tx - m) - 20, cardH - 16, rowFs, th.textPrimary, '600', `${POSTER_FONT()}`);
+    });
+  }
+
+  // ===== CTA + liên hệ =====
+  const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
+  const phone = (source.match(/(?:0\d{9,10}|\+84\d{9,10})/i) || [])[0];
+  const cta = copy.cta || (isEn ? 'Learn more' : 'Khám phá ngay');
+  ctx.font = `700 22px ${POSTER_FONT()}`;
+  const ctaW = Math.round(ctx.measureText(cta).width + 90);
+  const ctaH = 60;
+  drawCard(ctx, m, footerY, ctaW, ctaH, 30, th.accent, null, true);
+  ctx.save(); ctx.font = `700 22px ${POSTER_FONT()}`; ctx.fillStyle = th.accentText; ctx.textBaseline = 'middle';
+  ctx.fillText(cta, m + 28, footerY + ctaH / 2 + 1);
+  drawArrowIcon(ctx, m + ctaW - 34, footerY + ctaH / 2 - 11, 22, th.accentText);
+  ctx.restore();
+  const contact = phone ? `📞 ${phone}` : (email ? `✉ ${email}` : (marketing.brand || ''));
+  if (contact) {
+    ctx.save(); ctx.fillStyle = th.textSecondary; ctx.textBaseline = 'middle'; ctx.font = `600 16px ${POSTER_FONT()}`;
+    ctx.fillText(contact, m + ctaW + 24, footerY + ctaH / 2 + 1);
     ctx.restore();
   }
 }
@@ -1352,275 +1340,177 @@ export function drawFullPhotoRecruitmentHero(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
-
-  // 1. Draw Photo as Full-Bleed Background
-  const photo = (asset && asset.im) ? asset.im : bgImg;
-  if (photo) {
-    drawImageCover(ctx, photo, 0, 0, w, h, 0);
-  } else {
-    drawBackground(ctx, w, h, th, bgImg);
-    drawCitySkyline(ctx, 0, h - 280, w, 220, th.glow);
-  }
-
-  // 2. Cinematic Multi-Stop Darkening Vignette
-  const vignette = ctx.createLinearGradient(0, 0, 0, h);
-  vignette.addColorStop(0, 'rgba(3, 7, 18, 0.78)');
-  vignette.addColorStop(0.18, 'rgba(3, 7, 18, 0.42)');
-  vignette.addColorStop(0.38, 'rgba(3, 7, 18, 0.12)');
-  vignette.addColorStop(0.55, 'rgba(3, 7, 18, 0.48)');
-  vignette.addColorStop(0.75, 'rgba(3, 7, 18, 0.88)');
-  vignette.addColorStop(1, 'rgba(3, 7, 18, 0.98)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, w, h);
-
-  const radialGlow = ctx.createRadialGradient(w * 0.85, h * 0.12, 10, w * 0.85, h * 0.12, 450);
-  radialGlow.addColorStop(0, th.glow);
-  radialGlow.addColorStop(1, 'transparent');
-  ctx.fillStyle = radialGlow;
-  ctx.fillRect(0, 0, w, h);
-
-  const m = 54, contentW = w - m * 2;
 
   const source = (marketing.details || '') + ' ' + (marketing.offer || '');
   const labels = getPosterLabels(marketing, source);
   const isEn = labels.isEn;
+  const isTall = h >= 1600;
+  const isCompact = h <= 1100;
 
-  // 3. Top Header: Brand Pill + Stage Badge
-  const brandText = marketing.brand || 'MIVY STUDIO';
-  drawBadgePill(ctx, brandText, m, 52, 'rgba(0, 0, 0, 0.72)', 'rgba(255, 255, 255, 0.25)', '#ffffff');
-  drawBadgePill(ctx, labels.launchTag, w - m - 320, 52, 'rgba(0, 0, 0, 0.72)', 'rgba(255, 255, 255, 0.25)', th.accentLight);
+  const fitLine = (t: string, maxW: number, startPx: number, weight: string): number => {
+    let fs = startPx; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`;
+    while (ctx.measureText(t).width > maxW && fs > 18) { fs -= 2; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`; }
+    return fs;
+  };
 
-  // 4. Hero Typography Overlaid on Photo
+  // ===== 1. Nền màu đặc theo theme (KHÔNG đè chữ lên ảnh) =====
+  const grad = (th.bgGrad && th.bgGrad.length >= 3) ? th.bgGrad : [th.bg, th.bg, th.bg];
+  const bgG = ctx.createLinearGradient(0, 0, w * 0.45, h);
+  bgG.addColorStop(0, grad[0]); bgG.addColorStop(0.55, grad[1]); bgG.addColorStop(1, grad[2]);
+  ctx.fillStyle = bgG; ctx.fillRect(0, 0, w, h);
+  const glowG = ctx.createRadialGradient(w * 0.92, 0, 20, w * 0.92, 0, w * 0.8);
+  glowG.addColorStop(0, th.glow); glowG.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowG; ctx.fillRect(0, 0, w, h);
+
+  const m = 64, contentW = w - m * 2, cw = contentW;
+
+  // ===== 2. Top: brand + nhãn giai đoạn =====
+  let y = 60;
+  drawBadgePill(ctx, (marketing.brand || 'MIVY STUDIO'), m, y, th.badgeBg, th.badgeBorder, th.badgeText);
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-  ctx.shadowBlur = 12;
-  ctx.font = 'italic 700 46px "Caveat", "Dancing Script", cursive, sans-serif';
-  ctx.fillStyle = th.accent;
-  ctx.fillText("We're", m + 4, 138);
+  ctx.font = `700 14px ${POSTER_FONT()}`; ctx.fillStyle = th.textMuted;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText((labels.launchTag || '').toUpperCase(), w - m, y + 18);
   ctx.restore();
 
+  // ===== 3. Hero: chữ to, tương phản mạnh =====
+  y = isCompact ? 150 : 180;
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 6;
-  ctx.font = `900 90px ${POSTER_FONT()}`;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('HIRING', m, 224);
+  ctx.font = `italic 700 ${isCompact ? 40 : 48}px "Caveat", "Dancing Script", cursive, sans-serif`;
+  ctx.fillStyle = th.accent; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(isEn ? "We're" : 'Chúng tôi đang', m, y);
   ctx.restore();
 
-  const roleTitle = (copy.headline || marketing.name || 'FULLSTACK DEVELOPER').replace(/^tuyển(?: dụng)?\s+/i, '');
+  const bigWord = isEn ? 'HIRING' : 'TUYỂN DỤNG';
+  const bigPx = fitLine(bigWord, cw, isCompact ? 96 : (isTall ? 132 : 116), '900');
+  y += Math.round(bigPx * 0.98) + 18;
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-  ctx.shadowBlur = 14;
-  ctx.font = `800 36px ${POSTER_FONT()}`;
-  ctx.fillStyle = th.accentLight;
-  ctx.fillText(roleTitle.toUpperCase(), m + 2, 274);
+  ctx.font = `900 ${bigPx}px ${POSTER_FONT()}`; ctx.fillStyle = th.textPrimary;
+  ctx.fillText(bigWord, m, y);
   ctx.restore();
 
+  const roleTitle = (copy.headline || marketing.name || 'FULLSTACK DEVELOPER').replace(/^tuyển(?: dụng)?\s+/i, '').toUpperCase();
+  const rolePx = fitLine(roleTitle, cw, isCompact ? 30 : 38, '800');
+  y += Math.round(rolePx * 1.25);
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-  ctx.shadowBlur = 8;
-  ctx.font = `600 15px ${POSTER_FONT()}`;
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillText(isEn ? 'JOIN OUR CORE TEAM   ·   BUILD BETTER TOGETHER' : 'GIA NHẬP ĐỘI NGŨ NÒNG CỐT   ·   CÙNG NHAU PHÁT TRIỂN', m + 3, 308);
+  ctx.font = `800 ${rolePx}px ${POSTER_FONT()}`; ctx.fillStyle = th.accentLight;
+  ctx.fillText(roleTitle, m, y);
   ctx.restore();
 
-  // 5. Extract Facts and Highlights
+  y += 28;
+  ctx.save();
+  // Dùng slogan người dùng nhập (copy.subline); nếu trống mới dùng mặc định.
+  const heroSub = (copy.subline && copy.subline.trim())
+    ? copy.subline.toUpperCase()
+    : (isEn ? 'JOIN OUR CORE TEAM  ·  BUILD BETTER TOGETHER' : 'GIA NHẬP ĐỘI NGŨ NÒNG CỐT  ·  CÙNG NHAU PHÁT TRIỂN');
+  const heroSubPx = fitLine(heroSub, cw, 15, '600');
+  ctx.font = `600 ${heroSubPx}px ${POSTER_FONT()}`; ctx.fillStyle = th.textSecondary;
+  ctx.fillText(heroSub, m, y);
+  ctx.restore();
+
+  // ===== 4. Ảnh gọn trong 1 khung bo góc (không tràn nền) =====
+  const photo = (asset && asset.im) ? asset.im : bgImg;
+  const bandY = y + 26;
+  const bandH = Math.round(h * (isTall ? 0.30 : (isCompact ? 0.24 : 0.28)));
+  if (photo) {
+    drawImageCover(ctx, photo, m, bandY, cw, bandH, 22);
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, bandY, cw, bandH, 22);
+    ctx.lineWidth = 2; ctx.strokeStyle = th.cardBorder; ctx.stroke(); ctx.restore();
+  } else {
+    drawCard(ctx, m, bandY, cw, bandH, 22, th.cardBg, th.cardBorder, false);
+    drawCitySkyline(ctx, m, bandY + bandH - 90, cw, 80, th.glow);
+  }
+
+  // ===== 5. Facts → khối màu + danh sách yêu cầu =====
   const allFacts = (copy.pointsEdited || (copy.points && copy.points.length >= 4))
     ? copy.points!
     : (marketing.details || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
-
   let salaryHighlight = '';
   const cleanFacts: string[] = [];
-  for (const fact of allFacts) {
-    if (!salaryHighlight && /lương|triệu|usd|\$|thưởng|đãi ngộ/i.test(fact)) {
-      salaryHighlight = fact;
-    } else {
-      cleanFacts.push(fact);
-    }
+  for (const f of allFacts) {
+    if (!salaryHighlight && /lương|triệu|usd|\$|thưởng|đãi ngộ/i.test(f)) salaryHighlight = f;
+    else cleanFacts.push(f);
   }
-  if (!salaryHighlight && marketing.offer) {
-    salaryHighlight = marketing.offer;
+  if (!salaryHighlight && marketing.offer) salaryHighlight = marketing.offer;
+
+  const infoBlocks: { tag: string; val: string; hi: boolean }[] = [];
+  if (salaryHighlight) infoBlocks.push({ tag: isEn ? 'OFFER & REWARDS' : 'ĐÃI NGỘ / LƯƠNG', val: salaryHighlight, hi: true });
+  const reqPoints: string[] = [];
+  for (const f of cleanFacts) {
+    if (infoBlocks.length < 3 && /năm|year|exp|kinh nghiệm/i.test(f)) infoBlocks.push({ tag: isEn ? 'EXPERIENCE' : 'KINH NGHIỆM', val: f, hi: false });
+    else if (infoBlocks.length < 3 && /tp\.hcm|hà nội|đà nẵng|remote|hybrid|hồ chí minh|toàn thời gian|full-time|on-site|location/i.test(f)) infoBlocks.push({ tag: isEn ? 'LOCATION & MODE' : 'ĐỊA ĐIỂM & CHẾ ĐỘ', val: f, hi: false });
+    else reqPoints.push(f);
   }
+  if (reqPoints.length === 0 && copy.subline) reqPoints.push(copy.subline);
 
-  // 6. Floating Frosted Glass Bento Cards (Strictly source facts)
-  const isCompact = h <= 1080;
-  const isTall = h >= 1920;
-
-  const bentoY = isCompact ? 335 : (isTall ? 580 : 430);
-  const bentoH = isCompact ? 104 : 124;
-  const colGap = 16;
-
-  const bentoCards: { icon: string; tag: string; val: string; highlight: boolean }[] = [];
-  if (salaryHighlight) {
-    bentoCards.push({
-      icon: '💰',
-      tag: isEn ? 'OFFER & REWARDS' : 'ĐÃI NGỘ / LƯƠNG',
-      val: salaryHighlight,
-      highlight: true,
-    });
-  }
-
-  const usedBentoFacts = new Set<string>();
-  for (const fact of cleanFacts) {
-    if (bentoCards.length >= 3) break;
-    let icon = '⚡';
-    let tag = isEn ? 'REQUIREMENT' : 'TIÊU CHÍ';
-    if (/năm|year|exp|kinh nghiệm/i.test(fact)) {
-      icon = '⚙️'; tag = isEn ? 'EXPERIENCE' : 'KINH NGHIỆM';
-    } else if (/tp\.hcm|hà nội|đà nẵng|remote|hybrid|hồ chí minh|toàn thời gian|full-time|on-site|location/i.test(fact)) {
-      icon = '📍'; tag = isEn ? 'LOCATION & MODE' : 'ĐỊA ĐIỂM & CHẾ ĐỘ';
-    } else if (/react|node|js|ts|python|golang|java|cloud|aws|docker|k8s|tech|stack/i.test(fact)) {
-      icon = '💻'; tag = isEn ? 'TECH STACK' : 'CÔNG NGHỆ';
-    } else if (/lead|mentor|debt|codebase|stakeholder|team/i.test(fact)) {
-      icon = '🎯'; tag = isEn ? 'CORE FOCUS' : 'TRÁCH NHIỆM';
-    }
-    bentoCards.push({ icon, tag, val: fact, highlight: false });
-    usedBentoFacts.add(fact);
-  }
-
-  const cardCount = bentoCards.length;
-  if (cardCount > 0) {
-    const colW = (contentW - colGap * (cardCount - 1)) / cardCount;
-    bentoCards.forEach((card, idx) => {
-      const cx = m + idx * (colW + colGap);
-      const bgFill = card.highlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(15, 23, 42, 0.72)';
-      const bdStroke = card.highlight ? th.accent : 'rgba(255, 255, 255, 0.18)';
-
-      drawCard(ctx, cx, bentoY, colW, bentoH, 18, bgFill, bdStroke, true);
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(cx, bentoY, colW, bentoH, 18);
-      ctx.clip();
-
-      ctx.font = `600 13px ${POSTER_FONT()}`;
-      ctx.fillStyle = card.highlight ? th.accentLight : '#94a3b8';
-      ctx.fillText(`${card.icon}  ${card.tag}`, cx + 18, bentoY + (isCompact ? 28 : 34));
-
-      const maxTextW = colW - 36;
-      const textStartY = bentoY + (isCompact ? 48 : 56);
-      const availTextH = bentoH - (isCompact ? 52 : 62);
-
-      posterText(
-        ctx,
-        card.val,
-        cx + 18,
-        textStartY,
-        maxTextW,
-        availTextH,
-        isCompact ? 17 : 19,
-        card.highlight ? '#ffffff' : th.textPrimary,
-        '700',
-        `${POSTER_FONT()}`
-      );
-
+  // khối màu thông tin
+  const iy = bandY + bandH + 26;
+  const n = infoBlocks.length;
+  const blockH = isTall ? 108 : 94;
+  if (n > 0) {
+    const gap = 16;
+    const bw = (cw - gap * (n - 1)) / n;
+    infoBlocks.forEach((b, i) => {
+      const bx = m + i * (bw + gap);
+      drawCard(ctx, bx, iy, bw, blockH, 16, b.hi ? th.accent : th.cardBg, b.hi ? null : th.cardBorder, false);
+      ctx.save(); ctx.beginPath(); ctx.roundRect(bx, iy, bw, blockH, 16); ctx.clip();
+      ctx.font = `700 12px ${POSTER_FONT()}`; ctx.fillStyle = b.hi ? th.accentText : th.textMuted; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(b.tag, bx + 16, iy + 28);
+      posterText(ctx, b.val, bx + 16, iy + 40, bw - 32, blockH - 50, isTall ? 18 : 16, b.hi ? th.accentText : th.textPrimary, '700', `${POSTER_FONT()}`);
       ctx.restore();
     });
   }
 
-  // 7. Key Requirements Section
-  const reqY = bentoY + (cardCount > 0 ? bentoH + 18 : 0);
-  const footerH = 140;
-  const footerY = h - footerH - 30;
-  const reqH = footerY - reqY - 20;
-
-  if (reqH > 140) {
-    drawCard(ctx, m, reqY, contentW, reqH, 20, 'rgba(10, 15, 26, 0.75)', 'rgba(255, 255, 255, 0.14)', true);
-
-    ctx.save();
-    ctx.font = `700 15px ${POSTER_FONT()}`;
-    ctx.fillStyle = th.accentLight;
-    ctx.fillText(isEn ? '⚡ KEY REQUIREMENTS & QUALIFICATIONS' : '⚡ YÊU CẦU & KỸ NĂNG THEN CHỐT', m + 28, reqY + 36);
-    ctx.restore();
-
-    // Use facts not already displayed in bento cards, or cleanFacts
-    let pointsToShow = cleanFacts.filter(f => !usedBentoFacts.has(f)).slice(0, reqH > 220 ? 3 : 2);
-    if (pointsToShow.length === 0) {
-      pointsToShow = cleanFacts.slice(0, reqH > 220 ? 3 : 2);
-    }
-    if (pointsToShow.length === 0 && copy.subline) {
-      pointsToShow = [copy.subline];
-    }
-
-    if (pointsToShow.length > 0) {
-      const availablePointH = reqH - 55;
-      const itemH = availablePointH / pointsToShow.length;
-
-      pointsToShow.forEach((pt, pIdx) => {
-        const centerY = reqY + 54 + pIdx * itemH + itemH / 2;
-        const fontSize = isCompact ? 17 : 20;
-        const lineH = Math.round(fontSize * 1.32);
-        const badgeH = 34;
-
-        const badgeX = m + 24;
-        const badgeW = drawBadgePill(ctx, `0${pIdx + 1}`, badgeX, Math.round(centerY - badgeH / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
-
-        const textX = badgeX + badgeW + 18;
-        const textMaxW = contentW - (badgeW + 24 + 18 + 24);
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(m, reqY, contentW, reqH, 20);
-        ctx.clip();
-
-        posterText(
-          ctx,
-          pt,
-          textX,
-          Math.round(centerY - lineH / 2),
-          textMaxW,
-          lineH * 2.2,
-          fontSize,
-          '#f8fafc',
-          '600',
-          `${POSTER_FONT()}`
-        );
-        ctx.restore();
-      });
-    }
-  }
-
-  // 8. Bottom Action & Contact Footer
+  // ===== 6. Footer ghim đáy =====
   const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
   const phone = (source.match(/(?:0\d{9,10}|\+84\d{9,10})/i) || [])[0];
+  const footerY = h - (isTall ? 160 : 132);
 
-  const btnW = 290, btnH = 64;
-  drawCard(ctx, m, footerY + 8, btnW, btnH, 32, th.accent, null, true);
-  drawPaperPlaneIcon(ctx, m + 28, footerY + 28, 24, th.accentText);
+  // ===== 7. Danh sách yêu cầu (trên nền đặc, không hộp) =====
+  let ry = iy + (n > 0 ? blockH : 0) + 30;
+  const reqRoom = footerY - ry - 20;
+  if (reqPoints.length > 0 && reqRoom > 90) {
+    ctx.save();
+    ctx.font = `700 14px ${POSTER_FONT()}`; ctx.fillStyle = th.accentLight; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(isEn ? 'KEY REQUIREMENTS & QUALIFICATIONS' : 'YÊU CẦU & KỸ NĂNG THEN CHỐT', m + 14, ry);
+    ctx.restore();
+    ry += 26;
+    const rowFs = isTall ? 20 : 18;
+    const rowH = Math.round(rowFs * 1.7);
+    const rowGap = 12;
+    const fitRows = Math.max(1, Math.floor((footerY - 20 - ry + rowGap) / (rowH + rowGap)));
+    const show = reqPoints.slice(0, Math.min(fitRows, isTall ? 6 : 4));
+    const listBot = ry + show.length * rowH + (show.length - 1) * rowGap;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, ry, 4, Math.max(8, listBot - ry), 2); ctx.fillStyle = th.accent; ctx.fill(); ctx.restore();
+    const badgeH = 28;
+    show.forEach((pt, i) => {
+      const rowY = ry + i * (rowH + rowGap);
+      const badgeX = m + 16;
+      const badgeW = drawBadgePill(ctx, `0${i + 1}`, badgeX, Math.round(rowY + (rowH - badgeH) / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+      const tx = badgeX + badgeW + 16;
+      posterText(ctx, stripLeadingEnumeration(pt), tx, rowY + Math.round((rowH - rowFs * 1.3) / 2), cw - (tx - m) - 8, rowH, rowFs, th.textPrimary, '600', `${POSTER_FONT()}`);
+    });
+  }
 
+  // ===== 8. CTA + liên hệ =====
+  const cta = copy.cta || (isEn ? 'Apply now' : 'Gửi CV ngay');
+  ctx.font = `700 22px ${POSTER_FONT()}`;
+  const ctaW = Math.round(ctx.measureText(cta).width + 96);
+  const ctaH = 60;
+  drawCard(ctx, m, footerY, ctaW, ctaH, 30, th.accent, null, true);
+  drawPaperPlaneIcon(ctx, m + 26, footerY + ctaH / 2 - 11, 22, th.accentText);
   ctx.save();
-  ctx.font = `700 23px ${POSTER_FONT()}`;
-  ctx.fillStyle = th.accentText;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || (isEn ? 'Apply Now' : 'Send your CV'), m + 68, footerY + 8 + btnH / 2);
+  ctx.font = `700 22px ${POSTER_FONT()}`; ctx.fillStyle = th.accentText; ctx.textBaseline = 'middle';
+  ctx.fillText(cta, m + 60, footerY + ctaH / 2 + 1);
   ctx.restore();
 
-  const infoX = m + btnW + 28;
+  const contactText = phone ? `📞 ${phone}` : (email ? `✉ ${email}` : (marketing.brand ? marketing.brand : (isEn ? 'Connect with us' : 'Inbox để ứng tuyển')));
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-  ctx.shadowBlur = 8;
-  ctx.font = `500 17px ${POSTER_FONT()}`;
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillText(isEn ? '✉ Or connect to receive the full JD!' : '✉  hoặc inbox để nhận JD đầy đủ!', infoX, footerY + 28);
-
-  ctx.font = `700 20px ${POSTER_FONT()}`;
-  ctx.fillStyle = '#ffffff';
-  const contactText = phone ? `📞  Hotline: ${phone}` : (email ? `✉  Email: ${email}` : (marketing.brand ? `🏢  ${marketing.brand}` : (isEn ? '📩  Connect with us' : '📩  Inbox để ứng tuyển')));
-  ctx.fillText(contactText, infoX, footerY + 58);
-  ctx.restore();
-
-  drawHandwrittenSlogan(ctx, 'Same People\nBrighter Tomorrow', w - m, footerY + 52, 28, th.accentLight, -5);
-
-  ctx.save();
-  ctx.font = `600 12px ${POSTER_FONT()}`;
-  ctx.fillStyle = '#94a3b8';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '3px';
-  const footerBrand = marketing.brand ? marketing.brand.toUpperCase() : 'INNOVATE';
-  ctx.fillText(`${footerBrand}   ·   GROW   ·   LEARN   ·   MAKE AN IMPACT`, w / 2, h - 18);
+  ctx.fillStyle = th.textSecondary; ctx.textBaseline = 'middle';
+  ctx.font = `600 16px ${POSTER_FONT()}`;
+  ctx.fillText(contactText, m + ctaW + 24, footerY + ctaH / 2 + 1);
   ctx.restore();
 }
 
@@ -1632,7 +1522,7 @@ export function drawFullPhotoRecruitmentStory(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
 
   const photo = (asset && asset.im) ? asset.im : bgImg;
@@ -1694,18 +1584,31 @@ export function drawFullPhotoRecruitmentStory(
   const footerY = h - 120;
   const availableH = footerY - startY - 20;
 
-  const cardH = points.length > 0 ? (availableH - (points.length - 1) * 18) / points.length : 0;
+  // Cap chiều cao card cho gọn (tránh card rỗng khổng lồ khi ít item), canh giữa stack trong vùng trống.
+  const n = points.length;
+  const gapBase = 18;
+  const maxCard = h >= 1600 ? 150 : 124;
+  let cardH = n > 0 ? Math.min(maxCard, (availableH - gapBase * (n - 1)) / n) : 0;
+  cardH = Math.max(cardH, 88);
+  let cardGap = n > 1 ? (availableH - n * cardH) / (n - 1) : gapBase;
+  cardGap = Math.max(gapBase, Math.min(cardGap, 36));
+  const stackTop = startY + Math.max(0, (availableH - (n * cardH + cardGap * (n - 1))) / 2);
 
   points.forEach((point, i) => {
-    const cy = startY + i * (cardH + 18);
+    const cy = stackTop + i * (cardH + cardGap);
     const cardCenterY = cy + cardH / 2;
     const globalIdx = startIdx + i + 1;
     const numStr = (globalIdx < 10 ? '0' : '') + globalIdx;
 
-    drawCard(ctx, m, cy, contentW, cardH, 20, 'rgba(15, 23, 42, 0.76)', 'rgba(255, 255, 255, 0.16)', true);
-
-    const numFontSize = cardH > 140 ? 46 : 38;
+    // Không bọc box đen: thanh accent mảnh trái + số lớn + text, có bóng đổ để nổi trên ảnh.
     ctx.save();
+    ctx.fillStyle = th.accent;
+    ctx.beginPath(); ctx.roundRect(m, cy + 12, 5, cardH - 24, 3); ctx.fill();
+    ctx.restore();
+
+    const numFontSize = cardH > 130 ? 46 : 38;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 10;
     ctx.font = `800 ${numFontSize}px ${POSTER_FONT()}`;
     ctx.fillStyle = th.accent;
     ctx.textBaseline = 'middle';
@@ -1713,14 +1616,15 @@ export function drawFullPhotoRecruitmentStory(
     const numW = ctx.measureText(numStr).width;
     ctx.restore();
 
-    const textFontSize = cardH > 140 ? 22 : 18;
+    const textFontSize = cardH > 130 ? 22 : 18;
     const textLineH = Math.round(textFontSize * 1.35);
     const textX = m + 28 + Math.round(numW) + 24;
     const textMaxW = contentW - (textX - m + 28);
 
     ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 8;
     ctx.font = `600 ${textFontSize}px ${POSTER_FONT()}`;
-    const words = (point || '').split(/\s+/);
+    const words = (stripLeadingEnumeration(point) || '').split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
     for (const w of words) {
@@ -1764,7 +1668,7 @@ export function drawFullPhotoRecruitmentAction(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
 
   const photo = (asset && asset.im) ? asset.im : bgImg;
@@ -1815,40 +1719,52 @@ export function drawFullPhotoRecruitmentAction(
   let curY = 215 + titleHeight + 25;
 
   if (marketing.offer) {
-    const offerH = 100;
-    drawCard(ctx, m, curY, contentW, offerH, 20, th.cardHighlightBg, th.cardHighlightBorder, true);
+    const offerH = 92;
     ctx.save();
+    ctx.fillStyle = th.accent;
+    ctx.beginPath(); ctx.roundRect(m, curY + 8, 5, offerH - 16, 3); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 10;
     ctx.font = `700 16px ${POSTER_FONT()}`;
     ctx.fillStyle = th.accentLight;
-    ctx.fillText(labels.actionPerkTitle, m + 30, curY + 36);
-
+    ctx.fillText(labels.actionPerkTitle, m + 22, curY + 36);
     ctx.font = `800 28px ${POSTER_FONT()}`;
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(marketing.offer, m + 30, curY + 74);
+    ctx.fillText(marketing.offer, m + 22, curY + 74);
     ctx.restore();
-    curY += offerH + 20;
+    curY += offerH + 18;
   }
 
   let points = copy.points && copy.points.length ? copy.points.slice(0, 3) : [copy.subline];
   if (!points[0]) points = [isEn ? 'Submit your CV or connect directly to receive full details.' : 'Gửi CV qua email hoặc inbox trực tiếp để nhận JD chi tiết.'];
 
-  const stepCardH = 90;
+  const stepCardH = 78;
   points.forEach((pt, i) => {
-    drawCard(ctx, m, curY, contentW, stepCardH, 18, 'rgba(15, 23, 42, 0.72)', 'rgba(255, 255, 255, 0.14)', true);
     const stepCenterY = curY + stepCardH / 2;
     const badgeH = 34;
     const badgeY = Math.round(stepCenterY - badgeH / 2);
 
-    const badgeW = drawBadgePill(ctx, `${labels.actionStepPrefix} ${i + 1}`, m + 24, badgeY, th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
-    const stepTextX = m + 24 + badgeW + 18;
-    const stepTextW = contentW - (24 + badgeW + 18 + 24);
+    // Thanh accent mảnh bên trái thay cho box đen (text sạch, không bọc hộp)
+    ctx.save();
+    ctx.fillStyle = th.accent;
+    ctx.beginPath(); ctx.roundRect(m, curY + 10, 5, stepCardH - 20, 3); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 10;
+    const badgeW = drawBadgePill(ctx, `${labels.actionStepPrefix} ${i + 1}`, m + 22, badgeY, th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+    ctx.restore();
+    const stepTextX = m + 22 + badgeW + 18;
+    const stepTextW = contentW - (22 + badgeW + 18 + 24);
 
     const textFontSize = 19;
     const textLineH = Math.round(textFontSize * 1.35);
 
     ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 8;
     ctx.font = `600 ${textFontSize}px ${POSTER_FONT()}`;
-    const words = (pt || '').split(/\s+/);
+    const words = (stripLeadingEnumeration(pt) || '').split(/\s+/);
     const lines: string[] = [];
     let currentLine = '';
     for (const w of words) {
@@ -1875,7 +1791,7 @@ export function drawFullPhotoRecruitmentAction(
     }
     ctx.restore();
 
-    curY += stepCardH + 16;
+    curY += stepCardH + 12;
   });
 
   const footerY = h - 140;
@@ -1916,17 +1832,21 @@ function drawCheckCards(
   th: PosterTheme
 ) {
   if (!items.length) return;
-  const gap = 16;
+  const gap = 18;
   const availH = bottom - top;
-  const cardH = Math.min(220, (availH - (items.length - 1) * gap) / items.length);
+  const n = items.length;
+  const cardH = Math.min(132, (availH - (n - 1) * gap) / n);
+  const rowGap = n > 1 ? Math.max(gap, Math.min((availH - n * cardH) / (n - 1), 40)) : gap;
+  const stackTop = top + Math.max(0, (availH - (n * cardH + rowGap * (n - 1))) / 2);
   items.forEach((pt, i) => {
-    const cy = top + i * (cardH + gap);
+    const cy = stackTop + i * (cardH + rowGap);
     const cardCenterY = cy + cardH / 2;
-    drawCard(ctx, m, cy, contentW, cardH, 18, 'rgba(15, 23, 42, 0.76)', 'rgba(255, 255, 255, 0.16)', true);
 
-    const dotR = Math.min(26, cardH * 0.26);
-    const dotX = m + 30 + dotR, dotY = cardCenterY;
+    // Không bọc box đen: dot check accent + text, bóng đổ để nổi trên ảnh.
+    const dotR = Math.min(24, cardH * 0.26);
+    const dotX = m + 24 + dotR, dotY = cardCenterY;
     ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)'; ctx.shadowBlur = 10;
     ctx.fillStyle = th.accent;
     ctx.beginPath();
     ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
@@ -1947,6 +1867,7 @@ function drawCheckCards(
     const fs = cardH > 120 ? 24 : 21;
     const lineH = Math.round(fs * 1.32);
     ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'; ctx.shadowBlur = 8;
     ctx.font = `600 ${fs}px ${POSTER_FONT()}`;
     ctx.fillStyle = '#ffffff';
     ctx.textBaseline = 'middle';
@@ -1977,135 +1898,153 @@ export function drawFullPhotoGeneral(
   th: PosterTheme,
   bgImg: CanvasImageSource | null = null
 ) {
-  const w = 1080, h = canvas.height;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S;
   const ctx = canvas.getContext('2d')!;
 
-  const photo = (asset && asset.im) ? asset.im : bgImg;
-  if (photo) {
-    drawImageCover(ctx, photo, 0, 0, w, h, 0);
-  } else {
-    drawBackground(ctx, w, h, th, bgImg);
-  }
-
-  const vignette = ctx.createLinearGradient(0, 0, 0, h);
-  vignette.addColorStop(0, 'rgba(3, 7, 18, 0.80)');
-  vignette.addColorStop(0.28, 'rgba(3, 7, 18, 0.42)');
-  vignette.addColorStop(0.60, 'rgba(3, 7, 18, 0.74)');
-  vignette.addColorStop(1, 'rgba(3, 7, 18, 0.98)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, w, h);
-
-  const m = 60, contentW = w - m * 2;
-  const resolved = resolveStorySource(marketing, copy);
-  const labels = getPosterLabels(marketing, [copy.headline, copy.subline, ...resolved.items, marketing.details].filter(Boolean).join(' '));
+  const source = [copy.headline, copy.subline, marketing.details, marketing.offer].filter(Boolean).join(' ');
+  const labels = getPosterLabels(marketing, source);
   const isEn = labels.isEn;
+  const isTall = h >= 1600;
+  const isCompact = h <= 1100;
+  const resolved = resolveStorySource(marketing, copy);
 
-  // Nội dung points (đồng bộ qua shared story resolver)
-  const points = kind === 'story' ? resolved.pageItems : resolved.items;
+  const fitLine = (t: string, maxW: number, startPx: number, weight: string): number => {
+    let fs = startPx; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`;
+    while (ctx.measureText(t).width > maxW && fs > 18) { fs -= 2; ctx.font = `${weight} ${fs}px ${POSTER_FONT()}`; }
+    return fs;
+  };
 
-  // Header: brand (trái) + nhãn loại poster (phải)
-  drawBadgePill(ctx, marketing.brand || 'MIVY STUDIO', m, 68, 'rgba(0, 0, 0, 0.7)', 'rgba(255, 255, 255, 0.2)', '#ffffff');
-  const kindTag = kind === 'launch' ? (isEn ? 'FEATURED' : 'NỔI BẬT')
-    : kind === 'story' ? (isEn ? 'HIGHLIGHTS' : 'ĐIỂM NỔI BẬT')
-      : (isEn ? 'GET IT NOW' : 'ƯU ĐÃI & LIÊN HỆ');
-  const tagW = 50 + kindTag.length * 12;
-  drawBadgePill(ctx, kindTag, w - m - tagW, 68, th.badgeBg, th.badgeBorder, th.accent);
+  // ===== Nền màu đặc theo theme (KHÔNG đè chữ lên ảnh) =====
+  const grad = (th.bgGrad && th.bgGrad.length >= 3) ? th.bgGrad : [th.bg, th.bg, th.bg];
+  const bgG = ctx.createLinearGradient(0, 0, w * 0.45, h);
+  bgG.addColorStop(0, grad[0]); bgG.addColorStop(0.55, grad[1]); bgG.addColorStop(1, grad[2]);
+  ctx.fillStyle = bgG; ctx.fillRect(0, 0, w, h);
+  const glowG = ctx.createRadialGradient(w * 0.92, 0, 20, w * 0.92, 0, w * 0.8);
+  glowG.addColorStop(0, th.glow); glowG.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowG; ctx.fillRect(0, 0, w, h);
 
-  // ===== STORY: tiêu đề trên + danh sách điểm nổi bật =====
-  if (kind === 'story') {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
-    ctx.font = `700 20px ${POSTER_FONT()}`;
-    ctx.fillStyle = th.accentLight;
-    ctx.fillText(isEn ? 'WHY CHOOSE US' : 'VÌ SAO NÊN CHỌN', m, 172);
-    ctx.restore();
+  const m = 64, contentW = w - m * 2, cw = contentW;
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
-    const titleH = posterText(ctx, copy.headline || marketing.name || '', m, 205, contentW, h * 0.15,
-      h >= 1350 ? 52 : 42, '#ffffff', '800', `${POSTER_FONT()}`);
-    ctx.restore();
+  // ===== Top: brand (kicker chỉ hiện 1 lần ở dạng script bên dưới, tránh lặp) =====
+  let y = 60;
+  drawBadgePill(ctx, (marketing.brand || 'MIVY STUDIO'), m, y, th.badgeBg, th.badgeBorder, th.badgeText);
+  const kicker = kind === 'launch' ? (isEn ? 'Featured' : 'Nổi bật')
+    : kind === 'story' ? (isEn ? 'Why choose us' : 'Vì sao nên chọn')
+      : (isEn ? 'Offer & contact' : 'Ưu đãi & liên hệ');
 
-    drawCheckCards(ctx, points, m, contentW, 205 + titleH + 28, h - 120, th);
-    return;
-  }
-
-  // ===== ACTION: tiêu đề + bước/điểm + CTA nổi bật + liên hệ =====
-  if (kind === 'action') {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
-    const titleH = posterText(ctx, copy.headline || marketing.name || '', m, 180, contentW, h * 0.16,
-      h >= 1350 ? 54 : 44, '#ffffff', '800', `${POSTER_FONT()}`);
-    ctx.restore();
-
-    const listBottom = h - 200;
-    drawCheckCards(ctx, points.slice(0, 3), m, contentW, 180 + titleH + 26, listBottom, th);
-
-    // CTA pill rộng
-    const btnH = 74, btnY = h - 150;
-    drawCard(ctx, m, btnY, contentW, btnH, 37, th.accent, null, true);
-    ctx.save();
-    ctx.font = `800 26px ${POSTER_FONT()}`;
-    ctx.fillStyle = th.accentText;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(copy.cta || (isEn ? 'Contact Now' : 'Liên hệ ngay'), w / 2, btnY + btnH / 2);
-    ctx.restore();
-
-    if (marketing.offer) {
-      ctx.save();
-      ctx.font = `700 22px ${POSTER_FONT()}`;
-      ctx.fillStyle = '#e2e8f0';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText((isEn ? 'Offer: ' : 'Ưu đãi: ') + marketing.offer, w / 2, h - 60);
-      ctx.restore();
-    }
-    return;
-  }
-
-  // ===== LAUNCH (hero) =====
+  // ===== Hero: kicker script + tiêu đề to =====
+  y = isCompact ? 150 : 178;
   ctx.save();
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-  ctx.shadowBlur = 16;
-  const titleH = posterText(
-    ctx,
-    copy.headline || marketing.name || 'Sản Phẩm & Dịch Vụ Đột Phá',
-    m, h * 0.44, contentW, h * 0.22,
-    h >= 1350 ? 58 : 46, '#ffffff', '800', `${POSTER_FONT()}`
-  );
+  ctx.font = `italic 700 ${isCompact ? 34 : 42}px "Caveat", "Dancing Script", cursive, sans-serif`;
+  ctx.fillStyle = th.accent; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(kicker, m, y);
   ctx.restore();
 
-  let curY = h * 0.44 + titleH + 20;
+  const bigTitle = (copy.headline || marketing.name || (isEn ? 'Our product' : 'Sản phẩm & dịch vụ')).toUpperCase();
+  const bigPx = fitLine(bigTitle, cw, isCompact ? 56 : (isTall ? 88 : 72), '900');
+  ctx.save();
+  const titleH = posterText(ctx, bigTitle, m, y + 18, cw, isTall ? 260 : 210, bigPx, th.textPrimary, '900', `${POSTER_FONT()}`);
+  ctx.restore();
+  y = y + 18 + titleH + 6;
+
   if (copy.subline) {
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-    ctx.shadowBlur = 10;
-    const subH = posterText(ctx, copy.subline, m, curY, contentW, h * 0.12, 24, '#cbd5e1', '500', `${POSTER_FONT()}`);
+    const sH = posterText(ctx, copy.subline, m, y, cw, 64, isTall ? 22 : 18, th.textSecondary, '500', `${POSTER_FONT()}`);
     ctx.restore();
-    curY += subH + 24;
+    y += sH + 4;
   }
 
-  const footerY = h - 140;
-  const btnW = 320, btnH = 68;
-  drawCard(ctx, m, footerY, btnW, btnH, 34, th.accent, null, true);
-  ctx.save();
-  ctx.font = `700 24px ${POSTER_FONT()}`;
-  ctx.fillStyle = th.accentText;
-  ctx.textBaseline = 'middle';
-  ctx.fillText(copy.cta || 'Khám Phá Ngay', m + 40, footerY + btnH / 2);
-  drawArrowIcon(ctx, m + 270, footerY + 22, 24, th.accentText);
-  ctx.restore();
+  // ===== Ảnh gọn trong khung bo góc =====
+  const photo = (asset && asset.im) ? asset.im : bgImg;
+  const bandY = y + 20;
+  // Ảnh hero: poster "launch" cho ảnh TO hơn (ảnh là thứ hút khách); story/action nhỏ hơn để chừa danh sách.
+  const bandRatio = kind === 'launch'
+    ? (isTall ? 0.40 : (isCompact ? 0.30 : 0.38))
+    : (isTall ? 0.28 : (isCompact ? 0.22 : 0.26));
+  const bandH = Math.round(h * bandRatio);
+  if (photo) {
+    drawImageCover(ctx, photo, m, bandY, cw, bandH, 22);
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, bandY, cw, bandH, 22); ctx.lineWidth = 2; ctx.strokeStyle = th.cardBorder; ctx.stroke(); ctx.restore();
+  } else {
+    drawCard(ctx, m, bandY, cw, bandH, 22, th.cardBg, th.cardBorder, false);
+    drawCitySkyline(ctx, m, bandY + bandH - 90, cw, 80, th.glow);
+  }
+
+  // ===== Ưu đãi (khối nhấn) + danh sách điểm =====
+  const points = (kind === 'story' ? resolved.pageItems : resolved.items).filter(Boolean);
+  const footerY = h - (isTall ? 160 : 132);
+  let ry = bandY + bandH + 26;
 
   if (marketing.offer) {
-    drawCard(ctx, m + 340, footerY, contentW - 340, btnH, 22, 'rgba(15, 23, 42, 0.8)', th.cardHighlightBorder, true);
-    ctx.save();
-    ctx.font = `700 22px ${POSTER_FONT()}`;
-    ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Ưu đãi: ' + marketing.offer, m + 370, footerY + btnH / 2);
+    const chipH = 58;
+    drawCard(ctx, m, ry, cw, chipH, 14, th.accent, null, false);
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, ry, cw, chipH, 14); ctx.clip();
+    ctx.font = `700 12px ${POSTER_FONT()}`; ctx.fillStyle = th.accentText; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(isEn ? 'OFFER' : 'ƯU ĐÃI', m + 18, ry + 22);
+    posterText(ctx, marketing.offer, m + 18, ry + 30, cw - 36, 22, 17, th.accentText, '700', `${POSTER_FONT()}`);
+    ctx.restore();
+    ry += chipH + 18;
+  }
+
+  if (points.length > 0 && footerY - ry - 20 > 70) {
+    ctx.save(); ctx.font = `700 14px ${POSTER_FONT()}`; ctx.fillStyle = th.accentLight; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(isEn ? 'HIGHLIGHTS' : 'ĐIỂM NỔI BẬT', m + 14, ry);
+    ctx.restore();
+    ry += 26;
+    const rowFs = isTall ? 19 : 17; const rowH = Math.round(rowFs * 1.7); const baseGap = 12;
+    const fitRows = Math.max(1, Math.floor((footerY - 20 - ry + baseGap) / (rowH + baseGap)));
+    const show = points.slice(0, Math.min(fitRows, isTall ? 6 : 4));
+    const nRows = show.length;
+    const availListH = footerY - 20 - ry;
+    // dàn đều để LẤP khoảng trống ở khổ cao (9:16); 4:5/1:1 gần như không đổi
+    const rowGap = nRows > 1 ? Math.max(baseGap, Math.min(44, Math.floor((availListH - nRows * rowH) / (nRows - 1)))) : baseGap;
+    const listBot = ry + show.length * rowH + (show.length - 1) * rowGap;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(m, ry, 4, Math.max(8, listBot - ry), 2); ctx.fillStyle = th.accent; ctx.fill(); ctx.restore();
+    const badgeH = 28;
+    show.forEach((pt, i) => {
+      const rowY = ry + i * (rowH + rowGap);
+      const badgeW = drawBadgePill(ctx, `0${i + 1}`, m + 16, Math.round(rowY + (rowH - badgeH) / 2), th.badgeBg, th.badgeBorder, th.accent, null, badgeH);
+      const tx = m + 16 + badgeW + 16;
+      posterText(ctx, stripLeadingEnumeration(pt), tx, rowY + Math.round((rowH - rowFs * 1.3) / 2), cw - (tx - m) - 8, rowH, rowFs, th.textPrimary, '600', `${POSTER_FONT()}`);
+    });
+  }
+
+  // ===== CTA + liên hệ =====
+  const email = (source.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0];
+  const phone = (source.match(/(?:0\d{9,10}|\+84\d{9,10})/i) || [])[0];
+  const cta = copy.cta || (isEn ? 'Learn more' : 'Khám phá ngay');
+  ctx.font = `700 22px ${POSTER_FONT()}`;
+  const ctaW = Math.round(ctx.measureText(cta).width + 90);
+  const ctaH = 60;
+  drawCard(ctx, m, footerY, ctaW, ctaH, 30, th.accent, null, true);
+  ctx.save(); ctx.font = `700 22px ${POSTER_FONT()}`; ctx.fillStyle = th.accentText; ctx.textBaseline = 'middle';
+  ctx.fillText(cta, m + 28, footerY + ctaH / 2 + 1);
+  drawArrowIcon(ctx, m + ctaW - 34, footerY + ctaH / 2 - 11, 22, th.accentText);
+  ctx.restore();
+  const contact = phone ? `📞 ${phone}` : (email ? `✉ ${email}` : (marketing.brand || ''));
+  if (contact) {
+    ctx.save(); ctx.fillStyle = th.textSecondary; ctx.textBaseline = 'middle'; ctx.font = `600 16px ${POSTER_FONT()}`;
+    ctx.fillText(contact, m + ctaW + 24, footerY + ctaH / 2 + 1);
     ctx.restore();
   }
+}
+
+// Watermark "mivy" chìm góc dưới (gói Free). Pro truyền pro=true để bỏ.
+export function drawWatermark(canvas: HTMLCanvasElement, pro = false) {
+  if (pro) return;
+  const ctx = canvas.getContext('2d'); if (!ctx) return;
+  // Vẽ theo PIXEL THẬT của canvas (reset transform) → đúng cho mọi engine, mọi khổ (1080/1200/1640…)
+  const W = canvas.width, H = canvas.height;
+  const fs = Math.max(16, Math.round(W * 0.018));
+  const pad = Math.round(W * 0.026);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.font = `800 ${fs}px ${POSTER_FONT()}`;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = Math.round(fs * 0.4); ctx.shadowOffsetY = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fillText('✳ mivy', W - pad, H - pad);
+  ctx.restore();
 }
 
 export function drawIndustryPoster(
@@ -2115,22 +2054,24 @@ export function drawIndustryPoster(
   rawCopy: CopyItem,
   asset: AssetInfo | null,
   bgImg: CanvasImageSource | null = null,
-  logoImg: CanvasImageSource | null = null
+  logoImg: CanvasImageSource | null = null,
+  scale: number = 1
 ) {
   setPosterFontFromState(marketing); // chọn font trước khi vẽ
-  drawIndustryPosterCore(canvas, marketing, kind, rawCopy, asset, bgImg, logoImg);
+  drawIndustryPosterCore(canvas, marketing, kind, rawCopy, asset, bgImg, logoImg, scale);
   // Viền khung cho poster ngành (template tự xử lý trong catalog-renderer)
   if (!marketing.templateId && marketing.borderWidth && marketing.borderWidth > 0) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
+      const S = canvas.width / 1080, W = 1080, Hh = canvas.height / S; // toạ độ logic (ctx đã scale ở Core)
       const bw = marketing.borderWidth;
-      const fm = Math.round(canvas.width * 0.03);
+      const fm = Math.round(W * 0.03);
       const rad = marketing.borderRadius ?? 0;
       ctx.save();
       ctx.strokeStyle = marketing.borderColor || marketing.brandKit?.colorAccent || '#ffffff';
       ctx.lineWidth = bw;
       ctx.beginPath();
-      ctx.roundRect(fm + bw / 2, fm + bw / 2, canvas.width - fm * 2 - bw, canvas.height - fm * 2 - bw, rad);
+      ctx.roundRect(fm + bw / 2, fm + bw / 2, W - fm * 2 - bw, Hh - fm * 2 - bw, rad);
       ctx.stroke();
       ctx.restore();
     }
@@ -2138,6 +2079,7 @@ export function drawIndustryPoster(
   // Overlay sau cùng — áp cho MỌI nhánh layout: trang trí mùa trước, sticker trên cùng
   drawSeasonDecor(canvas, marketing);
   drawSaleSticker(canvas, marketing);
+  drawWatermark(canvas);
 }
 
 function drawIndustryPosterCore(
@@ -2147,17 +2089,21 @@ function drawIndustryPosterCore(
   rawCopy: CopyItem,
   asset: AssetInfo | null,
   bgImg: CanvasImageSource | null = null,
-  logoImg: CanvasImageSource | null = null
+  logoImg: CanvasImageSource | null = null,
+  scale: number = 1
 ) {
   const hMap: Record<AspectRatio, number> = { '1:1': 1080, '4:5': 1350, '9:16': 1920 };
   const h = hMap[marketing.aspect] || 1350;
-  canvas.width = 1080;
-  canvas.height = h;
+  const S = Math.max(1, Math.min(4, scale)); // supersampling: vẽ theo toạ độ logic 1080×h, xuất 1080*S
+  canvas.width = 1080 * S;
+  canvas.height = h * S;
+  const ctx = canvas.getContext('2d');
+  if (ctx) { normalizeCanvasContext(ctx, canvas); ctx.scale(S, S); ctx.imageSmoothingQuality = 'high'; }
 
   if (marketing.conceptId && drawIndustryConcept(canvas, marketing, kind, rawCopy, asset, bgImg)) return;
   if (drawCatalogPoster(canvas, marketing, kind, rawCopy, asset, bgImg, logoImg)) return;
 
-  const th = POSTER_THEMES[marketing.theme] || POSTER_THEMES.emerald_pro;
+  const th = POSTER_THEMES[marketing.theme] || POSTER_THEMES.tech_dark;
   const copy = rawCopy;
 
   const hasPhoto = Boolean(asset && asset.im);
@@ -2178,26 +2124,6 @@ function drawIndustryPosterCore(
     return;
   }
 
-  if (marketing.industry === 'recruitment') {
-    if (kind === 'launch') {
-      drawRecruitmentHero(canvas, marketing, copy, asset, th, bgImg);
-    } else if (kind === 'story') {
-      drawRecruitmentStory(canvas, marketing, copy, asset, th, bgImg);
-    } else {
-      drawRecruitmentAction(canvas, marketing, copy, asset, th, bgImg);
-    }
-    return;
-  }
-
-  if (marketing.industry === 'education') {
-    drawEducationPoster(canvas, marketing, kind, copy, asset, th, bgImg);
-    return;
-  }
-
-  if (marketing.industry === 'service') {
-    drawServicePoster(canvas, marketing, kind, copy, asset, th, bgImg);
-    return;
-  }
-
+  // Matrix (nền đặc) — mọi ngành dùng chung renderer concept sạch cho đồng nhất
   drawGeneralModernPoster(canvas, marketing, kind, copy, asset, th, bgImg);
 }

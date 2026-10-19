@@ -4,7 +4,7 @@ export type PosterKind = 'launch' | 'story' | 'action';
 export type LayoutMode = 'full_photo' | 'matrix';
 export type OutputLanguage = 'preserve' | 'vi' | 'en';
 
-export type ThemeId = 'tech_dark' | 'warm_editorial' | 'bold_vibrant' | 'clean_minimal' | 'emerald_pro';
+export type ThemeId = 'tech_dark' | 'warm_editorial' | 'bold_vibrant' | 'clean_minimal';
 
 export interface PosterTheme {
   id: ThemeId;

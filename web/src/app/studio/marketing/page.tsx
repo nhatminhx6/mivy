@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, Download, Copy, FileText, RefreshCw, Upload, Check, Layers, Image as ImageIcon, Maximize2, Eye, X, ChevronLeft, ChevronRight, CheckCircle2, ChevronDown } from 'lucide-react';
 import { AssetInfo, AspectRatio, IndustryId, MarketingState, PosterKind, ThemeId, OutputLanguage, FactItem } from '@/types';
-import { POSTER_THEMES, drawIndustryPoster } from '@/lib/design-engine';
+import { POSTER_THEMES, drawIndustryPoster, ensurePosterFontsReady } from '@/lib/design-engine';
 import { marketingZip } from '@/lib/marketing-zip';
 import { balancedPages, resolveStorySource, clampStoryPageInState, normalizePointList } from '@/lib/balanced-pages';
 import { IndustryForm } from '@/components/marketing/IndustryForm';
 import { makeIndustryCopy } from '@/lib/industry-concepts';
 import { STICKER_PRESETS, getPreset } from '@/lib/sticker-engine';
 import { SEASON_PRESETS } from '@/lib/season-engine';
+import { SEASON_VARIANTS } from '@/lib/season-decor';
 import { FONT_PRESETS } from '@/lib/brand-presets';
 import { StickerCorner } from '@/types';
 import { TemplateLibrary } from '@/components/marketing/TemplateLibrary';
@@ -17,6 +19,14 @@ import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
 import { CATEGORY_SAMPLES } from '@/lib/category-samples';
 import { loadBrand } from '@/lib/brand-presets';
 import { DraftController } from '@/lib/draft-controller';
+import { PageHeader } from '@/components/PageHeader';
+import { COPY_TONES, COPY_INDUSTRIES, suggestPosterCopy, CopyTone } from '@/lib/copy-library';
+import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
+import { AD_SKINS, AdContent } from '@/lib/ad-skins';
+import { buildAdTemplate, AD_SKIN_CSS } from '@/lib/ad-poster';
+
+// skin groups cho băng chọn phong cách
+const SKIN_GROUPS = Array.from(new Set(AD_SKINS.map((s) => s.group)));
 
 // Nền gen sẵn ĐÚNG NỘI DUNG theo từng ngành (offline, 1 lần) — chọn tức thì, không gọi AI mỗi lần.
 // Danh sách ảnh THỰC TẾ đã gen theo từng ngành (gen sẵn offline, không gọi AI mỗi lần).
@@ -50,7 +60,7 @@ const DEFAULT_MARKETING: MarketingState = {
   brand: 'Mivy Tech',
   offer: 'Lương 25 - 35 triệu',
   aspect: '4:5',
-  theme: 'emerald_pro',
+  theme: 'tech_dark',
   layoutMode: 'full_photo',
   selected: 'launch',
   outputLanguage: 'preserve',
@@ -98,6 +108,14 @@ export default function MarketingStudioPage() {
   const [copied, setCopied] = useState(false);
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [copyTone, setCopyTone] = useState<CopyTone>('sale');
+  const [copyIndustry, setCopyIndustry] = useState('chung');
+  const [copyIdx, setCopyIdx] = useState(0);
+  const [htmlStyleId, setHtmlStyleId] = useState<string>(''); // '' = dùng canvas như cũ; id = render mẫu HTML mới
+  const [styleGroup, setStyleGroup] = useState<string>('Tất cả');
+  const [seasonVariant, setSeasonVariant] = useState<string>('ribbon'); // kiểu trang trí dịp cho skin
+  const [editTab, setEditTab] = useState<'content' | 'design'>('content'); // tab cột trái
+  const htmlPreviewRef = useRef<TemplateHtmlPreviewHandle | null>(null);
 
   const canvasLaunchRef = useRef<HTMLCanvasElement | null>(null);
   const canvasStoryRef = useRef<HTMLCanvasElement | null>(null);
@@ -159,10 +177,9 @@ export default function MarketingStudioPage() {
     return controllerRef.current;
   };
 
-  // Load initial state from localStorage & resolve durable assets on mount
+  // Mỗi lần tải trang là BẮT ĐẦU MỚI (không nhớ phiên cũ) — chỉ nạp Brand Kit.
   useEffect(() => {
     const controller = getController();
-    controller.loadInitialDraft();
     const b = loadBrand();
     if (b) {
       controller.setBrandKit(b);
@@ -173,6 +190,13 @@ export default function MarketingStudioPage() {
   }, []);
 
   // Save state on change
+  // Gợi ý copy cho poster chính (launch) — offline, 0 AI
+  const suggestPoster = () => {
+    const next = copyIdx + 1; setCopyIdx(next);
+    const s = suggestPosterCopy(copyIndustry, copyTone, next);
+    saveState({ ...state, copies: { ...state.copies, launch: { ...state.copies.launch, headline: s.headline, subline: s.subline, cta: s.cta } } });
+  };
+
   const saveState = (newState: MarketingState) => {
     getController().saveState(clampStoryPageInState(newState));
   };
@@ -281,7 +305,7 @@ export default function MarketingStudioPage() {
   // Render all 3 canvases
   const renderAllCanvases = async () => {
     const version = ++renderVersion.current;
-    await document.fonts.ready;
+    await ensurePosterFontsReady(state);
     const assetUrl = state.cutout || state.image || '';
     const [asset, bgImg, logoImg] = await Promise.all([
       loadAsset(assetUrl),
@@ -302,6 +326,25 @@ export default function MarketingStudioPage() {
       drawIndustryPoster(canvasActionRef.current, state, 'action', state.copies.action, asset, bgImg, logoImg);
     }
   };
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.fonts) return;
+    let active = true;
+    const onFontReady = () => {
+      if (active) renderAllCanvases();
+    };
+    document.fonts.ready.then(onFontReady);
+    if ('addEventListener' in document.fonts) {
+      document.fonts.addEventListener('loadingdone', onFontReady);
+      return () => {
+        active = false;
+        document.fonts.removeEventListener('loadingdone', onFontReady);
+      };
+    }
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const [factsExpanded, setFactsExpanded] = useState(false);
 
@@ -396,45 +439,55 @@ export default function MarketingStudioPage() {
   // Trigger render on visual state changes (step: vẽ lại khi canvas vừa mount ở bước 3)
   useEffect(() => {
     renderAllCanvases();
-  }, [step, state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit, state.sticker, state.season, state.headingFontId, state.bodyFontId, state.borderWidth, state.borderRadius, state.borderColor]);
+  }, [step, state.selected, state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit, state.sticker, state.season, state.headingFontId, state.bodyFontId, state.borderWidth, state.borderRadius, state.borderColor]);
 
-  // Handle Form Submission (Generate copies via AI)
   // Dựng nội dung 100% bằng CODE từ data có sẵn — KHÔNG gọi AI realtime (đúng kiến trúc Mivy).
+  // Trả về state đã có copies + nền mặc định. Dùng chung cho nút "Tiếp" (bước 1) và "Tạo lại" (bước 2).
+  const buildContentState = (): MarketingState => {
+    const cat = catOf(state);
+    const facts = state.facts && state.facts.length > 0
+      ? state.facts
+      : extractFactsFromDetails(state.details, state.offer);
+
+    // Copies: ưu tiên nội dung sẵn có (mẫu/đã sửa tay). Nếu trống → dựng local từ field ngành / name-offer-details.
+    let copies = state.copies;
+    if (!copies?.launch?.headline) {
+      const auto = makeIndustryCopy(cat, state.industryFields || {});
+      const base = auto.headline ? auto : {
+        headline: state.name || state.brand || 'Tiêu đề của anh',
+        subline: state.offer || '',
+        cta: 'Liên hệ ngay',
+        caption: state.details || '',
+        points: (state.details || '').split(/\r?\n|\r/).map((s) => s.trim()).filter(Boolean).slice(0, 3),
+      };
+      copies = { launch: { ...base }, story: { ...base }, action: { ...base } };
+    }
+
+    const updatedState: MarketingState = { ...state, facts, storyPage: 0, copies };
+
+    // Nền dùng template có sẵn. Chưa chọn nền nào thì gán mặc định của ngành.
+    if (!state.image && !state.backgroundImage && !state.bgUrl) {
+      updatedState.bgUrl = bgsFor(cat)[0] || '/backgrounds/recruitment/a.jpg';
+    }
+    return updatedState;
+  };
+
+  // Bước 1 → bước 2 (gộp): dựng sẵn nội dung + nền để preview không trống/đen.
+  const goToCompose = () => {
+    saveState(buildContentState());
+    setStep(2);
+  };
+
+  // Handle Form Submission (dựng lại nội dung)
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
     setStatusText('Đang dựng nội dung…');
 
     try {
-      const cat = catOf(state);
-      const facts = state.facts && state.facts.length > 0
-        ? state.facts
-        : extractFactsFromDetails(state.details, state.offer);
-
-      // Copies: ưu tiên nội dung sẵn có (mẫu/đã sửa tay). Nếu trống → dựng local từ field ngành / name-offer-details.
-      let copies = state.copies;
-      if (!copies?.launch?.headline) {
-        const auto = makeIndustryCopy(cat, state.industryFields || {});
-        const base = auto.headline ? auto : {
-          headline: state.name || state.brand || 'Tiêu đề của anh',
-          subline: state.offer || '',
-          cta: 'Liên hệ ngay',
-          caption: state.details || '',
-          points: (state.details || '').split(/\r?\n|\r/).map((s) => s.trim()).filter(Boolean).slice(0, 3),
-        };
-        copies = { launch: { ...base }, story: { ...base }, action: { ...base } };
-      }
-
-      const updatedState: MarketingState = { ...state, facts, storyPage: 0, copies };
-
-      // Nền dùng template có sẵn. Chưa chọn nền nào thì gán mặc định của ngành.
-      if (!state.image && !state.backgroundImage && !state.bgUrl) {
-        updatedState.bgUrl = bgsFor(cat)[0] || '/backgrounds/recruitment/a.jpg';
-      }
-
-      saveState(updatedState);
+      saveState(buildContentState());
       setStatusText('');
-      setStep(3); // xong → sang bước xem & tải
+      setStep(2); // đang ở bước gộp — giữ nguyên
     } catch (err: any) {
       alert(err.message || 'Chưa dựng được nội dung. Anh thử lại nhé.');
     } finally {
@@ -469,7 +522,7 @@ export default function MarketingStudioPage() {
     const storySource = typeof balancedPages !== 'undefined' && (balancedPages as any).snapshotStory
       ? (balancedPages as any).snapshotStory(snapshot)
       : null;
-    await document.fonts.ready;
+    await (typeof ensurePosterFontsReady !== 'undefined' ? ensurePosterFontsReady(snapshot) : document.fonts.ready);
     const assetUrl = snapshot.cutout || snapshot.image || '';
     const bgUrl = snapshot.backgroundImage || snapshot.bgUrl || '';
     const [asset, bgImg, logoImg] = await Promise.all([
@@ -482,9 +535,7 @@ export default function MarketingStudioPage() {
 
     const draw = (kind: PosterKind, page: number = 0, aspect: AspectRatio = snapshot.aspect) => {
       const c = document.createElement('canvas');
-      c.width = 1080;
-      c.height = aspect === '1:1' ? 1080 : aspect === '9:16' ? 1920 : 1350;
-      drawIndustryPoster(c, { ...snapshot, aspect, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg);
+      drawIndustryPoster(c, { ...snapshot, aspect, storyPage: page }, kind, snapshot.copies[kind], asset, bgImg, logoImg, 2);
       return c;
     };
     return { snapshot, storySource, asset, bgImg, draw };
@@ -528,18 +579,27 @@ export default function MarketingStudioPage() {
   };
 
   // Download single PNG
-  const handleDownloadSingle = async () => {
+  const handleDownloadSingle = async (overrideKind?: PosterKind | React.MouseEvent) => {
     try {
+      if (htmlStyleId && htmlPreviewRef.current) {
+        setStatusText('Đang xuất mẫu thiết kế...');
+        await htmlPreviewRef.current.exportPng();
+        setStatusText('Đã tạo PNG và gửi yêu cầu tải xuống.');
+        return;
+      }
       setStatusText('Đang xử lý ảnh...');
       const { snapshot, storySource, draw } = await prepareExport();
-      const targetPage = snapshot.selected === 'story' && storySource ? storySource.pageIndex : (snapshot.storyPage || 0);
-      const canvas = draw(snapshot.selected, targetPage);
+      const kind: PosterKind = (typeof overrideKind === 'string' && (overrideKind === 'launch' || overrideKind === 'story' || overrideKind === 'action'))
+        ? overrideKind
+        : snapshot.selected;
+      const targetPage = kind === 'story' && storySource ? storySource.pageIndex : (snapshot.storyPage || 0);
+      const canvas = draw(kind, targetPage);
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r));
       if (!blob) throw new Error('Không thể tạo ảnh PNG.');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mivy-${snapshot.selected}-${snapshot.aspect.replace(':', 'x')}.png`;
+      a.download = `mivy-${kind}-${snapshot.aspect.replace(':', 'x')}.png`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setStatusText('Đã tạo PNG và gửi yêu cầu tải xuống.');
@@ -652,6 +712,17 @@ export default function MarketingStudioPage() {
   };
 
   const currentCopy = state.copies[state.selected];
+  const adContent: AdContent = {
+    eyebrow: state.offer || currentCopy?.cta ? (state.offer || '') : '',
+    headline: currentCopy?.headline,
+    subhead: currentCopy?.subline,
+    cta: currentCopy?.cta,
+    points: currentCopy?.points,
+    brand: state.brand,
+    image: state.image || state.cutout || state.bgUrl,
+  };
+  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, seasonVariant) : null;
+  const styleList = styleGroup === 'Tất cả' ? AD_SKINS : AD_SKINS.filter((s) => s.group === styleGroup);
   const posterNames: Record<PosterKind, string> = {
     launch: '1. Poster Chính (Hero)',
     story: '2. Tiêu Chí (Story)',
@@ -659,102 +730,315 @@ export default function MarketingStudioPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto">
+      <PageHeader
+        title="Tạo quảng cáo"
+        sub="Chọn ngành → điền nội dung → xuất poster/banner đúng khổ mọi sàn. Lấy màu & font từ Brand Kit."
+      />
+
+      <div className="space-y-8">
       {/* Stepper 3 bước */}
-      <div className="flex items-center gap-2 glass-panel p-2 rounded-2xl">
-        {[{ n: 1, t: 'Chọn ngành' }, { n: 2, t: 'Nội dung' }, { n: 3, t: 'Xem & tải' }].map((s) => (
+      <div className="mv-seg w-full mv-fade">
+        {[{ n: 1, t: 'Chọn ngành & mẫu' }, { n: 2, t: 'Soạn & tải' }].map((s) => (
           <button key={s.n} type="button" onClick={() => setStep(s.n)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${step === s.n ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:bg-white/5'}`}>
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? 'bg-slate-950/20' : 'bg-white/10'}`}>{s.n}</span>
+            data-active={step === s.n}
+            className="mv-seg-btn flex-1 flex items-center justify-center gap-2 !py-2.5">
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? 'bg-indigo-500 text-white' : 'bg-white/10'}`}>{s.n}</span>
             <span className="hidden sm:inline">{s.t}</span>
           </button>
         ))}
       </div>
 
-      {/* Tinh chỉnh hiển thị (bước 3) */}
-      {step === 3 && (
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
+      {/* Bước 2 (gộp): TRÁI = soạn nội dung + tuỳ chỉnh (cuộn), PHẢI = preview GHIM */}
+      {step === 2 && (
+      <div className="max-w-5xl mx-auto space-y-5">
+        <style dangerouslySetInnerHTML={{ __html: AD_SKIN_CSS }} />
+
+        {/* ===== BĂNG CHỌN PHONG CÁCH (skin nghệ thuật khoác lên poster ngành) ===== */}
+        <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-white">Phong cách thiết kế</h3>
+              <p className="text-[11px] text-slate-400">Khoác vibe nghệ thuật lên poster — nội dung anh điền giữ nguyên. &ldquo;Mặc định&rdquo; = bản canvas (xuất đủ 3 khổ).</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button type="button" onClick={() => setStyleGroup('Tất cả')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === 'Tất cả' ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>Tất cả</button>
+              {SKIN_GROUPS.map((g) => (
+                <button key={g} type="button" onClick={() => setStyleGroup(g)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2.5 overflow-x-auto pb-1">
+            <button type="button" onClick={() => setHtmlStyleId('')}
+              className={`shrink-0 w-[72px] h-[90px] rounded-lg border grid place-items-center text-[10px] font-semibold text-center leading-tight transition-colors ${!htmlStyleId ? 'border-indigo-500 bg-indigo-500/15 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>
+              Mặc định<br />(canvas)
+            </button>
+            {styleList.map((s) => {
+              const tpl = buildAdTemplate(adContent, s.id, state.season, seasonVariant)!;
+              const w = 72; const sc = w / tpl.w;
+              return (
+                <button key={s.id} type="button" onClick={() => setHtmlStyleId(s.id)} title={s.name}
+                  className={`shrink-0 rounded-lg overflow-hidden border bg-black/40 relative transition-colors ${htmlStyleId === s.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-white/10 hover:border-white/30'}`}
+                  style={{ width: w, height: Math.round(tpl.h * sc) }}>
+                  <div style={{ width: tpl.w, height: tpl.h, transform: `scale(${sc})`, transformOrigin: 'top left', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: tpl.html }} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-6 items-start">
+        {/* CỘT PHẢI (order-2): preview ghim — vừa khít 1 màn, không cuộn riêng */}
+        <div className="lg:sticky lg:top-4 self-start space-y-3 lg:order-2 lg:max-h-[calc(100vh-7.5rem)]">
+          {/* THANH TẢI — trên cùng, nổi bật */}
+          <div className="glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-slate-400">Đang chỉnh sửa</span>
+                <h3 className="text-sm font-bold text-white leading-tight">{posterNames[state.selected]}</h3>
+              </div>
+              <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">PNG · 1080px</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadSingle}
+              className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm"
+            >
+              <Download className="w-4 h-4" />
+              <span>Tải ảnh PNG</span>
+            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadAllSizes}
+                title="Xuất ảnh đang chọn ở cả 3 khổ: Post 1080×1350 · Story/Reels 1080×1920 · Vuông 1080×1080"
+                className="mv-btn mv-btn-ghost !flex justify-center !px-3 !py-2 !text-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Tải đủ 3 khổ</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadZip}
+                className="mv-btn mv-btn-ghost !flex justify-center !px-3 !py-2 !text-xs"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Tải cả bộ ZIP</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-3 border border-white/10 space-y-2.5">
+            {/* Poster đang chọn — TO, lấp đầy cột */}
+            <div
+              onClick={() => { if (!activeHtmlTemplate) openPreview(state.selected); }}
+              className="group relative rounded-xl overflow-hidden cursor-pointer bg-black/60 !border-indigo-500 ring-1 ring-indigo-500/40 border"
+              title="Bấm để phóng to"
+            >
+              {activeHtmlTemplate && (
+                <div className="py-2">
+                  <TemplateHtmlPreview ref={htmlPreviewRef} template={activeHtmlTemplate} content={{}} noFill maxHeightVh={42} />
+                </div>
+              )}
+              <canvas
+                ref={state.selected === 'launch' ? canvasLaunchRef : state.selected === 'story' ? canvasStoryRef : canvasActionRef}
+                style={{
+                  letterSpacing: 'normal',
+                  wordSpacing: 'normal',
+                  WebkitFontSmoothing: 'subpixel-antialiased',
+                  textRendering: 'geometricPrecision',
+                }}
+                className={`w-full h-auto max-h-[40vh] object-contain block mx-auto ${activeHtmlTemplate ? 'hidden' : ''}`}
+              />
+              {!activeHtmlTemplate && (
+                <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                  <Maximize2 className="w-6 h-6" />
+                </div>
+              )}
+              <span className="absolute bottom-1.5 left-1.5 text-[11px] font-bold text-white bg-black/65 px-2 py-0.5 rounded">{activeHtmlTemplate ? activeHtmlTemplate.title : posterNames[state.selected]}</span>
+            </div>
+            {/* 2 poster còn lại — hàng thumbnail ngang để đổi */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {(['launch', 'story', 'action'] as PosterKind[]).filter((k) => k !== state.selected).map((kind) => (
+                <div
+                  key={kind}
+                  onClick={() => saveState({ ...state, selected: kind })}
+                  className="group relative rounded-lg overflow-hidden cursor-pointer bg-black/60 border border-white/10 hover:border-white/30"
+                  title="Bấm để chọn poster này"
+                >
+                  <canvas
+                    ref={kind === 'launch' ? canvasLaunchRef : kind === 'story' ? canvasStoryRef : canvasActionRef}
+                    style={{
+                      letterSpacing: 'normal',
+                      wordSpacing: 'normal',
+                      WebkitFontSmoothing: 'subpixel-antialiased',
+                      textRendering: 'geometricPrecision',
+                    }}
+                    className="w-full h-auto max-h-[11vh] object-contain block mx-auto"
+                  />
+                  <span className="absolute bottom-1 left-1 text-[9px] font-bold text-white bg-black/65 px-1.5 py-0.5 rounded">{posterNames[kind].split('.')[0]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Carousel phân trang — chỉ Story */}
+          {state.selected === 'story' && (() => {
+              const storyResolved = resolveStorySource(state, state.copies.story);
+              const totalStoryPoints = storyResolved.items.length;
+              const totalStoryPages = storyResolved.totalPages;
+              const currentStoryPage = storyResolved.pageIndex;
+              if (totalStoryPages <= 1) return null;
+              return (
+                <div className="glass-card flex items-center justify-between !p-3 !rounded-xl hover:!transform-none">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Carousel Phân Trang:</span>
+                    <span className="text-xs text-slate-300">
+                      Trang {currentStoryPage + 1} / {totalStoryPages} · ({totalStoryPoints} yêu cầu chuyên môn)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={currentStoryPage <= 0}
+                      onClick={() => saveState({ ...state, storyPage: Math.max(0, currentStoryPage - 1) })}
+                      className="mv-btn mv-btn-ghost !p-1.5 disabled:opacity-40"
+                      title="Trang trước"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-mono font-bold text-white px-2">
+                      {currentStoryPage + 1} / {totalStoryPages}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={currentStoryPage >= totalStoryPages - 1}
+                      onClick={() => saveState({ ...state, storyPage: Math.min(totalStoryPages - 1, currentStoryPage + 1) })}
+                      className="mv-btn mv-btn-ghost !p-1.5 disabled:opacity-40"
+                      title="Trang sau"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+        </div>
+
+        {/* CỘT TRÁI (order-1): tool (cuộn bình thường) */}
+        <div className="space-y-6 min-w-0 lg:order-1">
+          {/* Tinh chỉnh hiển thị */}
+      <div className="glass-card p-6 rounded-2xl space-y-5 hover:!transform-none mv-fade">
         <div className="flex items-start justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-xl font-black text-white">Tuỳ chỉnh &amp; Tải poster</h1>
-            <p className="text-slate-400 text-xs mt-0.5">Chỉnh kiểu, chữ, khung, trang trí — preview cập nhật ngay.</p>
+            <h1 className="mv-h1 !text-xl">Tuỳ chỉnh &amp; Tải poster</h1>
+            <p className="mv-sub !mt-0.5 !text-xs">Chỉnh kiểu, chữ, khung, trang trí — preview cập nhật ngay.</p>
           </div>
-          <a href="/studio/marketing/review" className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
+          <a href="/studio/marketing/review" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs">
             Xem bộ mẫu kiểm tra
           </a>
+        </div>
+
+        {/* Tab chuyển nhóm cho gọn */}
+        <div className="mv-seg w-full">
+          <button type="button" onClick={() => setEditTab('content')} data-active={editTab === 'content'} className="mv-seg-btn flex-1 !justify-center !text-xs">📝 Nội dung</button>
+          <button type="button" onClick={() => setEditTab('design')} data-active={editTab === 'design'} className="mv-seg-btn flex-1 !justify-center !text-xs">🎨 Thiết kế &amp; Trang trí</button>
+        </div>
+      </div>
+
+      {editTab === 'design' && (
+      <div className="glass-card p-5 rounded-2xl space-y-4 hover:!transform-none mv-fade">
+        {/* Gợi ý nội dung bắt mắt (offline) cho poster chính */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="mv-label mr-1">Gợi ý tiêu đề:</span>
+          <select value={copyIndustry} onChange={(e) => setCopyIndustry(e.target.value)} className="mv-chip-select !py-1.5 text-[11px]" title="Ngành hàng">
+            {COPY_INDUSTRIES.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
+          </select>
+          <select value={copyTone} onChange={(e) => setCopyTone(e.target.value as CopyTone)} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
+            {COPY_TONES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button onClick={suggestPoster} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1.5 !text-[11px] !text-indigo-200 !border-indigo-500/30" title="Gợi ý câu chữ bắt mắt">
+            <Sparkles className="w-3.5 h-3.5" /> Gợi ý
+          </button>
         </div>
 
         {/* Nhóm điều khiển có nhãn cho dễ tìm */}
         <div className="space-y-2.5 border-t border-white/10 pt-4">
           {/* ===== Nhóm 1: KIỂU (layout + theme) ===== */}
           {!state.conceptId && (
+          <>
           <div className="flex items-start gap-3 flex-wrap">
-            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Kiểu</span>
-            <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
-            <button
-              type="button"
-              onClick={() => saveState({ ...state, layoutMode: 'full_photo', templateId: undefined })}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                state.layoutMode === 'full_photo' || (!state.layoutMode && (state.image || state.cutout))
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Ảnh tràn viền 100% điện ảnh và đè chữ lên ảnh"
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Ảnh Tràn Viền</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => saveState({ ...state, layoutMode: 'matrix', templateId: undefined })}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                state.layoutMode === 'matrix' || (!state.layoutMode && !state.image && !state.cutout)
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Bảng ma trận JD 4 cột chi tiết"
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Bảng Ma Trận</span>
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
-            {Object.values(POSTER_THEMES).map((th) => (
+            <span className="mv-label w-24 shrink-0 pt-3">Kiểu</span>
+            <div className="mv-seg">
               <button
-                key={th.id}
                 type="button"
-                onClick={() => saveState({ ...state, theme: th.id })}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  state.theme === th.id
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                onClick={() => saveState({ ...state, layoutMode: 'full_photo', templateId: undefined })}
+                data-active={!!(state.layoutMode === 'full_photo' || (!state.layoutMode && (state.image || state.cutout)))}
+                className="mv-seg-btn inline-flex items-center gap-1.5 !text-xs"
+                title="Ảnh tràn viền 100% điện ảnh và đè chữ lên ảnh"
               >
-                {th.name}
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Ảnh Tràn Viền</span>
               </button>
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={() => saveState({ ...state, layoutMode: 'matrix', templateId: undefined })}
+                data-active={!!(state.layoutMode === 'matrix' || (!state.layoutMode && !state.image && !state.cutout))}
+                className="mv-seg-btn inline-flex items-center gap-1.5 !text-xs"
+                title="Bảng ma trận JD 4 cột chi tiết"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Bảng Ma Trận</span>
+              </button>
             </div>
           </div>
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="mv-label w-24 shrink-0 pt-2">Phong cách</span>
+            <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+              {Object.values(POSTER_THEMES).map((th) => (
+                <button
+                  key={th.id}
+                  type="button"
+                  onClick={() => saveState({ ...state, theme: th.id })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${state.theme === th.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}
+                >
+                  {th.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          </>
           )}
 
           {/* ===== Nhóm 2: NỀN & KHỔ ===== */}
           <div className="flex items-start gap-3 flex-wrap">
-            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Nền &amp; khổ</span>
+            <span className="mv-label w-24 shrink-0 pt-3">Nền &amp; khổ</span>
             <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={handleRefreshBg}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300"
+            className="mv-btn mv-btn-ghost !gap-1.5 !px-3 !py-2 !text-xs"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span>Đổi nền</span>
           </button>
+          {(state.bgUrl || state.backgroundImage) && (
+            <button
+              type="button"
+              onClick={() => saveState({ ...state, bgUrl: '', backgroundImage: '' })}
+              title="Gỡ ảnh nền — dùng nền đặc theo phong cách"
+              className="mv-btn mv-btn-ghost !gap-1.5 !px-3 !py-2 !text-xs !text-rose-300 hover:!text-rose-200 hover:!border-rose-500/40"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Bỏ nền</span>
+            </button>
+          )}
           <select
             value={state.aspect}
             onChange={(e) => saveState({ ...state, aspect: e.target.value as AspectRatio })}
-            className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs font-bold text-white focus:outline-none focus:border-emerald-500"
+            className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold"
           >
             <option value="1:1">Vuông 1:1 (1080×1080)</option>
             <option value="4:5">Dọc 4:5 (1080×1350)</option>
@@ -765,37 +1049,37 @@ export default function MarketingStudioPage() {
 
           {/* ===== Nhóm 3: CHỮ & KHUNG ===== */}
           <div className="flex items-start gap-3 flex-wrap">
-            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Chữ &amp; khung</span>
+            <span className="mv-label w-24 shrink-0 pt-3">Chữ &amp; khung</span>
             <div className="flex items-center gap-2 flex-wrap">
           {/* Font chữ */}
           <select
             value={state.headingFontId || 'default'}
             onChange={(e) => setFont(e.target.value)}
             title="Đổi font chữ poster"
-            className="px-3 py-1.5 rounded-xl bg-black/40 border border-indigo-500/40 text-xs font-bold text-indigo-300 focus:outline-none focus:border-indigo-500"
+            className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold"
           >
             <option value="default">🔤 Font: Mặc định</option>
             {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>🔤 {f.name}</option>)}
           </select>
 
           {/* Viền + Bo góc (slider) */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
             <span>Viền</span>
             <input type="range" min={0} max={24} value={state.borderWidth ?? 0}
               onChange={(e) => setBorder(Number(e.target.value))}
-              className="w-20 accent-emerald-500 cursor-pointer" />
+              className="w-20 accent-indigo-500 cursor-pointer" />
             <span className="w-6 text-right text-slate-400">{state.borderWidth ?? 0}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
             <span>Bo góc</span>
             <input type="range" min={0} max={80} value={state.borderRadius ?? 0}
               onChange={(e) => setRadius(Number(e.target.value))}
-              className="w-20 accent-emerald-500 cursor-pointer" />
+              className="w-20 accent-indigo-500 cursor-pointer" />
             <span className="w-6 text-right text-slate-400">{state.borderRadius ?? 0}</span>
           </div>
 
           {/* Màu viền */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black/40 border border-white/15 text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
             <span>Màu viền</span>
             <input type="color" value={state.borderColor || '#ffffff'}
               onChange={(e) => setBorderColor(e.target.value)}
@@ -810,25 +1094,42 @@ export default function MarketingStudioPage() {
           </div>
 
           {/* ===== Nhóm 4: TRANG TRÍ ===== */}
+          {/* Dịp (2 cấp: chọn dịp → chọn kiểu) */}
           <div className="flex items-start gap-3 flex-wrap">
-            <span className="w-24 shrink-0 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">Trang trí</span>
-            <div className="flex items-center gap-2 flex-wrap">
-          {/* Mùa sale VN */}
-          <select
-            value={state.season || 'none'}
-            onChange={(e) => setSeason(e.target.value)}
-            title="Trang trí theo mùa sale"
-            className="px-3 py-1.5 rounded-xl bg-black/40 border border-amber-500/40 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
-          >
-            {SEASON_PRESETS.map((s) => <option key={s.id} value={s.id}>{s.id === 'none' ? '🎉 Mùa: Không' : `Mùa: ${s.label}`}</option>)}
-          </select>
+            <span className="mv-label w-24 shrink-0 pt-2">Dịp</span>
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {SEASON_PRESETS.map((s) => (
+                  <button key={s.id} type="button" onClick={() => setSeason(s.id)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${(state.season || 'none') === s.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>
+                    {s.id !== 'none' && <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.c1, boxShadow: `inset 0 0 0 2px ${s.c2}` }} />}
+                    {s.label.replace(/^[^\wÀ-ỹ]+\s*/, '') || 'Không'}
+                  </button>
+                ))}
+              </div>
+              {state.season && state.season !== 'none' && (
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] text-slate-500 self-center mr-1">Kiểu:</span>
+                  {SEASON_VARIANTS.map((v) => (
+                    <button key={v.id} type="button" onClick={() => setSeasonVariant(v.id)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${seasonVariant === v.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{v.label}</button>
+                  ))}
+                  <span className="text-[10px] text-slate-500 self-center ml-1">(áp cho mẫu Phong cách)</span>
+                </div>
+              )}
+            </div>
+          </div>
 
+          {/* Sticker */}
+          <div className="flex items-start gap-3 flex-wrap">
+            <span className="mv-label w-24 shrink-0 pt-3">Sticker</span>
+            <div className="flex items-center gap-2 flex-wrap">
           {/* Sticker sale */}
           <select
             value={state.sticker?.preset || 'none'}
             onChange={(e) => setStickerPreset(e.target.value)}
             title="Dán sticker sale lên poster"
-            className="px-3 py-1.5 rounded-xl bg-black/40 border border-rose-500/40 text-xs font-bold text-rose-300 focus:outline-none focus:border-rose-500"
+            className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold"
           >
             {STICKER_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.id === 'none' ? '🏷️ Sticker: Không' : `🏷️ ${p.label}`}</option>)}
           </select>
@@ -839,13 +1140,14 @@ export default function MarketingStudioPage() {
                 value={state.sticker.text}
                 onChange={(e) => setStickerText(e.target.value)}
                 placeholder="Chữ trên sticker"
-                className="px-3 py-1.5 w-40 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-rose-500"
+                className="mv-input !w-40 !py-2 !px-3 !text-xs"
               />
-              <div className="flex gap-1">
+              <div className="mv-seg">
                 {(['tl', 'tr', 'bl', 'br'] as StickerCorner[]).map((c) => (
                   <button key={c} type="button" onClick={() => setStickerCorner(c)}
                     title={{ tl: 'Trên trái', tr: 'Trên phải', bl: 'Dưới trái', br: 'Dưới phải' }[c]}
-                    className={`w-7 h-7 rounded-lg border text-[10px] font-bold ${state.sticker?.corner === c ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                    data-active={state.sticker?.corner === c}
+                    className="mv-seg-btn !px-2.5 !py-1 !text-xs">
                     {{ tl: '↖', tr: '↗', bl: '↙', br: '↘' }[c]}
                   </button>
                 ))}
@@ -856,41 +1158,99 @@ export default function MarketingStudioPage() {
           </div>
         </div>
       </div>
-      )}
+          )}
 
-      {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-black text-white">Chọn ngành &amp; mẫu thiết kế</h2>
-          <p className="text-slate-400 text-sm">Chọn ngành (có sẵn nội dung mẫu) và một mẫu thiết kế, rồi bấm Tiếp.</p>
-          <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
-          <div className="flex justify-end">
-            <button type="button" onClick={() => setStep(2)}
-              className="px-6 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20">
-              Tiếp → Nhập nội dung
-            </button>
+          {editTab === 'content' && (<>
+          <div className="glass-card p-6 rounded-2xl space-y-6 hover:!transform-none">
+            <div className="grid grid-cols-1 gap-6">
+              {/* Left: Poster Typography Controls */}
+              <div className="space-y-4 text-xs">
+                <div className="flex items-center gap-2 pb-1">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-indigo-300"><ImageIcon className="w-3.5 h-3.5" /> Chữ hiển thị TRÊN ảnh</span>
+                  <span className="flex-1 h-px bg-white/10" />
+                </div>
+                <div>
+                  <label className="mv-label block mb-1.5">Tiêu đề Poster</label>
+                  <input
+                    type="text"
+                    value={currentCopy.headline}
+                    onChange={(e) => {
+                      const updated = { ...state.copies };
+                      updated[state.selected] = { ...updated[state.selected], headline: e.target.value };
+                      saveState({ ...state, copies: updated });
+                    }}
+                    className="mv-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="mv-label block mb-1.5">Thông điệp phụ / Slogan</label>
+                  <input
+                    type="text"
+                    value={currentCopy.subline}
+                    onChange={(e) => {
+                      const updated = { ...state.copies };
+                      updated[state.selected] = { ...updated[state.selected], subline: e.target.value };
+                      saveState({ ...state, copies: updated });
+                    }}
+                    className="mv-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="mv-label block mb-1.5">Nút kêu gọi (CTA)</label>
+                  <input
+                    type="text"
+                    value={currentCopy.cta}
+                    onChange={(e) => {
+                      const updated = { ...state.copies };
+                      updated[state.selected] = { ...updated[state.selected], cta: e.target.value };
+                      saveState({ ...state, copies: updated });
+                    }}
+                    className="mv-input"
+                  />
+                </div>
+
+                {state.selected !== 'launch' && (
+                  <div>
+                    <label className="mv-label block mb-1.5">
+                      Các tiêu chí (mỗi dòng một ý)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={(state.selected === 'story' ? resolveStorySource(state, currentCopy).items : (currentCopy.points || [])).join('\n')}
+                      onChange={(e) => {
+                        const updated = { ...state.copies };
+                        updated[state.selected] = {
+                          ...updated[state.selected],
+                          pointsEdited: true,
+                          points: normalizePointList(e.target.value),
+                        };
+                        saveState({ ...state, copies: updated });
+                      }}
+                      className="mv-input font-sans leading-relaxed"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Workspace: nội dung (bước 2) + xem & chỉnh (bước 3) */}
-      <div className="space-y-8">
-        {step === 2 && (
-        <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-5 max-w-2xl mx-auto">
+        <div className="glass-card p-6 rounded-2xl space-y-5 hover:!transform-none">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-400" />
+              <Layers className="w-4 h-4 text-white" />
               <span>Thông Tin Chiến Dịch</span>
             </h2>
             <div className="flex items-center gap-2">
               <button type="button" onClick={toggleDevFill}
                 title="DEV: tự điền nội dung mẫu / xoá trắng"
-                className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition-all ${devFill ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-400'}`}>
+                className={`mv-btn mv-btn-ghost !px-2.5 !py-1 !text-xs ${devFill ? '!border-indigo-500/60 !text-indigo-200 !bg-indigo-500/10' : '!text-slate-400'}`}>
                 {devFill ? '⚡ Fill mẫu: BẬT' : '⚡ Fill mẫu: TẮT'}
               </button>
               <select
                 value={state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)}
                 onChange={(e) => { changeCategory(e.target.value); }}
-                className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-400 focus:outline-none"
+                className="mv-input !w-auto !px-2.5 !py-1 !text-xs font-semibold"
               >
                 {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -900,11 +1260,11 @@ export default function MarketingStudioPage() {
           <form onSubmit={handleGenerate} className="space-y-4 text-xs">
             <IndustryForm state={state} onChange={saveState} />
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Ngôn ngữ nội dung</label>
+              <label className="mv-label block mb-1.5">Ngôn ngữ nội dung</label>
               <select
                 value={state.outputLanguage || 'preserve'}
                 onChange={(e) => saveState({ ...state, outputLanguage: e.target.value as OutputLanguage })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                className="mv-input font-semibold"
               >
                 <option value="preserve">Giữ nguyên ngôn ngữ gốc (Mặc định)</option>
                 <option value="vi">Tiếng Việt</option>
@@ -914,105 +1274,105 @@ export default function MarketingStudioPage() {
 
             {!state.conceptId && (
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Vị trí / Tên sản phẩm</label>
+              <label className="mv-label block mb-1.5">Vị trí / Tên sản phẩm</label>
               <input
                 type="text"
                 required
                 value={state.name}
                 onChange={(e) => saveState({ ...state, name: e.target.value })}
                 placeholder="VD: Senior Backend Engineer"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                className="mv-input"
               />
             </div>
             )}
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Tên thương hiệu / Brand</label>
+              <label className="mv-label block mb-1.5">Tên thương hiệu / Brand</label>
               <input
                 type="text"
                 value={state.brand}
                 onChange={(e) => saveState({ ...state, brand: e.target.value })}
                 placeholder="VD: Mivy Studio"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                className="mv-input"
               />
             </div>
 
             {!state.conceptId && (
               <>
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Đãi ngộ / Ưu đãi then chốt</label>
+              <label className="mv-label block mb-1.5">Đãi ngộ / Ưu đãi then chốt</label>
               <input
                 type="text"
                 value={state.offer}
                 onChange={(e) => saveState({ ...state, offer: e.target.value })}
                 placeholder="VD: Lương 25 - 35 triệu"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                className="mv-input"
               />
             </div>
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Mô tả chi tiết / Nội dung JD</label>
+              <label className="mv-label block mb-1.5">Mô tả chi tiết / Nội dung JD</label>
               <textarea
                 rows={5}
                 required
                 value={state.details}
                 onChange={(e) => saveState({ ...state, details: e.target.value })}
                 placeholder="Dán nội dung JD hoặc yêu cầu công việc tại đây..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 leading-relaxed font-sans"
+                className="mv-input leading-relaxed font-sans"
               />
             </div>
               </>
             )}
 
             <div className="space-y-4">
-              <div className="rounded-xl border border-white/10 p-3 space-y-2">
+              <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
                 <p className="font-bold text-white">Ảnh nền</p>
                 <p className="text-slate-400">Chọn nền mẫu có sẵn, hoặc tải ảnh của anh (sẽ tự làm mờ cho chữ nổi).</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 mv-stagger">
                   {bgsFor(state.categoryId).map((url, i) => (
                     <button key={url} type="button" title={`Nền ${i + 1}`}
                       onClick={() => saveState({ ...state, bgUrl: url, backgroundImage: '' })}
-                      className={`aspect-video rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-emerald-500' : 'border-white/10 hover:border-white/30'}`}>
+                      className={`mv-hover-zoom aspect-video rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
                       <img src={url} alt={`Nền ${i + 1}`} className="w-full h-full object-cover"
                         onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
                     </button>
                   ))}
                 </div>
-                {(state.backgroundImage || state.bgUrl) && <img src={state.backgroundImage || state.bgUrl} alt="Ảnh nền của anh" className="w-full h-24 object-cover rounded-lg" />}
-                <label className="block cursor-pointer text-emerald-400 py-2">Tải ảnh nền
+                {(state.backgroundImage || state.bgUrl) && <div className="mv-hover-zoom rounded-lg"><img src={state.backgroundImage || state.bgUrl} alt="Ảnh nền của anh" className="w-full h-24 object-cover rounded-lg" /></div>}
+                <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh nền
                   <input aria-label="Tải ảnh nền" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => {
                     const file=e.target.files?.[0]; if(!file) return;
                     const reader=new FileReader(); reader.onload=()=>saveState({...state,backgroundImage:reader.result as string,backgroundDim: state.backgroundDim ?? 45, backgroundBlur: state.backgroundBlur ?? 8, templateId:state.templateId || 'editorial'});reader.readAsDataURL(file);e.target.value='';
                   }} />
                 </label>
                 {(state.backgroundImage || state.bgUrl) && <>
-                  <label className="block">Độ tối {state.backgroundDim ?? 35}%<input aria-label="Độ tối ảnh nền" className="w-full" type="range" min="0" max="85" value={state.backgroundDim ?? 35} onChange={e=>saveState({...state,backgroundDim:Number(e.target.value)})}/></label>
-                  <label className="block">Độ mờ {state.backgroundBlur ?? 0}<input aria-label="Độ mờ ảnh nền" className="w-full" type="range" min="0" max="24" value={state.backgroundBlur ?? 0} onChange={e=>saveState({...state,backgroundBlur:Number(e.target.value)})}/></label>
-                  <label className="block">Vị trí ngang<input aria-label="Vị trí ngang ảnh nền" className="w-full" type="range" min="0" max="100" value={state.backgroundX ?? 50} onChange={e=>saveState({...state,backgroundX:Number(e.target.value)})}/></label>
-                  <label className="block">Vị trí dọc<input aria-label="Vị trí dọc ảnh nền" className="w-full" type="range" min="0" max="100" value={state.backgroundY ?? 50} onChange={e=>saveState({...state,backgroundY:Number(e.target.value)})}/></label>
-                  <button type="button" className="text-rose-400" onClick={()=>saveState({...state,backgroundImage:'',bgUrl:''})}>Gỡ ảnh nền</button>
+                  <label className="block text-slate-300 font-medium">Độ tối {state.backgroundDim ?? 35}%<input aria-label="Độ tối ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="85" value={state.backgroundDim ?? 35} onChange={e=>saveState({...state,backgroundDim:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Độ mờ {state.backgroundBlur ?? 0}<input aria-label="Độ mờ ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="24" value={state.backgroundBlur ?? 0} onChange={e=>saveState({...state,backgroundBlur:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Vị trí ngang<input aria-label="Vị trí ngang ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundX ?? 50} onChange={e=>saveState({...state,backgroundX:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Vị trí dọc<input aria-label="Vị trí dọc ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundY ?? 50} onChange={e=>saveState({...state,backgroundY:Number(e.target.value)})}/></label>
+                  <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,backgroundImage:'',bgUrl:''})}>Gỡ ảnh nền</button>
                 </>}
               </div>
-              <div className="rounded-xl border border-white/10 p-3 space-y-2">
+              <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
                 <p className="font-bold text-white">Ảnh chính</p>
                 <p className="text-slate-400">Sản phẩm, nhân vật hoặc hình minh họa nổi bật.</p>
-                {state.image && <img src={state.cutout || state.image} alt="Ảnh chính của anh" className="w-full h-32 object-contain rounded-lg" />}
-                <label className="block cursor-pointer text-emerald-400 py-2">Tải ảnh chính<input aria-label="Tải ảnh chính" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="sr-only" /></label>
+                {state.image && <div className="mv-hover-zoom rounded-lg"><img src={state.cutout || state.image} alt="Ảnh chính của anh" className="w-full h-32 object-contain rounded-lg" /></div>}
+                <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh chính<input aria-label="Tải ảnh chính" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="sr-only" /></label>
                 {state.image && <div className="space-y-3">
-                  <label className="block">Cách đặt ảnh
-                    <select aria-label="Cách đặt ảnh chính" value={state.mainImageFit || (state.templateId === 'spotlight' ? 'contain' : 'cover')} onChange={e=>saveState({...state,mainImageFit:e.target.value as 'cover'|'contain',mainImageZoom:100,templateId:state.templateId || 'editorial'})} className="block w-full mt-1 p-2 rounded bg-slate-800 text-white">
+                  <label className="block text-slate-300 font-medium">Cách đặt ảnh
+                    <select aria-label="Cách đặt ảnh chính" value={state.mainImageFit || (state.templateId === 'spotlight' ? 'contain' : 'cover')} onChange={e=>saveState({...state,mainImageFit:e.target.value as 'cover'|'contain',mainImageZoom:100,templateId:state.templateId || 'editorial'})} className="mv-input mt-1">
                       <option value="cover">Lấp đầy khung — cắt phần dư</option>
                       <option value="contain">Giữ toàn ảnh — không cắt</option>
                     </select>
                   </label>
-                  <label className="block">Phóng to {state.mainImageZoom ?? 100}%<input aria-label="Phóng to ảnh chính" className="w-full" type="range" min="100" max="250" value={state.mainImageZoom ?? 100} onChange={e=>saveState({...state,mainImageZoom:Number(e.target.value)})}/></label>
-                  <label className="block">Dịch ảnh ngang<input aria-label="Dịch ảnh chính ngang" className="w-full" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
-                  <label className="block">Dịch ảnh dọc<input aria-label="Dịch ảnh chính dọc" className="w-full" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
-                  <button type="button" className="text-slate-300 underline" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí ảnh</button>
+                  <label className="block text-slate-300 font-medium">Phóng to {state.mainImageZoom ?? 100}%<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="100" max="250" value={state.mainImageZoom ?? 100} onChange={e=>saveState({...state,mainImageZoom:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Dịch ảnh ngang<input aria-label="Dịch ảnh chính ngang" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Dịch ảnh dọc<input aria-label="Dịch ảnh chính dọc" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
+                  <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí ảnh</button>
                 </div>}
                 {state.image && <div className="flex flex-wrap gap-3">
-                  <button type="button" className="text-emerald-400" onClick={()=>saveState({...state,backgroundImage:state.image,image:'',cutout:'',templateId:state.templateId || 'editorial'})}>Chuyển ảnh này làm nền</button>
-                  <button type="button" className="text-rose-400" onClick={()=>saveState({...state,image:'',cutout:''})}>Gỡ ảnh chính</button>
+                  <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,backgroundImage:state.image,image:'',cutout:'',templateId:state.templateId || 'editorial'})}>Chuyển ảnh này làm nền</button>
+                  <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,image:'',cutout:''})}>Gỡ ảnh chính</button>
                 </div>}
               </div>
             </div>
@@ -1020,14 +1380,14 @@ export default function MarketingStudioPage() {
             <button
               type="submit"
               disabled={isGenerating}
-              className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-50"
             >
               <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
               <span>{isGenerating ? 'Đang viết nội dung AI…' : '✦ Tạo Lại Bằng AI'}</span>
             </button>
 
             {statusText && (
-              <p className="text-center text-xs text-emerald-400 animate-pulse font-medium">
+              <p className="text-center text-xs text-white animate-pulse font-medium">
                 {statusText}
               </p>
             )}
@@ -1041,9 +1401,9 @@ export default function MarketingStudioPage() {
               className="w-full py-2 flex items-center justify-between text-left hover:text-white transition-colors text-slate-300"
             >
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 <span className="text-xs font-bold">Đối Chiếu Facts Nguồn</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-200 font-semibold">
                   {currentFacts.length} ý
                 </span>
               </div>
@@ -1060,30 +1420,30 @@ export default function MarketingStudioPage() {
                   <button
                     type="button"
                     onClick={handleSyncFactsToStory}
-                    className="px-2 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-semibold border border-emerald-500/30 transition-colors"
+                    className="mv-btn mv-btn-ghost !px-2.5 !py-1 !text-[11px]"
                   >
                     Đồng bộ vào Tiêu Chí
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1 mv-stagger">
                   {currentFacts.map((fact, fIdx) => {
                     const isIncluded = checkFactInPoster(fact.text);
                     return (
-                      <div key={fact.id} className="p-2 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                      <div key={fact.id} className="glass-card !p-2.5 space-y-1.5 hover:!transform-none">
                         <div className="flex items-center justify-between">
                           <label className="flex items-center gap-1.5 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={fact.selected}
                               onChange={(e) => handleToggleFact(fIdx, e.target.checked)}
-                              className="rounded border-white/20 text-emerald-500 focus:ring-0 w-3 h-3"
+                              className="rounded border-white/20 text-white focus:ring-0 w-3 h-3"
                             />
                             <span className="text-[10px] font-mono text-slate-400">#{fact.id}</span>
                           </label>
                           <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${
                             isIncluded
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              ? 'bg-indigo-500/15 text-indigo-200 border border-indigo-500/30'
                               : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                           }`}>
                             {isIncluded ? '✓ Đã vào poster' : '⚠ Chưa vào poster'}
@@ -1093,7 +1453,7 @@ export default function MarketingStudioPage() {
                           type="text"
                           value={fact.text}
                           onChange={(e) => handleEditFactText(fIdx, e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500"
+                          className="mv-input !px-2 !py-1 !text-xs"
                         />
                         <p className="text-[9px] text-slate-500 truncate" title={fact.source_excerpt}>
                           Gốc: {fact.source_excerpt}
@@ -1106,266 +1466,32 @@ export default function MarketingStudioPage() {
             )}
           </div>
         </div>
+          </>)}
+        </div>
+      </div>
+      </div>
+      )}
 
-        )}
-
-        {step === 3 && (
-        <div className="space-y-6">
-          {/* Canvases Selection Bar */}
-          <div className="grid grid-cols-3 gap-4">
-            {(['launch', 'story', 'action'] as PosterKind[]).map((kind) => (
-              <div
-                key={kind}
-                onClick={() => saveState({ ...state, selected: kind })}
-                className={`group p-3 rounded-2xl glass-card text-left transition-all border cursor-pointer relative ${
-                  state.selected === kind
-                    ? 'border-emerald-500 bg-emerald-500/10 shadow-md shadow-emerald-500/10'
-                    : 'border-white/10 hover:border-white/20'
-                }`}
-              >
-                <div className="aspect-[4/5] bg-black/60 rounded-xl overflow-hidden mb-2 relative flex items-center justify-center">
-                  <canvas
-                    ref={
-                      kind === 'launch'
-                        ? canvasLaunchRef
-                        : kind === 'story'
-                        ? canvasStoryRef
-                        : canvasActionRef
-                    }
-                    className="w-full h-full object-contain"
-                  />
-                  {/* Hover Overlay Button to Preview */}
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      saveState({ ...state, selected: kind });
-                      openPreview(kind);
-                    }}
-                    className="absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 text-white"
-                  >
-                    <div className="p-2.5 rounded-full bg-emerald-500 text-slate-950 shadow-lg transform group-hover:scale-110 transition-transform">
-                      <Maximize2 className="w-4 h-4" />
-                    </div>
-                    <span className="text-xs font-bold bg-black/70 px-3 py-1 rounded-full border border-white/20 shadow">
-                      Phóng to xem ảnh
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between gap-1">
-                  <p className="text-xs font-bold text-white truncate">{posterNames[kind]}</p>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      saveState({ ...state, selected: kind });
-                      openPreview(kind);
-                    }}
-                    className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-colors"
-                    title="Bấm xem phóng to"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                  {state.copies[kind]?.headline || 'Chưa có tiêu đề'}
-                </p>
-              </div>
-            ))}
+      {step === 1 && (
+        <div className="space-y-4 mv-fade">
+          <div>
+          <h2 className="mv-h1 !text-xl">Chọn ngành &amp; mẫu thiết kế</h2>
+          <p className="mv-sub">Chọn ngành (có sẵn nội dung mẫu) và một mẫu thiết kế, rồi bấm Tiếp.</p>
           </div>
-
-          {/* Editor & Download Action Bar */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/10 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
-              <div>
-                <span className="text-xs text-slate-400">Đang chỉnh sửa:</span>
-                <h3 className="text-lg font-bold text-white">{posterNames[state.selected]}</h3>
-              </div>
-
-              {/* Download Buttons */}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleDownloadSingle}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors shadow-md shadow-emerald-500/20"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải ảnh PNG</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadAllSizes}
-                  title="Xuất ảnh đang chọn ở cả 3 khổ: Post 1080×1350 · Story/Reels 1080×1920 · Vuông 1080×1080"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/20 border border-sky-500 text-sky-300 font-bold text-xs hover:bg-sky-500/30 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Tải đủ 3 khổ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadZip}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-white font-semibold text-xs hover:bg-white/10 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Tải cả bộ ZIP</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Carousel Pagination Controls for Story Poster */}
-            {state.selected === 'story' && (() => {
-              const storyResolved = resolveStorySource(state, state.copies.story);
-              const totalStoryPoints = storyResolved.items.length;
-              const totalStoryPages = storyResolved.totalPages;
-              const currentStoryPage = storyResolved.pageIndex;
-              if (totalStoryPages <= 1) return null;
-              return (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-400">Carousel Phân Trang:</span>
-                    <span className="text-xs text-slate-300">
-                      Trang {currentStoryPage + 1} / {totalStoryPages} · ({totalStoryPoints} yêu cầu chuyên môn)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={currentStoryPage <= 0}
-                      onClick={() => saveState({ ...state, storyPage: Math.max(0, currentStoryPage - 1) })}
-                      className="p-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-white disabled:opacity-40 transition-colors"
-                      title="Trang trước"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="text-xs font-mono font-bold text-white px-2">
-                      {currentStoryPage + 1} / {totalStoryPages}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={currentStoryPage >= totalStoryPages - 1}
-                      onClick={() => saveState({ ...state, storyPage: Math.min(totalStoryPages - 1, currentStoryPage + 1) })}
-                      className="p-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/10 text-white disabled:opacity-40 transition-colors"
-                      title="Trang sau"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Field Editors */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left: Poster Typography Controls */}
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Tiêu đề Poster</label>
-                  <input
-                    type="text"
-                    value={currentCopy.headline}
-                    onChange={(e) => {
-                      const updated = { ...state.copies };
-                      updated[state.selected] = { ...updated[state.selected], headline: e.target.value };
-                      saveState({ ...state, copies: updated });
-                    }}
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Thông điệp phụ / Slogan</label>
-                  <input
-                    type="text"
-                    value={currentCopy.subline}
-                    onChange={(e) => {
-                      const updated = { ...state.copies };
-                      updated[state.selected] = { ...updated[state.selected], subline: e.target.value };
-                      saveState({ ...state, copies: updated });
-                    }}
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Nút kêu gọi (CTA)</label>
-                  <input
-                    type="text"
-                    value={currentCopy.cta}
-                    onChange={(e) => {
-                      const updated = { ...state.copies };
-                      updated[state.selected] = { ...updated[state.selected], cta: e.target.value };
-                      saveState({ ...state, copies: updated });
-                    }}
-                    className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
-
-                {state.selected !== 'launch' && (
-                  <div>
-                    <label className="block text-slate-300 font-semibold mb-1">
-                      Các tiêu chí (mỗi dòng một ý)
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={(state.selected === 'story' ? resolveStorySource(state, currentCopy).items : (currentCopy.points || [])).join('\n')}
-                      onChange={(e) => {
-                        const updated = { ...state.copies };
-                        updated[state.selected] = {
-                          ...updated[state.selected],
-                          pointsEdited: true,
-                          points: normalizePointList(e.target.value),
-                        };
-                        saveState({ ...state, copies: updated });
-                      }}
-                      className="w-full px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white focus:outline-none focus:border-emerald-500 font-sans leading-relaxed"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Social Media Caption Editor */}
-              <div className="space-y-3 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Caption đi kèm bài đăng</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleCopyCaption}
-                      className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:underline font-semibold"
-                    >
-                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                      <span>{copied ? 'Đã sao chép!' : 'Sao chép caption'}</span>
-                    </button>
-                  </div>
-                  <textarea
-                    rows={9}
-                    value={currentCopy.caption}
-                    onChange={(e) => {
-                      const updated = { ...state.copies };
-                      updated[state.selected].caption = e.target.value;
-                      saveState({ ...state, copies: updated });
-                    }}
-                    className="w-full p-3.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs leading-relaxed focus:outline-none focus:border-emerald-500 font-sans"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  Anh có thể chỉnh sửa trực tiếp thông điệp và ưu đãi trước khi xuất file.
-                </p>
-              </div>
-            </div>
+          <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
+          <div className="flex justify-end">
+            <button type="button" onClick={goToCompose}
+              className="mv-btn mv-btn-primary !px-6 !py-3">
+              Tiếp → Soạn &amp; tải
+            </button>
           </div>
         </div>
-        )}
-      </div>
+      )}
 
       {/* Lightbox Fullscreen Preview Modal */}
-      {previewKind && previewUrl && (
+      {previewKind && previewUrl && typeof document !== 'undefined' && createPortal((
         <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => setPreviewKind(null)}
         >
           {/* Modal Header */}
@@ -1374,7 +1500,7 @@ export default function MarketingStudioPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-white">
                 Xem Trước Poster
               </span>
               <h2 className="text-lg font-bold text-white">
@@ -1385,13 +1511,8 @@ export default function MarketingStudioPage() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = previewUrl;
-                  a.download = `mivy-${previewKind}-${state.aspect.replace(':', 'x')}.png`;
-                  a.click();
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors shadow-lg"
+                onClick={() => handleDownloadSingle(previewKind)}
+                className="mv-btn mv-btn-primary !px-4 !py-2 !text-xs"
               >
                 <Download className="w-4 h-4" />
                 <span>Tải ảnh PNG</span>
@@ -1400,7 +1521,7 @@ export default function MarketingStudioPage() {
               <button
                 type="button"
                 onClick={() => setPreviewKind(null)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors"
+                className="mv-btn mv-btn-ghost !p-2"
                 title="Đóng (Esc)"
               >
                 <X className="w-5 h-5" />
@@ -1417,24 +1538,26 @@ export default function MarketingStudioPage() {
             <button
               type="button"
               onClick={handlePrevPreview}
-              className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-emerald-500 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
               title="Mẫu trước (Phím ←)"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
 
             {/* Poster High-Res Rendered Image */}
-            <img
-              src={previewUrl}
-              alt={posterNames[previewKind]}
-              className="max-h-full max-w-[82vw] object-contain rounded-2xl shadow-2xl border border-white/10 ring-1 ring-white/10 select-none"
-            />
+            <div key={previewKind} className="mv-hover-zoom mv-fade rounded-2xl shadow-2xl inline-flex">
+              <img
+                src={previewUrl}
+                alt={posterNames[previewKind]}
+                className="max-h-[80vh] w-auto max-w-[72vw] object-contain rounded-2xl border border-white/10 ring-1 ring-white/10 select-none"
+              />
+            </div>
 
             {/* Next Button */}
             <button
               type="button"
               onClick={handleNextPreview}
-              className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-emerald-500 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
               title="Mẫu tiếp theo (Phím →)"
             >
               <ChevronRight className="w-6 h-6" />
@@ -1446,26 +1569,26 @@ export default function MarketingStudioPage() {
             className="flex items-center gap-3 bg-black/60 border border-white/10 px-4 py-2 rounded-2xl backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="mv-seg">
             {(['launch', 'story', 'action'] as PosterKind[]).map((k) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => openPreview(k)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  previewKind === k
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
+                data-active={previewKind === k}
+                className="mv-seg-btn !text-xs"
               >
                 {posterNames[k]}
               </button>
             ))}
+            </div>
             <span className="text-[11px] text-slate-500 border-l border-white/10 pl-3">
               Dùng phím ← / → để chuyển mẫu · Esc để đóng
             </span>
           </div>
         </div>
-      )}
+      ), document.body)}
+      </div>
     </div>
   );
 }

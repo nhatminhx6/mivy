@@ -1,144 +1,88 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, Image as ImageIcon, BookmarkCheck, ArrowRight, Layers, Clock, Zap } from 'lucide-react';
+import { Sparkles, Image as ImageIcon, BookmarkCheck, ArrowRight, Clock, Wand2, ListOrdered, Package, PanelTop, ShoppingBag, Palette } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MarketingState } from '@/types';
 
+const TOOLS = [
+  { href: '/studio/product', icon: Wand2, name: 'Banner sản phẩm', desc: '1 ảnh → tách nền → bộ banner đúng khổ mọi sàn.', c: '#818cf8' },
+  { href: '/studio/marketing', icon: Sparkles, name: 'Tạo quảng cáo', desc: 'Bộ 3 poster Hero · Tiêu chí · Liên hệ + caption.', c: '#c084fc' },
+  { href: '/studio/pricelist', icon: ListOrdered, name: 'Bảng giá / Menu', desc: 'Điền món & giá → bảng giá đẹp để đăng, in.', c: '#38bdf8' },
+  { href: '/studio/brandpack', icon: Package, name: 'Bộ nhận diện', desc: 'Logo, avatar, bìa, name card, áo, ly — 1 lần.', c: '#f472b6' },
+  { href: '/studio/brand-assets', icon: PanelTop, name: 'Bìa & Avatar', desc: 'Bìa FB/Zalo/Shopee/YouTube + avatar.', c: '#34d399' },
+  { href: '/studio/merch', icon: ShoppingBag, name: 'Vật phẩm', desc: 'In logo lên áo, nón, ly, túi… ảnh thật.', c: '#fbbf24' },
+  { href: '/studio/brand', icon: Palette, name: 'Thương hiệu', desc: 'Brand Kit: màu, font, logo, slogan, liên hệ.', c: '#a78bfa' },
+  { href: '/studio/image', icon: ImageIcon, name: 'Tạo ảnh', desc: 'Tạo ảnh sản phẩm/nghệ thuật theo mô tả.', c: '#22d3ee' },
+  { href: '/studio/drafts', icon: BookmarkCheck, name: 'Chiến dịch', desc: 'Bản nháp & nội dung đã lưu trên máy.', c: '#94a3b8' },
+];
+
+const STATS = ['0đ chi phí API', '9 công cụ', 'Đúng khổ mọi sàn', 'Xuất PNG · ZIP'];
+
 export default function StudioDashboardPage() {
   const [draft, setDraft] = useState<MarketingState | null>(null);
-
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mivy-marketing-v1');
-      if (raw) setDraft(JSON.parse(raw));
-    } catch (e) {}
+    try { const raw = localStorage.getItem('mivy-marketing-v1'); if (raw) setDraft(JSON.parse(raw)); } catch {}
   }, []);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Welcome Banner */}
-      <div className="p-8 rounded-2xl glass-panel border border-emerald-500/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-2xl">
-          <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            KHÔNG GIAN SÁNG TẠO
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 mb-2">
-            Chào mừng anh đến với Mivy Studio
-          </h1>
-          <p className="text-slate-300 text-sm leading-relaxed mb-6">
-            Bắt đầu tạo poster quảng cáo tuyển dụng, khóa học hoặc hình ảnh thương mại chỉ trong vài bước đơn giản với 0đ API.
-          </p>
+      {/* Hero */}
+      <div className="relative overflow-hidden glass-card hover:!transform-none p-8 lg:p-10">
+        <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-28 -left-24 w-96 h-96 rounded-full bg-fuchsia-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+        <div className="relative max-w-2xl">
+          <span className="mv-label">Mivy Studio</span>
+          <h1 className="text-3xl lg:text-[36px] font-extrabold tracking-tight mt-2.5 mb-3 bg-gradient-to-r from-white via-white to-indigo-200 bg-clip-text text-transparent">Mọi thứ người bán cần,<br />trong một studio.</h1>
+          <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-lg">Tạo banner sản phẩm, bộ nhận diện, bảng giá, poster quảng cáo… đúng chuẩn từng sàn — nhanh, đẹp, 0đ chi phí.</p>
           <div className="flex items-center gap-3">
-            <Link
-              href="/studio/marketing"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/20"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Tạo Quảng Cáo Mới</span>
-            </Link>
-            <Link
-              href="/studio/image"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl glass-card text-white font-semibold text-sm hover:bg-white/10 transition-colors"
-            >
-              <ImageIcon className="w-4 h-4 text-emerald-400" />
-              <span>Tạo Ảnh AI</span>
-            </Link>
+            <Link href="/studio/product" className="mv-btn mv-btn-primary"><Wand2 className="w-4 h-4" /> Tạo banner sản phẩm</Link>
+            <Link href="/studio/brandpack" className="mv-btn mv-btn-ghost"><Package className="w-4 h-4" /> Bộ nhận diện</Link>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-7">
+            {STATS.map((s) => (
+              <span key={s} className="text-[11px] font-semibold text-slate-300 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10">{s}</span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="/studio/marketing"
-          className="glass-card p-6 rounded-2xl group hover:border-emerald-500/50 transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mb-4 text-emerald-400 group-hover:scale-110 transition-transform">
-              <Layers className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-white mb-1.5">Tạo Quảng Cáo & Poster</h2>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Tự động tạo trọn bộ 3 poster (Hero, Tiêu chí, Liên hệ) kèm bảng ma trận JD và caption chuẩn chỉnh.
-            </p>
-          </div>
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center text-xs font-bold text-emerald-400 gap-1.5">
-            <span>Bắt đầu tạo</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link
-          href="/studio/image"
-          className="glass-card p-6 rounded-2xl group hover:border-blue-500/50 transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center mb-4 text-blue-400 group-hover:scale-110 transition-transform">
-              <ImageIcon className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-white mb-1.5">Tạo Ảnh AI Độc Lập</h2>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Thử nghiệm tạo ảnh nghệ thuật, phối cảnh studio và phong cách thương mại theo prompt tùy chọn.
-            </p>
-          </div>
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center text-xs font-bold text-blue-400 gap-1.5">
-            <span>Mở công cụ</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-
-        <Link
-          href="/studio/drafts"
-          className="glass-card p-6 rounded-2xl group hover:border-amber-500/50 transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-4 text-amber-400 group-hover:scale-110 transition-transform">
-              <BookmarkCheck className="w-5 h-5" />
-            </div>
-            <h2 className="text-lg font-bold text-white mb-1.5">Chiến Dịch Đã Lưu</h2>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Quản lý các bản nháp poster, nội dung caption và bản sao lưu trên trình duyệt của anh.
-            </p>
-          </div>
-          <div className="mt-6 pt-4 border-t border-white/5 flex items-center text-xs font-bold text-amber-400 gap-1.5">
-            <span>Xem chiến dịch</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
-      </div>
-
-      {/* Current Draft Snippet */}
+      {/* Recent draft */}
       {draft && (
-        <div className="p-6 rounded-2xl glass-panel border border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-bold text-white">Bản nháp đang mở gần đây</span>
+        <Link href="/studio/marketing" className="glass-card p-4 flex items-center justify-between gap-4 group">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="grid place-items-center w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 shrink-0"><Clock className="w-5 h-5" /></span>
+            <div className="min-w-0">
+              <p className="text-[11px] mv-label">Mở lại gần đây</p>
+              <p className="font-semibold text-white truncate">{draft.name || 'Chiến dịch chưa đặt tên'}</p>
             </div>
-            <span className="text-xs px-2.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 uppercase">
-              {draft.industry}
-            </span>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <p className="font-bold text-white text-base">{draft.name || 'Chiến dịch chưa đặt tên'}</p>
-              <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                {draft.details || 'Chưa có thông tin mô tả.'}
-              </p>
-            </div>
-            <Link
-              href="/studio/marketing"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 hover:bg-emerald-500 hover:text-slate-950 text-white text-xs font-bold transition-all"
-            >
-              <span>Mở lại chiến dịch</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
+          <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+        </Link>
       )}
+
+      {/* Tools grid */}
+      <div>
+        <div className="mv-label mb-3">Công cụ</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mv-stagger">
+          {TOOLS.map((t) => {
+            const Icon = t.icon;
+            return (
+              <Link key={t.href} href={t.href} className="glass-card p-5 group flex flex-col">
+                <span className="grid place-items-center w-11 h-11 rounded-xl mb-4 transition-transform group-hover:scale-110" style={{ background: `${t.c}22`, border: `1px solid ${t.c}55`, color: t.c }}>
+                  <Icon className="w-[22px] h-[22px]" />
+                </span>
+                <h2 className="text-[15px] font-bold text-white mb-1">{t.name}</h2>
+                <p className="text-slate-400 text-xs leading-relaxed flex-1">{t.desc}</p>
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold" style={{ color: t.c }}>
+                  <span>Mở</span><ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

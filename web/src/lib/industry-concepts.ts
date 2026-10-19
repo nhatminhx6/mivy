@@ -68,13 +68,14 @@ export function makeIndustryCopy(category: string, fields: Record<string, string
   const caption = Object.values(visibleFields).filter(Boolean).join('\n');
   const splitLines = (s?: string) => (s ? s.split(/\r?\n|\r/).map((l) => l.trim()).filter(Boolean) : []);
   switch (category) {
-    case 'recruitment': return { 
-      headline: fields.role || '', 
-      subline: fields.salary || '', 
-      cta: '', 
-      caption, 
-      points: splitLines(fields.requirements).concat(splitLines(fields.benefits)), 
-      pointsEdited: false 
+    case 'recruitment': return {
+      headline: fields.role || '',
+      subline: '', // slogan do editor "Chữ hiển thị trên ảnh" giữ, KHÔNG nhét lương vào đây
+      cta: '',
+      caption,
+      // Lương + Địa điểm đưa vào points để hero bắt thành box "ĐÃI NGỘ/LƯƠNG" & "ĐỊA ĐIỂM" (đổi live khi gõ field)
+      points: [fields.salary, fields.location, ...splitLines(fields.requirements), ...splitLines(fields.benefits)].map((s) => (s || '').trim()).filter(Boolean),
+      pointsEdited: false
     };
     case 'property': return { 
       headline: fields.type || '', 

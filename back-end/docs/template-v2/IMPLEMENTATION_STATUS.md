@@ -505,3 +505,329 @@ Required checkpoints read. Native access restored; existing Gemini 3.8 Flash Hig
 
 ### 2026-10-13 16:05 UTC — font repair outcome unavailable
 Required checkpoints read; STORY_FONT_PARITY_RESULT.md not present. One native Antigravity status observation timed out (Computer Use -10005), so current execution state is unknown. No duplicate dispatch, retry loop, provider fallback or product edits. Do not test partial work as a completed repair. Await accessible existing session/result before focused cold-browser QC. Overall NOT ACCEPTED; evidence unchanged.
+
+
+### 2026-10-13 17:13 UTC — unchanged provider observation blocker
+Required checkpoints read; font-parity result file still absent. Single native Antigravity observation timed out again; existing job state remains unknown. No duplicate dispatch, retry loop, model fallback, product edits or repeated QC. Preserve any partial provider work; await result/session visibility. Overall NOT ACCEPTED; prior raster evidence unchanged.
+
+
+### 2026-10-13 18:18 UTC — native access blocked by lock
+Required checkpoints read; STORY_FONT_PARITY_RESULT.md still absent. One native Antigravity check reports locked Mac; current font-repair execution state cannot be verified. No duplicate dispatch, retry loop, fallback, product edits or redundant tests/renders. Await existing result/session access; overall NOT ACCEPTED and pixel mismatch evidence unchanged.
+
+
+### 2026-10-13 19:32 UTC — unchanged lock blocker
+Required checkpoints read; font-parity result file remains absent. Single native Antigravity observation reports locked Mac; existing job state remains unverified. No duplicate dispatch, retry loop, provider fallback, product edits or repeated tests/renders. Await existing session/result; overall NOT ACCEPTED and prior pixel evidence unchanged.
+
+
+### 2026-10-13 20:32 UTC — unchanged lock blocker
+Required checkpoints read; STORY_FONT_PARITY_RESULT.md remains absent. One Antigravity observation still reports locked Mac; existing repair job state cannot be verified. No duplicate dispatch, retry loop, provider fallback, product edits or redundant QC. Await existing result/session access. Overall NOT ACCEPTED; prior raster and pixel evidence unchanged.
+
+
+### 2026-10-13 21:34 UTC — unchanged lock blocker
+Required checkpoints read; font-parity result remains absent. One native Antigravity check reports locked Mac; existing job state cannot be verified. No duplicate dispatch, retry loop, model fallback, product edits or redundant tests/renders. Await existing result/session visibility; overall NOT ACCEPTED and prior pixel evidence unchanged.
+
+
+### 2026-10-13 22:34 UTC — unchanged lock blocker
+Required checkpoints read; STORY_FONT_PARITY_RESULT.md still absent. Single Antigravity observation reports locked Mac; current job state remains unverified. No duplicate dispatch, retry loop, provider fallback, product edits or repeated QC. Await existing session/result access; overall NOT ACCEPTED and prior raster evidence unchanged.
+
+
+### 2026-10-13 23:38 UTC — unchanged lock blocker
+Required checkpoints read; font-parity result remains absent. One native Antigravity observation reports locked Mac; existing job state remains unverified. No duplicate dispatch, retry loop, provider fallback, product edits or redundant tests/renders. Await existing result/session visibility; overall NOT ACCEPTED and prior pixel evidence unchanged.
+
+
+### 2026-10-14 00:44 UTC — unchanged lock blocker
+Required checkpoints read; STORY_FONT_PARITY_RESULT.md remains absent. Single native Antigravity check reports locked Mac; existing repair job state cannot be verified. No duplicate dispatch, retry loop, provider fallback, product edits or redundant QC. Await existing session/result access; overall NOT ACCEPTED and prior raster/pixel evidence unchanged.
+
+
+### 2026-10-14 01:47 UTC — unchanged lock blocker
+Required checkpoints read; font-parity result remains absent. One native Antigravity observation reports locked Mac; existing job state remains unverified. No duplicate dispatch, retry loop, provider fallback, product edits or repeated tests/renders. Await existing result/session visibility; overall NOT ACCEPTED and prior pixel evidence unchanged.
+
+
+### 2026-10-14 02:43 UTC — partial font helper found, follow-up not sent
+Native access returned. Existing font turn ended after7m with2files changed and empty final response; result document absent. Read-only source review finds ensurePosterFontsReady in poster-font.ts, but no calls in marketing/page.tsx or story-source review; multiword custom family parsing truncates names at first whitespace. Thus incomplete implementation, not ready for acceptance. Attempted bounded completion follow-up was interrupted by Computer Use reporting user changed Antigravity before input; no send performed. Do not interfere with active user interaction. Preserve extensive concurrent UI changes. Next verify session/composer afresh, then finish helper parsing/wiring/tests/report through Gemini. Overall NOT ACCEPTED; no new raster tests on partial code.
+
+
+### 2026-10-14 03:46 UTC — follow-up still not dispatched
+Required checkpoints read. Antigravity appeared on home screen with existing Mivy Studio link and Gemini3.8 FlashHigh. Attempt to open existing conversation failed because native control was inactive; one binding refresh timed out (-10005). No prompt typed/sent, no new job. Partial font helper still requires review and completion described in previous checkpoint. No provider fallback, product edits or repeated QC. Overall NOT ACCEPTED; next verify stable native access and existing conversation before sending bounded completion.
+
+
+### 2026-10-14 04:52 UTC — native interaction interrupted; no follow-up sent
+Required checkpoints read; font result absent. Antigravity opened in Settings; closed overlay without changing settings. Attempt to open existing Mivy Studio was interrupted by native tool reporting user changed the app. No prompt typed/sent and no new job. Partial font helper completion remains pending; preserve concurrent user activity and code. No retries, fallback or redundant QC. Overall NOT ACCEPTED.
+
+
+### 2026-10-14 05:49 UTC — locked; partial font repair still pending
+Required checkpoints read; font-parity result file remains absent. One Antigravity connection attempt reports locked Mac. Completion follow-up remains unsent; no duplicate job, provider fallback, product edits or repeated tests/renders. Preserve partial helper and concurrent changes. Overall NOT ACCEPTED; next verify idle session and finish the prepared font-parity repair through Gemini.
+
+
+### 2026-10-14 06:56 UTC — Antigravity window has no accessible session
+Required checkpoints read; font-parity result remains absent. Native app now returns only an empty window/container and menu bar; one subsequent state observation reports no change. No conversation/model/composer is available to verify or dispatch safely. Completion follow-up remains unsent. No duplicate job, fallback, product edits or redundant QC. Overall NOT ACCEPTED; preserve partial font helper and await usable existing session.
+
+
+### 2026-10-14 07:57 UTC — bounded font completion dispatched
+Required checkpoints read. Existing Mivy Studio loaded with idle composer and Gemini3.8 FlashHigh. Sent one bounded completion of partial font helper: preserve multiword family names, wire preview/export/review, snapshot before async, focused tests and result report, preserve concurrent work. UI confirmed Working/Cancel. No duplicate implementation job; await STORY_FONT_PARITY_RESULT.md and independent cold-browser pixel/raster QC. Overall NOT ACCEPTED; no new visual evidence.
+
+
+### 2026-10-14 09:00 UTC — font revision still fails actual pixel parity
+Received font result; independent focused suite5/5 passes. Fresh browser tab (existing profile, cold cache not proven) downloaded new standalone legacy page2 PNG and ZIP at16:01 local. Both raster images inspected; decoded comparison still31582/1458000 differing pixels, same1080x1350. Saved current artifacts and qc.json in reports/font-parity-20261014. No parity acceptance; tests mostly verify loading/wiring, not output equality. Sent narrow glyph/weight/subset/state parity investigation to idle Gemini3.8FlashHigh, UI confirmed Working. Preserve concurrent changes. Overall NOT ACCEPTED; await revision then repeat failing raster comparison only.
+
+
+### 2026-10-14 10:01 UTC — narrow standalone PNG/ZIP parity verified
+Gemini revision received; independent focused font suite passes 6/6. Fresh browser tab with existing profile at /studio/marketing/review/story-source exported legacy VI 4:5 page2 standalone PNG first, then ZIP. Decoded RGBA comparison is now 0/1,458,000 differing pixels at 1080x1350 (previous revision:31,582). Evidence: reports/font-parity-r2-20261014/{single.png,pack.zip,zip/,qc.json}. Actual standalone raster inspected: title, subline, source items04/05 and CTA readable; excessive vertical whitespace and page-local numbering1/2 alongside source04/05 remain visual limitations.
+Single export now rerenders on a detached canvas, so this verifies export-to-export equality only, not visible-preview parity. Cold-cache behavior, concept variants, intentional clear, other ratios and EN remain unverified. Overall NOT ACCEPTED; no aesthetic approval or scope expansion. Next bounded QC: visible-preview versus export, followed by concept/clear cases and priority visual gaps. No new implementation job dispatched; concurrent changes preserved.
+
+
+### 2026-10-14 11:12 UTC — visible preview evidence; exact comparison pending
+Read required checkpoints. Opened isolated /studio/marketing/review/story-source: legacy3/2, intentional-clear0, concept3/3/2/2 controls intact. Saved and inspected browser screenshot reports/preview-parity-20261014/review.png: visible legacy cards retain large whitespace and very small body copy at card scale. Screenshot API returned viewport-sized evidence despite fullPage request; only legacy area visually inspected. Read-only browser DOM facade does not expose canvas.toDataURL, so no raw preview pixels captured and no new parity claim. A dev-only capture-existing-preview control is the next bounded Gemini task, distinct from the existing detached rerender export. Antigravity access reports locked Mac; no prompt sent, no duplicate job or retries. Prior standalone/ZIP equality remains narrowly verified; overall NOT ACCEPTED. No product edits or redundant tests.
+
+
+### 2026-10-14 12:21 UTC — native access remains locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac. No prompt sent, duplicate job, fallback implementation or redundant tests/renders. Pending bounded task remains dev-only capture of the existing preview canvas for direct comparison against detached PNG/ZIP exports. Prior narrow export equality remains unchanged; overall NOT ACCEPTED. Stop this batch without retries and preserve concurrent work.
+
+
+### 2026-10-14 13:21 UTC — unchanged locked native access
+Required checkpoints read. One Antigravity access attempt still reports locked Mac. Preview-capture task remains unsent; no duplicate job, retries, fallback code or redundant QC. Existing narrow PNG/ZIP parity evidence unchanged; overall NOT ACCEPTED. Resume bounded preview capture through the existing idle Gemini session when native access is available.
+
+
+### 2026-10-14 14:23 UTC — native access still locked
+Required checkpoints read. A single Antigravity access attempt reports locked Mac. No dispatch, retries, provider fallback, product edits or repeated tests/renders. Preview-capture task remains pending; prior narrow export parity evidence unchanged and overall NOT ACCEPTED. Verify session idle before resuming when access returns.
+
+
+### 2026-10-14 15:17 UTC — preview-capture QC support dispatched
+Required checkpoints read. Native access restored; existing Mivy Studio conversation idle with Gemini3.8 FlashHigh. Sent one bounded dev-only attached-preview capture task for /studio/marketing/review/story-source: serialize current canvas without redraw/font await, readiness guard, preserve exports/isolation/concurrent edits. UI confirmed Working/Cancel. Await STORY_PREVIEW_CAPTURE_RESULT.md, then independent actual preview/export pixel comparison and raster inspection. No duplicate job or product acceptance; existing export-only parity remains narrow. No new renders/tests this dispatch batch.
+
+
+### 2026-10-14 16:30 UTC — attached preview parity FAIL confirmed
+Received STORY_PREVIEW_CAPTURE_RESULT.md; independent focused suite7/7 passes. Actual browser readiness controls changed from disabled to capture-ready. Captured legacy VI4:5 page2 attached canvas first, then fresh detached export. Decoded RGBA comparison:37107/1458000 differing pixels. Saved both images and qc.json in reports/attached-preview-20261014; both rasters inspected. Text weight/width differs; content04/05 remains present, whitespace issue unchanged. Thus prior detached export/ZIP equality does not resolve visible preview parity; overall NOT ACCEPTED. One Antigravity attempt to dispatch narrow fix reports locked Mac; no follow-up sent or retries. Next Gemini task: investigate attached canvas font/context state versus detached pipeline using these exact artifacts; fix actual preview, not capture by rerendering. Preserve existing export parity and concurrent changes.
+
+
+### 2026-10-14 17:27 UTC — existing Gemini session reports active
+Required checkpoints read. Native access returned, but existing Mivy Studio session shows Stop execution/Cancel and Thinking on the prior preview-capture request despite result file already present. Treat session as active; no duplicate follow-up sent, no interruption or overwrite. Attached-preview failure37107/1458000 remains unresolved. Next verify session idle, then dispatch narrow actual-preview parity repair using reports/attached-preview-20261014. No redundant tests/renders this batch; overall NOT ACCEPTED.
+
+
+### 2026-10-14 18:41 UTC — session status unavailable while Mac locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac; cannot determine whether the previously active session has finished. No follow-up sent, duplicate job, interruption, fallback implementation or redundant tests/renders. Attached-preview parity failure remains open; verify idle session before dispatching the narrow repair. Overall NOT ACCEPTED.
+
+
+### 2026-10-14 19:38 UTC — unchanged locked access
+Read required checkpoints. One Antigravity access attempt reports locked Mac; prior active-session status remains unknown. No duplicate dispatch, retries, interruption, fallback code or redundant QC. Attached-preview parity repair remains pending; overall NOT ACCEPTED. Verify idle Gemini session before continuing.
+
+
+### 2026-10-14 20:39 UTC — locked access unchanged
+Read required checkpoints. Single Antigravity access attempt reports locked Mac. Prior session completion cannot be verified; no duplicate job, retries, interruption, fallback implementation or redundant tests/renders. Attached-preview parity repair remains pending and overall NOT ACCEPTED. Resume only after verifying the existing Gemini session is idle.
+
+
+### 2026-10-14 21:40 UTC — native access still locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac. Existing session completion remains unverified; no duplicate dispatch, retries, interruption, provider fallback or redundant QC. Attached-preview parity repair remains pending; overall NOT ACCEPTED. Verify idle session when native access returns.
+
+
+### 2026-10-14 22:48 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac. Existing session completion remains unverified; no duplicate dispatch, retries, interruption, provider fallback, product edits or redundant QC. Attached-preview parity repair remains pending; overall NOT ACCEPTED. Verify idle session when native access returns.
+
+
+### 2026-10-14 23:58 UTC — native access remains locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac. Prior session completion cannot be verified; no duplicate dispatch, retries, interruption, fallback implementation or redundant QC. Attached-preview parity repair remains pending; overall NOT ACCEPTED. Verify idle Gemini session when access returns.
+
+
+### 2026-10-15 00:59 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac. Prior session completion remains unverified; no duplicate dispatch, retries, interruption, provider fallback, product edits or redundant QC. Attached-preview parity repair remains pending; overall NOT ACCEPTED. Verify idle Gemini session when access returns.
+
+
+### 2026-10-15 01:55 UTC — attached-preview repair dispatched
+Required checkpoints read. Native access restored; existing Mivy Studio session idle, Gemini3.8 FlashHigh selected. Sent one narrow repair using actual37107-pixel mismatch evidence, requesting actual preview/context normalization investigation while preserving direct capture and detached export parity. UI confirmed Working/Cancel. Await STORY_ATTACHED_PARITY_RESULT.md then independent browser capture/export comparison. No duplicate job, scope expansion or new acceptance. No redundant tests/renders during dispatch; overall NOT ACCEPTED.
+
+
+### 2026-10-15 02:57 UTC — normalization improves but does not fix preview parity
+Received attached-parity result; independent focused suite8/8 passes. Fresh native-browser legacy VI4:5 page2 attached capture, detached PNG and ZIP downloaded at09:58 local. Decoded preview/export mismatch20926/1458000 (previous37107); fresh export/ZIP remains0. Saved evidence reports/attached-preview-20261015; attached raster inspected, content intact and whitespace limitation unchanged. Overall NOT ACCEPTED; provider claim of complete root cause is not established by this outcome. Sent one narrow remaining-discrepancy repair to idle Gemini3.8FlashHigh, preserving direct capture and concurrent edits; UI confirmed Working/Cancel. Await updated result and repeat actual raster comparison.
+
+
+### 2026-10-15 04:02 UTC — attached preview/export/ZIP narrow parity verified
+Received revised result. Fresh browser tab, existing profile: captured attached legacy VI4:5 page2 first, then detached PNG and ZIP at11:02 local. Decoded comparisons preview/export0 and export/ZIP0 of1458000 pixels. Saved reports/attached-preview-r2-20261015/{preview.png,export.png,pack.zip,zip/,qc.json}; actual preview inspected, readable content04/05 but excessive whitespace persists. This is one legacy fixture only, not aesthetic or full VI/EN/concept/ratio/cold-cache acceptance.
+Independent focused suite fails Test8 at verify-font-parity-qc.cjs:483: it searches only600characters after drawIndustryPosterCore signature. Current function contains supersampling setup and normalizeCanvasContext at line2164 beyond that brittle window. Preserve concurrent changes; normalization call exists, but suite is NOT green. Next bounded Gemini task should replace brittle fixed-window assertion with meaningful function-level validation, then validate concept/intentional-clear cases. No duplicate implementation dispatched this batch; overall NOT ACCEPTED.
+
+
+### 2026-10-15 05:07 UTC — focused-test repair dispatch blocked by locked access
+Required checkpoints read. One Antigravity access attempt reports locked Mac; no follow-up sent or retries. Pending bounded Gemini task: replace Test8 brittle600character search with meaningful function-level validation while preserving concurrent supersampling edits. Existing narrow legacy preview/PNG/ZIP0-pixel evidence remains valid for its captured fixture; no broader acceptance. No product edits, fallback or redundant tests/renders; overall NOT ACCEPTED.
+
+
+### 2026-10-15 06:03 UTC — bounded test repair dispatched
+Required checkpoints read. Existing Mivy Studio idle with Gemini3.8 FlashHigh. Sent test-only repair for Test8 brittle600character window: function-level/AST validation, normalization before renderer dispatch, preserve all production/supersampling edits. UI confirmed Working/Cancel. Await STORY_PARITY_TEST_RESULT.md and focused suite; wider concept/clear raster QC still pending. No new product edits, duplicate job or acceptance; prior narrow legacy parity evidence unchanged.
+
+
+### 2026-10-15 07:02 UTC — test repaired; concept/clear raster spot checks
+Received test-only result; independently ran focused suite8/8 PASS. Actual browser /studio/marketing/review/story-source controls confirm balanced3/3/2/2 and intentional-clear0. Downloaded attached preview then detached PNG for concept page4 and intentional-clear page1, VI4:5. Evidence reports/concept-clear-20261015 includes rasters and decoded qc.json. Both actual previews inspected: concept has items9/10 and contact readable, but double numbering09 plus9 and10 plus10 remains; clear contains no restored story items but large empty area. No aesthetic acceptance. This spot check does not cover ZIP for these cases, all pages, EN, other ratios or cold cache. Next bounded QC should cover concept ZIP/all-page content then prioritize visual gaps. No product changes or new Gemini job in this batch; overall NOT ACCEPTED.
+
+
+### 2026-10-15 08:07 UTC — concept ZIP all story pages inspected
+Required checkpoints read. Exported fresh concept-balanced ZIP from isolated /studio/marketing/review/story-source at15:07 local; archive has launch, four story pages and action. Saved reports/concept-zip-20261015/pack.zip and extracted zip/. Inspected all four actual story rasters: items1–10 present once in content order with3/3/2/2 distribution, correct1/4..4/4 page labels, readable salary/contact, no visible clipping. Repeated decorative indices plus numbered source prefixes remain a presentation defect across all pages. This verifies content completeness for the VI4:5 fixture only, not all concepts/EN/ratios or aesthetic acceptance. No code changes or redundant unit tests. Next bounded Gemini repair: remove duplicate list numbering at display time without mutating source or stripping meaningful numeric content, with targeted cases and rerender QC. Overall NOT ACCEPTED.
+
+
+### 2026-10-15 09:09 UTC — Antigravity session unavailable
+Required checkpoints read. Native app initially returned empty loading surface at127.0.0.1:61883; one subsequent state read failed noWindowsAvailable. Existing conversation/model/idle state cannot be verified. No prompt typed or sent, no duplicate job or further retries. Pending bounded task remains display-only duplicate numbering repair preserving source and meaningful numbers; prior raster evidence unchanged. No product edits or redundant tests/renders; overall NOT ACCEPTED.
+
+
+### 2026-10-15 10:04 UTC — empty Antigravity window
+Required checkpoints read. Native app returns only empty window/container and menu bar; no conversation, model or composer available to verify idle state and dispatch. No prompt sent, duplicate job, further retries, fallback code or redundant QC. Display-only duplicate numbering repair remains pending; existing raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-15 11:13 UTC — native access timeout
+Required checkpoints read. One Antigravity access attempt timed out; conversation/model/idle state cannot be verified. No prompt sent, duplicate job, further retries, fallback implementation or redundant renders/tests. Display-only duplicate numbering repair remains pending; existing raster evidence unchanged. Overall NOT ACCEPTED. Resume bounded Gemini dispatch only when native access and idle session can be verified.
+
+
+### 2026-10-15 13:57 UTC — Antigravity loading surface persists
+Required checkpoints read. One native access attempt returned an empty Antigravity HTML surface at127.0.0.1:52279 with only an image and window controls. No conversation, selected model or composer is available to verify idle state. No prompt sent, duplicate job, further retries, fallback code or redundant tests/renders. Display-only duplicate numbering repair remains pending; prior raster evidence unchanged. Overall NOT ACCEPTED.
+
+
+### 2026-10-15 14:59 UTC — native access still unavailable
+Read required checkpoints. One Antigravity access attempt timed out; cannot verify the existing Gemini conversation or idle state. No dispatch, repeated retry, fallback implementation or redundant render/test run. Duplicate display numbering repair remains pending; previous raster QC evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-15 16:11 UTC — native access locked
+Read required checkpoints. One Antigravity access attempt reports locked Mac; existing Gemini conversation and idle state remain unverifiable. No prompt sent, duplicate job, repeated retry, provider fallback or redundant tests/renders. Duplicate display numbering repair remains pending; previous raster evidence unchanged. Overall NOT ACCEPTED. Resume when native access returns.
+
+
+### 2026-10-15 17:38 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac. No dispatch or further retries; existing session idle state remains unverifiable. Duplicate display numbering repair pending; no code changes, redundant tests/renders or broader acceptance. Prior raster evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-15 18:39 UTC — locked access unchanged
+Read required checkpoints. Single Antigravity access attempt reports locked Mac; Gemini idle state cannot be verified. No dispatch, further retry, fallback code or redundant tests/renders. Display numbering repair remains pending and prior raster evidence unchanged; overall NOT ACCEPTED.
+
+
+### 2026-10-15 19:56 UTC — locked access unchanged
+Required checkpoints read. One native Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retry, fallback implementation or redundant tests/renders. Duplicate numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-15 22:48 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; cannot verify existing Gemini idle state. No dispatch, additional retries, fallback code or redundant tests/renders. Duplicate numbering repair remains pending; prior raster evidence unchanged and overall NOT ACCEPTED.
+
+
+### 2026-10-15 23:50 UTC — locked access unchanged
+Required checkpoints read. Single Antigravity access attempt reports locked Mac; existing Gemini idle state unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Display numbering repair pending; prior raster QC unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 00:56 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini session idle state remains unverifiable. No dispatch, further retry, fallback code or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 01:59 UTC — native access timeout
+Required checkpoints read. Single Antigravity access attempt timed out; existing Gemini conversation/model/idle state remains unverifiable. No dispatch, additional retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 03:02 UTC — native access timeout persists
+Required checkpoints read. One Antigravity access attempt timed out; cannot verify existing Gemini conversation/model/idle state. No dispatch, further retry, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 03:58 UTC — native access timeout unchanged
+Required checkpoints read. One Antigravity access attempt timed out; existing Gemini conversation/model/idle state cannot be verified. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 05:06 UTC — native access locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini conversation/model/idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 06:02 UTC — empty Antigravity surface
+Required checkpoints read. One native access attempt returned only an empty HTML surface/image and window controls; conversation, model and composer unavailable. Existing Gemini idle state cannot be verified. No prompt sent, duplicate dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 07:01 UTC — empty Antigravity surface unchanged
+Required checkpoints read. One native access attempt returned only an empty HTML surface/image and window controls. No conversation/model/composer available to verify idle Gemini session. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 08:10 UTC — empty Antigravity surface persists
+Required checkpoints read. One native access attempt returned only an empty HTML surface/image at127.0.0.1:53044 and window controls. No conversation/model/composer available to verify idle Gemini session. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 09:08 UTC — empty Antigravity surface unchanged
+Required checkpoints read. One native access attempt returned only empty HTML/image and window controls; conversation/model/composer unavailable, idle Gemini state unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-16 10:12 UTC — empty Antigravity window persists
+Required checkpoints read. One native access attempt returned only empty containers and window controls; no conversation/model/composer to verify idle Gemini session. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 04:01 UTC — empty Antigravity surface persists
+Required checkpoints read. One native access attempt returned only empty HTML/image and window controls; conversation/model/composer unavailable, existing Gemini idle state unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 05:06 UTC — native access locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini conversation/model/idle state cannot be verified. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 07:55 UTC — empty Antigravity surface persists
+Required checkpoints read. One native access attempt returned only empty HTML/image and window controls; conversation/model/composer unavailable, Gemini idle state unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 08:58 UTC — native access timeout
+Required checkpoints read. One Antigravity access attempt timed out; existing Gemini conversation/model/idle state cannot be verified. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 10:03 UTC — native access locked
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini conversation/model/idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 11:08 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 12:09 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 13:06 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 14:08 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 15:07 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 16:09 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 17:08 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 18:05 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 19:11 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 20:14 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 21:14 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 22:16 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-18 23:14 UTC — locked access unchanged
+Required checkpoints read. One Antigravity access attempt reports locked Mac; existing Gemini idle state remains unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-19 00:24 UTC — empty Antigravity surface persists
+Required checkpoints read. One native access attempt returned only empty HTML/image and window controls; conversation/model/composer unavailable, existing Gemini idle state unverifiable. No dispatch, further retries, fallback implementation or redundant tests/renders. Duplicate display numbering repair remains pending; prior raster evidence unchanged, overall NOT ACCEPTED.
+
+
+### 2026-10-19 01:43 UTC — numbering repair dispatched
+Required checkpoints read. Native Antigravity access restored; opened existing Mivy Studio conversation 3f16b73d-1489-49c4-a5a4-08346785b3e0 and verified idle Gemini 3.8 Flash High with prior test-only result. Sent one bounded display-numbering repair using concept ZIP raster evidence, preserving raw source, meaningful numeric content, pagination, parity and concurrent edits. UI confirmed Working/Cancel. Await STORY_NUMBERING_RESULT.md before independent focused tests and actual PNG QC. No duplicate job or acceptance; overall NOT ACCEPTED.
+
+
+### 2026-10-19 02:40 UTC — numbering tests pass, live fixture discrepancy
+Received STORY_NUMBERING_RESULT.md; independent numbering suite7/7 PASS. Actual browser renders inspected: duplicate text prefixes absent, but concept fixture unexpectedly resolves12 items3/3/3/3 by prepending salary/location, contradicting expected10 items3/3/2/2 and test claims. Cause/ownership not established; preserve concurrent edits. Evidence report reports/numbering-20261019/QC.md. PNG download not located, no fresh pixel parity claim. No new dispatch; next inspect resolver/fixture discrepancy then bounded Gemini correction. Overall NOT ACCEPTED.
+
+
+### 2026-10-19 03:42 UTC — real copy-path repair dispatched
+Required checkpoints read. Inspected fixture: buildBalanced10ConceptState uses makeIndustryCopy; concept resolver returns copy.points unchanged. Existing Mivy Studio idle Gemini3.8 FlashHigh verified. Sent bounded investigation/fix for12-vs10 discrepancy, requiring real copy-generator regression coverage and retaining salary/location as metadata, concurrent changes and parity. UI confirmed Working/Cancel. Await STORY_SOURCE_COUNT_RESULT.md then independent actual raster QC. No duplicate job or new acceptance; overall NOT ACCEPTED.

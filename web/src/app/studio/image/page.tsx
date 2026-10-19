@@ -216,7 +216,7 @@ export default function ImageStudioPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8 mv-fade">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -224,28 +224,25 @@ export default function ImageStudioPage() {
             <span className="text-xs font-bold px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
               E-COMMERCE STUDIO
             </span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-white/10 text-white border border-white/20">
               Shopee · TikTok Shop · Facebook
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mt-2">
+          <h1 className="mv-h1 mt-2.5">
             Chuẩn Hóa Ảnh Sản Phẩm Theo Nền Tảng
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
+          <p className="mv-sub max-w-xl">
             Mỗi nền tảng có quy định kích thước và vùng an toàn riêng biệt. Chọn đúng kênh để Mivy tự động căn chỉnh chuẩn xác 100%.
           </p>
         </div>
 
         {/* Mode Selector Tabs */}
-        <div className="inline-flex p-1 rounded-xl bg-black/40 border border-white/10 self-start md:self-auto">
+        <div className="mv-seg self-start md:self-auto">
           <button
             type="button"
             onClick={() => setMode('product')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              mode === 'product'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            data-active={mode === 'product'}
+            className="mv-seg-btn flex items-center gap-2"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Ảnh Sản Phẩm (Theo Sàn)</span>
@@ -253,11 +250,8 @@ export default function ImageStudioPage() {
           <button
             type="button"
             onClick={() => setMode('text')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-              mode === 'text'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            data-active={mode === 'text'}
+            className="mv-seg-btn flex items-center gap-2"
           >
             <Sparkles className="w-4 h-4" />
             <span>Vẽ Ảnh AI Tự Do</span>
@@ -269,7 +263,7 @@ export default function ImageStudioPage() {
       {mode === 'product' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+            <span className="mv-label !text-slate-300">
               1. Chọn Nền Tảng Cần Đăng Bán
             </span>
             <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -278,7 +272,7 @@ export default function ImageStudioPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mv-stagger grid grid-cols-1 md:grid-cols-3 gap-4">
             {(Object.keys(PLATFORMS) as TargetPlatform[]).map((platKey) => {
               const cfg = PLATFORMS[platKey];
               const Icon = cfg.icon;
@@ -289,10 +283,10 @@ export default function ImageStudioPage() {
                   key={platKey}
                   type="button"
                   onClick={() => handleSelectPlatform(platKey)}
-                  className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                  className={`glass-card p-4 text-left relative overflow-hidden flex flex-col justify-between ${
                     isSelected
-                      ? `border-white/30 bg-gradient-to-br ${cfg.accentBg} ring-2 ring-blue-500/50 shadow-xl`
-                      : 'border-white/10 bg-black/30 hover:border-white/20'
+                      ? `!border-white/30 bg-gradient-to-br ${cfg.accentBg} ring-2 ring-indigo-500/50 shadow-xl`
+                      : ''
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -308,7 +302,7 @@ export default function ImageStudioPage() {
                       </div>
                     </div>
                     {isSelected && (
-                      <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-indigo-300 shrink-0" />
                     )}
                   </div>
 
@@ -326,12 +320,12 @@ export default function ImageStudioPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         {/* Left Form (5 cols) */}
-        <form onSubmit={handleGenerate} className="md:col-span-5 glass-card p-6 rounded-2xl border border-white/10 space-y-6">
+        <form onSubmit={handleGenerate} className="md:col-span-5 glass-card p-6 space-y-6">
           {mode === 'product' ? (
             <>
               {/* Product Mode Upload */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                <label className="block text-xs font-medium text-slate-400 mb-2">
                   2. Tải ảnh sản phẩm gốc <span className="text-red-400">*</span>
                 </label>
 
@@ -344,7 +338,7 @@ export default function ImageStudioPage() {
                 />
 
                 {productPreview ? (
-                  <div className="relative rounded-xl overflow-hidden border border-white/20 bg-black/40 p-2.5 flex items-center justify-between gap-3">
+                  <div className="mv-fade relative rounded-xl overflow-hidden border border-white/[0.12] bg-black/30 p-2.5 flex items-center justify-between gap-3">
                     <img
                       src={productPreview}
                       alt="Product preview"
@@ -363,7 +357,7 @@ export default function ImageStudioPage() {
                         setProductPreview('');
                         if (fileInputRef.current) fileInputRef.current.value = '';
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-indigo-400/10 transition-colors"
                       title="Xóa ảnh"
                     >
                       <X className="w-4 h-4" />
@@ -374,9 +368,9 @@ export default function ImageStudioPage() {
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-white/15 hover:border-blue-500/50 rounded-2xl p-6 text-center cursor-pointer transition-all hover:bg-white/[0.02] flex flex-col items-center justify-center space-y-2 group"
+                    className="border border-dashed border-white/15 hover:border-indigo-400/50 rounded-2xl p-6 text-center cursor-pointer transition-all hover:bg-white/[0.03] flex flex-col items-center justify-center space-y-2 group"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Upload className="w-6 h-6" />
                     </div>
                     <div>
@@ -389,7 +383,7 @@ export default function ImageStudioPage() {
 
               {/* Tỷ lệ theo sàn */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                <label className="block text-xs font-medium text-slate-400 mb-2">
                   3. Tỷ lệ kích thước ({currentPlatformConfig.name})
                 </label>
                 <div className="space-y-2">
@@ -400,8 +394,8 @@ export default function ImageStudioPage() {
                       onClick={() => setProductAspect(item.id)}
                       className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                         productAspect === item.id
-                          ? 'border-blue-500 bg-blue-500 text-white'
-                          : 'border-white/10 bg-black/30 text-slate-400 hover:text-white'
+                          ? 'border-indigo-400/60 bg-indigo-500/20 text-white'
+                          : 'border-white/[0.08] bg-white/[0.02] text-slate-400 hover:text-white hover:border-white/20'
                       }`}
                     >
                       <div>
@@ -422,7 +416,7 @@ export default function ImageStudioPage() {
 
               {/* Phông nền theo tiêu chuẩn sàn */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
+                <label className="block text-xs font-medium text-slate-400 mb-2">
                   4. Kiểu phông nền
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -431,8 +425,8 @@ export default function ImageStudioPage() {
                     onClick={() => setProductBackground('studio_white')}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       productBackground === 'studio_white'
-                        ? 'border-blue-500 bg-blue-500/10 text-white'
-                        : 'border-white/10 bg-black/30 text-slate-400 hover:text-white'
+                        ? 'border-indigo-400/60 bg-indigo-500/10 text-white'
+                        : 'border-white/[0.08] bg-white/[0.02] text-slate-400 hover:text-white hover:border-white/20'
                     }`}
                   >
                     <div className="w-5 h-5 rounded-full border border-slate-400 bg-white mb-2" />
@@ -447,8 +441,8 @@ export default function ImageStudioPage() {
                     onClick={() => setProductBackground('gradient')}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       productBackground === 'gradient'
-                        ? 'border-blue-500 bg-blue-500/10 text-white'
-                        : 'border-white/10 bg-black/30 text-slate-400 hover:text-white'
+                        ? 'border-indigo-400/60 bg-indigo-500/10 text-white'
+                        : 'border-white/[0.08] bg-white/[0.02] text-slate-400 hover:text-white hover:border-white/20'
                     }`}
                   >
                     <div className="w-5 h-5 rounded-full border border-slate-400 bg-gradient-to-tr from-pink-200 to-indigo-200 mb-2" />
@@ -463,7 +457,7 @@ export default function ImageStudioPage() {
               {/* Tiêu chuẩn sàn tóm tắt */}
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2">
                 <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   Quy chuẩn kỹ thuật áp dụng cho {currentPlatformConfig.name}:
                 </span>
                 <ul className="space-y-1.5 text-[11px] text-slate-400 pl-4 list-disc">
@@ -479,7 +473,7 @@ export default function ImageStudioPage() {
             <>
               {/* Free Text-to-Image Form */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
                   Mô tả hình ảnh (Prompt) <span className="text-red-400">*</span>
                 </label>
                 <textarea
@@ -488,17 +482,17 @@ export default function ImageStudioPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="VD: Chân dung chuyên gia công nghệ trong văn phòng hiện đại..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-blue-500 leading-relaxed font-sans"
+                  className="mv-input !text-xs leading-relaxed font-sans"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Phong cách</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Phong cách</label>
                   <select
                     value={style}
                     onChange={(e) => setStyle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none"
+                    className="mv-input !py-2 !text-xs"
                   >
                     <option value="cinematic">Điện ảnh (Cinematic)</option>
                     <option value="studio">Studio chụp mẫu</option>
@@ -508,11 +502,11 @@ export default function ImageStudioPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Ánh sáng</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Ánh sáng</label>
                   <select
                     value={lighting}
                     onChange={(e) => setLighting(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none"
+                    className="mv-input !py-2 !text-xs"
                   >
                     <option value="natural">Tự nhiên ban ngày</option>
                     <option value="dramatic">Tương phản cao</option>
@@ -523,8 +517,8 @@ export default function ImageStudioPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Tỷ lệ khung hình</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Tỷ lệ khung hình</label>
+                <div className="mv-seg w-full">
                   {[
                     { id: '1:1', label: '1:1 Vuông' },
                     { id: '4:5', label: '4:5 Dọc' },
@@ -534,11 +528,8 @@ export default function ImageStudioPage() {
                       key={item.id}
                       type="button"
                       onClick={() => setTextAspect(item.id as AspectRatio)}
-                      className={`py-2 rounded-xl text-xs font-bold transition-all border ${
-                        textAspect === item.id
-                          ? 'bg-blue-500 text-white border-blue-400'
-                          : 'bg-black/30 border-white/10 text-slate-400 hover:text-white'
-                      }`}
+                      data-active={textAspect === item.id}
+                      className="mv-seg-btn flex-1 text-center !px-2 !text-xs"
                     >
                       {item.label}
                     </button>
@@ -552,7 +543,7 @@ export default function ImageStudioPage() {
           <button
             type="submit"
             disabled={isGenerating || (mode === 'product' && !productFile)}
-            className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="mv-btn mv-btn-primary w-full justify-center !py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Wand2 className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
             <span>
@@ -565,7 +556,7 @@ export default function ImageStudioPage() {
           </button>
 
           {statusText && (
-            <p className="text-center text-xs text-blue-400 animate-pulse font-medium">
+            <p className="text-center text-xs text-indigo-300 animate-pulse font-medium">
               {statusText}
             </p>
           )}
@@ -581,13 +572,13 @@ export default function ImageStudioPage() {
         </form>
 
         {/* Right Output Showcase (7 cols) */}
-        <div className="md:col-span-7 glass-panel p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-center min-h-[500px]">
+        <div className="md:col-span-7 glass-card p-6 flex flex-col items-center justify-center min-h-[500px] md:sticky md:top-4 self-start">
           {resultUrl ? (
             <div className="space-y-5 w-full flex flex-col items-center">
               {/* Badge platform info */}
               <div className="flex items-center justify-between w-full px-2">
                 <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-white" />
                   Đã chuẩn hóa cho {PLATFORMS[completedPlatform]?.name || 'Sàn TMĐT'}
                 </span>
 
@@ -595,10 +586,8 @@ export default function ImageStudioPage() {
                   <button
                     type="button"
                     onClick={() => setShowSafeZone(!showSafeZone)}
-                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
-                      showSafeZone
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    className={`mv-btn mv-btn-ghost !gap-1.5 !px-2.5 !py-1 !text-[11px] ${
+                      showSafeZone ? '!bg-cyan-500/20 !text-cyan-300 !border-cyan-500/40' : ''
                     }`}
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -608,7 +597,7 @@ export default function ImageStudioPage() {
               </div>
 
               {/* Preview Box with simulated safe zone if toggled */}
-              <div className="relative rounded-2xl overflow-hidden border border-white/15 max-h-[520px] shadow-2xl bg-black/50 flex items-center justify-center p-2">
+              <div className="relative rounded-2xl overflow-hidden border border-white/[0.12] max-h-[520px] shadow-2xl bg-black/40 flex items-center justify-center p-2">
                 <img
                   src={resultUrl}
                   alt="Generated result"
@@ -633,7 +622,7 @@ export default function ImageStudioPage() {
                 <a
                   href={resultUrl}
                   download={`mivy-${completedPlatform}-${Date.now()}.png`}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors shadow-md shadow-emerald-500/20"
+                  className="mv-btn mv-btn-primary"
                 >
                   <Download className="w-4 h-4" />
                   <span>Tải ảnh hoàn chỉnh (Đăng {PLATFORMS[completedPlatform]?.name})</span>
@@ -643,9 +632,9 @@ export default function ImageStudioPage() {
                   <a
                     href={cutoutUrl}
                     download={`mivy-cutout-${Date.now()}.png`}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-colors border border-white/15"
+                    className="mv-btn mv-btn-ghost"
                   >
-                    <Scissors className="w-4 h-4 text-emerald-400" />
+                    <Scissors className="w-4 h-4 text-white" />
                     <span>Tải bản tách nền (PNG trong suốt)</span>
                   </a>
                 )}
@@ -658,7 +647,7 @@ export default function ImageStudioPage() {
           ) : (
             <div className="text-center text-slate-500 space-y-4 max-w-sm">
               <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
-                <currentPlatformConfig.icon className="w-8 h-8 text-blue-400" />
+                <currentPlatformConfig.icon className="w-8 h-8 text-indigo-300" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-300">

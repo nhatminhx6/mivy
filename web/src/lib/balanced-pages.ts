@@ -247,6 +247,51 @@ export function createExportSnapshot<T extends StorySourceStateLike>(liveState: 
   };
 }
 
+export function stripLeadingEnumeration(text?: string | null): string {
+  if (!text || typeof text !== 'string') return '';
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+
+  // 1. Labeled step prefixes: "Bước 1: ", "CHẶNG 01 - ", "Step 2. ", "Phần 1: "
+  const labeledRegex = /^(?:bước|mục|phần|điều|khoản|chặng|bài|tiết|giai\s+đoạn|step|part|item|phase)\s+\d{1,2}(?:\s*[:.)\/:–—-]\s*|\s+)/i;
+  const labeledMatch = trimmed.match(labeledRegex);
+  if (labeledMatch) {
+    const stripped = trimmed.slice(labeledMatch[0].length).trim();
+    if (stripped.length > 0) return stripped;
+  }
+
+  // 2. Bracketed or parenthesized numbers: "(1) ", "[01] ", "1) ", "01) "
+  // Must NOT match "(100% remote)" or "(45 - 65 triệu)"
+  const bracketedRegex = /^(?:\(?\d{1,2}\)|\[\d{1,2}\])\s*/;
+  const bracketedMatch = trimmed.match(bracketedRegex);
+  if (bracketedMatch) {
+    const stripped = trimmed.slice(bracketedMatch[0].length).trim();
+    if (stripped.length > 0) return stripped;
+  }
+
+  // 3. Roman numerals or letter bullets with delimiter: "I. ", "II) ", "a. ", "B) "
+  const romanOrLetterRegex = /^(?:[IVXLCDM]+|[ivxlcdm]+|[A-Za-z])[\.\):]\s+/;
+  const romanMatch = trimmed.match(romanOrLetterRegex);
+  if (romanMatch) {
+    const stripped = trimmed.slice(romanMatch[0].length).trim();
+    if (stripped.length > 0) return stripped;
+  }
+
+  // 4. Digits (1-2 digits) with delimiter:
+  // - Dot: "1. ", "01. ", "10. " (must NOT match "1.5 triệu", "4.5 sao", "15.000.000")
+  // - Colon: "1: ", "01: " (must NOT match "08:30")
+  // - Dash: "1 - ", "01 – " (must NOT match "45 - 65 triệu", "1-2 năm")
+  // - Slash: "1/ ", "01/ " (must NOT match "15/10/2026", "24/7", "1/2 chén")
+  const delimitedRegex = /^\d{1,2}(?:\.(?!\d)\s*|:(?!\s*\d)\s*|\s*[-–—](?!\s*\d)\s*|\/(?!\s*\d)\s*)/;
+  const delimitedMatch = trimmed.match(delimitedRegex);
+  if (delimitedMatch) {
+    const stripped = trimmed.slice(delimitedMatch[0].length).trim();
+    if (stripped.length > 0) return stripped;
+  }
+
+  return trimmed;
+}
+
 export interface BalancedPagesFn {
   <T>(items: readonly T[], maxPerPage?: number): T[][];
   resolveStorySource: typeof resolveStorySource;
@@ -254,6 +299,7 @@ export interface BalancedPagesFn {
   snapshotStory: typeof snapshotStoryState;
   clampStoryPageInState: typeof clampStoryPageInState;
   createExportSnapshot: typeof createExportSnapshot;
+  stripLeadingEnumeration: typeof stripLeadingEnumeration;
 }
 
 (balancedPages as BalancedPagesFn).resolveStorySource = resolveStorySource;
@@ -261,3 +307,4 @@ export interface BalancedPagesFn {
 (balancedPages as BalancedPagesFn).snapshotStory = snapshotStoryState;
 (balancedPages as BalancedPagesFn).clampStoryPageInState = clampStoryPageInState;
 (balancedPages as BalancedPagesFn).createExportSnapshot = createExportSnapshot;
+(balancedPages as BalancedPagesFn).stripLeadingEnumeration = stripLeadingEnumeration;

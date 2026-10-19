@@ -126,7 +126,7 @@ export default function LogoMakerPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="glass-panel p-6 rounded-2xl">
-        <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">LOGO MAKER</span>
+        <span className="text-xs font-bold px-2.5 py-1 rounded bg-white/20 text-white border border-white/30">LOGO MAKER</span>
         <h1 className="text-2xl font-black text-white mt-2">Tạo logo từ thương hiệu</h1>
         <p className="text-slate-400 text-xs mt-1">Chọn gói icon + bố cục — logo tự dùng màu và font thương hiệu. Tải PNG/SVG hoặc đặt làm logo chính.</p>
       </div>
@@ -138,7 +138,7 @@ export default function LogoMakerPage() {
             <div className="flex flex-wrap gap-2">
               {ICON_STYLES.map((st) => (
                 <button key={st.id} type="button" onClick={() => setIconStyle(st.id)}
-                  className={`px-3 py-1.5 rounded-lg border-2 ${iconStyle === st.id ? 'border-emerald-500 bg-emerald-500/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{st.name}</button>
+                  className={`px-3 py-1.5 rounded-lg border-2 ${iconStyle === st.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{st.name}</button>
               ))}
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function LogoMakerPage() {
               <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto pr-1">
                 {LOGO_ICONS.map(({ id, Comp }) => (
                   <button key={id} type="button" onClick={() => setIconId(id)}
-                    className={`aspect-square rounded-lg flex items-center justify-center border-2 ${iconId === id ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/10 hover:border-white/30'}`}>
+                    className={`aspect-square rounded-lg flex items-center justify-center border-2 ${iconId === id ? 'border-indigo-500 bg-white/10' : 'border-white/10 hover:border-white/30'}`}>
                     <Comp size={22} weight="duotone" className="text-slate-200" />
                   </button>
                 ))}
@@ -158,7 +158,7 @@ export default function LogoMakerPage() {
               <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
                 {AI_CONCEPTS.map((c) => (
                   <button key={c.id} type="button" onClick={() => setAiConcept(c.id)} title={c.label}
-                    className={`aspect-square rounded-lg overflow-hidden flex items-center justify-center border-2 bg-white/90 ${aiConcept === c.id ? 'border-emerald-500' : 'border-white/10 hover:border-white/30'}`}>
+                    className={`aspect-square rounded-lg overflow-hidden flex items-center justify-center border-2 bg-white/90 ${aiConcept === c.id ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
                     <img src={aiIconPath(iconStyle, c.id)} alt={c.label} className="w-full h-full object-contain"
                       onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
                   </button>
@@ -172,7 +172,7 @@ export default function LogoMakerPage() {
             <div className="grid grid-cols-4 gap-2">
               {LAYOUTS.map((l) => (
                 <button key={l.id} type="button" onClick={() => setLayout(l.id)}
-                  className={`px-2 py-2 rounded-lg border-2 ${layout === l.id ? 'border-emerald-500 bg-emerald-500/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{l.name}</button>
+                  className={`px-2 py-2 rounded-lg border-2 ${layout === l.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{l.name}</button>
               ))}
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function LogoMakerPage() {
               <div className="grid grid-cols-2 gap-2">
                 {CONTAINERS.map((c) => (
                   <button key={c.id} type="button" onClick={() => setContainer(c.id)} disabled={layout === 'wordmark'}
-                    className={`px-2 py-2 rounded-lg border-2 disabled:opacity-40 ${container === c.id ? 'border-emerald-500 bg-emerald-500/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{c.name}</button>
+                    className={`px-2 py-2 rounded-lg border-2 disabled:opacity-40 ${container === c.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{c.name}</button>
                 ))}
               </div>
             </div>
@@ -192,16 +192,16 @@ export default function LogoMakerPage() {
               <div className="grid grid-cols-3 gap-2">
                 {([['trong', 'Trong'], ['sang', 'Sáng'], ['dam', 'Đậm']] as const).map(([id, lbl]) => (
                   <button key={id} type="button" onClick={() => setBg(id)}
-                    className={`px-1 py-2 rounded-lg border-2 ${bg === id ? 'border-emerald-500 bg-emerald-500/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{lbl}</button>
+                    className={`px-1 py-2 rounded-lg border-2 ${bg === id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{lbl}</button>
                 ))}
               </div>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2">
-            <button type="button" onClick={handlePng} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400"><Download className="w-3.5 h-3.5" />Tải PNG</button>
-            <button type="button" onClick={handleSvg} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card text-white font-semibold hover:bg-white/10"><Download className="w-3.5 h-3.5 text-emerald-400" />Tải SVG</button>
-            <button type="button" onClick={handleUseAsLogo} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/40 text-emerald-400 font-semibold hover:bg-emerald-500/10">
+            <button type="button" onClick={handlePng} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-bold hover:bg-indigo-400"><Download className="w-3.5 h-3.5" />Tải PNG</button>
+            <button type="button" onClick={handleSvg} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card text-white font-semibold hover:bg-indigo-400/10"><Download className="w-3.5 h-3.5 text-white" />Tải SVG</button>
+            <button type="button" onClick={handleUseAsLogo} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/40 text-white font-semibold hover:bg-indigo-400/10">
               {savedLogo ? <><Check className="w-3.5 h-3.5" />Đã đặt làm logo</> : 'Đặt làm logo chính'}</button>
           </div>
           <p className="text-[11px] text-slate-500">Màu & font lấy từ mục Thương hiệu. Icon màu (gói AI) để lên khối nền trắng cho rõ.</p>

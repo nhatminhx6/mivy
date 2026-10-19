@@ -11,6 +11,7 @@ export {
   clampStoryPageInState,
   snapshotStoryState,
   createExportSnapshot,
+  stripLeadingEnumeration,
 } from './balanced-pages';
 export type {
   StorySourceStateLike,

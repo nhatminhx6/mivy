@@ -43,53 +43,52 @@ export default function BrandKitPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="glass-panel p-6 rounded-2xl">
-        <span className="text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">THƯƠNG HIỆU</span>
-        <h1 className="text-2xl font-black text-white mt-2">Bộ nhận diện thương hiệu</h1>
-        <p className="text-slate-400 text-xs mt-1">Nhập một lần — mọi poster và ảnh sẽ tự dùng màu, font, logo, slogan và liên hệ của anh.</p>
-        <div className="flex gap-2 mt-4">
-          <button type="button" onClick={() => setTab('kit')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'kit' ? 'bg-emerald-500 text-slate-950' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>Nhận diện</button>
-          <button type="button" onClick={() => setTab('logo')} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === 'logo' ? 'bg-emerald-500 text-slate-950' : 'bg-white/5 text-slate-300 hover:bg-white/10'}`}>Tạo logo</button>
+    <div className="max-w-5xl mx-auto space-y-7">
+      <div className="pb-5 border-b border-white/[0.07]">
+        <h1 className="mv-h1">Bộ nhận diện thương hiệu</h1>
+        <p className="mv-sub max-w-xl">Nhập một lần — mọi poster và ảnh sẽ tự dùng màu, font, logo, slogan và liên hệ của anh.</p>
+        <div className="mv-seg mt-4">
+          <button type="button" onClick={() => setTab('kit')} data-active={tab === 'kit'} className="mv-seg-btn">Nhận diện</button>
+          <button type="button" onClick={() => setTab('logo')} data-active={tab === 'logo'} className="mv-seg-btn">Tạo logo</button>
         </div>
       </div>
 
       {tab === 'logo' && <LogoMakerPage />}
       {tab === 'kit' && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 items-start mv-fade">
         {/* Form */}
-        <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-6 text-xs">
+        <div className="glass-card p-6 space-y-6 text-xs">
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Tên thương hiệu</label>
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">Tên thương hiệu</label>
             <input value={brand.name} onChange={(e) => update({ name: e.target.value })} placeholder="VD: Nami Aquarium"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+              className="mv-input" />
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-1">Slogan / Khẩu hiệu</label>
+            <label className="block text-sm font-medium text-slate-400 mb-1.5">Slogan / Khẩu hiệu</label>
             <input value={brand.slogan || ''} onChange={(e) => update({ slogan: e.target.value })} placeholder="VD: Thế giới thủy sinh trong nhà bạn"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+              className="mv-input" />
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-2">Logo</label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Logo</label>
             <div className="flex items-center gap-3">
               {brand.logo
                 ? <div className="relative"><img src={brand.logo} alt="logo" className="h-16 w-16 object-contain rounded-lg bg-white/10 p-1" />
                     <button type="button" onClick={() => update({ logo: undefined })} className="absolute -top-2 -right-2 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button></div>
-                : <label className="h-16 w-16 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-emerald-500">
+                : <label className="h-16 w-16 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/10 transition-colors">
                     <Upload className="w-5 h-5 text-slate-400" /><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="sr-only" onChange={handleLogo} /></label>}
               <p className="text-slate-500 text-[11px]">PNG nền trong suốt đẹp nhất · dưới 2MB</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-2 flex items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-emerald-400" />Bảng màu</label>
-            <div className="grid grid-cols-4 gap-2">
+            <label className="flex text-sm font-medium text-slate-400 mb-2 items-center gap-1.5"><Palette className="w-3.5 h-3.5 text-white" />Bảng màu</label>
+            <div className="grid grid-cols-4 gap-2 mv-stagger">
               {COLOR_PRESETS.map((p) => (
                 <button key={p.name} type="button" title={p.name}
                   onClick={() => update({ colorPrimary: p.colorPrimary, colorSecondary: p.colorSecondary, colorAccent: p.colorAccent, colorInk: p.colorInk, colorSurface: p.colorSurface })}
-                  className={`h-12 rounded-lg overflow-hidden border-2 flex ${presetActive(p) ? 'border-emerald-500' : 'border-white/10 hover:border-white/30'}`}>
+                  className={`h-12 rounded-lg overflow-hidden border-2 flex transition-all hover:scale-[1.04] ${presetActive(p) ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-white/10 hover:border-white/30'}`}>
                   <span className="flex-1" style={{ background: p.colorPrimary }} />
                   <span className="flex-1" style={{ background: p.colorSecondary }} />
                   <span className="w-1/4" style={{ background: p.colorAccent }} />
@@ -108,15 +107,15 @@ export default function BrandKitPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-300 font-semibold mb-2">Font tiêu đề</label>
-              <select value={brand.fontHeadingId} onChange={(e) => update({ fontHeadingId: e.target.value })} className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white">
+              <label className="block text-sm font-medium text-slate-400 mb-2">Font tiêu đề</label>
+              <select value={brand.fontHeadingId} onChange={(e) => update({ fontHeadingId: e.target.value })} className="mv-input">
                 {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <p className="mt-1 text-white text-lg" style={{ fontFamily: head }}>Tiêu đề</p>
             </div>
             <div>
-              <label className="block text-slate-300 font-semibold mb-2">Font nội dung</label>
-              <select value={brand.fontBodyId} onChange={(e) => update({ fontBodyId: e.target.value })} className="w-full px-3 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white">
+              <label className="block text-sm font-medium text-slate-400 mb-2">Font nội dung</label>
+              <select value={brand.fontBodyId} onChange={(e) => update({ fontBodyId: e.target.value })} className="mv-input">
                 {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>
               <p className="mt-1 text-slate-300" style={{ fontFamily: body }}>Nội dung tiếng Việt</p>
@@ -124,11 +123,11 @@ export default function BrandKitPage() {
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-2">Giọng văn</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="block text-sm font-medium text-slate-400 mb-2">Giọng văn</label>
+            <div className="grid grid-cols-2 gap-2 mv-stagger">
               {VOICE_OPTIONS.map((v) => (
                 <button key={v.id} type="button" onClick={() => update({ voice: v.id })}
-                  className={`text-left px-3.5 py-2.5 rounded-xl border-2 ${brand.voice === v.id ? 'border-emerald-500 bg-emerald-500/10' : 'border-white/10 hover:border-white/30'}`}>
+                  className={`text-left px-3.5 py-2.5 rounded-xl border transition-all ${brand.voice === v.id ? 'border-indigo-500/60 bg-indigo-500/10' : 'border-white/[0.07] hover:border-white/20 hover:bg-white/[0.03]'}`}>
                   <b className="text-white block">{v.name}</b><span className="text-slate-400 text-[11px]">{v.desc}</span>
                 </button>
               ))}
@@ -136,28 +135,28 @@ export default function BrandKitPage() {
           </div>
 
           <div>
-            <label className="block text-slate-300 font-semibold mb-2">Thông tin liên hệ <span className="text-slate-500">· hiện ở chân poster</span></label>
+            <label className="block text-sm font-medium text-slate-400 mb-2">Thông tin liên hệ <span className="text-slate-500">· hiện ở chân poster</span></label>
             <div className="space-y-2">
               {contactFields.map(({ key, label, icon: Icon, ph }) => (
                 <div key={key} className="flex items-center gap-2">
                   <Icon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                   <input value={brand.contact?.[key] || ''} onChange={(e) => updateContact({ [key]: e.target.value })} placeholder={`${label} · ${ph}`}
-                    className="flex-1 px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500" />
+                    className="mv-input flex-1" />
                 </div>
               ))}
             </div>
           </div>
 
           <button type="button" onClick={handleSave}
-            className="w-full py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-sm hover:bg-emerald-400 flex items-center justify-center gap-2">
+            className="mv-btn mv-btn-primary w-full justify-center">
             {saved ? <><Check className="w-4 h-4" />Đã lưu</> : 'Lưu thương hiệu'}
           </button>
         </div>
 
         {/* Preview */}
-        <div className="space-y-3 lg:sticky lg:top-4">
-          <p className="text-xs text-slate-400 font-semibold">Xem trước</p>
-          <div className="rounded-2xl overflow-hidden border border-white/10 aspect-[4/5] flex flex-col justify-between p-8" style={{ background: brand.colorPrimary }}>
+        <div className="glass-card p-4 space-y-3 lg:sticky lg:top-4">
+          <p className="mv-label">Xem trước</p>
+          <div className="rounded-xl overflow-hidden border border-white/10 aspect-[4/5] flex flex-col justify-between p-8" style={{ background: brand.colorPrimary }}>
             <div>
               <div className="flex items-center gap-3">
                 {brand.logo && <img src={brand.logo} alt="logo" className="h-9 object-contain" />}

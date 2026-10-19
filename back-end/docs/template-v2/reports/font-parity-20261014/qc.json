@@ -1,0 +1,6 @@
+{
+  "differentPixels": 31582,
+  "totalPixels": 1458000,
+  "scope": "fresh tab, existing browser profile; not verified cold cache",
+  "tests": "5/5 pass"
+}

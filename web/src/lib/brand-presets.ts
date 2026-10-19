@@ -11,6 +11,7 @@ export interface Palette {
 
 // 12 palette hoàn chỉnh (primary + secondary + accent + ink + surface), phối tay — không AI.
 export const COLOR_PRESETS: Palette[] = [
+  { name: 'Trắng đen', colorPrimary: '#111418', colorSecondary: '#2b2f36', colorAccent: '#111827', colorInk: '#0e1116', colorSurface: '#f5f6f8' },
   { name: 'Xanh ngọc', colorPrimary: '#0f3d2e', colorSecondary: '#14604a', colorAccent: '#10b981', colorInk: '#0f1b16', colorSurface: '#f0faf5' },
   { name: 'Đỏ nhiệt', colorPrimary: '#3a0d0d', colorSecondary: '#7a1f1f', colorAccent: '#e23d28', colorInk: '#1a0e0e', colorSurface: '#fdf1ef' },
   { name: 'Cam năng động', colorPrimary: '#3a1f05', colorSecondary: '#7a4310', colorAccent: '#f97316', colorInk: '#241503', colorSurface: '#fff4ea' },

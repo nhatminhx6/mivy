@@ -53,14 +53,14 @@ export default function LabPage() {
             <ArrowLeft className="w-4 h-4" />
             <span>Quay lại Studio</span>
           </Link>
-          <span className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-emerald-400 font-mono">
+          <span className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white font-mono">
             API LAB · DEVELOPER MODE
           </span>
         </div>
 
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <FlaskConical className="w-6 h-6 text-emerald-400" />
+            <FlaskConical className="w-6 h-6 text-white" />
             <span>Phòng Thử Nghiệm API Trực Tiếp</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -70,19 +70,19 @@ export default function LabPage() {
 
         <form onSubmit={handleTest} className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 font-mono text-xs font-bold border border-emerald-500/30">
+            <span className="px-3 py-2 rounded-xl bg-white/20 text-white font-mono text-xs font-bold border border-white/30">
               POST
             </span>
             <input
               type="text"
               value={endpoint}
               onChange={(e) => setEndpoint(e.target.value)}
-              className="flex-1 px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+              className="flex-1 px-3.5 py-2 rounded-xl bg-black/40 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-white"
             />
             <button
               type="submit"
               disabled={isLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-white text-slate-950 font-bold text-xs hover:bg-white transition-colors disabled:opacity-50"
             >
               <Send className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Gửi Request</span>
@@ -95,7 +95,7 @@ export default function LabPage() {
               rows={8}
               value={payload}
               onChange={(e) => setPayload(e.target.value)}
-              className="w-full p-3.5 rounded-xl bg-black/50 border border-white/10 text-emerald-400 font-mono text-xs focus:outline-none focus:border-emerald-500 leading-relaxed"
+              className="w-full p-3.5 rounded-xl bg-black/50 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-white leading-relaxed"
             />
           </div>
 

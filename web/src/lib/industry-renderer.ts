@@ -1,4 +1,4 @@
-import { resolveStorySource } from './balanced-pages';
+import { resolveStorySource, stripLeadingEnumeration } from './balanced-pages';
 import { MarketingState, PosterKind, CopyItem, AssetInfo } from '../types';
 import { posterText } from './design-engine';
 import { POSTER_FONT } from './poster-font';
@@ -12,7 +12,7 @@ export function drawIndustryConcept(
   bgImg: CanvasImageSource | null
 ): boolean {
   const ctx = canvas.getContext('2d')!;
-  const w = canvas.width, h = canvas.height, m = w * 0.08;
+  const S = canvas.width / 1080, w = 1080, h = canvas.height / S, m = w * 0.08;
   const fields = state.industryFields || {};
   const cId = state.conceptId;
   const validConcepts = ['recruitment-announcement', 'recruitment-team', 'property-architecture', 'property-brochure', 'food-hero', 'food-menu'];
@@ -260,7 +260,7 @@ export function drawIndustryConcept(
         ctx.fillStyle = brandInk; ctx.fillRect(m, py + pointH * 0.1, w * 0.015, pointH * 0.8);
         const numStr = `0${currentPage.offset + i + 1}`.slice(-2);
         drawText(numStr, m + w * 0.04, py + pointH * 0.1, w * 0.1, pointH * 0.25, w * 0.035, brandInk, '800');
-        drawText(p, m + w * 0.04, py + pointH * 0.35, w - m * 2 - w * 0.04, pointH * 0.55, w * 0.04, ink, '500');
+        drawText(stripLeadingEnumeration(p), m + w * 0.04, py + pointH * 0.35, w - m * 2 - w * 0.04, pointH * 0.55, w * 0.04, ink, '500');
       });
     } else if (cId.startsWith('property')) {
       const is916 = (h / w) > 1.6;
@@ -328,7 +328,7 @@ export function drawIndustryConcept(
       dispPoints.forEach((p, i) => {
         const py = reqY + i * pointH;
         drawText(`0${i + 1}`, m, py, w * 0.08, pointH * 0.9, w * 0.045, '#a3e635', '800');
-        drawText(p, m + w * 0.1, py, w - m * 2 - w * 0.1, pointH * 0.9, w * 0.035, '#fdfbf7', '500');
+        drawText(stripLeadingEnumeration(p), m + w * 0.1, py, w - m * 2 - w * 0.1, pointH * 0.9, w * 0.035, '#fdfbf7', '500');
       });
       if (allPoints.length > 3) {
         const extra = allPoints.length - 3;

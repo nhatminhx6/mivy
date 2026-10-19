@@ -1,4 +1,5 @@
 import { MarketingState, StickerCorner } from '@/types';
+import { qcBox } from './qc-capture';
 
 // Kho sticker sale gen sẵn (vector, render bằng code — KHÔNG gọi AI).
 // Mỗi preset: hình + màu cố định, text cho sửa.
@@ -65,16 +66,20 @@ function drawLines(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: 
 export function drawSaleSticker(canvas: HTMLCanvasElement, marketing: MarketingState) {
   const cfg = marketing.sticker;
   if (!cfg || !cfg.preset || cfg.preset === 'none') return;
+  // (qcBox import ở đầu file)
   const preset = getPreset(cfg.preset);
   if (!preset) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const W = canvas.width;
-  const H = canvas.height;
+  const _sc = canvas.width / 1080; // ctx đã scale ở entry → dùng toạ độ logic
+  const W = canvas.width / _sc;
+  const H = canvas.height / _sc;
   const text = (cfg.text ?? preset.defaultText) || preset.defaultText;
   const S = Math.round(W * 0.2); // kích thước cơ bản ~ 216px khi W=1080
   const margin = Math.round(W * 0.055);
+  // QC: ghi box vùng sticker (quanh góc đặt) để audit đè CTA/nội dung
+  { const a = anchor(cfg.corner, W, H, margin + S * 0.5); qcBox('sticker', a.x - S * 0.75, a.y - S * 0.75, S * 1.5, S * 1.5, cfg.preset); }
 
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.35)';

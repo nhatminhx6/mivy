@@ -1,0 +1,6 @@
+{
+  "differentPixels": 37107,
+  "totalPixels": 1458000,
+  "tests": "7/7",
+  "scope": "legacy VI 4:5 attached preview versus fresh detached export, existing browser profile"
+}

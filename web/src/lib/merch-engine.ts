@@ -1,6 +1,8 @@
 // Vẽ mockup vật phẩm thương hiệu bằng code (vector có khối: bóng đổ, highlight, nếp vải, chất liệu).
 // Ghép logo/brand vào vùng in rồi phủ shading để trông như in thật. KHÔNG gen AI realtime.
 import { fontFamilyById } from './brand-presets';
+import { drawWatermark } from './design-engine';
+import type { PosterTheme } from '@/types';
 
 export interface MerchItem { id: string; label: string; }
 
@@ -28,6 +30,8 @@ export interface MerchOpts {
   contact?: string;
   mode?: 'vector' | 'photo';
   mockupImg?: HTMLImageElement | null;
+  scale?: number; // supersampling khi xuất file
+  theme?: Partial<PosterTheme>; // tông poster (tuỳ chọn) — đồng bộ nền/nhãn với poster
 }
 
 // Vùng in trên ảnh mockup thật (toạ độ trong khung 1080×1080). Chỉ item có ảnh mới liệt kê.
@@ -123,10 +127,17 @@ function placeBrand(
 }
 
 export function drawMerch(canvas: HTMLCanvasElement, o: MerchOpts) {
+  drawMerchCore(canvas, o);
+  drawWatermark(canvas); // gói Free — luôn chạy dù Core return sớm
+}
+
+function drawMerchCore(canvas: HTMLCanvasElement, o: MerchOpts) {
   const W = 1080, H = 1080;
-  canvas.width = W; canvas.height = H;
+  const S = Math.max(1, Math.min(4, o.scale || 1));
+  canvas.width = W * S; canvas.height = H * S;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  ctx.scale(S, S); ctx.imageSmoothingQuality = 'high';
   const font = fontFamilyById(o.fontHeadingId);
   const pc = o.productColor || '#1f2937';
   const onProduct = lum(pc) > 0.62 ? '#17181c' : '#ffffff';
@@ -140,7 +151,7 @@ export function drawMerch(canvas: HTMLCanvasElement, o: MerchOpts) {
     // đo độ sáng vùng in để chọn cách hoà logo
     let bright = 0.8;
     try {
-      const d = ctx.getImageData(pa.x, pa.y, pa.w, pa.h).data;
+      const d = ctx.getImageData(pa.x * S, pa.y * S, Math.max(1, pa.w * S), Math.max(1, pa.h * S)).data;
       let s = 0, n = 0;
       for (let i = 0; i < d.length; i += 4 * 40) { s += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255; n++; }
       bright = n ? s / n : 0.8;
@@ -160,13 +171,57 @@ export function drawMerch(canvas: HTMLCanvasElement, o: MerchOpts) {
     return;
   }
 
-  // nền studio: radial sáng giữa
-  const bg = o.bgColor || '#eef2f7';
+  // ===== NỀN "concept sạch": gradient đặc theo tông + quầng sáng góc (đồng bộ poster) =====
+  const th = o.theme || {};
+  let bgStops: [string, string, string];
+  if (th.bgGrad && th.bgGrad.length >= 3) bgStops = [th.bgGrad[0], th.bgGrad[1], th.bgGrad[2]];
+  else if (o.bgColor) bgStops = [mixHex(o.bgColor, '#ffffff', 0.35), o.bgColor, mixHex(o.bgColor, '#000000', 0.06)];
+  else bgStops = [mixHex(accent, '#ffffff', 0.94), mixHex(accent, '#ffffff', 0.88), mixHex(accent, '#ffffff', 0.8)];
+  const bg = bgStops[1];
   const isDarkBg = lum(bg) < 0.4;
-  const rg = ctx.createRadialGradient(cx, H * 0.42, 80, cx, H * 0.5, H * 0.75);
-  rg.addColorStop(0, isDarkBg ? shiftLight(bg, 22) : '#ffffff');
-  rg.addColorStop(1, bg);
-  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+  const glowCol = th.glow || hexToRgba(accent, isDarkBg ? 0.22 : 0.2);
+  const bgG = ctx.createLinearGradient(0, 0, W, H);
+  bgG.addColorStop(0, bgStops[0]); bgG.addColorStop(0.5, bgStops[1]); bgG.addColorStop(1, bgStops[2]);
+  ctx.fillStyle = bgG; ctx.fillRect(0, 0, W, H);
+  const g1 = ctx.createRadialGradient(W * 0.88, H * 0.12, 40, W * 0.88, H * 0.12, W * 0.7);
+  g1.addColorStop(0, glowCol); g1.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g1; ctx.fillRect(0, 0, W, H);
+  const g2 = ctx.createRadialGradient(W * 0.12, H * 0.88, 30, W * 0.12, H * 0.88, W * 0.6);
+  g2.addColorStop(0, glowCol); g2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g2; ctx.fillRect(0, 0, W, H);
+  // quầng sáng studio nhẹ sau vật phẩm để vật thể nổi khỏi nền
+  const spot = ctx.createRadialGradient(cx, H * 0.48, 40, cx, H * 0.5, H * 0.5);
+  spot.addColorStop(0, isDarkBg ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.55)');
+  spot.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = spot; ctx.fillRect(0, 0, W, H);
+  // vệt accent mảnh trên cùng
+  ctx.fillStyle = th.accent || accent; ctx.fillRect(0, 0, W, 6);
+
+  // nhãn gọn dưới đáy: pill tên vật phẩm + tên thương hiệu
+  {
+    const itemLabel = (MERCH_ITEMS.find((m) => m.id === o.item)?.label || '').toUpperCase();
+    const acc = th.accent || accent;
+    const brandTxt = (o.brandName || '').trim();
+    if (itemLabel) {
+      ctx.save();
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      ctx.font = `800 22px ${font}`;
+      const pw = ctx.measureText(itemLabel).width + 44, ph = 44, py = 1080 - 40 - ph;
+      ctx.font = `600 22px ${font}`;
+      const bw2 = brandTxt ? ctx.measureText(brandTxt).width : 0;
+      const gap = brandTxt ? 18 : 0;
+      const tw2 = pw + gap + bw2;
+      const px = (W - tw2) / 2;
+      ctx.fillStyle = acc; rr(ctx, px, py, pw, ph, ph / 2); ctx.fill();
+      ctx.fillStyle = th.accentText || (lum(acc) > 0.6 ? '#111827' : '#ffffff');
+      ctx.font = `800 22px ${font}`; ctx.fillText(itemLabel, px + 22, py + ph / 2 + 1);
+      if (brandTxt) {
+        ctx.fillStyle = th.textSecondary || (isDarkBg ? '#e5e7eb' : '#475569');
+        ctx.font = `600 22px ${font}`; ctx.fillText(brandTxt, px + pw + gap, py + ph / 2 + 1);
+      }
+      ctx.restore();
+    }
+  }
 
   // vùng in: vẽ shape -> brand -> clip -> shade. Hàm con dùng chung.
   const withShade = (pathFn: () => void, box: [number, number, number, number], orient: 'v' | 'h', strength: number) => {
@@ -311,6 +366,19 @@ export function drawMerch(canvas: HTMLCanvasElement, o: MerchOpts) {
     withShade(body, [x, y, w, h], 'h', 0.9);
     gloss(ctx, x + 70, y + 120, 140, 0.35);
   }
+}
+
+function mixHex(a: string, b: string, t: number): string {
+  const pa = a.replace('#', ''), pb = b.replace('#', '');
+  if (pa.length < 6 || pb.length < 6) return a;
+  const f = (i: number) => Math.round(parseInt(pa.slice(i, i + 2), 16) * (1 - t) + parseInt(pb.slice(i, i + 2), 16) * t).toString(16).padStart(2, '0');
+  return `#${f(0)}${f(2)}${f(4)}`;
+}
+
+function hexToRgba(hex: string, a: number): string {
+  const c = hex.replace('#', '');
+  if (c.length < 6) return `rgba(16,185,129,${a})`;
+  return `rgba(${parseInt(c.slice(0, 2), 16)},${parseInt(c.slice(2, 4), 16)},${parseInt(c.slice(4, 6), 16)},${a})`;
 }
 
 // đổi độ sáng hex (amt: -100..100)
