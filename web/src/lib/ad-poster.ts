@@ -9,8 +9,13 @@ function esc(s = ''): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string): string {
+export interface AdFrameOpts { borderWidth?: number; borderColor?: string; borderRadius?: number }
+
+export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, frame?: AdFrameOpts): string {
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
+  const bw = frame?.borderWidth || 0;
+  const border = bw > 0 ? `border:${bw}px solid ${frame?.borderColor || ink};` : '';
+  const radius = frame?.borderRadius ? `border-radius:${frame.borderRadius}px;` : '';
   const headTransform = skin.headlineUpper ? 'uppercase' : 'none';
   const headStyle = `font-family:${fontDisplay};font-weight:${skin.headlineWeight || 800};font-style:${skin.headlineItalic ? 'italic' : 'normal'};text-transform:${headTransform};line-height:0.98;letter-spacing:${skin.headlineUpper ? '0.01em' : '-0.01em'};color:${ink};`;
 
@@ -53,9 +58,9 @@ export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: stri
   const brand = content.brand || '';
 
   return `
-  <div style="width:1080px;height:1350px;box-sizing:border-box;position:relative;overflow:hidden;background:${bg};font-family:${fontBody};color:${ink};">
+  <div style="width:1080px;height:1350px;box-sizing:border-box;position:relative;overflow:hidden;background:${bg};font-family:${fontBody};color:${ink};${border}${radius}">
     ${skin.frame(ink, accent, muted)}
-    ${renderSeasonDecor(seasonId, seasonVariant, fontBody)}
+    ${renderSeasonDecor(seasonId, seasonVariant)}
     <div style="position:relative;height:100%;box-sizing:border-box;padding:132px 112px;display:flex;flex-direction:column;align-items:center;text-align:center;">
       <div style="width:100%;display:flex;align-items:center;justify-content:space-between;font-family:${fontBody};font-size:19px;letter-spacing:0.28em;text-transform:uppercase;color:${muted};">
         <span style="font-weight:700;color:${ink};">${esc(brand)}</span>
@@ -79,7 +84,7 @@ export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: stri
   </div>`;
 }
 
-export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: string, seasonVariant?: string): AdTemplateDef | null {
+export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: string, seasonVariant?: string, frame?: AdFrameOpts): AdTemplateDef | null {
   const skin = getSkin(skinId);
   if (!skin) return null;
   return {
@@ -89,7 +94,7 @@ export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: s
     w: 1080,
     h: 1350,
     css: skin.fontImport,
-    html: renderAdPoster(content, skin, seasonId, seasonVariant),
+    html: renderAdPoster(content, skin, seasonId, seasonVariant, frame),
   };
 }
 

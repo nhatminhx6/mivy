@@ -217,6 +217,50 @@ export const AD_SKINS: AdSkin[] = [
     },
   },
   {
+    id: 'candlenight',
+    name: 'Đêm nến',
+    group: 'Lãng mạn',
+    fontImport: "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=EB+Garamond:ital@0;1&display=swap');",
+    bg: '#15100e', ink: '#f2e7d6', muted: '#b89a84', accent: '#c6564d', accentInk: '#15100e',
+    fontDisplay: "'Cormorant Garamond', serif", fontBody: "'EB Garamond', serif",
+    headlineItalic: true, headlineWeight: 600,
+    frame: (_i, accent, muted) => `
+      <svg width="1080" height="1350" viewBox="0 0 1080 1350" style="position:absolute;inset:0" fill="none" stroke="${muted}" stroke-width="1.2">
+        <rect x="56" y="56" width="968" height="1238"/>
+        <g fill="${accent}" stroke="none"><path d="M540 118 c-20 -17 -16 -34 -5 -34 c6 0 5 6 5 8 c0 -2 -1 -8 5 -8 c11 0 15 17 -5 34 Z"/></g>
+      </svg>`,
+  },
+  {
+    id: 'blush',
+    name: 'Hồng phấn',
+    group: 'Lãng mạn',
+    fontImport: "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,500;1,600&family=EB+Garamond:ital@0;1&display=swap');",
+    bg: '#f7e8e6', ink: '#6e2f38', muted: '#b67e88', accent: '#cf6f7c', accentInk: '#ffffff',
+    fontDisplay: "'Playfair Display', serif", fontBody: "'EB Garamond', serif",
+    headlineItalic: true,
+    frame: (_i, accent, muted) => {
+      const heart = (x: number, y: number, s: number) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 12 C-16 -2 -12 -16 -4 -16 C-1 -16 0 -11 0 -9 C0 -11 1 -16 4 -16 C12 -16 16 -2 0 12 Z" fill="${accent}"/>`;
+      return `<svg width="1080" height="1350" viewBox="0 0 1080 1350" style="position:absolute;inset:0" fill="none" stroke="${muted}" stroke-width="1.3">
+        <rect x="54" y="54" width="972" height="1242"/>
+        ${heart(110, 110, 1.6)}${heart(970, 110, 1.6)}${heart(110, 1240, 1.6)}${heart(970, 1240, 1.6)}
+      </svg>`;
+    },
+  },
+  {
+    id: 'burgundy',
+    name: 'Rượu vang',
+    group: 'Lãng mạn',
+    fontImport: "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500&family=EB+Garamond&display=swap');",
+    bg: '#3a0f17', ink: '#f4e0ca', muted: '#c98f86', accent: '#e4b45a', accentInk: '#3a0f17',
+    fontDisplay: "'Cormorant Garamond', serif", fontBody: "'EB Garamond', serif",
+    frame: (_i, accent) => `
+      <svg width="1080" height="1350" viewBox="0 0 1080 1350" style="position:absolute;inset:0" fill="none" stroke="${accent}" stroke-width="1.4">
+        <rect x="52" y="52" width="976" height="1246"/>
+        <rect x="66" y="66" width="948" height="1218" stroke-width="0.8"/>
+        <g stroke-width="2"><path d="M86 160 q74 0 74 -74 M994 160 q-74 0 -74 -74 M86 1190 q74 0 74 74 M994 1190 q-74 0 -74 74"/></g>
+      </svg>`,
+  },
+  {
     id: 'editorial',
     name: 'Tạp chí',
     group: 'Hiện đại',

@@ -104,6 +104,7 @@ export interface MarketingState {
   brandKit?: BrandKit;
   sticker?: StickerConfig;
   season?: string; // id trong SEASON_PRESETS, 'none' = không trang trí
+  seasonStyle?: string; // kiểu trang trí dịp: ribbon|badge|banner|corners (áp cho cả canvas & skin)
   headingFontId?: string; // id trong FONT_PRESETS; override font cho poster
   bodyFontId?: string;
   borderWidth?: number; // px viền khung (0 = tắt). undefined = mặc định theo mẫu

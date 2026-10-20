@@ -66,7 +66,7 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
     <div ref={wrapRef} className="w-full flex justify-center">
       <style dangerouslySetInnerHTML={{ __html: fontCss + '\n' + nonImportCss }} />
       <div style={{ position: 'relative', width: template.w * scale, height: template.h * scale, overflow: 'hidden', flex: '0 0 auto' }}>
-        <div ref={nodeRef} style={{ position: 'absolute', top: 0, left: 0, width: template.w, height: template.h, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+        <div ref={nodeRef} data-testid="ad-preview" style={{ position: 'absolute', top: 0, left: 0, width: template.w, height: template.h, transform: `scale(${scale})`, transformOrigin: 'top left' }}
           dangerouslySetInnerHTML={{ __html: filled }} />
       </div>
     </div>

@@ -50,15 +50,17 @@ const INDUSTRY_BACKGROUNDS: Record<string, string[]> = Object.fromEntries(
 const bgsFor = (categoryId?: string): string[] =>
   INDUSTRY_BACKGROUNDS[categoryId || 'retail'] || INDUSTRY_BACKGROUNDS.retail;
 
+// Mặc định = DU LỊCH (bán hàng/dịch vụ), KHÔNG focus tuyển dụng.
+const DEFAULT_SAMPLE = CATEGORY_SAMPLES['travel'];
 const DEFAULT_MARKETING: MarketingState = {
-  industry: 'recruitment',
-  categoryId: 'recruitment',
-  bgUrl: '/backgrounds/recruitment/a.jpg',
-  name: 'Lead Fullstack Developer',
-  goal: 'recruitment',
-  details: '5+ năm kinh nghiệm kiến trúc hệ thống lớn\nLương 25 - 35 triệu + Thưởng dự án KPI\nLàm việc TP.HCM · Hybrid\nThành thạo ReactJS, Node.js, Python, PostgreSQL\nEmail: tuyendung@mivy.vn',
-  brand: 'Mivy Tech',
-  offer: 'Lương 25 - 35 triệu',
+  industry: 'service',
+  categoryId: 'travel',
+  bgUrl: '/backgrounds/travel/a.jpg',
+  name: DEFAULT_SAMPLE.name,
+  goal: DEFAULT_SAMPLE.goal,
+  details: DEFAULT_SAMPLE.details,
+  brand: DEFAULT_SAMPLE.brand,
+  offer: DEFAULT_SAMPLE.offer,
   aspect: '4:5',
   theme: 'tech_dark',
   layoutMode: 'full_photo',
@@ -67,36 +69,7 @@ const DEFAULT_MARKETING: MarketingState = {
   storyPage: 0,
   storyPerPage: 3,
   facts: [],
-  copies: {
-    launch: {
-      headline: 'Fullstack Developer',
-      subline: 'Gia nhập đội ngũ sản phẩm công nghệ cao',
-      cta: 'Send your CV',
-      caption: '🚀 MIVY TECH ĐANG TÌM KIẾM LEAD FULLSTACK DEVELOPER\n\n📌 Đãi ngộ: Lương 25 - 35 Triệu + Thưởng KPI\n📌 Địa điểm: TP.HCM · Chế độ Hybrid linh hoạt\n\nỨng tuyển ngay qua email: tuyendung@mivy.vn',
-    },
-    story: {
-      headline: 'Yêu Cầu Chuyên Môn & Kỹ Năng',
-      subline: 'Tiêu chuẩn kỹ thuật cho core member',
-      cta: 'Tìm hiểu thêm',
-      caption: '🎯 TIÊU CHÍ ỨNG VIÊN LEAD DEVELOPER\n\n1. 5+ năm kinh nghiệm thực chiến production\n2. Làm chủ ReactJS, Node, Python & Database\n3. Kỹ năng tư duy kiến trúc và dẫn dắt team',
-      points: [
-        '5+ năm kinh nghiệm với hệ thống high-traffic.',
-        'Thành thạo ReactJS, TypeScript và Node / Python backend.',
-        'Tư duy Clean Code, Microservices và tối ưu hiệu năng.',
-      ],
-    },
-    action: {
-      headline: 'Quy Trình Tuyển Dụng Nhanh Gọn',
-      subline: '3 bước kết nối và nhận offer',
-      cta: 'Gửi CV Ngay Hôm Nay',
-      caption: '📬 KẾT NỐI VÀ ỨNG TUYỂN CÙNG CHÚNG EM\n\n- Vòng 1: Gửi CV & Portfolio\n- Vòng 2: Phỏng vấn kỹ thuật cùng Tech Lead\n- Vòng 3: Nhận Offer và onboard\n\nHotline/Zalo: 0907124244',
-      points: [
-        'Vòng 1: Gửi CV & Portfolio dự án.',
-        'Vòng 2: Trao đổi kỹ thuật cùng Tech Lead.',
-        'Vòng 3: Thống nhất đãi ngộ và onboard.',
-      ],
-    },
-  },
+  copies: DEFAULT_SAMPLE.copies,
 };
 
 export default function MarketingStudioPage() {
@@ -111,9 +84,8 @@ export default function MarketingStudioPage() {
   const [copyTone, setCopyTone] = useState<CopyTone>('sale');
   const [copyIndustry, setCopyIndustry] = useState('chung');
   const [copyIdx, setCopyIdx] = useState(0);
-  const [htmlStyleId, setHtmlStyleId] = useState<string>(''); // '' = dùng canvas như cũ; id = render mẫu HTML mới
+  const [htmlStyleId, setHtmlStyleId] = useState<string>('editorial'); // luôn render bằng skin (đã bỏ canvas cũ)
   const [styleGroup, setStyleGroup] = useState<string>('Tất cả');
-  const [seasonVariant, setSeasonVariant] = useState<string>('ribbon'); // kiểu trang trí dịp cho skin
   const [editTab, setEditTab] = useState<'content' | 'design'>('content'); // tab cột trái
   const htmlPreviewRef = useRef<TemplateHtmlPreviewHandle | null>(null);
 
@@ -191,10 +163,14 @@ export default function MarketingStudioPage() {
 
   // Save state on change
   // Gợi ý copy cho poster chính (launch) — offline, 0 AI
+  const applySuggestion = (industry: string, tone: CopyTone, idx: number) => {
+    const s = suggestPosterCopy(industry, tone, idx);
+    const sel = state.selected;
+    saveState({ ...state, copies: { ...state.copies, [sel]: { ...state.copies[sel], headline: s.headline, subline: s.subline, cta: s.cta } } });
+  };
   const suggestPoster = () => {
     const next = copyIdx + 1; setCopyIdx(next);
-    const s = suggestPosterCopy(copyIndustry, copyTone, next);
-    saveState({ ...state, copies: { ...state.copies, launch: { ...state.copies.launch, headline: s.headline, subline: s.subline, cta: s.cta } } });
+    applySuggestion(copyIndustry, copyTone, next);
   };
 
   const saveState = (newState: MarketingState) => {
@@ -226,6 +202,7 @@ export default function MarketingStudioPage() {
   const setStickerText = (text: string) => saveState({ ...state, sticker: { preset: state.sticker?.preset || 'none', text, corner: state.sticker?.corner || 'tr' } });
   const setStickerCorner = (corner: StickerCorner) => saveState({ ...state, sticker: { preset: state.sticker?.preset || 'none', text: state.sticker?.text || '', corner } });
   const setSeason = (seasonId: string) => saveState({ ...state, season: seasonId });
+  const setSeasonStyle = (v: string) => saveState({ ...state, seasonStyle: v });
   const setFont = (id: string) => saveState({ ...state, headingFontId: id === 'default' ? undefined : id, bodyFontId: id === 'default' ? undefined : id });
   const setBorder = (v: number) => saveState({ ...state, borderWidth: v });
   const setRadius = (v: number) => saveState({ ...state, borderRadius: v });
@@ -327,11 +304,15 @@ export default function MarketingStudioPage() {
     }
   };
 
+  // Giữ closure MỚI NHẤT của renderAllCanvases — tránh effect font dùng state cũ lúc mount (gây reset preview).
+  const renderAllRef = useRef(renderAllCanvases);
+  renderAllRef.current = renderAllCanvases;
+
   useEffect(() => {
     if (typeof document === 'undefined' || !document.fonts) return;
     let active = true;
     const onFontReady = () => {
-      if (active) renderAllCanvases();
+      if (active) renderAllRef.current();
     };
     document.fonts.ready.then(onFontReady);
     if ('addEventListener' in document.fonts) {
@@ -721,7 +702,8 @@ export default function MarketingStudioPage() {
     brand: state.brand,
     image: state.image || state.cutout || state.bgUrl,
   };
-  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, seasonVariant) : null;
+  const htmlFrameOpts = { borderWidth: state.borderWidth, borderColor: state.borderColor, borderRadius: state.borderRadius };
+  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, state.seasonStyle, htmlFrameOpts) : null;
   const styleList = styleGroup === 'Tất cả' ? AD_SKINS : AD_SKINS.filter((s) => s.group === styleGroup);
   const posterNames: Record<PosterKind, string> = {
     launch: '1. Poster Chính (Hero)',
@@ -759,7 +741,7 @@ export default function MarketingStudioPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h3 className="text-sm font-bold text-white">Phong cách thiết kế</h3>
-              <p className="text-[11px] text-slate-400">Khoác vibe nghệ thuật lên poster — nội dung anh điền giữ nguyên. &ldquo;Mặc định&rdquo; = bản canvas (xuất đủ 3 khổ).</p>
+              <p className="text-[11px] text-slate-400">Chọn vibe — nội dung anh điền tự khoác lên, giữ nguyên chữ.</p>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <button type="button" onClick={() => setStyleGroup('Tất cả')}
@@ -771,12 +753,8 @@ export default function MarketingStudioPage() {
             </div>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1">
-            <button type="button" onClick={() => setHtmlStyleId('')}
-              className={`shrink-0 w-[72px] h-[90px] rounded-lg border grid place-items-center text-[10px] font-semibold text-center leading-tight transition-colors ${!htmlStyleId ? 'border-indigo-500 bg-indigo-500/15 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>
-              Mặc định<br />(canvas)
-            </button>
             {styleList.map((s) => {
-              const tpl = buildAdTemplate(adContent, s.id, state.season, seasonVariant)!;
+              const tpl = buildAdTemplate(adContent, s.id, state.season, state.seasonStyle)!;
               const w = 72; const sc = w / tpl.w;
               return (
                 <button key={s.id} type="button" onClick={() => setHtmlStyleId(s.id)} title={s.name}
@@ -809,25 +787,6 @@ export default function MarketingStudioPage() {
               <Download className="w-4 h-4" />
               <span>Tải ảnh PNG</span>
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleDownloadAllSizes}
-                title="Xuất ảnh đang chọn ở cả 3 khổ: Post 1080×1350 · Story/Reels 1080×1920 · Vuông 1080×1080"
-                className="mv-btn mv-btn-ghost !flex justify-center !px-3 !py-2 !text-xs"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải đủ 3 khổ</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDownloadZip}
-                className="mv-btn mv-btn-ghost !flex justify-center !px-3 !py-2 !text-xs"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải cả bộ ZIP</span>
-              </button>
-            </div>
           </div>
 
           <div className="glass-panel rounded-2xl p-3 border border-white/10 space-y-2.5">
@@ -859,27 +818,13 @@ export default function MarketingStudioPage() {
               )}
               <span className="absolute bottom-1.5 left-1.5 text-[11px] font-bold text-white bg-black/65 px-2 py-0.5 rounded">{activeHtmlTemplate ? activeHtmlTemplate.title : posterNames[state.selected]}</span>
             </div>
-            {/* 2 poster còn lại — hàng thumbnail ngang để đổi */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {(['launch', 'story', 'action'] as PosterKind[]).filter((k) => k !== state.selected).map((kind) => (
-                <div
-                  key={kind}
-                  onClick={() => saveState({ ...state, selected: kind })}
-                  className="group relative rounded-lg overflow-hidden cursor-pointer bg-black/60 border border-white/10 hover:border-white/30"
-                  title="Bấm để chọn poster này"
-                >
-                  <canvas
-                    ref={kind === 'launch' ? canvasLaunchRef : kind === 'story' ? canvasStoryRef : canvasActionRef}
-                    style={{
-                      letterSpacing: 'normal',
-                      wordSpacing: 'normal',
-                      WebkitFontSmoothing: 'subpixel-antialiased',
-                      textRendering: 'geometricPrecision',
-                    }}
-                    className="w-full h-auto max-h-[11vh] object-contain block mx-auto"
-                  />
-                  <span className="absolute bottom-1 left-1 text-[9px] font-bold text-white bg-black/65 px-1.5 py-0.5 rounded">{posterNames[kind].split('.')[0]}</span>
-                </div>
+            {/* Chọn poster trong bộ (3 nội dung) */}
+            <div className="grid grid-cols-3 gap-2">
+              {(['launch', 'story', 'action'] as PosterKind[]).map((kind) => (
+                <button key={kind} type="button" onClick={() => saveState({ ...state, selected: kind })}
+                  className={`rounded-lg px-2 py-2 text-[11px] font-semibold border transition-colors ${state.selected === kind ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}>
+                  {posterNames[kind].split('.')[0]}. {posterNames[kind].split('(')[1]?.replace(')', '') || ['Hero', 'Tiêu chí', 'Kết nối'][['launch', 'story', 'action'].indexOf(kind)]}
+                </button>
               ))}
             </div>
           </div>
@@ -953,10 +898,10 @@ export default function MarketingStudioPage() {
         {/* Gợi ý nội dung bắt mắt (offline) cho poster chính */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="mv-label mr-1">Gợi ý tiêu đề:</span>
-          <select value={copyIndustry} onChange={(e) => setCopyIndustry(e.target.value)} className="mv-chip-select !py-1.5 text-[11px]" title="Ngành hàng">
+          <select value={copyIndustry} onChange={(e) => { setCopyIndustry(e.target.value); applySuggestion(e.target.value, copyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Ngành hàng">
             {COPY_INDUSTRIES.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
           </select>
-          <select value={copyTone} onChange={(e) => setCopyTone(e.target.value as CopyTone)} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
+          <select value={copyTone} onChange={(e) => { setCopyTone(e.target.value as CopyTone); applySuggestion(copyIndustry, e.target.value as CopyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
             {COPY_TONES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
           <button onClick={suggestPoster} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1.5 !text-[11px] !text-indigo-200 !border-indigo-500/30" title="Gợi ý câu chữ bắt mắt">
@@ -966,8 +911,8 @@ export default function MarketingStudioPage() {
 
         {/* Nhóm điều khiển có nhãn cho dễ tìm */}
         <div className="space-y-2.5 border-t border-white/10 pt-4">
-          {/* ===== Nhóm 1: KIỂU (layout + theme) ===== */}
-          {!state.conceptId && (
+          {/* ===== Nhóm 1: KIỂU (layout + theme) — chỉ cho bản canvas ===== */}
+          {!htmlStyleId && !state.conceptId && (
           <>
           <div className="flex items-start gap-3 flex-wrap">
             <span className="mv-label w-24 shrink-0 pt-3">Kiểu</span>
@@ -1035,6 +980,7 @@ export default function MarketingStudioPage() {
               <span>Bỏ nền</span>
             </button>
           )}
+          {!htmlStyleId && (
           <select
             value={state.aspect}
             onChange={(e) => saveState({ ...state, aspect: e.target.value as AspectRatio })}
@@ -1044,6 +990,7 @@ export default function MarketingStudioPage() {
             <option value="4:5">Dọc 4:5 (1080×1350)</option>
             <option value="9:16">Story 9:16 (1080×1920)</option>
           </select>
+          )}
             </div>
           </div>
 
@@ -1051,7 +998,8 @@ export default function MarketingStudioPage() {
           <div className="flex items-start gap-3 flex-wrap">
             <span className="mv-label w-24 shrink-0 pt-3">Chữ &amp; khung</span>
             <div className="flex items-center gap-2 flex-wrap">
-          {/* Font chữ */}
+          {/* Font chữ — chỉ cho bản canvas (skin có font riêng) */}
+          {!htmlStyleId && (
           <select
             value={state.headingFontId || 'default'}
             onChange={(e) => setFont(e.target.value)}
@@ -1061,6 +1009,7 @@ export default function MarketingStudioPage() {
             <option value="default">🔤 Font: Mặc định</option>
             {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>🔤 {f.name}</option>)}
           </select>
+          )}
 
           {/* Viền + Bo góc (slider) */}
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
@@ -1098,29 +1047,41 @@ export default function MarketingStudioPage() {
           <div className="flex items-start gap-3 flex-wrap">
             <span className="mv-label w-24 shrink-0 pt-2">Dịp</span>
             <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap gap-1.5">
-                {SEASON_PRESETS.map((s) => (
-                  <button key={s.id} type="button" onClick={() => setSeason(s.id)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${(state.season || 'none') === s.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>
-                    {s.id !== 'none' && <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.c1, boxShadow: `inset 0 0 0 2px ${s.c2}` }} />}
-                    {s.label.replace(/^[^\wÀ-ỹ]+\s*/, '') || 'Không'}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {SEASON_PRESETS.map((s) => {
+                  const active = (state.season || 'none') === s.id;
+                  const isNone = s.id === 'none';
+                  const label = s.label.replace(/^[^\wÀ-ỹ]+\s*/, '') || 'Không';
+                  return (
+                    <button key={s.id} type="button" onClick={() => setSeason(s.id)}
+                      className={`inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 ${active ? 'text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}
+                      style={active && !isNone
+                        ? { background: `${s.c1}26`, borderColor: s.c1, boxShadow: `0 0 0 1px ${s.c1}66, 0 6px 16px ${s.c1}2e` }
+                        : active && isNone
+                        ? { background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.45)' }
+                        : undefined}>
+                      {isNone
+                        ? <span className={`w-5 h-5 rounded-full grid place-items-center text-[11px] leading-none ${active ? 'bg-white/15 text-white' : 'bg-white/5 text-slate-500'}`}>∅</span>
+                        : <span className="w-5 h-5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${s.c1}, ${s.c2})`, boxShadow: active ? `0 0 0 2px ${s.c1}80` : '0 0 0 1px rgba(255,255,255,0.14)' }} />}
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
               </div>
               {state.season && state.season !== 'none' && (
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-[10px] text-slate-500 self-center mr-1">Kiểu:</span>
                   {SEASON_VARIANTS.map((v) => (
-                    <button key={v.id} type="button" onClick={() => setSeasonVariant(v.id)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${seasonVariant === v.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{v.label}</button>
+                    <button key={v.id} type="button" onClick={() => setSeasonStyle(v.id)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${(state.seasonStyle || 'ribbon') === v.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{v.label}</button>
                   ))}
-                  <span className="text-[10px] text-slate-500 self-center ml-1">(áp cho mẫu Phong cách)</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Sticker */}
+          {/* Sticker — chỉ cho bản canvas */}
+          {!htmlStyleId && (
           <div className="flex items-start gap-3 flex-wrap">
             <span className="mv-label w-24 shrink-0 pt-3">Sticker</span>
             <div className="flex items-center gap-2 flex-wrap">
@@ -1156,6 +1117,7 @@ export default function MarketingStudioPage() {
           )}
             </div>
           </div>
+          )}
         </div>
       </div>
           )}

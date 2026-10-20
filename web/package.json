@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3009",
     "lint": "next lint",
-    "test:qc": "playwright test"
+    "test:qc": "playwright test",
+    "qc:options": "node e2e/qc-options.js"
   },
   "dependencies": {
     "@imgly/background-removal": "^1.6.0",

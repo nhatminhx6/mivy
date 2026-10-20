@@ -1,17 +1,17 @@
 import { IndustryId } from '@/types';
 export const CATEGORIES: {id:string; name:string; industry:IndustryId}[] = [
-  {id:'recruitment',name:'Tuyển dụng',industry:'recruitment'},
-  {id:'education',name:'Khóa học',industry:'education'},
-  {id:'event',name:'Sự kiện',industry:'service'},
-  {id:'food',name:'Ẩm thực',industry:'general'},
-  {id:'beauty',name:'Làm đẹp',industry:'service'},
-  {id:'property',name:'Bất động sản',industry:'service'},
   {id:'travel',name:'Du lịch',industry:'service'},
   {id:'retail',name:'Sản phẩm',industry:'general'},
+  {id:'food',name:'Ẩm thực',industry:'general'},
+  {id:'beauty',name:'Làm đẹp',industry:'service'},
   {id:'fitness',name:'Thể thao',industry:'service'},
   {id:'technology',name:'App & công nghệ',industry:'general'},
+  {id:'event',name:'Sự kiện',industry:'service'},
+  {id:'property',name:'Bất động sản',industry:'service'},
+  {id:'education',name:'Khóa học',industry:'education'},
   {id:'personal',name:'Thương hiệu cá nhân',industry:'service'},
   {id:'service',name:'Dịch vụ',industry:'service'},
+  {id:'recruitment',name:'Tuyển dụng',industry:'recruitment'},
 ];
 const ALL = ['recruitment','education','event','food','beauty','property','travel','retail','fitness','technology','personal','service'];
 export const TEMPLATES = [
