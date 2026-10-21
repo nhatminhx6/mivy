@@ -14,35 +14,27 @@ import { SEASON_PRESETS } from '@/lib/season-engine';
 import { SEASON_VARIANTS } from '@/lib/season-decor';
 import { FONT_PRESETS } from '@/lib/brand-presets';
 import { StickerCorner } from '@/types';
-import { TemplateLibrary } from '@/components/marketing/TemplateLibrary';
-import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
+import { CATEGORIES } from '@/lib/template-catalog';
 import { CATEGORY_SAMPLES } from '@/lib/category-samples';
 import { loadBrand } from '@/lib/brand-presets';
 import { DraftController } from '@/lib/draft-controller';
 import { PageHeader } from '@/components/PageHeader';
 import { COPY_TONES, COPY_INDUSTRIES, suggestPosterCopy, CopyTone } from '@/lib/copy-library';
 import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
-import { AD_SKINS, AdContent } from '@/lib/ad-skins';
-import { buildAdTemplate, AD_SKIN_CSS } from '@/lib/ad-poster';
+import { AD_LAYOUTS, AD_BACKGROUNDS, AdContent } from '@/lib/ad-skins';
+import { buildAdTemplate, AD_SKIN_CSS, AD_SIZES } from '@/lib/ad-poster';
 
 // skin groups cho băng chọn phong cách
-const SKIN_GROUPS = Array.from(new Set(AD_SKINS.map((s) => s.group)));
+const SKIN_GROUPS = Array.from(new Set(AD_LAYOUTS.map((s) => s.group)));
+const BG_GROUPS = Array.from(new Set(AD_BACKGROUNDS.filter((b) => b.id !== 'none').map((b) => b.group)));
 
 // Nền gen sẵn ĐÚNG NỘI DUNG theo từng ngành (offline, 1 lần) — chọn tức thì, không gọi AI mỗi lần.
 // Danh sách ảnh THỰC TẾ đã gen theo từng ngành (gen sẵn offline, không gọi AI mỗi lần).
+const BG_TEN = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
 const BG_FILES: Record<string, string[]> = {
-  recruitment: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  education: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  event: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  food: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  beauty: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  property: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  travel: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  retail: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  fitness: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  technology: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  personal: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-  service: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+  recruitment: BG_TEN, education: BG_TEN, event: BG_TEN, food: BG_TEN,
+  beauty: BG_TEN, property: BG_TEN, travel: BG_TEN, retail: BG_TEN,
+  fitness: BG_TEN, technology: BG_TEN, personal: BG_TEN, service: BG_TEN,
 };
 const INDUSTRY_BACKGROUNDS: Record<string, string[]> = Object.fromEntries(
   Object.entries(BG_FILES).map(([k, arr]) => [k, arr.map((s) => `/backgrounds/${k}/${s}.jpg`)])
@@ -76,15 +68,20 @@ export default function MarketingStudioPage() {
   const [state, setState] = useState<MarketingState>(DEFAULT_MARKETING);
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusText, setStatusText] = useState('');
-  const [step, setStep] = useState(1); // 1 chọn ngành · 2 nội dung · 3 xem & tải
+  const [step, setStep] = useState(2); // 1 chọn ngành (đã bỏ) · 2 màn edit duy nhất
   const [devFill, setDevFill] = useState(true); // DEV: tự điền nội dung mẫu, tắt để nhập tay
   const [copied, setCopied] = useState(false);
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
+  const [htmlFull, setHtmlFull] = useState(false); // xem skin toàn màn hình
+  const [cuttingIdx, setCuttingIdx] = useState<number | null>(null); // đang tách nền ảnh sản phẩm thứ idx
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [copyTone, setCopyTone] = useState<CopyTone>('sale');
   const [copyIndustry, setCopyIndustry] = useState('chung');
   const [copyIdx, setCopyIdx] = useState(0);
-  const [htmlStyleId, setHtmlStyleId] = useState<string>('editorial'); // luôn render bằng skin (đã bỏ canvas cũ)
+  const [htmlStyleId, setHtmlStyleId] = useState<string>('minimal_light'); // luôn render bằng skin (đã bỏ canvas cũ)
+  const [htmlSizeId, setHtmlSizeId] = useState<string>('feed45'); // khổ xuất: 4:5 / 1:1 / 9:16 / 16:9
+  const [htmlBgId, setHtmlBgId] = useState<string>('none'); // màu nền áp lên bố cục (tách riêng)
+  const [bgGroup, setBgGroup] = useState<string>('Trung tính');
   const [styleGroup, setStyleGroup] = useState<string>('Tất cả');
   const [editTab, setEditTab] = useState<'content' | 'design'>('content'); // tab cột trái
   const htmlPreviewRef = useRef<TemplateHtmlPreviewHandle | null>(null);
@@ -179,6 +176,38 @@ export default function MarketingStudioPage() {
 
   const changeCategory = (categoryId: string) => {
     getController().changeCategory(categoryId);
+  };
+
+  const toDataUrl = (b: Blob) => new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(b); });
+
+  // Thêm ảnh sản phẩm — GIỮ NGUYÊN ảnh (không auto tách nền)
+  const addProductRaw = async (file: File) => {
+    const cur = getController().getState();
+    if ((cur.products?.length ?? 0) >= 3) return;
+    const dataUrl = await toDataUrl(file);
+    const s = getController().getState();
+    saveState({ ...s, products: [...(s.products || []), dataUrl].slice(0, 3) });
+  };
+
+  // Tách nền 1 ảnh sản phẩm khi user BẤM nút (WASM, client-side)
+  const cutoutProductAt = async (idx: number) => {
+    const cur = getController().getState();
+    const src = cur.products?.[idx];
+    if (!src || cuttingIdx != null) return;
+    setCuttingIdx(idx);
+    try {
+      const { removeBackground } = await import('@imgly/background-removal');
+      const blob = await removeBackground(await (await fetch(src)).blob());
+      const dataUrl = await toDataUrl(blob);
+      const s = getController().getState();
+      const next = [...(s.products || [])];
+      next[idx] = dataUrl;
+      saveState({ ...s, products: next });
+    } catch {
+      /* tách lỗi → giữ ảnh gốc */
+    } finally {
+      setCuttingIdx(null);
+    }
   };
 
   // DEV: điền sẵn toàn bộ nội dung mẫu cho ngành đang chọn
@@ -701,10 +730,25 @@ export default function MarketingStudioPage() {
     points: currentCopy?.points,
     brand: state.brand,
     image: state.image || state.cutout || state.bgUrl,
+    priceOld: state.priceOld,
+    priceNew: state.priceNew,
+    bgImage: state.backgroundImage || state.bgUrl,
+    products: (state.products && state.products.length)
+      ? state.products
+      : (state.cutout ? [state.cutout] : state.image ? [state.image] : []),
+    imgZoom: state.mainImageZoom,
+    imgX: state.mainImageX,
+    imgY: state.mainImageY,
+    bgDim: state.backgroundDim,
+    bgBlur: state.backgroundBlur,
+    bgX: state.backgroundX,
+    bgY: state.backgroundY,
   };
   const htmlFrameOpts = { borderWidth: state.borderWidth, borderColor: state.borderColor, borderRadius: state.borderRadius };
-  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, state.seasonStyle, htmlFrameOpts) : null;
-  const styleList = styleGroup === 'Tất cả' ? AD_SKINS : AD_SKINS.filter((s) => s.group === styleGroup);
+  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, state.seasonStyle, htmlFrameOpts, htmlSizeId, htmlBgId) : null;
+  const isProductLayout = AD_LAYOUTS.find((s) => s.id === htmlStyleId)?.layout === 'product';
+  const styleList = styleGroup === 'Tất cả' ? AD_LAYOUTS : AD_LAYOUTS.filter((s) => s.group === styleGroup);
+  const bgList = AD_BACKGROUNDS.filter((b) => b.id === 'none' || b.group === bgGroup);
   const posterNames: Record<PosterKind, string> = {
     launch: '1. Poster Chính (Hero)',
     story: '2. Tiêu Chí (Story)',
@@ -715,26 +759,36 @@ export default function MarketingStudioPage() {
     <div className="max-w-7xl mx-auto">
       <PageHeader
         title="Tạo quảng cáo"
-        sub="Chọn ngành → điền nội dung → xuất poster/banner đúng khổ mọi sàn. Lấy màu & font từ Brand Kit."
+        sub="Chọn ngành, điền nội dung, chọn bố cục · màu · hình nền · khổ — xuất poster/banner mọi sàn."
       />
 
       <div className="space-y-8">
-      {/* Stepper 3 bước */}
-      <div className="mv-seg w-full mv-fade">
-        {[{ n: 1, t: 'Chọn ngành & mẫu' }, { n: 2, t: 'Soạn & tải' }].map((s) => (
-          <button key={s.n} type="button" onClick={() => setStep(s.n)}
-            data-active={step === s.n}
-            className="mv-seg-btn flex-1 flex items-center justify-center gap-2 !py-2.5">
-            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step === s.n ? 'bg-indigo-500 text-white' : 'bg-white/10'}`}>{s.n}</span>
-            <span className="hidden sm:inline">{s.t}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Bước 2 (gộp): TRÁI = soạn nội dung + tuỳ chỉnh (cuộn), PHẢI = preview GHIM */}
+      {/* Một màn duy nhất: chọn ngành + soạn + thiết kế + tải (đã bỏ bước chọn mẫu) */}
       {step === 2 && (
       <div className="max-w-5xl mx-auto space-y-5">
         <style dangerouslySetInnerHTML={{ __html: AD_SKIN_CSS }} />
+
+        {/* ===== CHỌN NGÀNH — đổi ngành thì nội dung mẫu + ảnh nền theo ngành ===== */}
+        <div className="glass-panel rounded-2xl p-4 border border-indigo-500/30 bg-indigo-500/[0.04]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 shrink-0">
+              <Layers className="w-4 h-4 text-indigo-300" />
+              <span className="text-sm font-bold text-white">Ngành</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((c) => {
+                const active = (state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)) === c.id;
+                return (
+                  <button type="button" key={c.id} onClick={() => changeCategory(c.id)} aria-pressed={active}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${active ? 'bg-white text-slate-950 border-white font-semibold' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2.5">Đổi ngành → nội dung mẫu + bộ ảnh nền (mục “Ảnh nền” bên dưới) tự đổi theo ngành đó.</p>
+        </div>
 
         {/* ===== BĂNG CHỌN PHONG CÁCH (skin nghệ thuật khoác lên poster ngành) ===== */}
         <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-3">
@@ -767,6 +821,31 @@ export default function MarketingStudioPage() {
           </div>
         </div>
 
+        {/* ===== DẢI MÀU NỀN (tách khỏi bố cục) ===== */}
+        <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h3 className="text-sm font-bold text-white">Màu nền</h3>
+              <p className="text-[11px] text-slate-400">Áp lên bố cục đang chọn — đổi màu không đổi layout.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {BG_GROUPS.map((g) => (
+                <button key={g} type="button" onClick={() => setBgGroup(g)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${bgGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {bgList.map((b) => (
+              <button key={b.id} type="button" onClick={() => setHtmlBgId(b.id)} title={b.name}
+                className={`shrink-0 w-11 h-11 rounded-lg border relative transition-colors ${htmlBgId === b.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-white/15 hover:border-white/40'}`}
+                style={{ background: b.css || 'repeating-linear-gradient(45deg,#2a2a33 0 6px,#33333d 6px 12px)' }}>
+                {b.id === 'none' && <span className="absolute inset-0 flex items-center justify-center text-[9px] text-slate-300">mẫu</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-6 items-start">
         {/* CỘT PHẢI (order-2): preview ghim — vừa khít 1 màn, không cuộn riêng */}
         <div className="lg:sticky lg:top-4 self-start space-y-3 lg:order-2 lg:max-h-[calc(100vh-7.5rem)]">
@@ -777,7 +856,21 @@ export default function MarketingStudioPage() {
                 <span className="text-[11px] text-slate-400">Đang chỉnh sửa</span>
                 <h3 className="text-sm font-bold text-white leading-tight">{posterNames[state.selected]}</h3>
               </div>
-              <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">PNG · 1080px</span>
+              <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">PNG · {AD_SIZES.find((s) => s.id === htmlSizeId)?.w}×{AD_SIZES.find((s) => s.id === htmlSizeId)?.h}</span>
+            </div>
+            {/* Chọn khổ — 1 thiết kế xuất mọi sàn */}
+            <div className="flex flex-wrap gap-1.5">
+              {AD_SIZES.map((sz) => (
+                <button
+                  key={sz.id}
+                  type="button"
+                  onClick={() => setHtmlSizeId(sz.id)}
+                  title={sz.hint}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${htmlSizeId === sz.id ? 'border-indigo-500 bg-indigo-500/20 text-white' : 'border-white/10 text-slate-300 hover:border-white/30'}`}
+                >
+                  {sz.name}
+                </button>
+              ))}
             </div>
             <button
               type="button"
@@ -792,14 +885,22 @@ export default function MarketingStudioPage() {
           <div className="glass-panel rounded-2xl p-3 border border-white/10 space-y-2.5">
             {/* Poster đang chọn — TO, lấp đầy cột */}
             <div
-              onClick={() => { if (!activeHtmlTemplate) openPreview(state.selected); }}
+              onClick={() => { if (activeHtmlTemplate) setHtmlFull(true); else openPreview(state.selected); }}
               className="group relative rounded-xl overflow-hidden cursor-pointer bg-black/60 !border-indigo-500 ring-1 ring-indigo-500/40 border"
-              title="Bấm để phóng to"
+              title="Bấm để xem toàn màn hình"
             >
               {activeHtmlTemplate && (
-                <div className="py-2">
-                  <TemplateHtmlPreview ref={htmlPreviewRef} template={activeHtmlTemplate} content={{}} noFill maxHeightVh={42} />
-                </div>
+                <>
+                  <div className="py-2">
+                    <TemplateHtmlPreview ref={htmlPreviewRef} template={activeHtmlTemplate} content={{}} noFill maxHeightVh={42} />
+                  </div>
+                  <button type="button"
+                    onClick={(e) => { e.stopPropagation(); setHtmlFull(true); }}
+                    className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 backdrop-blur text-white text-[11px] font-semibold border border-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Xem toàn màn hình">
+                    <Maximize2 className="w-3.5 h-3.5" /> Phóng to
+                  </button>
+                </>
               )}
               <canvas
                 ref={state.selected === 'launch' ? canvasLaunchRef : state.selected === 'story' ? canvasStoryRef : canvasActionRef}
@@ -1315,19 +1416,19 @@ export default function MarketingStudioPage() {
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,backgroundImage:'',bgUrl:''})}>Gỡ ảnh nền</button>
                 </>}
               </div>
-              <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
+              {!isProductLayout && <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
                 <p className="font-bold text-white">Ảnh chính</p>
                 <p className="text-slate-400">Sản phẩm, nhân vật hoặc hình minh họa nổi bật.</p>
                 {state.image && <div className="mv-hover-zoom rounded-lg"><img src={state.cutout || state.image} alt="Ảnh chính của anh" className="w-full h-32 object-contain rounded-lg" /></div>}
                 <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh chính<input aria-label="Tải ảnh chính" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="sr-only" /></label>
-                {state.image && <div className="space-y-3">
+                {(state.image || state.bgUrl || state.backgroundImage) && <div className="space-y-3">
                   <label className="block text-slate-300 font-medium">Cách đặt ảnh
                     <select aria-label="Cách đặt ảnh chính" value={state.mainImageFit || (state.templateId === 'spotlight' ? 'contain' : 'cover')} onChange={e=>saveState({...state,mainImageFit:e.target.value as 'cover'|'contain',mainImageZoom:100,templateId:state.templateId || 'editorial'})} className="mv-input mt-1">
                       <option value="cover">Lấp đầy khung — cắt phần dư</option>
                       <option value="contain">Giữ toàn ảnh — không cắt</option>
                     </select>
                   </label>
-                  <label className="block text-slate-300 font-medium">Phóng to {state.mainImageZoom ?? 100}%<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="100" max="250" value={state.mainImageZoom ?? 100} onChange={e=>saveState({...state,mainImageZoom:Number(e.target.value)})}/></label>
+                  <label className="block text-slate-300 font-medium">Phóng to {((state.mainImageZoom ?? 100) - 100 > 0 ? '+' : '')}{(state.mainImageZoom ?? 100) - 100}<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="-100" max="100" value={(state.mainImageZoom ?? 100) - 100} onChange={e=>saveState({...state,mainImageZoom:100 + Number(e.target.value)})}/></label>
                   <label className="block text-slate-300 font-medium">Dịch ảnh ngang<input aria-label="Dịch ảnh chính ngang" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
                   <label className="block text-slate-300 font-medium">Dịch ảnh dọc<input aria-label="Dịch ảnh chính dọc" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí ảnh</button>
@@ -1336,7 +1437,49 @@ export default function MarketingStudioPage() {
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,backgroundImage:state.image,image:'',cutout:'',templateId:state.templateId || 'editorial'})}>Chuyển ảnh này làm nền</button>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,image:'',cutout:''})}>Gỡ ảnh chính</button>
                 </div>}
-              </div>
+              </div>}
+
+              {/* Ảnh sản phẩm (combo) + giá — CHỈ cho bố cục "Sản phẩm" */}
+              {isProductLayout && <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
+                <p className="font-bold text-white">Ảnh sản phẩm (combo · tối đa 3)</p>
+                <p className="text-slate-400">Cho bố cục “Sản phẩm”: nền riêng + sản phẩm nổi ở giữa. Nên dùng ảnh tách nền (PNG trong suốt).</p>
+                {(state.products?.length ?? 0) > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {state.products!.map((p, i) => (
+                      <div key={i} className="relative rounded-lg bg-black/30 border border-white/10 p-1 flex flex-col gap-1">
+                        <img src={p} alt={`Sản phẩm ${i + 1}`} className="w-full h-20 object-contain" />
+                        <button type="button" aria-label={`Gỡ sản phẩm ${i + 1}`}
+                          onClick={() => saveState({ ...state, products: state.products!.filter((_, j) => j !== i) })}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white text-[13px] leading-none flex items-center justify-center">×</button>
+                        <button type="button" aria-label={`Tách nền sản phẩm ${i + 1}`}
+                          disabled={cuttingIdx != null}
+                          onClick={() => cutoutProductAt(i)}
+                          className={`w-full text-[10px] py-1 rounded-md border border-white/15 text-slate-200 hover:border-indigo-400 ${cuttingIdx != null ? 'opacity-60 pointer-events-none' : ''}`}>
+                          {cuttingIdx === i ? '⏳ Đang tách…' : '✂ Tách nền'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(state.products?.length ?? 0) < 3 && (
+                  <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">
+                    + Thêm ảnh sản phẩm
+                    <input aria-label="Thêm ảnh sản phẩm" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) addProductRaw(f); e.target.value = ''; }} />
+                  </label>
+                )}
+                <p className="text-[10px] text-slate-500">Up ảnh thường cũng được. Muốn sản phẩm nổi trên nền thì bấm <b>✂ Tách nền</b> trên ảnh.</p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <label className="block text-[11px] text-slate-400">Giá gốc<input value={state.priceOld || ''} onChange={e => saveState({ ...state, priceOld: e.target.value })} placeholder="580K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
+                  <label className="block text-[11px] text-slate-400">Giá sale<input value={state.priceNew || ''} onChange={e => saveState({ ...state, priceNew: e.target.value })} placeholder="419K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
+                </div>
+                {(state.products?.length ?? 0) > 0 && <div className="space-y-2.5 pt-1 border-t border-white/10 mt-1">
+                  <p className="text-[11px] text-slate-400 pt-1">Chỉnh vị trí sản phẩm</p>
+                  <label className="block text-[11px] text-slate-300">Phóng to {((state.mainImageZoom ?? 100) - 100 > 0 ? '+' : '')}{(state.mainImageZoom ?? 100) - 100}<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="-100" max="100" value={(state.mainImageZoom ?? 100) - 100} onChange={e=>saveState({...state,mainImageZoom:100 + Number(e.target.value)})}/></label>
+                  <label className="block text-[11px] text-slate-300">Dịch ngang<input aria-label="Dịch ảnh chính ngang" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
+                  <label className="block text-[11px] text-slate-300">Dịch dọc<input aria-label="Dịch ảnh chính dọc" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
+                  <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí</button>
+                </div>}
+              </div>}
             </div>
 
             <button
@@ -1434,21 +1577,21 @@ export default function MarketingStudioPage() {
       </div>
       )}
 
-      {step === 1 && (
-        <div className="space-y-4 mv-fade">
-          <div>
-          <h2 className="mv-h1 !text-xl">Chọn ngành &amp; mẫu thiết kế</h2>
-          <p className="mv-sub">Chọn ngành (có sẵn nội dung mẫu) và một mẫu thiết kế, rồi bấm Tiếp.</p>
-          </div>
-          <TemplateLibrary state={state} onChange={saveState} onCategoryChange={changeCategory} />
-          <div className="flex justify-end">
-            <button type="button" onClick={goToCompose}
-              className="mv-btn mv-btn-primary !px-6 !py-3">
-              Tiếp → Soạn &amp; tải
-            </button>
+      {/* Fullscreen xem skin (HTML) */}
+      {htmlFull && activeHtmlTemplate && typeof document !== 'undefined' && createPortal((
+        <div
+          className="fixed inset-0 z-[100] bg-black/92 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200"
+          onClick={() => setHtmlFull(false)}
+        >
+          <button type="button" onClick={() => setHtmlFull(false)}
+            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20">
+            <X className="w-4 h-4" /> Đóng
+          </button>
+          <div onClick={(e) => e.stopPropagation()} className="max-h-[92vh] overflow-auto rounded-xl shadow-2xl">
+            <TemplateHtmlPreview template={activeHtmlTemplate} content={{}} noFill maxHeightVh={90} />
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Lightbox Fullscreen Preview Modal */}
       {previewKind && previewUrl && typeof document !== 'undefined' && createPortal((

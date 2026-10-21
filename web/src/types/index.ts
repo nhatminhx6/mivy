@@ -81,6 +81,9 @@ export interface MarketingState {
   details: string;
   brand: string;
   offer: string;
+  priceOld?: string;  // giá gốc (gạch ngang) cho bố cục Khuyến mãi
+  priceNew?: string;  // giá sale (nổi bật)
+  products?: string[]; // ảnh sản phẩm (cutout) cho bố cục Sản phẩm — tối đa 3
   image?: string;
   cutout?: string;
   bgUrl?: string;
