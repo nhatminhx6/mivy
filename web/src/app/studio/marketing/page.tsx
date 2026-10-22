@@ -984,7 +984,8 @@ export default function MarketingStudioPage() {
       </div>
 
       {editTab === 'design' && (
-      <div className="glass-card p-5 rounded-2xl space-y-4 hover:!transform-none mv-fade">
+      <CollapsibleSection tone="card" title="🎨 Thiết kế & Trang trí">
+      <div className="space-y-4 mv-fade">
         {/* Gợi ý nội dung bắt mắt (offline) cho poster chính */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="mv-label mr-1">Gợi ý tiêu đề:</span>
@@ -1207,17 +1208,14 @@ export default function MarketingStudioPage() {
           )}
         </div>
       </div>
+      </CollapsibleSection>
           )}
 
           {editTab === 'content' && (<>
-          <div className="glass-card p-6 rounded-2xl space-y-6 hover:!transform-none">
+          <CollapsibleSection tone="card" title={<span className="inline-flex items-center gap-1.5"><ImageIcon className="w-4 h-4 text-indigo-300" /> Chữ hiển thị trên ảnh</span>}>
             <div className="grid grid-cols-1 gap-6">
               {/* Left: Poster Typography Controls */}
               <div className="space-y-4 text-xs">
-                <div className="flex items-center gap-2 pb-1">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-indigo-300"><ImageIcon className="w-3.5 h-3.5" /> Chữ hiển thị TRÊN ảnh</span>
-                  <span className="flex-1 h-px bg-white/10" />
-                </div>
                 <div>
                   <label className="mv-label block mb-1.5">Tiêu đề Poster</label>
                   <input
@@ -1283,7 +1281,7 @@ export default function MarketingStudioPage() {
                 )}
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
         <div className="glass-card p-6 rounded-2xl space-y-5 hover:!transform-none">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <button type="button" onClick={() => setNoiDungOpen((o) => !o)} className="text-base font-bold text-white flex items-center gap-2">
