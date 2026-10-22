@@ -11,13 +11,12 @@ const TOOLS = [
   { href: '/studio/pricelist', icon: ListOrdered, name: 'Bảng giá / Menu', desc: 'Điền món & giá → bảng giá đẹp để đăng, in.', c: '#38bdf8' },
   { href: '/studio/brandpack', icon: Package, name: 'Bộ nhận diện', desc: 'Logo, avatar, bìa, name card, áo, ly — 1 lần.', c: '#f472b6' },
   { href: '/studio/brand-assets', icon: PanelTop, name: 'Bìa & Avatar', desc: 'Bìa FB/Zalo/Shopee/YouTube + avatar.', c: '#34d399' },
-  { href: '/studio/merch', icon: ShoppingBag, name: 'Vật phẩm', desc: 'In logo lên áo, nón, ly, túi… ảnh thật.', c: '#fbbf24' },
   { href: '/studio/brand', icon: Palette, name: 'Thương hiệu', desc: 'Brand Kit: màu, font, logo, slogan, liên hệ.', c: '#a78bfa' },
   { href: '/studio/image', icon: ImageIcon, name: 'Tạo ảnh', desc: 'Tạo ảnh sản phẩm/nghệ thuật theo mô tả.', c: '#22d3ee' },
   { href: '/studio/drafts', icon: BookmarkCheck, name: 'Chiến dịch', desc: 'Bản nháp & nội dung đã lưu trên máy.', c: '#94a3b8' },
 ];
 
-const STATS = ['0đ chi phí API', '9 công cụ', 'Đúng khổ mọi sàn', 'Xuất PNG · ZIP'];
+const STATS = ['0đ chi phí API', '8 công cụ', 'Đúng khổ mọi sàn', 'Xuất PNG · ZIP'];
 
 export default function StudioDashboardPage() {
   const [draft, setDraft] = useState<MarketingState | null>(null);

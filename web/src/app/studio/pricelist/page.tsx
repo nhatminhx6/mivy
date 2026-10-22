@@ -1,132 +1,304 @@
 'use client';
-// Bảng giá / Menu — render code từ Brand Kit.
-import { useEffect, useRef, useState } from 'react';
-import { Download, Plus, Trash2, Sparkles } from 'lucide-react';
-import { drawPriceList, PriceItem } from '@/lib/pricelist-engine';
-import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
-import { PageHeader } from '@/components/PageHeader';
-import { suggestMenuTitle } from '@/lib/copy-library';
+// Bảng giá / Menu: nhiều nhóm món, 2 cột giá, nhãn HOT/MỚI, dán thẳng từ Excel/ghi chú, 4 bố cục, tự co chữ/chia cột
+// cho vừa khổ (kể cả A4 in 300dpi). Lấy logo/tên/liên hệ/màu từ bộ nhận diện. Render 100% bằng code.
 
-const SAMPLE: PriceItem[] = [
-  { name: 'Cà phê sữa đá', price: '25.000đ', desc: 'Đậm vị, pha phin truyền thống' },
-  { name: 'Bạc xỉu', price: '30.000đ', desc: '' },
-  { name: 'Trà đào cam sả', price: '35.000đ', desc: 'Giải nhiệt, nhiều topping' },
-  { name: 'Bánh mì chảo', price: '45.000đ', desc: '' },
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AlertTriangle, ClipboardPaste, Download, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import type { BrandKit } from '@/types';
+import { contactLine, loadBrand } from '@/lib/brand-presets';
+import { POSTER_THEMES, type PosterThemeId } from '@/lib/infographic-engine';
+import { posterColorsFromBrand } from '@/lib/poster-engine';
+import { ILLUSTRATIONS, illustrationUrl } from '@/lib/illustrations';
+import { suggestMenuTitle } from '@/lib/copy-library';
+import { downloadBlob, embedFontCss } from '@/lib/html-export';
+import { slugify } from '@/lib/image-utils';
+import {
+  FIT_STEPS, PL_ASPECTS, PL_FONT_CSS, PL_LAYOUTS, PriceBoard, fitStart, parsePriceText, serializePriceText,
+  type PLAspect, type PLItem, type PLLayout, type PLSection, type PriceData,
+} from '@/components/PriceBoard';
+import { Scaled } from '@/components/BrandAssets';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { PageHeader } from '@/components/PageHeader';
+
+const PRESETS: { name: string; layout: PLLayout; theme: PosterThemeId; illus: string[]; data: PriceData }[] = [
+  {
+    name: 'Quán cà phê', layout: 'chalk', theme: 'orange', illus: ['hot_beverage', 'bubble_tea'],
+    data: {
+      title: 'Menu', subtitle: 'Cà phê · Trà · Bánh', note: 'Mang đi giảm 5k',
+      sections: [
+        { title: 'Cà phê', items: [
+          { name: 'Cà phê đen đá', price: '25.000đ', desc: 'Pha phin truyền thống' }, { name: 'Cà phê sữa đá', price: '29.000đ', badge: 'hot' },
+          { name: 'Bạc xỉu', price: '32.000đ' }, { name: 'Cà phê muối', price: '35.000đ', desc: 'Kem muối béo mặn', badge: 'new' },
+        ] },
+        { title: 'Trà & trà sữa', cols: ['M', 'L'], items: [
+          { name: 'Trà đào cam sả', price: '35.000đ', price2: '42.000đ' }, { name: 'Trà sữa trân châu', price: '30.000đ', price2: '37.000đ', badge: 'hot' },
+          { name: 'Trà vải lài', price: '35.000đ', price2: '42.000đ' }, { name: 'Matcha latte', price: '39.000đ', price2: '45.000đ' },
+        ] },
+        { title: 'Bánh', items: [{ name: 'Bánh mì chảo', price: '45.000đ' }, { name: 'Croissant bơ', price: '28.000đ' }, { name: 'Bánh flan', price: '18.000đ' }] },
+      ],
+    },
+  },
+  {
+    name: 'Spa / Nail', layout: 'elegant', theme: 'pink', illus: [],
+    data: {
+      title: 'Bảng giá dịch vụ', subtitle: 'Nail · Mi · Spa', note: 'Đặt lịch trước để được ưu tiên',
+      sections: [
+        { title: 'Nail', items: [
+          { name: 'Sơn gel trơn', price: '120.000đ' }, { name: 'Sơn gel + vẽ', price: '180.000đ', desc: 'Vẽ tối đa 4 ngón' },
+          { name: 'Đắp bột', price: '250.000đ' }, { name: 'Tháo gel', price: '30.000đ' },
+        ] },
+        { title: 'Mi', items: [{ name: 'Nối mi classic', price: '200.000đ' }, { name: 'Nối mi volume', price: '350.000đ', badge: 'new' }, { name: 'Uốn mi', price: '150.000đ' }] },
+        { title: 'Spa', items: [{ name: 'Gội đầu dưỡng sinh', price: '80.000đ', badge: 'hot' }, { name: 'Chăm sóc da cơ bản', price: '250.000đ' }] },
+      ],
+    },
+  },
+  {
+    name: 'Bảng giá sỉ shop', layout: 'cards', theme: 'blue', illus: ['shopping_bags'],
+    data: {
+      title: 'Bảng giá sỉ', subtitle: 'Áp dụng từ 01/11 — số lượng có hạn', note: 'Sỉ từ 10 sản phẩm, được mix mẫu',
+      sections: [
+        { title: 'Áo', cols: ['Lẻ', 'Sỉ 10+'], items: [
+          { name: 'Áo thun cotton', price: '99.000đ', price2: '79.000đ', badge: 'hot' }, { name: 'Áo polo', price: '159.000đ', price2: '129.000đ' },
+          { name: 'Áo oversize', price: '129.000đ', price2: '105.000đ' },
+        ] },
+        { title: 'Quần', cols: ['Lẻ', 'Sỉ 10+'], items: [{ name: 'Quần jean nam', price: '249.000đ', price2: '199.000đ' }, { name: 'Quần short kaki', price: '149.000đ', price2: '119.000đ' }] },
+        { title: 'Phụ kiện', cols: ['Lẻ', 'Sỉ 10+'], items: [{ name: 'Nón lưỡi trai', price: '79.000đ', price2: '59.000đ' }, { name: 'Túi tote canvas', price: '89.000đ', price2: '69.000đ', badge: 'new' }] },
+      ],
+    },
+  },
+  {
+    name: 'Tiệm bánh', layout: 'menu', theme: 'red', illus: ['birthday_cake', 'wrapped_gift'],
+    data: {
+      title: 'Menu bánh', subtitle: 'Nướng mới mỗi sáng', note: 'Đặt bánh kem trước 1 ngày',
+      sections: [
+        { title: 'Bánh kem', cols: ['Size 16', 'Size 20'], items: [
+          { name: 'Bánh kem dâu', price: '280.000đ', price2: '380.000đ' }, { name: 'Bánh kem socola', price: '300.000đ', price2: '400.000đ', badge: 'hot' },
+          { name: 'Mousse chanh dây', price: '320.000đ', price2: '420.000đ', badge: 'new' },
+        ] },
+        { title: 'Bánh lẻ', items: [{ name: 'Bông lan trứng muối', price: '45.000đ', badge: 'hot' }, { name: 'Tiramisu ly', price: '39.000đ' }, { name: 'Bánh su kem', price: '50.000đ', desc: 'Hộp 10 cái' }] },
+        { title: 'Đồ uống', items: [{ name: 'Trà đào', price: '30.000đ' }, { name: 'Sữa tươi trân châu', price: '35.000đ' }] },
+      ],
+    },
+  },
 ];
 
+const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`;
+
+// Nạp font bảng giá (link Google Fonts) rồi chờ sẵn sàng — đo độ vừa khổ cần font thật.
+function usePriceFonts(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let on = true;
+    let link = document.getElementById('mivy-pl-fonts') as HTMLLinkElement | null;
+    new Promise<void>((res) => {
+      if (link?.sheet) return res();
+      if (!link) { link = document.createElement('link'); link.id = 'mivy-pl-fonts'; link.rel = 'stylesheet'; link.href = PL_FONT_CSS.match(/url\('([^']+)'\)/)![1]; document.head.appendChild(link); }
+      link.addEventListener('load', () => res(), { once: true });
+      link.addEventListener('error', () => res(), { once: true });
+    })
+      .then(() => Promise.all(['500 20px "Be Vietnam Pro"', '700 20px "Be Vietnam Pro"', '800 20px "Be Vietnam Pro"', '900 20px "Be Vietnam Pro"', '700 20px "Dancing Script"', '800 20px "Playfair Display"', '700 20px "Playfair Display"'].map((f) => document.fonts.load(f, 'Ắâ Aa'))))
+      .catch(() => null)
+      .then(() => { if (on) setReady(true); });
+    return () => { on = false; };
+  }, []);
+  return ready;
+}
+
 export default function PriceListPage() {
-  const [title, setTitle] = useState('BẢNG GIÁ');
-  const [items, setItems] = useState<PriceItem[]>(SAMPLE);
-  const [brandName, setBrandName] = useState('MIVY');
+  const fontsReady = usePriceFonts();
+  const [kit, setKit] = useState<BrandKit | null>(null);
+  const [data, setData] = useState<PriceData>(PRESETS[0].data);
+  const [layout, setLayout] = useState<PLLayout>(PRESETS[0].layout);
+  const [aspect, setAspect] = useState<PLAspect>('4:5');
+  const [themeId, setThemeId] = useState<PosterThemeId | 'brand'>(PRESETS[0].theme);
+  const [illus, setIllus] = useState<string[]>(PRESETS[0].illus);
+  const [brandName, setBrandName] = useState('');
   const [contact, setContact] = useState('');
-  const [primary, setPrimary] = useState('#0f172a');
-  const [accent, setAccent] = useState('#1f2937');
-  const [fontId, setFontId] = useState('be-vietnam');
-  const [style, setStyle] = useState<'dark' | 'light' | 'elegant'>('elegant');
-  const [aspect, setAspect] = useState<'4:5' | '9:16' | '1:1'>('4:5');
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mode, setMode] = useState<'form' | 'paste'>('form');
+  const [pasteText, setPasteText] = useState('');
+  const [titleIdx, setTitleIdx] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const b = loadBrand();
-    if (b) { setBrandName(b.name || 'MIVY'); setContact(contactLine(b.contact) || ''); setPrimary(b.colorPrimary || '#0f172a'); setAccent(b.colorAccent || '#1f2937'); setFontId(b.fontHeadingId || 'be-vietnam'); }
+    if (!b) return;
+    setKit(b);
+    setBrandName(b.name || '');
+    setContact(contactLine(b.contact));
+    if (b.name || b.logo) setThemeId('brand');
   }, []);
 
-  const [fontTick, setFontTick] = useState(0);
-  useEffect(() => { (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts?.ready?.then(() => setFontTick((t) => t + 1)); }, []);
+  const T = themeId === 'brand' && kit ? posterColorsFromBrand(kit) : (POSTER_THEMES.find((t) => t.id === themeId) || POSTER_THEMES[0]);
+  const brand = { name: brandName.trim(), logo: kit?.logo, contact: contact.trim() };
 
-  const opts = () => ({ title, items, brandName, contact, colorPrimary: primary, colorAccent: accent, fontHeadingId: fontId, fontBodyId: fontId, style, aspect });
-  useEffect(() => { if (canvasRef.current) drawPriceList(canvasRef.current, opts()); }, [title, items, brandName, contact, primary, accent, fontId, style, aspect, fontTick]);
+  // ---------- tự vừa khổ: thử (cột, cỡ chữ) từ to → nhỏ, lấy mức đầu tiên không tràn ----------
+  const fitKey = JSON.stringify([data, layout, aspect, illus, brand, fontsReady]);
+  const [fitState, setFitState] = useState({ key: '', idx: 0, over: false });
+  const idx = fitState.key === fitKey ? fitState.idx : fitStart(layout);
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const over = el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1;
+    if (over && idx < FIT_STEPS.length - 1) setFitState({ key: fitKey, idx: idx + 1, over: false });
+    else if (fitState.key !== fitKey || fitState.idx !== idx || fitState.over !== over) setFitState({ key: fitKey, idx, over });
+  });
+  const overflow = fitState.key === fitKey && fitState.over;
 
-  const [titleIdx, setTitleIdx] = useState(0);
-  const suggestTitle = () => { const n = titleIdx + 1; setTitleIdx(n); setTitle(suggestMenuTitle(n)); };
+  // ---------- sửa nội dung ----------
+  const set = (patch: Partial<PriceData>) => setData((d) => ({ ...d, ...patch }));
+  const setSec = (si: number, patch: Partial<PLSection>) => setData((d) => ({ ...d, sections: d.sections.map((s, i) => (i === si ? { ...s, ...patch } : s)) }));
+  const setItem = (si: number, ii: number, patch: Partial<PLItem>) => setSec(si, { items: data.sections[si].items.map((it, i) => (i === ii ? { ...it, ...patch } : it)) });
+  const loadPreset = (p: typeof PRESETS[number]) => { setData(p.data); setLayout(p.layout); setIllus(p.illus); if (!(kit && themeId === 'brand')) setThemeId(p.theme); };
+  const openPaste = () => { setPasteText(serializePriceText(data.sections)); setMode('paste'); };
+  const applyPaste = () => { const secs = parsePriceText(pasteText); if (secs.length) { set({ sections: secs }); setMode('form'); } };
+  const toggleIllus = (id: string) => setIllus((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id].slice(-2)));
 
-  const setItem = (i: number, k: keyof PriceItem, v: string) => setItems((a) => a.map((it, idx) => idx === i ? { ...it, [k]: v } : it));
-  const addItem = () => setItems((a) => [...a, { name: '', price: '', desc: '' }]);
-  const delItem = (i: number) => setItems((a) => a.filter((_, idx) => idx !== i));
-
-  const download = () => {
-    const c = document.createElement('canvas'); drawPriceList(c, { ...opts(), scale: 2 });
-    c.toBlob((b) => { if (!b) return; const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `mivy-bang-gia-${aspect.replace(':', 'x')}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); });
+  const A = PL_ASPECTS.find((a) => a.id === aspect)!;
+  const download = async () => {
+    if (!nodeRef.current || busy) return;
+    setBusy(true);
+    try {
+      const { toBlob } = await import('html-to-image');
+      const b = await toBlob(nodeRef.current, { width: A.w, height: A.h, pixelRatio: 2, fontEmbedCSS: await embedFontCss(PL_FONT_CSS), cacheBust: false, style: { transform: 'none' } });
+      if (b) downloadBlob(b, `${slugify(`${brand.name} ${data.title}`, 'bang-gia')}-${aspect === 'A4' ? 'a4-300dpi' : aspect.replace(':', 'x')}.png`);
+    } finally { setBusy(false); }
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader
-        title="Bảng giá / Menu"
-        sub="Điền món & giá — ra bảng giá đẹp để đăng/in. Lấy màu, font, liên hệ từ Brand Kit."
-        actions={<button onClick={download} className="mv-btn mv-btn-primary"><Download className="w-4 h-4" /> Tải PNG</button>}
-      />
+  const itemCount = data.sections.reduce((n, s) => n + s.items.length, 0);
 
-      <div className="grid lg:grid-cols-[1fr_380px] gap-7 items-start">
-        <div className="glass-card p-6 flex flex-col items-center lg:sticky lg:top-4 self-start hover:!transform-none">
-          <div className="w-full rounded-xl bg-black/25 border border-white/[0.05] p-5 flex items-center justify-center min-h-[420px]">
-            <canvas ref={canvasRef} className="rounded-lg shadow-2xl max-h-[520px] w-auto" style={{ maxWidth: 420 }} />
-          </div>
+  return (
+    <div className="p-6 lg:p-8">
+      <PageHeader title="Bảng giá / Menu" sub="Nhập hoặc dán danh sách món → chọn bố cục → tự co chữ cho vừa khổ. Tải ảnh đăng mạng hoặc A4 in 300dpi." />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] gap-6 items-start">
+        <div className="space-y-4 min-w-0">
+          <CollapsibleSection title="1 · Mẫu">
+            <div className="flex flex-wrap gap-2">
+              {PRESETS.map((p) => <button key={p.name} type="button" onClick={() => loadPreset(p)} className={chip(data === p.data)}>{p.name}</button>)}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection title="2 · Bố cục, khổ & màu">
+            <div className="mv-label mb-1.5">Bố cục</div>
+            <div className="flex flex-wrap gap-1.5 mb-4">{PL_LAYOUTS.map((l) => <button key={l.id} type="button" onClick={() => setLayout(l.id)} className={chip(layout === l.id)}>{l.name}</button>)}</div>
+            <div className="mv-label mb-1.5">Khổ</div>
+            <div className="flex flex-wrap gap-1.5 mb-4">{PL_ASPECTS.map((a) => <button key={a.id} type="button" onClick={() => setAspect(a.id)} className={chip(aspect === a.id)}>{a.name}</button>)}</div>
+            <div className="mv-label mb-1.5">Màu</div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {kit && (() => { const bc = posterColorsFromBrand(kit); return (
+                <button type="button" onClick={() => setThemeId('brand')} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === 'brand' ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                  <span className="w-5 h-5 rounded-full" style={{ background: bc.main, boxShadow: `inset 0 0 0 3px ${bc.soft}` }} />Thương hiệu
+                </button>); })()}
+              {POSTER_THEMES.map((t) => (
+                <button key={t.id} type="button" onClick={() => setThemeId(t.id)} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === t.id ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                  <span className="w-5 h-5 rounded-full" style={{ background: t.main, boxShadow: `inset 0 0 0 3px ${t.soft}` }} />{t.name}
+                </button>
+              ))}
+            </div>
+            {layout !== 'elegant' && (<>
+              <div className="mv-label mb-1.5">Hình minh hoạ <span className="normal-case text-slate-500">(tối đa 2)</span></div>
+              <div className="grid grid-cols-10 sm:grid-cols-12 gap-1 max-h-28 overflow-y-auto pr-1">
+                {ILLUSTRATIONS.map((il) => (
+                  <button key={il.id} type="button" title={il.name} onClick={() => toggleIllus(il.id)}
+                    className={`aspect-square rounded-md border p-0.5 ${illus.includes(il.id) ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/25'}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={illustrationUrl(il.id)} alt={il.name} className="w-full h-full object-contain" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </>)}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="3 · Nội dung" right={<span className="text-[11px] text-slate-400">{data.sections.length} nhóm · {itemCount} món</span>}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="block"><span className="mv-label flex justify-between mb-1.5">Tiêu đề
+                <button type="button" onClick={() => { const n = titleIdx + 1; setTitleIdx(n); set({ title: suggestMenuTitle(n) }); }} className="normal-case text-indigo-300 hover:text-indigo-200 inline-flex items-center gap-1"><Sparkles className="w-3 h-3" />Gợi ý</button></span>
+                <input className="mv-input" value={data.title} onChange={(e) => set({ title: e.target.value })} data-testid="pl-title" /></label>
+              <label className="block"><span className="mv-label block mb-1.5">Dòng phụ</span><input className="mv-input" value={data.subtitle || ''} onChange={(e) => set({ subtitle: e.target.value })} placeholder="VD: Cà phê · Trà · Bánh" /></label>
+              <label className="block"><span className="mv-label block mb-1.5">Tên shop</span><input className="mv-input" value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Lấy từ bộ nhận diện" /></label>
+              <label className="block"><span className="mv-label block mb-1.5">Liên hệ</span><input className="mv-input" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="SĐT · địa chỉ" /></label>
+              <label className="block sm:col-span-2"><span className="mv-label block mb-1.5">Ghi chú cuối</span><input className="mv-input" value={data.note || ''} onChange={(e) => set({ note: e.target.value })} placeholder="VD: Giá đã gồm VAT" /></label>
+            </div>
+
+            <div className="mv-seg w-full mt-4 mb-3">
+              <button type="button" onClick={() => setMode('form')} data-active={mode === 'form'} className="mv-seg-btn flex-1 !justify-center !text-xs">Từng món</button>
+              <button type="button" onClick={openPaste} data-active={mode === 'paste'} className="mv-seg-btn flex-1 !justify-center !text-xs"><ClipboardPaste className="w-3.5 h-3.5" /> Dán nhanh từ Excel / ghi chú</button>
+            </div>
+
+            {mode === 'paste' ? (
+              <div>
+                <textarea rows={12} value={pasteText} onChange={(e) => setPasteText(e.target.value)} className="mv-input font-mono !text-xs leading-relaxed" data-testid="pl-paste"
+                  placeholder={'# Cà phê\nCà phê sữa đá - 29k\nBạc xỉu | 32.000đ | Ít ngọt\n\n# Trà sữa | M | L\nTrà sữa trân châu | 30k | 37k'} />
+                <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                  Dòng bắt đầu bằng <b>#</b> là tên nhóm (thêm <b>| M | L</b> nếu có 2 cột giá). Mỗi món 1 dòng: <b>Tên | Giá | Mô tả</b>, hoặc <b>Tên - 25k</b>, hoặc copy thẳng các cột từ Excel. Thêm <b>(hot)</b> / <b>(mới)</b> sau tên để gắn nhãn.
+                </p>
+                <button type="button" onClick={applyPaste} className="mv-btn mv-btn-primary !px-4 !py-2 !text-xs mt-2">Áp dụng</button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {data.sections.map((sec, si) => (
+                  <div key={si} className="rounded-xl border border-white/10 p-3 space-y-2 bg-white/[0.02]">
+                    <div className="flex items-center gap-2">
+                      <input className="mv-input flex-1 min-w-0 !font-bold" value={sec.title} onChange={(e) => setSec(si, { title: e.target.value })} placeholder="Tên nhóm" />
+                      <label className="flex items-center gap-1.5 text-[11px] text-slate-300 shrink-0">
+                        <input type="checkbox" checked={!!sec.cols} onChange={(e) => setSec(si, { cols: e.target.checked ? ['M', 'L'] : undefined })} /> 2 cột giá
+                      </label>
+                      <button type="button" onClick={() => set({ sections: data.sections.filter((_, i) => i !== si) })} className="mv-btn mv-btn-ghost !p-2 !text-rose-300" title="Xoá nhóm"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                    {sec.cols && (
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400">Tên cột:
+                        {[0, 1].map((j) => <input key={j} className="mv-input !w-24 !py-1 !text-xs" value={sec.cols![j]} onChange={(e) => { const c = [...sec.cols!] as [string, string]; c[j] = e.target.value; setSec(si, { cols: c }); }} />)}
+                      </div>
+                    )}
+                    {sec.items.map((it, ii) => (
+                      <div key={ii} className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <input className="mv-input flex-1 min-w-0" value={it.name} onChange={(e) => setItem(si, ii, { name: e.target.value })} placeholder="Tên món" />
+                          <input className="mv-input !w-24" value={it.price} onChange={(e) => setItem(si, ii, { price: e.target.value })} placeholder="Giá" />
+                          {sec.cols && <input className="mv-input !w-24" value={it.price2 || ''} onChange={(e) => setItem(si, ii, { price2: e.target.value })} placeholder={sec.cols[1]} />}
+                          <button type="button" onClick={() => setSec(si, { items: sec.items.filter((_, i) => i !== ii) })} className="mv-btn mv-btn-ghost !p-2 !text-rose-300" title="Xoá món"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <div className="flex items-center gap-1.5 pl-0.5">
+                          <input className="mv-input flex-1 min-w-0 !py-1 !text-xs" value={it.desc || ''} onChange={(e) => setItem(si, ii, { desc: e.target.value })} placeholder="Mô tả (tuỳ chọn)" />
+                          <input className="mv-input !w-24 !py-1 !text-xs" value={it.old || ''} onChange={(e) => setItem(si, ii, { old: e.target.value })} placeholder="Giá cũ" title="Giá cũ (gạch ngang)" />
+                          <select className="mv-input !w-20 !py-1 !text-xs" value={it.badge || ''} onChange={(e) => setItem(si, ii, { badge: e.target.value as PLItem['badge'] })}>
+                            <option value="">—</option><option value="hot">HOT</option><option value="new">MỚI</option>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => setSec(si, { items: [...sec.items, { name: '', price: '' }] })} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs"><Plus className="w-3.5 h-3.5" /> Thêm món</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => set({ sections: [...data.sections, { title: 'Nhóm mới', items: [{ name: '', price: '' }] }] })} className="mv-btn mv-btn-ghost !px-3 !py-2 !text-xs"><Plus className="w-3.5 h-3.5" /> Thêm nhóm</button>
+              </div>
+            )}
+          </CollapsibleSection>
         </div>
 
-        <div className="glass-card p-5 space-y-6">
-          <div>
-            <div className="mv-label mb-2.5">Phong cách</div>
-            <div className="mv-seg w-full">
-              {([['elegant', 'Sang trọng'], ['light', 'Kem sáng'], ['dark', 'Tối']] as const).map(([v, l]) => (
-                <button key={v} onClick={() => setStyle(v)} data-active={style === v} className="mv-seg-btn flex-1 text-center">{l}</button>
-              ))}
+        {/* Xem trước ghim + tải */}
+        <div className="lg:sticky lg:top-4 self-start space-y-3">
+          <div className="glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-white">Xem trước</span>
+              <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">{aspect === 'A4' ? 'A4 · 2480×3508 · 300dpi' : `PNG · ${A.w * 2}×${A.h * 2}`}</span>
             </div>
+            <button type="button" onClick={download} disabled={busy || !fontsReady} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-60">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Tải ảnh PNG
+            </button>
+            {overflow && (
+              <div className="flex items-start gap-2 text-[11px] text-amber-200 bg-amber-400/10 border border-amber-400/30 rounded-lg px-2.5 py-2" data-testid="pl-overflow">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> Danh sách dài quá khổ này. Chọn khổ Story 9:16 hoặc A4, hoặc bớt món / mô tả.
+              </div>
+            )}
           </div>
-          <div>
-            <div className="mv-label mb-2.5">Khổ</div>
-            <div className="mv-seg w-full">
-              {(['4:5', '9:16', '1:1'] as const).map((a) => (
-                <button key={a} onClick={() => setAspect(a)} data-active={aspect === a} className="mv-seg-btn flex-1 text-center">{a}</button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="mv-label">Tiêu đề</div>
-              <button onClick={suggestTitle} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1 !text-[11px]" title="Gợi ý tiêu đề"><Sparkles className="w-3.5 h-3.5" /> Gợi ý</button>
-            </div>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tiêu đề (vd BẢNG GIÁ, MENU)" className="mv-input" />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="mv-label">Món / Dịch vụ <span className="text-slate-600 font-normal">· {items.length}</span></div>
-              <button onClick={addItem} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1 !text-[11px]"><Plus className="w-3.5 h-3.5" /> Thêm món</button>
-            </div>
-            <div className="mv-stagger space-y-2.5 max-h-[22rem] overflow-auto pr-1 -mr-1">
-              {items.map((it, i) => (
-                <div key={i} className="glass-card !rounded-xl p-2.5 space-y-2">
-                  <div className="flex gap-2 items-center">
-                    <span className="grid place-items-center w-5 h-5 rounded-md bg-indigo-500/15 text-indigo-300 text-[10px] font-bold shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-0"><input value={it.name} onChange={(e) => setItem(i, 'name', e.target.value)} placeholder="Tên món / dịch vụ" className="mv-input !py-1.5 text-sm" /></div>
-                    <div className="w-24 shrink-0"><input value={it.price} onChange={(e) => setItem(i, 'price', e.target.value)} placeholder="Giá" className="mv-input !py-1.5 !px-2.5 text-sm text-right" /></div>
-                    <button onClick={() => delItem(i)} className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors" title="Xoá món"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                  <input value={it.desc || ''} onChange={(e) => setItem(i, 'desc', e.target.value)} placeholder="Mô tả ngắn (tuỳ chọn)" className="mv-input !py-1.5 text-xs" />
-                </div>
-              ))}
-              {items.length === 0 && <p className="text-[12px] text-slate-500 text-center py-4">Chưa có món nào — bấm “Thêm món”.</p>}
-            </div>
-          </div>
-
-          <div>
-            <div className="mv-label mb-2.5">Thương hiệu &amp; liên hệ</div>
-            <div className="space-y-2.5">
-              <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Tên thương hiệu" className="mv-input" />
-              <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Liên hệ (hiện ở chân trang)" className="mv-input" />
-            </div>
-          </div>
-
-          <div>
-            <div className="mv-label mb-2.5">Màu &amp; font</div>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Nền</label>
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"><input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Nhấn</label>
-              <select value={fontId} onChange={(e) => setFontId(e.target.value)} className="mv-chip-select flex-1">
-                {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
+          <div className="glass-panel rounded-2xl p-3 border border-white/10" style={{ maxWidth: aspect === '9:16' || aspect === 'A4' ? 360 : undefined, marginInline: 'auto' }}>
+            <div className="rounded-xl overflow-hidden" data-testid="pl-preview">
+              <Scaled w={A.w} h={A.h} nodeRef={(el) => { nodeRef.current = el; }}>
+                <PriceBoard data={data} layout={layout} aspect={aspect} T={T} brand={brand} illus={layout === 'elegant' ? [] : illus} fit={FIT_STEPS[idx]} bodyRef={(el) => { bodyRef.current = el; }} />
+              </Scaled>
             </div>
           </div>
         </div>

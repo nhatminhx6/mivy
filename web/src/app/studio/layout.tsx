@@ -25,7 +25,6 @@ const GROUPS = [
       { label: 'Thương hiệu', href: '/studio/brand', icon: Palette },
       { label: 'Bộ nhận diện', href: '/studio/brandpack', icon: Package },
       { label: 'Bìa & Avatar', href: '/studio/brand-assets', icon: PanelTop },
-      { label: 'Vật phẩm', href: '/studio/merch', icon: ShoppingBag },
     ],
   },
   { title: 'Khác', items: [{ label: 'Chiến dịch', href: '/studio/drafts', icon: BookmarkCheck }] },
@@ -44,7 +43,6 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     if (pathname.includes('/marketing')) return 'Tạo quảng cáo';
     if (pathname.includes('/infographic')) return 'Infographic';
     if (pathname.includes('/templates')) return 'Mẫu thiết kế';
-    if (pathname.includes('/merch')) return 'Vật phẩm';
     if (pathname.includes('/image')) return 'Tạo ảnh';
     if (pathname.includes('/drafts')) return 'Chiến dịch';
     if (pathname.includes('/lab')) return 'Phòng thử ảnh API';
@@ -69,7 +67,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
               <div className="space-y-0.5">
                 {group.items.map((item, ii) => {
                   const Icon = item.icon;
-                  const isActive = item.href === '/studio' ? pathname === '/studio' : pathname.startsWith(item.href);
+                  const isActive = item.href === '/studio' ? pathname === '/studio' : (pathname === item.href || pathname.startsWith(item.href + '/'));
                   return (
                     <Link
                       key={item.href}

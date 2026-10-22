@@ -10,7 +10,7 @@ export const ILLUSTRATIONS: Illustration[] = [
   { id: 'package', name: 'Kiện hàng', group: 'Bán hàng' },
   { id: 'delivery_truck', name: 'Xe giao hàng', group: 'Bán hàng' },
   { id: 'money_bag', name: 'Túi tiền', group: 'Bán hàng' },
-  { id: 'credit_card', name: 'Thẻ', group: 'Bán hàng' },
+  { id: 'credit_card', name: 'Thẻ ngân hàng', group: 'Bán hàng' },
   { id: 'megaphone', name: 'Loa', group: 'Bán hàng' },
   { id: 'party_popper', name: 'Pháo giấy', group: 'Sự kiện' },
   { id: 'fire', name: 'Lửa', group: 'Sự kiện' },

@@ -1,8 +1,13 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Download, Plus, Trash2, Flame } from 'lucide-react';
+import Link from 'next/link';
+import { Download, Plus, Trash2, Flame, Package, Upload, X, Loader2, BadgeCheck } from 'lucide-react';
 import { renderFeatureInfographic, renderListInfographic, AD_BACKGROUNDS, getBackground, POSTER_THEMES, POSTER_VARIANTS, InfographicData, InfographicRow, PosterCard, PosterThemeId } from '@/lib/infographic-engine';
-import { renderPosterInfographic } from '@/lib/poster-engine';
+import { renderPosterInfographic, posterColorsFromBrand, isCustomHero } from '@/lib/poster-engine';
+import { loadBrand } from '@/lib/brand-presets';
+import { renderHtmlToPng, downloadBlob } from '@/lib/html-export';
+import { scaleImage, cutoutImage, slugify } from '@/lib/image-utils';
+import type { BrandKit } from '@/types';
 import { ILLUSTRATIONS, illustrationUrl } from '@/lib/illustrations';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
@@ -223,17 +228,59 @@ const TEMPLATES: { name: string; bg: string; theme?: PosterThemeId; data: Infogr
 
 const BG_GROUPS = Array.from(new Set(AD_BACKGROUNDS.map((b) => b.group)));
 
+// Bộ ảnh đa sàn: 1 nội dung → đủ khổ chuẩn từng nền tảng.
+const PLATFORMS: { aspect: Aspect; file: string }[] = [
+  { aspect: '1:1', file: 'shopee-lazada-tiktokshop_1080x1080' },
+  { aspect: '4:5', file: 'facebook-instagram_1080x1350' },
+  { aspect: '9:16', file: 'tiktok-reels-story-zalo_1080x1920' },
+];
+
+// Liên hệ từ bộ nhận diện → tối đa 2 dòng footer poster.
+function kitContacts(b: BrandKit): string[] {
+  const c = b.contact || {};
+  return [c.phone && `📞 ${c.phone}`, c.zalo && `💬 Zalo ${c.zalo}`, c.facebook && `👍 ${c.facebook}`, c.website && `🌐 ${c.website}`, c.address && `📍 ${c.address}`]
+    .filter((x): x is string => !!x).slice(0, 2);
+}
+const withKit = (d: InfographicData, b: BrandKit): InfographicData => {
+  const cs = kitContacts(b);
+  return { ...d, brand: b.name || d.brand, logo: b.logo, contacts: cs.length ? cs : d.contacts };
+};
+
 export default function InfographicStudio() {
   const [bgId, setBgId] = useState<string>(TEMPLATES[0].bg);
-  const [themeId, setThemeId] = useState<PosterThemeId>(TEMPLATES[0].theme || 'blue');
+  const [themeId, setThemeId] = useState<PosterThemeId | 'brand'>(TEMPLATES[0].theme || 'blue');
   const [aspect, setAspect] = useState<Aspect>('4:5');
   const [data, setData] = useState<InfographicData>(TEMPLATES[0].data);
+  const [kit, setKit] = useState<BrandKit | null>(null);
+  const [useKit, setUseKit] = useState(false);
+  const [cutting, setCutting] = useState<string | null>(null);
+  const [zipState, setZipState] = useState('');
+  const [zipErr, setZipErr] = useState('');
   const htmlPreviewRef = useRef<TemplateHtmlPreviewHandle | null>(null);
   const isFeature = data.layout === 'feature';
   const isPoster = data.layout === 'poster';
   const bg = getBackground(bgId) || AD_BACKGROUNDS[0];
-  const rendered = isPoster ? renderPosterInfographic(data, themeId, aspect)
-    : isFeature ? renderFeatureInfographic(data, bg, aspect) : renderListInfographic(data, bg, aspect);
+  const posterTheme = themeId === 'brand' ? (kit ? posterColorsFromBrand(kit) : 'blue') : themeId;
+  const renderFor = (a: Aspect) => (isPoster ? renderPosterInfographic(data, posterTheme, a)
+    : isFeature ? renderFeatureInfographic(data, bg, a) : renderListInfographic(data, bg, a));
+  const rendered = renderFor(aspect);
+
+  // Bộ nhận diện đã lưu (/studio/brand) → tự áp: tên shop, logo, liên hệ, màu thương hiệu
+  useEffect(() => {
+    const b = loadBrand();
+    if (!b || !(b.name || b.logo)) return;
+    setKit(b);
+    setUseKit(true);
+    setThemeId('brand');
+    setData((d) => withKit(d, b));
+  }, []);
+  const toggleKit = () => {
+    if (!kit) return;
+    const on = !useKit;
+    setUseKit(on);
+    if (on) { setData((d) => withKit(d, kit)); setThemeId('brand'); }
+    else { setData((d) => ({ ...d, logo: undefined })); if (themeId === 'brand') setThemeId('blue'); }
+  };
   const tpl = { id: `infographic-${data.layout || 'list'}-${isPoster ? `${data.variant || 'split'}-${themeId}` : bgId}`, title: 'Infographic', group: 'Infographic', ...rendered };
 
   const set = (patch: Partial<InfographicData>) => setData((d) => ({ ...d, ...patch }));
@@ -254,9 +301,55 @@ export default function InfographicStudio() {
     return { ...d, hero: h.length < 3 ? [...h, id] : [...h.slice(0, 2), id] };
   });
 
-  const loadTemplate = (t: typeof TEMPLATES[number]) => { setBgId(t.bg); if (t.theme) setThemeId(t.theme); setData(t.data); };
+  const loadTemplate = (t: typeof TEMPLATES[number]) => {
+    setBgId(t.bg);
+    if (t.theme && !(useKit && kit)) setThemeId(t.theme);
+    setData(useKit && kit ? withKit(t.data, kit) : t.data);
+  };
+
+  // Ảnh sản phẩm thật làm hình chính (ảnh mới lên đầu = hình to nhất). Tách nền chỉ khi user bấm.
+  const customHeroes = (data.hero || []).filter(isCustomHero);
+  const onUpload = async (files: FileList | null) => {
+    for (const f of Array.from(files || []).slice(0, 3)) {
+      const url = await scaleImage(f);
+      setData((d) => ({ ...d, hero: [url, ...(d.hero || [])].slice(0, 3) }));
+    }
+  };
+  const cutoutHero = async (src: string) => {
+    if (cutting) return;
+    setCutting(src);
+    try {
+      const url = await cutoutImage(src);
+      setData((d) => ({ ...d, hero: (d.hero || []).map((h) => (h === src ? url : h)) }));
+    } catch {
+      /* tách lỗi → giữ ảnh gốc */
+    } finally {
+      setCutting(null);
+    }
+  };
 
   const download = async () => { await htmlPreviewRef.current?.exportPng(); };
+
+  // 1 chạm: xuất đủ khổ các sàn → 1 file .zip
+  const downloadAll = async () => {
+    if (zipState) return;
+    setZipErr('');
+    try {
+      const slug = slugify(`${data.title} ${data.title2 || ''}`);
+      const files: Record<string, Uint8Array> = {};
+      for (const [i, p] of PLATFORMS.entries()) {
+        setZipState(`Đang xuất ${i + 1}/${PLATFORMS.length}…`);
+        const blob = await renderHtmlToPng(renderFor(p.aspect));
+        files[`${slug}-${p.file}.png`] = new Uint8Array(await blob.arrayBuffer());
+      }
+      const { zipSync } = await import('fflate');
+      downloadBlob(new Blob([zipSync(files, { level: 0 }) as BlobPart], { type: 'application/zip' }), `${slug}-bo-anh-da-san.zip`);
+    } catch {
+      setZipErr('Xuất bộ ảnh bị lỗi, anh bấm lại giúp em nhé.');
+    } finally {
+      setZipState('');
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8">
@@ -268,6 +361,26 @@ export default function InfographicStudio() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] gap-6 items-start">
         {/* CỘT TRÁI: điều khiển */}
         <div className="space-y-4 min-w-0">
+          {/* Bộ nhận diện: nhập 1 lần ở /studio/brand → tự điền vào poster */}
+          <div className="glass-panel border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+            {kit ? (<>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {kit.logo ? <img src={kit.logo} alt="" className="w-9 h-9 rounded-lg bg-white object-contain p-1 shrink-0" /> : <BadgeCheck className="w-5 h-5 text-indigo-300 shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-white truncate">Bộ nhận diện: {kit.name || 'Chưa đặt tên'}</div>
+                <div className="text-[11px] text-slate-400">Tự điền tên shop, logo, liên hệ & màu thương hiệu vào ảnh.</div>
+              </div>
+              <button type="button" role="switch" aria-checked={useKit} onClick={toggleKit} title="Bật/tắt bộ nhận diện"
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${useKit ? 'bg-indigo-500 border-indigo-400 text-white' : 'border-white/20 text-slate-300 hover:border-white/40'}`}>
+                {useKit ? 'Đang dùng' : 'Dùng'}
+              </button>
+            </>) : (<>
+              <BadgeCheck className="w-5 h-5 text-slate-400 shrink-0" />
+              <div className="flex-1 text-xs text-slate-300">Chưa có bộ nhận diện. Nhập 1 lần, mọi ảnh tự có logo, màu và liên hệ của shop.</div>
+              <Link href="/studio/brand" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs shrink-0">Tạo ngay</Link>
+            </>)}
+          </div>
+
           {/* 1 · Mẫu */}
           <CollapsibleSection title="1 · Chọn mẫu">
             <p className="text-[11px] text-slate-400 mb-2.5">Bấm 1 mẫu để nạp nội dung + phong cách mồi, rồi chỉnh bên dưới.</p>
@@ -301,6 +414,11 @@ export default function InfographicStudio() {
               </div>
               <div className="mv-label mb-1.5">Màu chủ đạo</div>
               <div className="flex flex-wrap gap-2 mb-4">
+                {kit && (() => { const bc = posterColorsFromBrand(kit); return (
+                  <button type="button" onClick={() => setThemeId('brand')} title="Màu từ bộ nhận diện"
+                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === 'brand' ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                    <span className="w-5 h-5 rounded-full" style={{ background: bc.main, boxShadow: `inset 0 0 0 3px ${bc.soft}` }} />Thương hiệu
+                  </button>); })()}
                 {POSTER_THEMES.map((t) => (
                   <button key={t.id} type="button" onClick={() => setThemeId(t.id)} title={t.name}
                     className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === t.id ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
@@ -360,8 +478,38 @@ export default function InfographicStudio() {
 
           {/* 4 · Poster: minh hoạ 3D + card */}
           {isPoster && (<>
-          <CollapsibleSection title="4 · Minh hoạ 3D" right={<span className="text-[11px] text-slate-400">{(data.hero || []).length}/3</span>}>
-            <p className="text-[11px] text-slate-400 mb-2.5">Chọn tối đa 3 hình — hình đầu là hình chính (to nhất).</p>
+          <CollapsibleSection title="4 · Hình chính" right={<span className="text-[11px] text-slate-400">{(data.hero || []).length}/3</span>}>
+            <div className="mb-3 pb-3 border-b border-white/10">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="mv-label">Ảnh sản phẩm của anh</span>
+                <label className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs cursor-pointer">
+                  <Upload className="w-3.5 h-3.5" /> Tải ảnh
+                  <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="sr-only" data-testid="hero-upload"
+                    onChange={(e) => { onUpload(e.target.files); e.target.value = ''; }} />
+                </label>
+              </div>
+              {customHeroes.length ? (
+                <div className="flex gap-2.5 flex-wrap">
+                  {customHeroes.map((src, i) => (
+                    <div key={i} className="relative w-20">
+                      <div className="w-20 h-20 rounded-lg border border-white/15 p-1" style={{ background: 'repeating-conic-gradient(#ffffff14 0 25%, transparent 0 50%) 0 0/12px 12px' }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt="" className="w-full h-full object-contain" />
+                      </div>
+                      <button type="button" onClick={() => cutoutHero(src)} disabled={!!cutting}
+                        className="mt-1 w-full flex items-center justify-center gap-1 rounded-md border border-white/15 py-1 text-[10px] font-semibold text-slate-200 hover:border-indigo-400 disabled:opacity-50">
+                        {cutting === src ? <><Loader2 className="w-3 h-3 animate-spin" /> Đang tách…</> : '✂ Tách nền'}
+                      </button>
+                      <button type="button" onClick={() => toggleHero(src)} title="Bỏ ảnh"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center"><X className="w-3 h-3 text-white" /></button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400">Ảnh thật sẽ thay hình 3D làm hình chính. Ảnh còn nền thì bấm &quot;✂ Tách nền&quot;.</p>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 mb-2.5">Hoặc chọn hình minh hoạ 3D (tối đa 3 hình, hình đầu là hình chính, to nhất).</p>
             <div className="grid grid-cols-8 sm:grid-cols-10 gap-1.5 max-h-56 overflow-y-auto pr-1">
               {ILLUSTRATIONS.map((il) => {
                 const idx = (data.hero || []).indexOf(il.id);
@@ -449,6 +597,11 @@ export default function InfographicStudio() {
             <button type="button" onClick={download} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm">
               <Download className="w-4 h-4" /> <span>Tải ảnh PNG</span>
             </button>
+            <button type="button" onClick={downloadAll} disabled={!!zipState} className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-sm disabled:opacity-60">
+              {zipState ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} <span>{zipState || 'Tải trọn bộ đa sàn (.zip)'}</span>
+            </button>
+            {zipErr && <p className="text-[11px] text-rose-300 text-center">{zipErr}</p>}
+            <p className="text-[10px] leading-relaxed text-slate-400 text-center">1080×1080 Shopee · Lazada · TikTok Shop — 1080×1350 Facebook · Instagram — 1080×1920 TikTok · Story · Zalo</p>
           </div>
           <div className="glass-panel rounded-2xl p-3 border border-white/10">
             <TemplateHtmlPreview ref={htmlPreviewRef} template={tpl} content={{}} noFill maxHeightVh={62} />

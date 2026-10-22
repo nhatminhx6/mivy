@@ -2,7 +2,25 @@
 // Render 100% bằng code (HTML/CSS + SVG vẽ tay) + hình 3D tĩnh trong kho /illustrations. Không gọi AI realtime.
 // Khối chữ chính gắn data-b → QC Playwright kiểm không đè nhau / không tràn.
 
-import { InfographicData, POSTER_THEMES, PosterThemeId, PosterVariant } from './infographic-engine';
+import { InfographicData, POSTER_THEMES, PosterColors, PosterThemeId, PosterVariant } from './infographic-engine';
+import type { BrandKit } from '@/types';
+
+// Ảnh user (dataURL/blob/url) dùng thẳng; còn lại là id trong kho minh hoạ.
+export const isCustomHero = (id: string) => /^(data:|blob:|https?:|\/)/.test(id);
+const heroSrc = (id: string) => (isCustomHero(id) ? id : `/illustrations/fluent3d/${encodeURIComponent(id)}.png`);
+
+function mixHex(a: string, b: string, t: number): string {
+  const p = (h: string) => { const s = h.replace('#', ''); const f = s.length === 3 ? s.split('').map((c) => c + c).join('') : s; return [0, 2, 4].map((i) => parseInt(f.slice(i, i + 2), 16)); };
+  const [x, y] = [p(a), p(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+const luminance = (h: string) => { const s = h.replace('#', ''); const [r, g, b] = [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+
+// Bảng màu poster suy ra từ bộ nhận diện: nhấn = accent, chữ đậm = màu tối nhất, nền = surface pha nhẹ accent.
+export function posterColorsFromBrand(b: Pick<BrandKit, 'colorAccent' | 'colorPrimary' | 'colorInk' | 'colorSurface'>): PosterColors {
+  const deep = luminance(b.colorPrimary) < 0.3 ? b.colorPrimary : b.colorInk;
+  return { main: b.colorAccent, deep, tint: b.colorSurface, tint2: mixHex(b.colorSurface, b.colorAccent, 0.1), soft: mixHex(b.colorSurface, b.colorAccent, 0.3) };
+}
 
 // Ngoặc ĐƠN: nhét vào style="..." — ngoặc kép sẽ đóng attribute giữa chừng.
 const FONT = "'Be Vietnam Pro', system-ui, sans-serif";
@@ -12,12 +30,12 @@ const esc = (s = '') => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/
 const sparkle = (size: number, color: string) =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24"><path d="M12 0C13 7 17 11 24 12C17 13 13 17 12 24C11 17 7 13 0 12C7 11 11 7 12 0Z" fill="${color}"/></svg>`;
 
-export function renderPosterInfographic(data: InfographicData, themeId: PosterThemeId = 'blue', aspect: '1:1' | '4:5' | '9:16' = '4:5'): { w: number; h: number; css: string; html: string } {
+export function renderPosterInfographic(data: InfographicData, theme: PosterThemeId | PosterColors = 'blue', aspect: '1:1' | '4:5' | '9:16' = '4:5'): { w: number; h: number; css: string; html: string } {
   const W = 1080;
   const H = aspect === '1:1' ? 1080 : aspect === '9:16' ? 1920 : 1350;
   const k = aspect === '1:1' ? 0.8 : aspect === '9:16' ? 1.08 : 1;
   const px = (n: number) => Math.round(n * k);
-  const T = POSTER_THEMES.find((t) => t.id === themeId) || POSTER_THEMES[0];
+  const T: PosterColors = typeof theme === 'string' ? (POSTER_THEMES.find((t) => t.id === theme) || POSTER_THEMES[0]) : theme;
   const v: PosterVariant = data.variant || 'split';
   const dark = v === 'bigdeal' || v === 'bento';
   const ink = dark ? '#ffffff' : T.deep;
@@ -34,8 +52,10 @@ export function renderPosterInfographic(data: InfographicData, themeId: PosterTh
 
   // ---------- mảnh dùng chung ----------
   const shadow = `filter:drop-shadow(0 ${px(18)}px ${px(22)}px ${dark ? '#00000059' : T.deep + '2e'});`;
+  // ảnh user: object-fit contain + bo góc (ảnh chưa tách nền vẫn gọn)
+  const custom = (id: string) => (isCustomHero(id) ? `object-fit:contain;border-radius:${px(18)}px;` : '');
   const img = (id: string | undefined, s: number, style = '') =>
-    id ? `<img src="/illustrations/fluent3d/${encodeURIComponent(id)}.png" alt="" style="display:block;width:${px(s)}px;height:${px(s)}px;${shadow}${style}"/>` : '';
+    id ? `<img src="${heroSrc(id)}" alt="" style="display:block;width:${px(s)}px;height:${px(s)}px;${custom(id)}${shadow}${style}"/>` : '';
   const at = (style: string, inner: string) => `<div style="position:absolute;${style}">${inner}</div>`;
   const iconBox = (icon: string | undefined, s: number, bg: string = T.tint2, border: string = T.soft) =>
     `<div style="width:${px(s)}px;height:${px(s)}px;flex:none;border-radius:${px(s * 0.28)}px;background:${bg};border:1.5px solid ${border};display:flex;align-items:center;justify-content:center;font-size:${px(s * 0.52)}px;">${esc(icon || '✦')}</div>`;
@@ -51,9 +71,11 @@ export function renderPosterInfographic(data: InfographicData, themeId: PosterTh
     ? `<div style="margin-top:${px(8)}px;font-family:${SCRIPT};font-weight:700;font-size:${px(size)}px;line-height:1.05;color:${color};${center ? 'text-align:center;' : ''}">${esc(data.tagline)}</div>${swoosh(Math.min(340, size * 5.5), color, center)}` : '';
 
   const header = `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;position:relative;z-index:4;">
-    ${brandName ? `<div style="display:flex;align-items:center;gap:${px(12)}px;">
-      <div style="width:${px(50)}px;height:${px(50)}px;border-radius:50%;background:${dark ? '#ffffff' : T.main};color:${dark ? T.main : '#ffffff'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:${px(24)}px;">${esc(brandName.charAt(0).toUpperCase())}</div>
-      <div style="font-weight:900;font-size:${px(34)}px;letter-spacing:-0.01em;color:${ink};">${esc(brandName)}</div>
+    ${brandName || data.logo ? `<div style="display:flex;align-items:center;gap:${px(12)}px;min-width:0;">
+      ${data.logo
+        ? `<img src="${data.logo}" alt="" style="display:block;height:${px(58)}px;max-width:${px(180)}px;object-fit:contain;background:#ffffff;border-radius:${px(14)}px;padding:${px(6)}px;box-sizing:border-box;box-shadow:0 ${px(6)}px ${px(16)}px #0000001f;"/>`
+        : `<div style="width:${px(50)}px;height:${px(50)}px;flex:none;border-radius:50%;background:${dark ? '#ffffff' : T.main};color:${dark ? T.main : '#ffffff'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:${px(24)}px;">${esc(brandName.charAt(0).toUpperCase())}</div>`}
+      ${brandName ? `<div style="font-weight:900;font-size:${px(34)}px;letter-spacing:-0.01em;color:${ink};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${px(460)}px;">${esc(brandName)}</div>` : ''}
     </div>` : '<div></div>'}
     ${data.note ? `<div style="font-family:${SCRIPT};font-weight:700;font-size:${px(36)}px;line-height:0.95;color:${accent};text-align:center;max-width:${px(250)}px;transform:rotate(-7deg);margin-top:${px(6)}px;">${esc(data.note)}</div>` : ''}
   </div>`;
@@ -255,7 +277,7 @@ export function renderPosterInfographic(data: InfographicData, themeId: PosterTh
       return `<div style="position:relative;flex:none;width:33%;aspect-ratio:0.8;max-height:100%;margin-left:${i ? '-3%' : '0'};transform:translateY(${lift[i]}px) rotate(${rot[i]}deg);background:#ffffff;border-radius:${px(8)}px;padding:${px(14)}px ${px(14)}px 0;box-sizing:border-box;box-shadow:0 ${px(18)}px ${px(36)}px ${T.deep}33;display:flex;flex-direction:column;z-index:${i === 1 ? 2 : 1};">
         ${at(`left:50%;top:-${px(16)}px;width:${px(110)}px;height:${px(32)}px;transform:translateX(-50%) rotate(${-rot[i] * 0.7}deg);background:${tape[i]};`, '')}
         <div style="flex:1 1 auto;min-height:0;border-radius:${px(4)}px;background:radial-gradient(circle at 50% 45%, #ffffff 0%, ${T.tint2} 78%);display:flex;align-items:center;justify-content:center;">
-          <img src="/illustrations/fluent3d/${encodeURIComponent(id)}.png" alt="" style="width:74%;height:auto;max-height:88%;object-fit:contain;${shadow}"/>
+          <img src="${heroSrc(id)}" alt="" style="width:74%;height:auto;max-height:88%;object-fit:contain;${custom(id)}${shadow}"/>
         </div>
         <div style="height:${px(78)}px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
           ${cap ? `<div style="font-family:${SCRIPT};font-weight:700;font-size:${px(30)}px;line-height:1;color:${T.deep};">${esc(cap.text)}</div>${sub(cap.sub, T.deep + '99', 15)}` : ''}

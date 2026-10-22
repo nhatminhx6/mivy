@@ -24,6 +24,14 @@ export const COLOR_PRESETS: Palette[] = [
   { name: 'Nâu ấm', colorPrimary: '#3a2416', colorSecondary: '#6b4328', colorAccent: '#b4703a', colorInk: '#24150c', colorSurface: '#faf3ec' },
   { name: 'Pastel dịu', colorPrimary: '#5b4b8a', colorSecondary: '#8a74c9', colorAccent: '#9b7ede', colorInk: '#2a2440', colorSurface: '#f4f1fb' },
   { name: 'Xanh lá tươi', colorPrimary: '#143d10', colorSecondary: '#2d6b22', colorAccent: '#65c23a', colorInk: '#0c2208', colorSurface: '#f1faee' },
+  { name: 'Navy cam', colorPrimary: '#0a2540', colorSecondary: '#14457a', colorAccent: '#ff7a1a', colorInk: '#081726', colorSurface: '#eef4fb' },
+  { name: 'Than vàng', colorPrimary: '#1c1c1e', colorSecondary: '#3a3a3e', colorAccent: '#f4b400', colorInk: '#121214', colorSurface: '#f6f6f5' },
+  { name: 'Rượu vang', colorPrimary: '#4a1020', colorSecondary: '#7d2039', colorAccent: '#c81d4e', colorInk: '#2a0a12', colorSurface: '#fceef2' },
+  { name: 'Cổ vịt', colorPrimary: '#0b3a3a', colorSecondary: '#12605f', colorAccent: '#06b6d4', colorInk: '#082626', colorSurface: '#ecfbfb' },
+  { name: 'Indigo', colorPrimary: '#1e1b4b', colorSecondary: '#3730a3', colorAccent: '#6366f1', colorInk: '#141236', colorSurface: '#eef0fe' },
+  { name: 'Đất nung', colorPrimary: '#4a241a', colorSecondary: '#8a3f29', colorAccent: '#e2663b', colorInk: '#2a140d', colorSurface: '#fcf0ea' },
+  { name: 'Rêu', colorPrimary: '#2f3310', colorSecondary: '#5a6318', colorAccent: '#a3b018', colorInk: '#1a1d07', colorSurface: '#f7f8ec' },
+  { name: 'Xám đá', colorPrimary: '#1e293b', colorSecondary: '#334155', colorAccent: '#0ea5e9', colorInk: '#0f172a', colorSurface: '#f1f5f9' },
 ];
 
 export const FONT_PRESETS: { id: string; name: string; family: string }[] = [

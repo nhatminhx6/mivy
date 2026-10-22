@@ -2,15 +2,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { TemplateDef } from '@/lib/templates-data';
 import { fillTemplateHtml, FillContent } from '@/lib/template-fill';
-
-const urlCache = new Map<string, Promise<string>>();
-function fetchCss(url: string): Promise<string> {
-  if (!urlCache.has(url)) urlCache.set(url, fetch(url).then((r) => r.text()).catch(() => ''));
-  return urlCache.get(url)!;
-}
-function importUrls(css: string): string[] {
-  return Array.from(new Set(Array.from(css.matchAll(/@import url\(['"]?([^'")]+)['"]?\)/g)).map((m) => m[1])));
-}
+import { fontCssFor, embedFontCss, stripImports } from '@/lib/html-export';
 
 export interface TemplateHtmlPreviewHandle {
   exportPng: () => Promise<void>;
@@ -28,11 +20,11 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
-  const nonImportCss = useMemo(() => (template.css || '').replace(/@import url\([^)]*\);?/g, '').trim(), [template.css]);
+  const nonImportCss = useMemo(() => stripImports(template.css || ''), [template.css]);
 
   useEffect(() => {
     let on = true;
-    Promise.all(importUrls(template.css || '').map(fetchCss)).then((parts) => { if (on) setFontCss(parts.join('\n')); });
+    fontCssFor(template.css || '').then((css) => { if (on) setFontCss(css); });
     return () => { on = false; };
   }, [template.css]);
 
@@ -59,7 +51,8 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
     exportPng: async () => {
       if ((document as any).fonts?.ready) await (document as any).fonts.ready;
       const { toPng } = await import('html-to-image');
-      const url = await toPng(nodeRef.current!, { width: template.w, height: template.h, pixelRatio: 2, cacheBust: true, fontEmbedCSS: fontCss, skipFonts: !fontCss });
+      const embedded = await embedFontCss(template.css || '');
+      const url = await toPng(nodeRef.current!, { width: template.w, height: template.h, pixelRatio: 2, cacheBust: false, fontEmbedCSS: embedded, skipFonts: !embedded });
       const a = document.createElement('a');
       a.href = url; a.download = `mivy-${template.id}.png`; a.click();
     },

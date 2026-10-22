@@ -1,250 +1,257 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Download, Check } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Download, Loader2, Save, Shuffle } from 'lucide-react';
 import { BrandKit } from '@/types';
-import { DEFAULT_BRAND, fontFamilyById, loadBrand, saveBrand } from '@/lib/brand-presets';
-import { LOGO_ICONS, iconById, ICON_STYLES, AI_CONCEPTS, aiIconPath } from '@/lib/logo-icons';
+import { DEFAULT_BRAND, contactLine, loadBrand, saveBrand } from '@/lib/brand-presets';
+import { LogoMockups } from '@/components/LogoMockups';
+import { LOGO_ICONS } from '@/lib/logo-icons';
+import {
+  ACCENTS, Gu, LOGO_FONTS, LOGO_GUS, LOGO_INDUSTRIES, LOGO_KINDS, LOGO_PALETTES, LogoSpec, LogoSvg, SHAPES,
+  fontById, generateLogos, logoFontCss, useLogoFonts, usesIcon, usesShape,
+} from '@/lib/logo-engine';
+import { downloadBlob, embedFontCss } from '@/lib/html-export';
+import { slugify } from '@/lib/image-utils';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 
-type Layout = 'emblem' | 'icon-top' | 'icon-left' | 'wordmark';
-type BgStyle = 'trong' | 'sang' | 'dam';
-type Container = 'squircle' | 'circle' | 'badge' | 'plain';
-
-const LAYOUTS: { id: Layout; name: string }[] = [
-  { id: 'emblem', name: 'Huy hiệu' }, { id: 'icon-top', name: 'Icon trên' },
-  { id: 'icon-left', name: 'Icon trái' }, { id: 'wordmark', name: 'Chữ không' },
-];
-const CONTAINERS: { id: Container; name: string }[] = [
-  { id: 'squircle', name: 'Khối bo' }, { id: 'circle', name: 'Tròn' },
-  { id: 'badge', name: 'Huy hiệu' }, { id: 'plain', name: 'Trơn' },
-];
+type Variant = 'color' | 'black' | 'white' | 'avatar';
+const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`;
 
 export default function LogoMakerPage() {
+  const ready = useLogoFonts();
   const [brand, setBrand] = useState<BrandKit>(DEFAULT_BRAND);
-  const [iconStyle, setIconStyle] = useState('3d');       // '3d' | 'phang' | 'line'
-  const [iconId, setIconId] = useState('store');          // phosphor id
-  const [aiConcept, setAiConcept] = useState('coffee');   // concept AI
-  const [iconDataUrl, setIconDataUrl] = useState('');     // dataURL icon AI (để export)
-  const [layout, setLayout] = useState<Layout>('emblem');
-  const [container, setContainer] = useState<Container>('squircle');
-  const [bg, setBg] = useState<BgStyle>('trong');
-  const [savedLogo, setSavedLogo] = useState(false);
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [name, setName] = useState('');
+  const [slogan, setSlogan] = useState('');
+  const [industry, setIndustry] = useState('retail');
+  const [gus, setGus] = useState<Gu[]>([]);
+  const [seed, setSeed] = useState(1);
+  const [sel, setSel] = useState<LogoSpec | null>(null);
+  const [previewBg, setPreviewBg] = useState<'light' | 'dark' | 'none'>('light');
+  const [syncColors, setSyncColors] = useState(true);
+  const [busy, setBusy] = useState('');
+  const [saved, setSaved] = useState(false);
+  const exportRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { const b = loadBrand(); if (b) setBrand(b); }, []);
-
-  // Gói đơn sắc → nhuộm theo màu thương hiệu; gói màu (emoji) giữ nguyên.
-  const MONO = ['carbon', 'tabler', 'fluentf', 'iconoir', 'phfill', 'majestic', 'solarbold'];
   useEffect(() => {
-    if (iconStyle === 'line') { setIconDataUrl(''); return; }
-    let active = true;
-    (async () => {
-      try {
-        const res = await fetch(aiIconPath(iconStyle, aiConcept));
-        if (!res.ok) throw new Error();
-        let txt = await res.text();
-        if (MONO.includes(iconStyle)) txt = txt.replace(/#1f2937/gi, brand.colorPrimary);
-        if (active) setIconDataUrl('data:image/svg+xml;utf8,' + encodeURIComponent(txt));
-      } catch { if (active) setIconDataUrl(''); }
-    })();
-    return () => { active = false; };
-  }, [iconStyle, aiConcept, brand.colorPrimary]);
+    const b = loadBrand();
+    if (b) { setBrand(b); setName(b.name || ''); setSlogan(b.slogan || ''); }
+  }, []);
 
-  const head = fontFamilyById(brand.fontHeadingId);
-  const body = fontFamilyById(brand.fontBodyId);
-  const name = (brand.name || 'Thương Hiệu');
-  const Icon = iconById(iconId);
-  const bgColor = bg === 'trong' ? 'transparent' : bg === 'sang' ? brand.colorSurface : brand.colorPrimary;
-  const textColor = bg === 'dam' ? '#ffffff' : brand.colorPrimary;
-  const W = 480, H = 480;
+  const logos = useMemo(() => generateLogos({ gus, industry, seed }), [gus, industry, seed]);
+  const cur = sel || logos[0];
+  const upd = (patch: Partial<LogoSpec>) => setSel({ ...cur, ...patch });
+  const shopName = name.trim() || 'Tên shop';
+  const hasBrandColors = brand.colorAccent !== DEFAULT_BRAND.colorAccent || brand.colorPrimary !== DEFAULT_BRAND.colorPrimary;
+  const palettes = hasBrandColors
+    ? [{ name: 'Thương hiệu', colorPrimary: brand.colorPrimary, colorSecondary: brand.colorSecondary, colorAccent: brand.colorAccent, colorInk: brand.colorInk, colorSurface: brand.colorSurface }, ...LOGO_PALETTES]
+    : LOGO_PALETTES;
+  const toggleGu = (g: Gu) => setGus((s) => (s.includes(g) ? s.filter((x) => x !== g) : [...s, g]));
 
-  const IconMark = ({ cx, cy, s }: { cx: number; cy: number; s: number }) => {
-    // Icon AI (ảnh màu): nền trắng bo + ảnh.
-    if (iconStyle !== 'line') {
-      if (!iconDataUrl) return null;
-      const pad = container === 'plain' ? 0 : s * 0.12;
-      return (
-        <g filter="url(#logoShadow)">
-          {container !== 'plain' && (container === 'circle' || container === 'badge'
-            ? <circle cx={cx} cy={cy} r={s / 2} fill="#ffffff" />
-            : <rect x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={s * 0.28} fill="#ffffff" />)}
-          {container === 'badge' && <circle cx={cx} cy={cy} r={s / 2 - 7} fill="none" stroke={brand.colorAccent} strokeWidth={3} />}
-          <image href={iconDataUrl} x={cx - (s / 2 - pad)} y={cy - (s / 2 - pad)} width={s - 2 * pad} height={s - 2 * pad} preserveAspectRatio="xMidYMid meet" />
-        </g>
-      );
-    }
-    // Icon nét (Phosphor): khối gradient + icon trắng.
-    const inner = s * 0.52;
-    if (container === 'plain') {
-      return <g transform={`translate(${cx - inner / 2},${cy - inner / 2})`}><Icon size={inner} color={brand.colorAccent} weight="duotone" /></g>;
-    }
-    return (
-      <g filter="url(#logoShadow)">
-        {container === 'circle' && <circle cx={cx} cy={cy} r={s / 2} fill="url(#logoGrad)" />}
-        {container === 'squircle' && <rect x={cx - s / 2} y={cy - s / 2} width={s} height={s} rx={s * 0.28} fill="url(#logoGrad)" />}
-        {container === 'badge' && <>
-          <circle cx={cx} cy={cy} r={s / 2} fill="url(#logoGrad)" />
-          <circle cx={cx} cy={cy} r={s / 2 - 7} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={3} />
-        </>}
-        <g transform={`translate(${cx - inner / 2},${cy - inner / 2})`}><Icon size={inner} color="#ffffff" weight="fill" /></g>
-      </g>
-    );
+  // ---------- xuất ----------
+  const node = (v: Variant) => exportRef.current?.querySelector(`[data-x="${v}"]`) as HTMLElement | null;
+  const pngBlob = async (v: Variant, targetW: number): Promise<Blob> => {
+    const el = node(v);
+    const svg = el?.querySelector('svg');
+    if (!el || !svg) throw new Error('Không tìm thấy logo');
+    const w = svg.viewBox.baseVal.width, h = svg.viewBox.baseVal.height;
+    const css = await embedFontCss(logoFontCss([cur.fontId]));
+    const { toBlob } = await import('html-to-image');
+    const b = await toBlob(el, { width: w, height: h, pixelRatio: targetW / w, fontEmbedCSS: css, cacheBust: false });
+    if (!b) throw new Error('Xuất rỗng');
+    return b;
   };
+  const slug = slugify(shopName, 'logo');
+  const run = async (key: string, fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(key);
+    try { await fn(); } finally { setBusy(''); }
+  };
+  const downloadPng = (v: Variant, w: number, suffix: string) => run(v, async () => downloadBlob(await pngBlob(v, w), `${slug}-${suffix}.png`));
+  const downloadSvg = () => run('svg', async () => {
+    const svg = node('color')?.querySelector('svg')?.cloneNode(true) as SVGSVGElement | undefined;
+    if (!svg) return;
+    const st = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    st.textContent = await embedFontCss(logoFontCss([cur.fontId]));
+    svg.insertBefore(st, svg.firstChild);
+    downloadBlob(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }), `${slug}-logo.svg`);
+  });
+  const saveToBrand = () => run('save', async () => {
+    const blob = await pngBlob('color', 1000);
+    const dataUrl = await new Promise<string>((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.readAsDataURL(blob); });
+    const p = cur.palette;
+    const latest = loadBrand() || brand;
+    const next: BrandKit = {
+      ...latest, name: name.trim() || latest.name, slogan: slogan.trim() || latest.slogan, logo: dataUrl,
+      ...(syncColors ? { colorPrimary: p.colorPrimary, colorSecondary: p.colorSecondary, colorAccent: p.colorAccent, colorInk: p.colorInk, colorSurface: p.colorSurface } : {}),
+    };
+    if (saveBrand(next)) { setBrand(next); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+  });
 
-  const serialize = (): string => {
-    if (!svgRef.current) return '';
-    const clone = svgRef.current.cloneNode(true) as SVGSVGElement;
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    return new XMLSerializer().serializeToString(clone);
-  };
-  const rasterize = async (): Promise<Blob | null> => {
-    await document.fonts.ready;
-    const xml = serialize(); if (!xml) return null;
-    const url = URL.createObjectURL(new Blob([xml], { type: 'image/svg+xml;charset=utf-8' }));
-    try {
-      const img = new Image(); img.crossOrigin = 'anonymous';
-      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = url; });
-      const c = document.createElement('canvas'); c.width = 1024; c.height = 1024;
-      c.getContext('2d')!.drawImage(img, 0, 0, 1024, 1024);
-      return await new Promise((r) => c.toBlob(r, 'image/png'));
-    } finally { URL.revokeObjectURL(url); }
-  };
-  const download = (blob: Blob, ext: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `${(brand.name || 'logo').replace(/\s+/g, '-').toLowerCase()}-logo.${ext}`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-  const handlePng = async () => { const b = await rasterize(); if (b) download(b, 'png'); };
-  const handleSvg = () => { const xml = serialize(); if (xml) download(new Blob([xml], { type: 'image/svg+xml' }), 'svg'); };
-  const handleUseAsLogo = async () => {
-    const b = await rasterize(); if (!b) return;
-    const reader = new FileReader();
-    reader.onload = () => { saveBrand({ ...brand, logo: reader.result as string }); setSavedLogo(true); setTimeout(() => setSavedLogo(false), 2500); };
-    reader.readAsDataURL(b);
-  };
+  const previewStyle = previewBg === 'light' ? { background: cur.palette.colorSurface }
+    : previewBg === 'dark' ? { background: cur.palette.colorPrimary }
+      : { background: 'repeating-conic-gradient(#ffffff14 0 25%, transparent 0 50%) 0 0/18px 18px' };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <div className="glass-panel p-6 rounded-2xl">
-        <span className="text-xs font-bold px-2.5 py-1 rounded bg-white/20 text-white border border-white/30">LOGO MAKER</span>
-        <h1 className="text-2xl font-black text-white mt-2">Tạo logo từ thương hiệu</h1>
-        <p className="text-slate-400 text-xs mt-1">Chọn gói icon + bố cục — logo tự dùng màu và font thương hiệu. Tải PNG/SVG hoặc đặt làm logo chính.</p>
+    <div className="p-6 lg:p-8">
+      <div className="mb-5">
+        <h1 className="mv-h1 !text-2xl">Tạo logo</h1>
+        <p className="mv-sub !mt-0.5">Nhập tên shop → chọn 1 logo ưng ý trong bộ gợi ý → tinh chỉnh nhẹ → tải về hoặc lưu vào bộ nhận diện.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-5 text-xs">
-          <div>
-            <label className="block text-slate-300 font-semibold mb-2">Gói icon</label>
-            <div className="flex flex-wrap gap-2">
-              {ICON_STYLES.map((st) => (
-                <button key={st.id} type="button" onClick={() => setIconStyle(st.id)}
-                  className={`px-3 py-1.5 rounded-lg border-2 ${iconStyle === st.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{st.name}</button>
-              ))}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-6 items-start">
+        <div className="space-y-4 min-w-0">
+          <CollapsibleSection title="1 · Thông tin shop">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="block"><span className="mv-label block mb-1.5">Tên shop</span>
+                <input className="mv-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Bánh Mì Cô Ba" data-testid="logo-name" /></label>
+              <label className="block"><span className="mv-label block mb-1.5">Slogan (tuỳ chọn)</span>
+                <input className="mv-input" value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="VD: Ngon từ tâm" data-testid="logo-slogan" /></label>
+              <label className="block"><span className="mv-label block mb-1.5">Ngành</span>
+                <select className="mv-input" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+                  {LOGO_INDUSTRIES.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+                </select></label>
+              <div><span className="mv-label block mb-1.5">Gu (chọn nhiều, bỏ trống = tất cả)</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {LOGO_GUS.map((g) => <button key={g.id} type="button" onClick={() => toggleGu(g.id)} className={chip(gus.includes(g.id))}>{g.name}</button>)}
+                </div></div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-2">Biểu tượng</label>
-            {iconStyle === 'line' ? (
-              <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto pr-1">
-                {LOGO_ICONS.map(({ id, Comp }) => (
-                  <button key={id} type="button" onClick={() => setIconId(id)}
-                    className={`aspect-square rounded-lg flex items-center justify-center border-2 ${iconId === id ? 'border-indigo-500 bg-white/10' : 'border-white/10 hover:border-white/30'}`}>
-                    <Comp size={22} weight="duotone" className="text-slate-200" />
+          <CollapsibleSection title="2 · Chọn logo ưng ý"
+            right={<button type="button" onClick={() => setSeed((s) => s + 1)} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs"><Shuffle className="w-3.5 h-3.5" /> Xem bộ khác</button>}>
+            {ready ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5" data-testid="logo-grid">
+                {logos.map((l) => (
+                  <button key={l.id} type="button" onClick={() => setSel(l)} data-testid="logo-tile" title={`${LOGO_KINDS.find((k) => k.id === l.kind)?.name} · ${fontById(l.fontId).family}`}
+                    className={`h-32 rounded-xl border p-3 transition-all ${cur.id === l.id ? 'border-indigo-400 ring-2 ring-indigo-400/50' : 'border-white/10 hover:border-white/40'}`}
+                    style={{ background: l.palette.colorSurface }}>
+                    <LogoSvg spec={l} name={shopName} slogan={slogan} style={{ width: '100%', height: '100%', display: 'block' }} />
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
-                {AI_CONCEPTS.map((c) => (
-                  <button key={c.id} type="button" onClick={() => setAiConcept(c.id)} title={c.label}
-                    className={`aspect-square rounded-lg overflow-hidden flex items-center justify-center border-2 bg-white/90 ${aiConcept === c.id ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
-                    <img src={aiIconPath(iconStyle, c.id)} alt={c.label} className="w-full h-full object-contain"
-                      onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
+              <div className="h-40 flex items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /> Đang tải font…</div>
+            )}
+          </CollapsibleSection>
+
+          <CollapsibleSection title="4 · Xem trên đồ thật">
+            {ready && (
+              <LogoMockups palette={cur.palette} logoKey={JSON.stringify(cur)} fontCss={logoFontCss([cur.fontId])}
+                renderLogo={({ tone, frame, style }) => <LogoSvg spec={cur} name={shopName} slogan={slogan} tone={tone} frame={frame} style={style} />}
+                name={shopName} slogan={slogan} contact={contactLine(brand.contact)} fileSlug={slug}
+                makeLogoPng={() => pngBlob('color', 800)} />
+            )}
+          </CollapsibleSection>
+        </div>
+
+        {/* CỘT PHẢI: tinh chỉnh + tải */}
+        <div className="lg:sticky lg:top-4 self-start space-y-3">
+          <div className="glass-card p-4 rounded-2xl space-y-4 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-white">3 · Tinh chỉnh & tải</span>
+              <div className="flex gap-1">
+                {(['light', 'dark', 'none'] as const).map((b) => (
+                  <button key={b} type="button" onClick={() => setPreviewBg(b)} className={`text-[10px] px-2 py-1 rounded-full border ${previewBg === b ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>
+                    {b === 'light' ? 'Nền sáng' : b === 'dark' ? 'Nền tối' : 'Trong suốt'}
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="h-56 rounded-xl p-5 border border-white/10" style={previewStyle} data-testid="logo-preview">
+              {ready && <LogoSvg spec={cur} name={shopName} slogan={slogan} tone={previewBg === 'dark' ? 'white' : 'color'} style={{ width: '100%', height: '100%', display: 'block' }} />}
+            </div>
+
+            <div>
+              <div className="mv-label mb-1.5">Kiểu</div>
+              <div className="flex flex-wrap gap-1.5">{LOGO_KINDS.map((k) => <button key={k.id} type="button" onClick={() => upd({ kind: k.id })} className={chip(cur.kind === k.id)}>{k.name}</button>)}</div>
+            </div>
+            <label className="block">
+              <span className="mv-label block mb-1.5">Font</span>
+              <select className="mv-input" value={cur.fontId} onChange={(e) => upd({ fontId: e.target.value })} data-testid="logo-font">
+                {LOGO_GUS.map((g) => (
+                  <optgroup key={g.id} label={g.name}>
+                    {LOGO_FONTS.filter((f) => f.gu[0] === g.id).map((f) => <option key={f.id} value={f.id}>{f.family}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+            <div>
+              <div className="mv-label mb-1.5">Màu</div>
+              <div className="flex flex-wrap gap-2">
+                {palettes.map((p) => (
+                  <button key={p.name} type="button" title={p.name} onClick={() => upd({ palette: p })}
+                    className={`w-8 h-8 rounded-full border-2 transition-transform ${cur.palette.name === p.name ? 'border-white scale-110' : 'border-white/10 hover:border-white/40'}`}
+                    style={{ background: `linear-gradient(135deg, ${p.colorPrimary} 50%, ${p.colorAccent} 50%)` }} />
+                ))}
+              </div>
+            </div>
+            {cur.kind === 'word-dot' && (
+              <div><div className="mv-label mb-1.5">Điểm nhấn</div>
+                <div className="flex flex-wrap gap-1.5">{ACCENTS.map((a) => <button key={a.id} type="button" onClick={() => upd({ accent: a.id })} className={chip(cur.accent === a.id)}>{a.name}</button>)}</div></div>
             )}
-          </div>
+            {cur.kind === 'badge' ? (
+              <div><div className="mv-label mb-1.5">Tâm huy hiệu</div>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => upd({ shape: 'circle' })} className={chip(cur.shape === 'circle' || cur.shape === 'ring')}>Icon</button>
+                  <button type="button" onClick={() => upd({ shape: 'square' })} className={chip(cur.shape === 'square' || cur.shape === 'diamond')}>Chữ cái đầu</button>
+                </div></div>
+            ) : usesShape(cur.kind) && (
+              <div><div className="mv-label mb-1.5">Khung</div>
+                <div className="flex flex-wrap gap-1.5">{SHAPES.map((s) => <button key={s.id} type="button" onClick={() => upd({ shape: s.id })} className={chip(cur.shape === s.id)}>{s.name}</button>)}</div></div>
+            )}
+            {usesIcon(cur.kind) && (
+              <div><div className="mv-label mb-1.5">Biểu tượng</div>
+                <div className="grid grid-cols-10 gap-1 max-h-28 overflow-y-auto pr-1">
+                  {LOGO_ICONS.map(({ id, Comp }) => (
+                    <button key={id} type="button" title={id} onClick={() => upd({ icon: id })}
+                      className={`aspect-square rounded-md flex items-center justify-center border ${cur.icon === id ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/20'}`}>
+                      <Comp size={16} color="#e2e8f0" weight="fill" />
+                    </button>
+                  ))}
+                </div></div>
+            )}
 
-          <div>
-            <label className="block text-slate-300 font-semibold mb-2">Bố cục</label>
-            <div className="grid grid-cols-4 gap-2">
-              {LAYOUTS.map((l) => (
-                <button key={l.id} type="button" onClick={() => setLayout(l.id)}
-                  className={`px-2 py-2 rounded-lg border-2 ${layout === l.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{l.name}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-300 font-semibold mb-2">Kiểu khối</label>
+            <div className="pt-3 border-t border-white/10 space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                {CONTAINERS.map((c) => (
-                  <button key={c.id} type="button" onClick={() => setContainer(c.id)} disabled={layout === 'wordmark'}
-                    className={`px-2 py-2 rounded-lg border-2 disabled:opacity-40 ${container === c.id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{c.name}</button>
-                ))}
+                <button type="button" onClick={() => downloadPng('color', 2000, 'logo')} className="mv-btn mv-btn-primary !flex justify-center !py-2.5 !text-xs">
+                  {busy === 'color' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PNG nền trong
+                </button>
+                <button type="button" onClick={downloadSvg} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs">
+                  {busy === 'svg' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} SVG
+                </button>
+                <button type="button" onClick={() => downloadPng('avatar', 1000, 'avatar')} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs">
+                  {busy === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Avatar tròn
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => downloadPng('black', 2000, 'logo-den')} className="mv-btn mv-btn-ghost !flex justify-center !px-1 !py-2.5 !text-xs">{busy === 'black' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Bản đen'}</button>
+                  <button type="button" onClick={() => downloadPng('white', 2000, 'logo-trang')} className="mv-btn mv-btn-ghost !flex justify-center !px-1 !py-2.5 !text-xs">{busy === 'white' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Bản trắng'}</button>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-slate-300 font-semibold mb-2">Nền logo</label>
-              <div className="grid grid-cols-3 gap-2">
-                {([['trong', 'Trong'], ['sang', 'Sáng'], ['dam', 'Đậm']] as const).map(([id, lbl]) => (
-                  <button key={id} type="button" onClick={() => setBg(id)}
-                    className={`px-1 py-2 rounded-lg border-2 ${bg === id ? 'border-indigo-500 bg-white/10 text-white' : 'border-white/10 text-slate-400 hover:border-white/30'}`}>{lbl}</button>
-                ))}
-              </div>
+              <button type="button" onClick={saveToBrand} className="w-full mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-sm !border-indigo-400/50">
+                {busy === 'save' ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+                {saved ? 'Đã lưu vào bộ nhận diện' : 'Lưu vào bộ nhận diện'}
+              </button>
+              <label className="flex items-center gap-2 text-[11px] text-slate-400">
+                <input type="checkbox" checked={syncColors} onChange={(e) => setSyncColors(e.target.checked)} /> Đổi màu thương hiệu theo logo này
+              </label>
             </div>
           </div>
-
-          <div className="flex flex-wrap gap-2 pt-2">
-            <button type="button" onClick={handlePng} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500 text-white font-bold hover:bg-indigo-400"><Download className="w-3.5 h-3.5" />Tải PNG</button>
-            <button type="button" onClick={handleSvg} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card text-white font-semibold hover:bg-indigo-400/10"><Download className="w-3.5 h-3.5 text-white" />Tải SVG</button>
-            <button type="button" onClick={handleUseAsLogo} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/40 text-white font-semibold hover:bg-indigo-400/10">
-              {savedLogo ? <><Check className="w-3.5 h-3.5" />Đã đặt làm logo</> : 'Đặt làm logo chính'}</button>
-          </div>
-          <p className="text-[11px] text-slate-500">Màu & font lấy từ mục Thương hiệu. Icon màu (gói AI) để lên khối nền trắng cho rõ.</p>
-        </div>
-
-        <div className="space-y-3 lg:sticky lg:top-4">
-          <p className="text-xs text-slate-400 font-semibold">Xem trước</p>
-          <div className="rounded-2xl overflow-hidden border border-white/10 bg-[repeating-conic-gradient(#1a1d26_0_90deg,#13161e_0_180deg)] bg-[length:28px_28px] flex items-center justify-center p-6">
-            <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} width="360" height="360" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor={brand.colorPrimary} />
-                  <stop offset="100%" stopColor={brand.colorSecondary} />
-                </linearGradient>
-                <filter id="logoShadow" x="-25%" y="-25%" width="150%" height="150%">
-                  <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#000000" floodOpacity="0.28" />
-                </filter>
-              </defs>
-              {bg !== 'trong' && <rect x="0" y="0" width={W} height={H} rx="48" fill={bgColor} />}
-              {layout === 'emblem' && (<>
-                <IconMark cx={W / 2} cy={185} s={175} />
-                <text x={W / 2} y={360} textAnchor="middle" fontFamily={head} fontWeight="800" fontSize="46" fill={textColor}>{name}</text>
-                {brand.slogan && <text x={W / 2} y={398} textAnchor="middle" fontFamily={body} fontSize="20" fill={brand.colorAccent}>{brand.slogan}</text>}
-              </>)}
-              {layout === 'icon-top' && (<>
-                <IconMark cx={W / 2} cy={160} s={190} />
-                <text x={W / 2} y={330} textAnchor="middle" fontFamily={head} fontWeight="800" fontSize="52" fill={textColor}>{name}</text>
-                {brand.slogan && <text x={W / 2} y={372} textAnchor="middle" fontFamily={body} fontSize="20" fill={brand.colorAccent}>{brand.slogan}</text>}
-              </>)}
-              {layout === 'icon-left' && (<>
-                <IconMark cx={135} cy={H / 2} s={150} />
-                <text x={235} y={H / 2 - 6} textAnchor="start" dominantBaseline="middle" fontFamily={head} fontWeight="800" fontSize="44" fill={textColor}>{name}</text>
-                {brand.slogan && <text x={235} y={H / 2 + 34} textAnchor="start" dominantBaseline="middle" fontFamily={body} fontSize="19" fill={brand.colorAccent}>{brand.slogan}</text>}
-              </>)}
-              {layout === 'wordmark' && (<>
-                <text x={W / 2} y={H / 2 - 8} textAnchor="middle" dominantBaseline="middle" fontFamily={head} fontWeight="800" fontSize="64" fill={textColor}>{name}</text>
-                {brand.slogan && <text x={W / 2} y={H / 2 + 56} textAnchor="middle" fontFamily={body} fontSize="24" fill={brand.colorAccent}>{brand.slogan}</text>}
-              </>)}
-            </svg>
-          </div>
-          <p className="text-[11px] text-slate-500">Logo xuất 1024×1024 PNG (nền trong suốt nếu chọn) hoặc SVG vector.</p>
         </div>
       </div>
+
+      {/* Bản dựng ẩn để xuất ảnh đúng kích thước */}
+      {ready && (
+        <div ref={exportRef} aria-hidden style={{ position: 'fixed', left: -100000, top: 0, pointerEvents: 'none' }}>
+          {(['color', 'black', 'white'] as const).map((v) => (
+            <div key={v} data-x={v} style={{ display: 'inline-block' }}>
+              <LogoSvg spec={cur} name={shopName} slogan={slogan} tone={v} style={{ display: 'block' }} />
+            </div>
+          ))}
+          <div data-x="avatar" style={{ display: 'inline-block' }}>
+            <LogoSvg spec={cur} name={shopName} slogan={slogan} frame="avatar" style={{ display: 'block' }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

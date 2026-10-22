@@ -32,16 +32,25 @@ export interface MerchOpts {
   mockupImg?: HTMLImageElement | null;
   scale?: number; // supersampling khi xuất file
   theme?: Partial<PosterTheme>; // tông poster (tuỳ chọn) — đồng bộ nền/nhãn với poster
+  // --- studio vật phẩm (ảnh thật) ---
+  productTint?: string;            // đổi màu sản phẩm ngay trên ảnh (cần maskImg); trắng/bỏ trống = giữ nguyên
+  maskImg?: HTMLImageElement | null; // mặt nạ vùng sản phẩm (/mockups/masks/<item>.png, tạo offline)
+  printBox?: { x: number; y: number; w: number; h: number }; // vị trí in (mặc định PHOTO_PRINT)
+  logoScale?: number;              // 0.5–1.3, phóng quanh tâm vùng in
+  logoInk?: LogoInk;               // auto: sản phẩm sáng in logo màu, sản phẩm tối in logo trắng
 }
 
+export type LogoInk = 'auto' | 'color' | 'white' | 'black';
+
+// Vị trí in từng món + khổ in thật (cm) để xuất file in 300dpi.
 // Vùng in trên ảnh mockup thật (toạ độ trong khung 1080×1080). Chỉ item có ảnh mới liệt kê.
 export const PHOTO_PRINT: Record<string, { x: number; y: number; w: number; h: number }> = {
-  tshirt: { x: 398, y: 330, w: 290, h: 250 },
-  mug: { x: 388, y: 356, w: 440, h: 420 },
-  tumbler: { x: 398, y: 430, w: 286, h: 312 },
-  tote: { x: 360, y: 388, w: 362, h: 290 },
-  cap: { x: 326, y: 300, w: 430, h: 232 },
-  box: { x: 520, y: 442, w: 338, h: 238 },
+  tshirt: { x: 417, y: 185, w: 250, h: 220 },
+  mug: { x: 500, y: 430, w: 310, h: 260 },
+  tumbler: { x: 450, y: 445, w: 190, h: 230 },
+  tote: { x: 379, y: 540, w: 300, h: 280 },
+  cap: { x: 425, y: 320, w: 230, h: 150 },
+  box: { x: 545, y: 450, w: 250, h: 200 },
 };
 
 export function hasPhoto(item: string): boolean {
@@ -126,6 +135,117 @@ function placeBrand(
   ctx.restore();
 }
 
+
+export const PRINT_SPOTS: Record<string, { id: string; name: string; box: { x: number; y: number; w: number; h: number }; cm: number }[]> = {
+  tshirt: [{ id: 'giua-nguc', name: 'Giữa ngực', box: PHOTO_PRINT.tshirt, cm: 25 }, { id: 'nguc-trai', name: 'Ngực trái', box: { x: 606, y: 195, w: 88, h: 72 }, cm: 9 }],
+  cap: [{ id: 'mat-truoc', name: 'Mặt trước', box: PHOTO_PRINT.cap, cm: 10 }],
+  mug: [{ id: 'than-ly', name: 'Thân ly', box: PHOTO_PRINT.mug, cm: 8 }],
+  tumbler: [{ id: 'than-ly', name: 'Thân ly', box: PHOTO_PRINT.tumbler, cm: 6 }],
+  tote: [{ id: 'giua-tui', name: 'Giữa túi', box: PHOTO_PRINT.tote, cm: 25 }],
+  box: [{ id: 'mat-truoc', name: 'Mặt trước', box: PHOTO_PRINT.box, cm: 12 }],
+};
+// Độ cong thân (nửa góc logo trải trên thân trụ, rad) và độ bóng bề mặt (men sứ/nhựa bóng phủ cả lên logo).
+const CURVE: Record<string, number> = { mug: 0.58, tumbler: 0.57, cap: 0.37 };
+const GLOSS: Record<string, number> = { mug: 0.75, tumbler: 0.65, box: 0.12, cap: 0.08, tshirt: 0.04, tote: 0.04 };
+
+// Màu mực thực tế cho 1 màu sản phẩm (auto: sáng → logo màu, tối → logo trắng).
+export function inkFor(ink: LogoInk | undefined, productTint?: string): Exclude<LogoInk, 'auto'> {
+  if (ink && ink !== 'auto') return ink;
+  return productTint && lum(productTint) < 0.45 ? 'white' : 'color';
+}
+
+// Logo tô 1 màu (bản trắng/đen) — cache theo ảnh gốc.
+const tintCache = new WeakMap<HTMLImageElement, Record<string, HTMLCanvasElement>>();
+export function tintedLogo(im: HTMLImageElement, color: string): HTMLCanvasElement {
+  const m = tintCache.get(im) || {};
+  if (!m[color]) {
+    const c = document.createElement('canvas');
+    c.width = im.naturalWidth || im.width; c.height = im.naturalHeight || im.height;
+    const x = c.getContext('2d')!;
+    x.drawImage(im, 0, 0, c.width, c.height);
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height);
+    m[color] = c; tintCache.set(im, m);
+  }
+  return m[color];
+}
+
+// Thống kê ảnh gốc ở đúng kích thước đang vẽ (cache): độ sáng từng điểm, mặt nạ, trung vị & điểm sáng nhất trong vùng sản phẩm.
+interface PhotoStats { w: number; h: number; blur: number; lum: Float32Array; lumBig: Float32Array; mask: Uint8ClampedArray; med: number; hi: number }
+const statCache = new WeakMap<HTMLImageElement, PhotoStats>();
+// blur: làm mịn độ sáng trước khi dùng (khử nhiễu nén JPEG — nếu không, vệt bóng/nếp bị vỡ ô vuông)
+function photoStats(photo: HTMLImageElement, mask: HTMLImageElement, w: number, h: number, blur: number): PhotoStats {
+  const c = statCache.get(photo);
+  if (c && c.w === w && c.h === h && c.blur === blur) return c;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d', { willReadFrequently: true })!;
+  if (blur > 0) x.filter = `blur(${blur}px)`;
+  x.drawImage(photo, 0, 0, w, h);
+  x.filter = 'none';
+  const p = x.getImageData(0, 0, w, h).data;
+  // nền sáng cục bộ (mịn mạnh) — vệt bóng = chỗ sáng hơn hẳn xung quanh
+  x.filter = `blur(${Math.max(4, Math.round((w / 1080) * 22))}px)`;
+  x.drawImage(photo, 0, 0, w, h);
+  x.filter = 'none';
+  const pb = x.getImageData(0, 0, w, h).data;
+  x.clearRect(0, 0, w, h); x.drawImage(mask, 0, 0, w, h);
+  const m = x.getImageData(0, 0, w, h).data;
+  const lum = new Float32Array(w * h); const lumBig = new Float32Array(w * h); const ma = new Uint8ClampedArray(w * h); const hist = new Uint32Array(256); let n = 0;
+  for (let i = 0, j = 0; j < lum.length; i += 4, j++) {
+    lum[j] = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]; ma[j] = m[i + 3];
+    lumBig[j] = 0.299 * pb[i] + 0.587 * pb[i + 1] + 0.114 * pb[i + 2];
+    if (ma[j] > 200) { hist[Math.round(lum[j])]++; n++; }
+  }
+  const q = (f: number) => { let a = 0; for (let v = 0; v < 256; v++) { a += hist[v]; if (a >= n * f) return v; } return 255; };
+  const s = { w, h, blur, lum, lumBig, mask: ma, med: Math.max(40, q(0.5)), hi: Math.max(60, q(0.995)) };
+  statCache.set(photo, s);
+  return s;
+}
+
+// Đổi màu vùng sản phẩm, GIỮ nếp/độ sáng tối: màu sáng → nhân theo độ sáng tương đối; màu tối → CỘNG chênh lệch sáng
+// (áo đen vẫn thấy nếp gấp thay vì đen bệt).
+function recolor(ctx: CanvasRenderingContext2D, st: PhotoStats, tint: string) {
+  const img = ctx.getImageData(0, 0, st.w, st.h); const d = img.data;
+  const s = tint.replace('#', ''); const t = [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16));
+  const w = Math.min(1, Math.max(0, (0.55 - lum(tint)) / 0.45));
+  for (let j = 0, i = 0; j < st.lum.length; j++, i += 4) {
+    const a = st.mask[j] / 255; if (a < 0.01) continue;
+    const L = st.lum[j], shade = Math.min(1.25, L / st.med), dl = (L - st.med) * 1.05;
+    for (let c = 0; c < 3; c++) {
+      const v = Math.min(255, Math.max(0, t[c] * shade * (1 - w) + (t[c] + dl) * w));
+      d[i + c] += (v - d[i + c]) * a;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// Vệt bóng của men sứ/nhựa: phủ trắng lên cả logo ở những điểm ảnh gốc sáng nhất (logo như in dưới lớp men).
+function glaze(ctx: CanvasRenderingContext2D, st: PhotoStats, gloss: number) {
+  if (gloss <= 0) return;
+  const img = ctx.getImageData(0, 0, st.w, st.h); const d = img.data;
+  for (let j = 0, i = 0; j < st.lum.length; j++, i += 4) {
+    if (st.mask[j] < 3) continue;
+    // đỉnh sáng cục bộ (không phải vùng sáng chung) → chỉ vệt bóng thật được làm nổi
+    const u = Math.min(1, Math.max(0, (st.lum[j] - st.lumBig[j] - 5) / 28)) * (st.lum[j] > st.med ? 1 : 0);
+    if (u <= 0) continue;
+    const s = u * u * (3 - 2 * u) * gloss * (st.mask[j] / 255); // smoothstep: chuyển mềm, không gắt
+    d[i] += (255 - d[i]) * s; d[i + 1] += (255 - d[i + 1]) * s; d[i + 2] += (255 - d[i + 2]) * s;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// Vẽ logo uốn theo thân trụ: cắt dải dọc, dải ở mép co lại (sin), giữa võng nhẹ xuống như vành ly nhìn từ trên.
+function drawCurved(x: CanvasRenderingContext2D, src: CanvasImageSource, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number, theta: number, S: number) {
+  if (!theta) { x.drawImage(src, dx, dy, dw, dh); return; }
+  const n = Math.max(24, Math.ceil((dw * S) / 2)), st = Math.sin(theta);
+  for (let k = 0; k < n; k++) {
+    const s0 = (k / n) * 2 - 1, s1 = ((k + 1) / n) * 2 - 1;
+    const u0 = (Math.asin(s0 * st) / theta + 1) / 2, u1 = (Math.asin(s1 * st) / theta + 1) / 2;
+    const phi = Math.asin(((s0 + s1) / 2) * st);
+    const sag = (Math.cos(phi) - Math.cos(theta)) * 0.05 * dh;
+    x.drawImage(src, u0 * sw, 0, Math.max(0.5, (u1 - u0) * sw), sh, dx + ((s0 + 1) / 2) * dw, dy + sag, dw / n + 0.6, dh);
+  }
+}
+
 export function drawMerch(canvas: HTMLCanvasElement, o: MerchOpts) {
   drawMerchCore(canvas, o);
   drawWatermark(canvas); // gói Free — luôn chạy dù Core return sớm
@@ -147,23 +267,55 @@ function drawMerchCore(canvas: HTMLCanvasElement, o: MerchOpts) {
   // ===== MODE ẢNH THẬT: vẽ ảnh mockup + ghép logo vào vùng in (blend multiply) =====
   if (o.mode === 'photo' && o.mockupImg && PHOTO_PRINT[o.item]) {
     ctx.drawImage(o.mockupImg, 0, 0, W, H);
-    const pa = PHOTO_PRINT[o.item];
-    // đo độ sáng vùng in để chọn cách hoà logo
+    const tint = o.productTint && o.productTint.toLowerCase() !== '#ffffff' ? o.productTint : undefined;
+    const st = o.maskImg ? photoStats(o.mockupImg, o.maskImg, canvas.width, canvas.height, ((GLOSS[o.item] ?? 0) > 0.5 ? 2.4 : 0.8) * S) : null;
+    if (tint && st) recolor(ctx, st, tint);
+    const base = o.printBox || PHOTO_PRINT[o.item];
+    const k = Math.max(0.4, Math.min(1.4, o.logoScale ?? 1));
+    const pa = { x: base.x + (base.w * (1 - k)) / 2, y: base.y + (base.h * (1 - k)) / 2, w: base.w * k, h: base.h * k };
+    if (o.logoImg && (o.logoInk || o.maskImg)) {
+      // studio: mực theo màu sản phẩm, logo uốn theo thân, ăn theo nếp/độ sáng, cắt theo mép, bóng men phủ lên
+      const ink = inkFor(o.logoInk, tint);
+      const src: CanvasImageSource = ink === 'color' ? o.logoImg : tintedLogo(o.logoImg, ink === 'white' ? '#ffffff' : '#111111');
+      const iw = o.logoImg.naturalWidth || o.logoImg.width, ih = o.logoImg.naturalHeight || o.logoImg.height;
+      const sc = Math.min(pa.w / iw, pa.h / ih), dw = iw * sc, dh = ih * sc;
+      const lc = document.createElement('canvas'); lc.width = canvas.width; lc.height = canvas.height;
+      const lx = lc.getContext('2d', { willReadFrequently: true })!; lx.scale(S, S); lx.imageSmoothingQuality = 'high';
+      drawCurved(lx, src, iw, ih, pa.x + (pa.w - dw) / 2, pa.y + (pa.h - dh) / 2, dw, dh, CURVE[o.item] || 0, S);
+      lx.setTransform(1, 0, 0, 1, 0, 0);
+      if (o.maskImg) { lx.globalCompositeOperation = 'destination-in'; lx.drawImage(o.maskImg, 0, 0, lc.width, lc.height); lx.globalCompositeOperation = 'source-over'; }
+      if (st && ink !== 'color') {
+        // mực trắng/đen phủ (không nhân): tự ăn theo nếp vải/độ sáng tối của sản phẩm
+        const ld = lx.getImageData(0, 0, lc.width, lc.height); const p = ld.data;
+        for (let j = 0, i = 0; j < st.lum.length; j++, i += 4) {
+          if (!p[i + 3]) continue;
+          const f = Math.min(1.12, Math.max(0.5, st.lum[j] / st.med));
+          p[i] *= f; p[i + 1] *= f; p[i + 2] *= f;
+        }
+        lx.putImageData(ld, 0, 0);
+      }
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = ink === 'white' ? 0.93 : 0.95;
+      ctx.globalCompositeOperation = ink === 'white' ? 'source-over' : 'multiply';
+      ctx.drawImage(lc, 0, 0);
+      ctx.restore();
+      if (st) glaze(ctx, st, GLOSS[o.item] ?? 0);
+      return;
+    }
+    // (trang Logo / Brand pack) đo độ sáng vùng in để chọn cách hoà logo
     let bright = 0.8;
     try {
       const d = ctx.getImageData(pa.x * S, pa.y * S, Math.max(1, pa.w * S), Math.max(1, pa.h * S)).data;
-      let s = 0, n = 0;
-      for (let i = 0; i < d.length; i += 4 * 40) { s += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255; n++; }
-      bright = n ? s / n : 0.8;
+      let sum = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4 * 40) { sum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255; n++; }
+      bright = n ? sum / n : 0.8;
     } catch { /* ignore */ }
     ctx.save();
     if (bright > 0.55) {
-      // nền sáng: multiply, chữ/logo đậm → như in chìm vào vải
       ctx.globalAlpha = 0.95;
       ctx.globalCompositeOperation = 'multiply';
       placeBrand(ctx, o, pa.x, pa.y, pa.w, pa.h, '#1b1b1b', font);
     } else {
-      // nền tối/màu: đè thường, chữ trắng để nổi
       ctx.globalAlpha = 0.96;
       placeBrand(ctx, o, pa.x, pa.y, pa.w, pa.h, '#ffffff', font);
     }

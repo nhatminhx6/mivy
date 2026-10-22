@@ -23,7 +23,8 @@ export interface InfographicData {
   // --- poster ---
   note?: string;        // ghi chú viết tay góc phải
   tagline?: string;     // dòng viết tay dưới tiêu đề
-  hero?: string[];      // id minh hoạ 3D (tối đa 3) — /illustrations/fluent3d/<id>.png
+  hero?: string[];      // tối đa 3: id minh hoạ 3D (/illustrations/fluent3d/<id>.png) HOẶC ảnh sản phẩm user (data:...)
+  logo?: string;        // logo shop (dataURL, từ bộ nhận diện)
   cards?: PosterCard[]; // tối đa 2
   contacts?: string[];  // dòng liên hệ ở footer, vd "📞 0909 123 456"
   variant?: PosterVariant; // bố cục poster (cùng nội dung, đổi bố cục)
@@ -49,6 +50,7 @@ export interface PosterCard {
 }
 
 export type PosterThemeId = 'blue' | 'orange' | 'pink' | 'violet' | 'red';
+export interface PosterColors { main: string; deep: string; tint: string; tint2: string; soft: string }
 export const POSTER_THEMES: { id: PosterThemeId; name: string; main: string; deep: string; tint: string; tint2: string; soft: string }[] = [
   { id: 'blue', name: 'Xanh dương', main: '#2563eb', deep: '#0b1f4d', tint: '#eef4ff', tint2: '#dde9ff', soft: '#c7dbff' },
   { id: 'orange', name: 'Cam', main: '#ea580c', deep: '#3a1606', tint: '#fff5ec', tint2: '#ffe6d1', soft: '#ffd2ad' },

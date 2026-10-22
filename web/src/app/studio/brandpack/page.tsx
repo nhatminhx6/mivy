@@ -1,134 +1,271 @@
 'use client';
-// Bộ nhận diện shop 1 lần: điền brand → sinh trọn bộ logo/avatar/bìa/name card/áo/ly/túi → tải 1 ZIP.
+// Bộ nhận diện thương hiệu (gói bàn giao như designer): brand board + mạng xã hội + ấn phẩm in + mockup.
+// Lấy sẵn từ bộ nhận diện (tên, logo, màu, liên hệ), chỉnh nhanh tại chỗ, tải 1 ZIP chia thư mục. Render 100% client.
+
 import { useEffect, useRef, useState } from 'react';
-import { Download, Upload, X, Loader2 } from 'lucide-react';
-import { drawBrandAsset, drawWordmark } from '@/lib/brandasset-engine';
-import { drawMerch } from '@/lib/merch-engine';
-import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
-import { marketingZip } from '@/lib/marketing-zip';
+import Link from 'next/link';
+import { Check, Download, Loader2, Maximize2, Package, Save, Upload, X } from 'lucide-react';
+import type { BrandKit } from '@/types';
+import { loadBrand, saveBrand, type Palette } from '@/lib/brand-presets';
+import { LOGO_FONTS, LOGO_PALETTES, logoFontCss, useLogoFonts } from '@/lib/logo-engine';
+import { downloadBlob, embedFontCss } from '@/lib/html-export';
+import { slugify } from '@/lib/image-utils';
+import { BOARD, LogoMark, PRINT, SOCIAL, Scaled, type AssetDef, type PackCtx } from '@/components/BrandAssets';
+import { LogoMockups, type LogoMockupsHandle } from '@/components/LogoMockups';
+import { useLightbox } from '@/components/ImageLightbox';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
 
-type Comp = { id: string; label: string; aspect: string; render: (c: HTMLCanvasElement, scale?: number) => void };
+// font tiêu đề của bộ nhận diện (FONT_PRESETS) → font logo tương ứng
+const FONT_MAP: Record<string, string> = { 'be-vietnam': 'bevietnam', montserrat: 'montserrat', lora: 'lora', playfair: 'playfair' };
+const HEAD_FONTS = LOGO_FONTS.filter((f) => !f.script);
+const ALL_ASSETS: AssetDef[] = [BOARD, ...SOCIAL, ...PRINT];
+
+const kitPalette = (b: BrandKit): Palette => ({ name: 'Thương hiệu', colorPrimary: b.colorPrimary, colorSecondary: b.colorSecondary, colorAccent: b.colorAccent, colorInk: b.colorInk, colorSurface: b.colorSurface });
+
+// Tô logo ảnh thành 1 màu (bản đen/trắng) giữ nguyên độ phân giải gốc.
+async function tintLogo(src: string, color?: string): Promise<Blob> {
+  const im = new Image();
+  im.src = src;
+  await im.decode();
+  const c = document.createElement('canvas');
+  c.width = im.naturalWidth;
+  c.height = im.naturalHeight;
+  const ctx = c.getContext('2d')!;
+  ctx.drawImage(im, 0, 0);
+  if (color) { ctx.globalCompositeOperation = 'source-in'; ctx.fillStyle = color; ctx.fillRect(0, 0, c.width, c.height); }
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('rỗng'))), 'image/png'));
+}
+
+function Tile({ a, i, ctx, busy, loading, onOpen, onDownload, setNode }: {
+a: AssetDef; i: number; ctx: PackCtx; busy: string; loading: number | null;
+onOpen: (i: number) => void; onDownload: (a: AssetDef) => void; setNode: (id: string, el: HTMLDivElement | null) => void;
+}) {
+return (
+  <div>
+    <button type="button" onClick={() => onOpen(i)} aria-label={`Xem lớn ${a.label}`} data-testid="asset-tile"
+      className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-white/10 hover:border-indigo-400 transition-colors"
+      style={{ background: 'repeating-conic-gradient(#e2e8f0 0 25%, #f8fafc 0 50%) 0 0/16px 16px' }}>
+      <Scaled w={a.w} h={a.h} nodeRef={(el) => setNode(a.id, el)}>{a.render(ctx)}</Scaled>
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover:bg-slate-950/35 group-hover:opacity-100">
+        <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900">
+          {loading === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Maximize2 className="w-3.5 h-3.5" />} Xem lớn
+        </span>
+      </span>
+    </button>
+    <div className="flex items-center justify-between mt-1 px-0.5">
+      <span className="text-[11px] text-slate-400">{a.label} <span className="text-slate-500">· {a.w}×{a.h}</span></span>
+      <button type="button" onClick={() => onDownload(a)} aria-label={`Tải ${a.label}`} title={`Tải ${a.label}`} className="text-slate-400 hover:text-white">
+        {busy === a.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  </div>
+);
+}
 
 export default function BrandPackPage() {
-  const [brandName, setBrandName] = useState('MIVY');
-  const [slogan, setSlogan] = useState('Chất lượng tạo niềm tin');
-  const [contact, setContact] = useState('');
-  const [primary, setPrimary] = useState('#0f172a');
-  const [accent, setAccent] = useState('#1f2937');
-  const [fontId, setFontId] = useState('be-vietnam');
-  const [logoUrl, setLogoUrl] = useState('');
-  const logoRef = useRef<HTMLImageElement | null>(null);
-  const mkRef = useRef<Record<string, HTMLImageElement>>({});
-  const [ready, setReady] = useState(0);
-  const [zipping, setZipping] = useState(false);
-  const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({});
+  const ready = useLogoFonts();
+  const [kit, setKit] = useState<BrandKit | null>(null);
+  const [c, setC] = useState<PackCtx>({ name: '', slogan: '', p: LOGO_PALETTES.find((p) => p.name === 'Xanh dương') || LOGO_PALETTES[0], headFontId: 'bevietnam' });
+  const [busy, setBusy] = useState('');
+  const [saved, setSaved] = useState(false);
+  const nodes = useRef<Record<string, HTMLDivElement | null>>({});
+  const mockRef = useRef<LogoMockupsHandle | null>(null);
 
   useEffect(() => {
     const b = loadBrand();
-    if (b) { setBrandName(b.name || 'MIVY'); setSlogan(b.slogan || 'Chất lượng tạo niềm tin'); setContact(contactLine(b.contact) || ''); setPrimary(b.colorPrimary || '#0f172a'); setAccent(b.colorAccent || '#1f2937'); setFontId(b.fontHeadingId || 'be-vietnam'); if (b.logo) setLogoUrl(b.logo); }
-  }, []);
-
-  useEffect(() => {
-    if (!logoUrl) { logoRef.current = null; setReady((n) => n + 1); return; }
-    const im = new Image(); im.onload = () => { logoRef.current = im; setReady((n) => n + 1); }; im.onerror = () => { logoRef.current = null; setReady((n) => n + 1); }; im.src = logoUrl;
-  }, [logoUrl]);
-
-  // nạp ảnh mockup merch 1 lần
-  useEffect(() => {
-    let left = 3;
-    (['tshirt', 'mug', 'tote'] as const).forEach((id) => {
-      const im = new Image(); im.onload = () => { mkRef.current[id] = im; if (--left === 0) setReady((n) => n + 1); }; im.onerror = () => { if (--left === 0) setReady((n) => n + 1); }; im.src = `/mockups/${id}.jpg`;
+    if (!b) return;
+    setKit(b);
+    setC({
+      name: b.name || '', slogan: b.slogan || '', p: kitPalette(b), headFontId: FONT_MAP[b.fontHeadingId] || 'bevietnam', logo: b.logo,
+      phone: b.contact?.phone || b.contact?.zalo, web: b.contact?.facebook || b.contact?.website, address: b.contact?.address,
     });
   }, []);
 
-  const base = () => ({ colorPrimary: primary, colorSecondary: primary, colorAccent: accent, fontHeadingId: fontId, fontBodyId: fontId, brandName, slogan, logoImg: logoRef.current });
-  const merchBase = () => ({ productColor: primary, logoImg: logoRef.current, brandName, slogan, accent, fontHeadingId: fontId, contact, mode: 'photo' as const });
+  const set = (patch: Partial<PackCtx>) => setC((x) => ({ ...x, ...patch }));
+  const ctx: PackCtx = { ...c, name: c.name.trim() || 'Tên shop', slogan: c.slogan.trim() };
+  const slug = slugify(ctx.name, 'thuong-hieu');
+  const palettes = kit ? [kitPalette(kit), ...LOGO_PALETTES] : LOGO_PALETTES;
+  const fontCss = logoFontCss([c.headFontId, 'dancing']);
 
-  const comps: Comp[] = [
-    { id: 'logo', label: 'Logo', aspect: '1200/420', render: (c, s) => drawWordmark(c, { ...base(), kind: 'logo', scale: s }) },
-    { id: 'avatar', label: 'Avatar', aspect: '1/1', render: (c, s) => drawBrandAsset(c, { ...base(), kind: 'avatar', scale: s }) },
-    { id: 'cover', label: 'Bìa Facebook', aspect: '1640/624', render: (c, s) => drawBrandAsset(c, { ...base(), kind: 'fb', coverTemplate: 'brand', usps: ['Uy tín', 'Chất lượng', 'Tận tâm'], contact, scale: s }) },
-    { id: 'namecard', label: 'Name card', aspect: '1/1', render: (c, s) => drawMerch(c, { ...merchBase(), item: 'namecard', mode: 'vector', mockupImg: null, scale: s }) },
-    { id: 'tshirt', label: 'Áo thun', aspect: '1/1', render: (c, s) => drawMerch(c, { ...merchBase(), item: 'tshirt', mockupImg: mkRef.current.tshirt || null, scale: s }) },
-    { id: 'mug', label: 'Ly', aspect: '1/1', render: (c, s) => drawMerch(c, { ...merchBase(), item: 'mug', mockupImg: mkRef.current.mug || null, scale: s }) },
-    { id: 'tote', label: 'Túi tote', aspect: '1/1', render: (c, s) => drawMerch(c, { ...merchBase(), item: 'tote', mockupImg: mkRef.current.tote || null, scale: s }) },
-  ];
-
-  useEffect(() => { comps.forEach((cp) => { const c = canvasRefs.current[cp.id]; if (c) cp.render(c); }); }, [brandName, slogan, contact, primary, accent, fontId, ready]);
-
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setLogoUrl(String(r.result)); r.readAsDataURL(f); };
-
-  const downloadAll = async () => {
-    setZipping(true);
-    try {
-      const files: { name: string; data: Uint8Array }[] = [];
-      for (const cp of comps) {
-        const c = document.createElement('canvas'); cp.render(c, 2);
-        const blob = await new Promise<Blob | null>((res) => c.toBlob(res));
-        if (blob) files.push({ name: `mivy-${cp.id}.png`, data: new Uint8Array(await blob.arrayBuffer()) });
-      }
-      const zip = marketingZip(files); const u = URL.createObjectURL(zip); const a = document.createElement('a'); a.href = u; a.download = `mivy-bo-nhan-dien-${(brandName || 'brand').replace(/\s+/g, '-').toLowerCase()}.zip`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1500);
-    } finally { setZipping(false); }
+  // ---------- xuất ----------
+  const exportNode = async (key: string, w: number, h: number, pixelRatio = 1): Promise<Blob> => {
+    const el = nodes.current[key];
+    if (!el) throw new Error(`thiếu ${key}`);
+    const { toBlob } = await import('html-to-image');
+    const b = await toBlob(el, { width: w, height: h, pixelRatio, fontEmbedCSS: await embedFontCss(fontCss), cacheBust: false, style: { transform: 'none' } });
+    if (!b) throw new Error('rỗng');
+    return b;
+  };
+  const renderAsset = (a: AssetDef) => exportNode(a.id, a.w, a.h);
+  // logo gốc (ảnh trong bộ nhận diện) hoặc logo chữ tạm, ở kích thước tự nhiên
+  const logoPng = (tone?: 'black' | 'white') => {
+    if (c.logo) return tintLogo(c.logo, tone === 'black' ? '#000000' : tone === 'white' ? '#ffffff' : undefined);
+    const el = nodes.current[`logo-${tone || 'color'}`];
+    const svg = el?.querySelector('svg');
+    if (!svg) throw new Error('chưa có logo');
+    return exportNode(`logo-${tone || 'color'}`, svg.viewBox.baseVal.width, svg.viewBox.baseVal.height, 2000 / svg.viewBox.baseVal.width);
   };
 
-  return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader
-        title="Bộ nhận diện shop (1 lần)"
-        sub="Điền tên & màu → ra trọn bộ: logo, avatar, bìa, name card, áo, ly, túi. Tải 1 ZIP đi in & đăng."
-        actions={
-          <button onClick={downloadAll} disabled={zipping} className="mv-btn mv-btn-primary disabled:opacity-60">
-            {zipping ? <><Loader2 className="w-4 h-4 animate-spin" /> Đang đóng gói…</> : <><Download className="w-4 h-4" /> Tải trọn bộ</>}
-          </button>
-        }
-      />
+  const run = async (key: string, fn: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(key);
+    try { await fn(); } finally { setBusy(''); }
+  };
+  const downloadAsset = (a: AssetDef) => run(a.id, async () => downloadBlob(await renderAsset(a), `${slug}-${a.id}.png`));
+  const lb = useLightbox(ALL_ASSETS, (i) => renderAsset(ALL_ASSETS[i]), (i) => downloadAsset(ALL_ASSETS[i]));
 
-      <div className="grid lg:grid-cols-[1fr_330px] gap-7 items-start">
-        {/* Lưới xem trước */}
-        <div className="grid grid-cols-2 gap-3">
-          {comps.map((cp) => (
-            <div key={cp.id} className="glass-card p-3">
-              <p className="text-xs font-medium text-slate-400 mb-2">{cp.label}</p>
-              <div className="rounded-lg border border-white/10 bg-black/30 overflow-hidden">
-                <canvas ref={(el) => { canvasRefs.current[cp.id] = el; }} className="w-full block" style={{ aspectRatio: cp.aspect }} />
+  const downloadAll = () => run('zip', async () => {
+    const files: Record<string, Uint8Array> = {};
+    const add = async (name: string, b: Blob) => { files[name] = new Uint8Array(await b.arrayBuffer()); };
+    const steps = ALL_ASSETS.length + 4;
+    let n = 0;
+    const tick = () => setBusy(`zip:${++n}/${steps}`);
+    for (const a of ALL_ASSETS) { tick(); await add(`${a.folder ? a.folder + '/' : ''}${slug}-${a.id}.png`, await renderAsset(a)); }
+    tick(); await add(`01-logo/${slug}-logo-mau.png`, await logoPng());
+    tick(); await add(`01-logo/${slug}-logo-den.png`, await logoPng('black'));
+    tick(); await add(`01-logo/${slug}-logo-trang.png`, await logoPng('white'));
+    tick();
+    const mock = (await mockRef.current?.renderAll()) || {};
+    for (const [k, v] of Object.entries(mock)) files[`04-mockup/${k}`] = v;
+    const p = ctx.p;
+    const guide = [
+      `BỘ NHẬN DIỆN THƯƠNG HIỆU — ${ctx.name}`, ctx.slogan && `Slogan: ${ctx.slogan}`, '',
+      'BẢNG MÀU', `  Màu chính : ${p.colorPrimary}`, `  Màu phụ   : ${p.colorSecondary}`, `  Màu nhấn  : ${p.colorAccent}`, `  Màu chữ   : ${p.colorInk}`, `  Màu nền   : ${p.colorSurface}`, '',
+      'FONT (Google Fonts, có dấu tiếng Việt)', `  Tiêu đề : ${LOGO_FONTS.find((f) => f.id === c.headFontId)?.family}`, '  Nội dung: Be Vietnam Pro', '',
+      'KÍCH THƯỚC', '  Name card 1050×600 px = 3.5×2 inch @300dpi', '  Thiệp cảm ơn 1748×1240 px = A6 ngang @300dpi', '  Bìa Facebook 1640×624 px', '',
+      'Tạo bằng Mivy',
+    ].filter((x): x is string => typeof x === 'string').join('\n');
+    files['bang-mau-va-font.txt'] = new TextEncoder().encode(guide);
+    const { zipSync } = await import('fflate');
+    downloadBlob(new Blob([zipSync(files, { level: 0 }) as BlobPart], { type: 'application/zip' }), `${slug}-bo-nhan-dien.zip`);
+  });
+
+  const saveToKit = () => {
+    const b = loadBrand() || kit;
+    if (!b) return;
+    const p = c.p;
+    const next: BrandKit = {
+      ...b, name: c.name.trim() || b.name, slogan: c.slogan.trim(), logo: c.logo,
+      colorPrimary: p.colorPrimary, colorSecondary: p.colorSecondary, colorAccent: p.colorAccent, colorInk: p.colorInk, colorSurface: p.colorSurface,
+      contact: { ...(b.contact || {}), phone: c.phone || undefined, facebook: c.web || undefined, address: c.address || undefined },
+    };
+    if (saveBrand(next)) { setKit(next); setSaved(true); setTimeout(() => setSaved(false), 2500); }
+  };
+  const onLogo = (f?: File) => {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => set({ logo: String(r.result) });
+    r.readAsDataURL(f);
+  };
+
+  const tileProps = { ctx, busy, loading: lb.loading, onOpen: lb.open, onDownload: downloadAsset, setNode: (id: string, el: HTMLDivElement | null) => { nodes.current[id] = el; } };
+
+  const zipLabel = busy.startsWith('zip:') ? `Đang xuất ${busy.slice(4)}…` : busy === 'zip' ? 'Đang chuẩn bị…' : 'Tải trọn bộ (.zip)';
+
+  return (
+    <div className="p-6 lg:p-8">
+      <PageHeader title="Bộ nhận diện thương hiệu" sub="Gói bàn giao trọn bộ: brand board, ảnh mạng xã hội, ấn phẩm in và mockup — lấy sẵn từ bộ nhận diện, tải 1 file ZIP."
+        actions={
+          <button type="button" onClick={downloadAll} disabled={!!busy || !ready} className="mv-btn mv-btn-primary disabled:opacity-60">
+            {busy.startsWith('zip') ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} {zipLabel}
+          </button>
+        } />
+
+      {!ready ? (
+        <div className="h-60 flex items-center justify-center gap-2 text-sm text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /> Đang tải font…</div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] gap-6 items-start">
+          <div className="space-y-4 min-w-0">
+            {!c.logo && (
+              <div className="glass-panel border border-amber-400/30 bg-amber-400/[0.06] rounded-2xl px-4 py-3 flex items-center gap-3 text-xs text-amber-100">
+                <span className="flex-1">Chưa có logo nên bộ đang dùng <b>logo chữ tạm</b>. Tạo logo đẹp trong 1 phút rồi quay lại đây.</span>
+                <Link href="/studio/logo" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs shrink-0">Tạo logo</Link>
               </div>
+            )}
+            <CollapsibleSection title="1 · Brand board">
+              <Tile {...tileProps} a={BOARD} i={0} />
+            </CollapsibleSection>
+            <CollapsibleSection title="2 · Mạng xã hội">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SOCIAL.map((a, k) => (
+                  <div key={a.id} className={a.w > a.h * 1.5 ? 'col-span-2 sm:col-span-3' : ''}><Tile {...tileProps} a={a} i={1 + k} /></div>
+                ))}
+              </div>
+            </CollapsibleSection>
+            <CollapsibleSection title="3 · Ấn phẩm in">
+              <div className="grid grid-cols-2 gap-3">
+                {PRINT.map((a, k) => <Tile key={a.id} {...tileProps} a={a} i={1 + SOCIAL.length + k} />)}
+              </div>
+            </CollapsibleSection>
+            <CollapsibleSection title="4 · Mockup">
+              <LogoMockups ref={mockRef} palette={ctx.p} fontCss={fontCss} fileSlug={slug}
+                logoKey={JSON.stringify([c.logo?.length, c.logo?.slice(-48), c.p, c.headFontId, ctx.name])}
+                renderLogo={({ tone, frame, style }) => <LogoMark c={ctx} tone={tone} frame={frame} style={style} />}
+                name={ctx.name} slogan={ctx.slogan} contact={[c.phone, c.web].filter(Boolean).join('  ·  ')}
+                makeLogoPng={() => logoPng()} />
+            </CollapsibleSection>
+          </div>
+
+          {/* Chỉnh nhanh (ghim) */}
+          <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-4 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
+            <div className="text-sm font-bold text-white">Chỉnh nhanh</div>
+            <div>
+              <div className="mv-label mb-1.5">Logo</div>
+              <div className="flex items-center gap-2">
+                {c.logo ? (
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={c.logo} alt="logo" className="w-14 h-14 object-contain rounded-lg bg-white p-1" />
+                    <button type="button" onClick={() => set({ logo: undefined })} aria-label="Bỏ logo" className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button>
+                  </div>
+                ) : <span className="text-[11px] text-slate-400">Đang dùng logo chữ tạm</span>}
+                <label className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải logo
+                  <input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" className="sr-only" data-testid="pack-logo" onChange={(e) => { onLogo(e.target.files?.[0]); e.target.value = ''; }} /></label>
+                <Link href="/studio/logo" className="text-[11px] text-indigo-300 hover:text-indigo-200">Tạo logo mới</Link>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <input className="mv-input" value={c.name} onChange={(e) => set({ name: e.target.value })} placeholder="Tên thương hiệu" data-testid="pack-name" />
+              <input className="mv-input" value={c.slogan} onChange={(e) => set({ slogan: e.target.value })} placeholder="Slogan" data-testid="pack-slogan" />
+              <input className="mv-input" value={c.phone || ''} onChange={(e) => set({ phone: e.target.value })} placeholder="Số điện thoại / Zalo" />
+              <input className="mv-input" value={c.web || ''} onChange={(e) => set({ web: e.target.value })} placeholder="Facebook / website" />
+              <input className="mv-input" value={c.address || ''} onChange={(e) => set({ address: e.target.value })} placeholder="Địa chỉ" />
+            </div>
+            <div>
+              <div className="mv-label mb-1.5">Màu</div>
+              <div className="flex flex-wrap gap-2">
+                {palettes.map((p) => (
+                  <button key={p.name} type="button" title={p.name} onClick={() => set({ p })}
+                    className={`w-8 h-8 rounded-full border-2 transition-transform ${c.p.name === p.name ? 'border-white scale-110' : 'border-white/10 hover:border-white/40'}`}
+                    style={{ background: `linear-gradient(135deg, ${p.colorPrimary} 50%, ${p.colorAccent} 50%)` }} />
+                ))}
+              </div>
+            </div>
+            <label className="block">
+              <span className="mv-label block mb-1.5">Font tiêu đề</span>
+              <select className="mv-input" value={c.headFontId} onChange={(e) => set({ headFontId: e.target.value })}>
+                {HEAD_FONTS.map((f) => <option key={f.id} value={f.id}>{f.family}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={saveToKit} disabled={!kit} className="w-full mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-sm disabled:opacity-50" title={kit ? '' : 'Chưa có bộ nhận diện để lưu'}>
+              {saved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />} {saved ? 'Đã lưu' : 'Lưu thay đổi vào bộ nhận diện'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* logo chữ tạm ở kích thước tự nhiên (khi chưa có ảnh logo) để xuất bản màu/đen/trắng */}
+      {ready && !c.logo && (
+        <div aria-hidden style={{ position: 'fixed', left: -100000, top: 0, pointerEvents: 'none' }}>
+          {(['color', 'black', 'white'] as const).map((t) => (
+            <div key={t} ref={(el) => { nodes.current[`logo-${t}`] = el; }} style={{ display: 'inline-block' }}>
+              <LogoMark c={ctx} tone={t} style={{ display: 'block' }} />
             </div>
           ))}
         </div>
-
-        {/* Điều khiển (ghim khi cuộn) */}
-        <div className="glass-card p-5 space-y-6 lg:sticky lg:top-4 self-start">
-          <div>
-            <div className="mv-label mb-2.5">Logo (tuỳ chọn)</div>
-            <div className="flex items-center gap-2">
-              {logoUrl ? <div className="relative"><img src={logoUrl} className="w-12 h-12 object-contain rounded-lg bg-white/10 border border-white/10" alt="logo" /><button onClick={() => setLogoUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button></div> : <span className="text-xs text-slate-500">Chưa có — dùng chữ cái đầu</span>}
-              <label className="mv-btn mv-btn-ghost cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải logo<input type="file" accept="image/*" className="sr-only" onChange={onFile} /></label>
-            </div>
-          </div>
-
-          <div>
-            <div className="mv-label mb-2.5">Nội dung</div>
-            <div className="space-y-2.5">
-              <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Tên thương hiệu" className="mv-input" />
-              <input value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="Slogan" className="mv-input" />
-              <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Liên hệ (name card / bìa)" className="mv-input" />
-            </div>
-          </div>
-
-          <div>
-            <div className="mv-label mb-2.5">Màu &amp; font</div>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Chính</label>
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Nhấn</label>
-              <select value={fontId} onChange={(e) => setFontId(e.target.value)} className="mv-chip-select flex-1">
-                {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-500">Mẹo: tạo Brand Kit ở mục Thương hiệu trước, ở đây sẽ tự lấy sẵn.</p>
-        </div>
-      </div>
+      )}
+      {lb.node}
     </div>
   );
 }
