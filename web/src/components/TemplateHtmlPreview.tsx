@@ -24,6 +24,7 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
 }>(function TemplateHtmlPreview({ template, content, noFill = false, maxHeightVh = 40 }, ref) {
   const [fontCss, setFontCss] = useState<string>('');
   const [boxW, setBoxW] = useState(400);
+  const [vh, setVh] = useState<number>(typeof window !== 'undefined' ? window.innerHeight : 800);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const nodeRef = useRef<HTMLDivElement | null>(null);
 
@@ -41,7 +42,9 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
     const ro = new ResizeObserver(() => setBoxW(el.clientWidth || 400));
     ro.observe(el);
     setBoxW(el.clientWidth || 400);
-    return () => ro.disconnect();
+    const onResize = () => setVh(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => { ro.disconnect(); window.removeEventListener('resize', onResize); };
   }, []);
 
   const filled = useMemo(
@@ -49,7 +52,7 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
     [template.html, content, noFill],
   );
 
-  const maxH = typeof window !== 'undefined' ? window.innerHeight * (maxHeightVh / 100) : 500;
+  const maxH = vh * (maxHeightVh / 100);
   const scale = Math.min(boxW / template.w, maxH / template.h);
 
   useImperativeHandle(ref, () => ({
@@ -65,7 +68,7 @@ export const TemplateHtmlPreview = forwardRef<TemplateHtmlPreviewHandle, {
   return (
     <div ref={wrapRef} className="w-full flex justify-center">
       <style dangerouslySetInnerHTML={{ __html: fontCss + '\n' + nonImportCss }} />
-      <div style={{ position: 'relative', width: template.w * scale, height: template.h * scale, overflow: 'hidden', flex: '0 0 auto' }}>
+      <div style={{ position: 'relative', width: template.w * scale, height: template.h * scale, overflow: 'hidden', flex: '0 0 auto', borderRadius: 14 }}>
         <div ref={nodeRef} data-testid="ad-preview" style={{ position: 'absolute', top: 0, left: 0, width: template.w, height: template.h, transform: `scale(${scale})`, transformOrigin: 'top left' }}
           dangerouslySetInnerHTML={{ __html: filled }} />
       </div>

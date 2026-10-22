@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { createPortal } from 'react-dom';
 import { Sparkles, Download, Copy, FileText, RefreshCw, Upload, Check, Layers, Image as ImageIcon, Maximize2, Eye, X, ChevronLeft, ChevronRight, CheckCircle2, ChevronDown } from 'lucide-react';
 import { AssetInfo, AspectRatio, IndustryId, MarketingState, PosterKind, ThemeId, OutputLanguage, FactItem } from '@/types';
@@ -19,12 +20,19 @@ import { CATEGORY_SAMPLES } from '@/lib/category-samples';
 import { loadBrand } from '@/lib/brand-presets';
 import { DraftController } from '@/lib/draft-controller';
 import { PageHeader } from '@/components/PageHeader';
-import { COPY_TONES, COPY_INDUSTRIES, suggestPosterCopy, CopyTone } from '@/lib/copy-library';
+import { COPY_TONES, suggestPosterCopy, CopyTone } from '@/lib/copy-library';
 import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
 import { AD_LAYOUTS, AD_BACKGROUNDS, AdContent } from '@/lib/ad-skins';
 import { buildAdTemplate, AD_SKIN_CSS, AD_SIZES } from '@/lib/ad-poster';
 
 // skin groups cho băng chọn phong cách
+// Map ngành (categoryId) -> "ngành copy" của kho gợi ý tiêu đề (tự suy, khỏi hỏi lại)
+const CAT_TO_COPY: Record<string, string> = {
+  food: 'do-an', beauty: 'spa', technology: 'dien-tu', property: 'noi-that',
+  retail: 'thoi-trang', personal: 'phu-kien',
+};
+const copyIndOf = (catId: string) => CAT_TO_COPY[catId] || 'chung';
+
 const SKIN_GROUPS = Array.from(new Set(AD_LAYOUTS.map((s) => s.group)));
 const BG_GROUPS = Array.from(new Set(AD_BACKGROUNDS.filter((b) => b.id !== 'none').map((b) => b.group)));
 
@@ -74,9 +82,9 @@ export default function MarketingStudioPage() {
   const [previewKind, setPreviewKind] = useState<PosterKind | null>(null);
   const [htmlFull, setHtmlFull] = useState(false); // xem skin toàn màn hình
   const [cuttingIdx, setCuttingIdx] = useState<number | null>(null); // đang tách nền ảnh sản phẩm thứ idx
+  const [noiDungOpen, setNoiDungOpen] = useState(true); // thu/mở khối Nội dung
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [copyTone, setCopyTone] = useState<CopyTone>('sale');
-  const [copyIndustry, setCopyIndustry] = useState('chung');
   const [copyIdx, setCopyIdx] = useState(0);
   const [htmlStyleId, setHtmlStyleId] = useState<string>('minimal_light'); // luôn render bằng skin (đã bỏ canvas cũ)
   const [htmlSizeId, setHtmlSizeId] = useState<string>('feed45'); // khổ xuất: 4:5 / 1:1 / 9:16 / 16:9
@@ -167,7 +175,8 @@ export default function MarketingStudioPage() {
   };
   const suggestPoster = () => {
     const next = copyIdx + 1; setCopyIdx(next);
-    applySuggestion(copyIndustry, copyTone, next);
+    const s = getController().getState();
+    applySuggestion(copyIndOf(s.categoryId || (s.industry === 'general' ? 'retail' : s.industry)), copyTone, next);
   };
 
   const saveState = (newState: MarketingState) => {
@@ -768,43 +777,28 @@ export default function MarketingStudioPage() {
       <div className="max-w-5xl mx-auto space-y-5">
         <style dangerouslySetInnerHTML={{ __html: AD_SKIN_CSS }} />
 
-        {/* ===== CHỌN NGÀNH — đổi ngành thì nội dung mẫu + ảnh nền theo ngành ===== */}
-        <div className="glass-panel rounded-2xl p-4 border border-indigo-500/30 bg-indigo-500/[0.04]">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 shrink-0">
-              <Layers className="w-4 h-4 text-indigo-300" />
-              <span className="text-sm font-bold text-white">Ngành</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((c) => {
-                const active = (state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)) === c.id;
-                return (
-                  <button type="button" key={c.id} onClick={() => changeCategory(c.id)} aria-pressed={active}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${active ? 'bg-white text-slate-950 border-white font-semibold' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-2.5">Đổi ngành → nội dung mẫu + bộ ảnh nền (mục “Ảnh nền” bên dưới) tự đổi theo ngành đó.</p>
+        {/* ===== Ngành mẫu — chỉ nạp nội dung mồi + bộ ảnh nền (phụ trợ, gọn) ===== */}
+        <div className="flex items-center gap-2 flex-wrap text-xs px-1">
+          <span className="text-slate-400">Ngành mẫu:</span>
+          <select
+            value={state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)}
+            onChange={(e) => changeCategory(e.target.value)}
+            className="mv-input !w-auto !px-2.5 !py-1 !text-xs font-semibold text-white">
+            {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <span className="text-slate-500">— nạp nội dung mồi + bộ ảnh nền. Thiết kế chọn bên dưới.</span>
         </div>
 
-        {/* ===== BĂNG CHỌN PHONG CÁCH (skin nghệ thuật khoác lên poster ngành) ===== */}
-        <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h3 className="text-sm font-bold text-white">Phong cách thiết kế</h3>
-              <p className="text-[11px] text-slate-400">Chọn vibe — nội dung anh điền tự khoác lên, giữ nguyên chữ.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button type="button" onClick={() => setStyleGroup('Tất cả')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === 'Tất cả' ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>Tất cả</button>
-              {SKIN_GROUPS.map((g) => (
-                <button key={g} type="button" onClick={() => setStyleGroup(g)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
-              ))}
-            </div>
+        {/* ===== 1 · BỐ CỤC ===== */}
+        <CollapsibleSection title="1 · Bố cục">
+          <p className="text-[11px] text-slate-400 mb-2">Chọn vibe — nội dung anh điền tự khoác lên, giữ nguyên chữ.</p>
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            <button type="button" onClick={() => setStyleGroup('Tất cả')}
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === 'Tất cả' ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>Tất cả</button>
+            {SKIN_GROUPS.map((g) => (
+              <button key={g} type="button" onClick={() => setStyleGroup(g)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+            ))}
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1">
             {styleList.map((s) => {
@@ -819,21 +813,16 @@ export default function MarketingStudioPage() {
               );
             })}
           </div>
-        </div>
+        </CollapsibleSection>
 
-        {/* ===== DẢI MÀU NỀN (tách khỏi bố cục) ===== */}
-        <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-3">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h3 className="text-sm font-bold text-white">Màu nền</h3>
-              <p className="text-[11px] text-slate-400">Áp lên bố cục đang chọn — đổi màu không đổi layout.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {BG_GROUPS.map((g) => (
-                <button key={g} type="button" onClick={() => setBgGroup(g)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${bgGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
-              ))}
-            </div>
+        {/* ===== 2 · MÀU NỀN ===== */}
+        <CollapsibleSection title="2 · Màu nền">
+          <p className="text-[11px] text-slate-400 mb-2">Áp lên bố cục đang chọn — đổi màu không đổi layout.</p>
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            {BG_GROUPS.map((g) => (
+              <button key={g} type="button" onClick={() => setBgGroup(g)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${bgGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+            ))}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {bgList.map((b) => (
@@ -844,7 +833,7 @@ export default function MarketingStudioPage() {
               </button>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] gap-6 items-start">
         {/* CỘT PHẢI (order-2): preview ghim — vừa khít 1 màn, không cuộn riêng */}
@@ -892,7 +881,7 @@ export default function MarketingStudioPage() {
               {activeHtmlTemplate && (
                 <>
                   <div className="py-2">
-                    <TemplateHtmlPreview ref={htmlPreviewRef} template={activeHtmlTemplate} content={{}} noFill maxHeightVh={42} />
+                    <TemplateHtmlPreview ref={htmlPreviewRef} template={activeHtmlTemplate} content={{}} noFill maxHeightVh={38} />
                   </div>
                   <button type="button"
                     onClick={(e) => { e.stopPropagation(); setHtmlFull(true); }}
@@ -999,10 +988,7 @@ export default function MarketingStudioPage() {
         {/* Gợi ý nội dung bắt mắt (offline) cho poster chính */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="mv-label mr-1">Gợi ý tiêu đề:</span>
-          <select value={copyIndustry} onChange={(e) => { setCopyIndustry(e.target.value); applySuggestion(e.target.value, copyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Ngành hàng">
-            {COPY_INDUSTRIES.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
-          </select>
-          <select value={copyTone} onChange={(e) => { setCopyTone(e.target.value as CopyTone); applySuggestion(copyIndustry, e.target.value as CopyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
+          <select value={copyTone} onChange={(e) => { setCopyTone(e.target.value as CopyTone); applySuggestion(copyIndOf(catOf(state)), e.target.value as CopyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
             {COPY_TONES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
           <button onClick={suggestPoster} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1.5 !text-[11px] !text-indigo-200 !border-indigo-500/30" title="Gợi ý câu chữ bắt mắt">
@@ -1300,10 +1286,10 @@ export default function MarketingStudioPage() {
           </div>
         <div className="glass-card p-6 rounded-2xl space-y-5 hover:!transform-none">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Layers className="w-4 h-4 text-white" />
-              <span>Thông Tin Chiến Dịch</span>
-            </h2>
+            <button type="button" onClick={() => setNoiDungOpen((o) => !o)} className="text-base font-bold text-white flex items-center gap-2">
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${noiDungOpen ? '' : '-rotate-90'}`} />
+              <span>3 · Nội dung</span>
+            </button>
             <div className="flex items-center gap-2">
               <button type="button" onClick={toggleDevFill}
                 title="DEV: tự điền nội dung mẫu / xoá trắng"
@@ -1320,6 +1306,7 @@ export default function MarketingStudioPage() {
             </div>
           </div>
 
+          {noiDungOpen && <>
           <form onSubmit={handleGenerate} className="space-y-4 text-xs">
             <IndustryForm state={state} onChange={saveState} />
             <div>
@@ -1389,19 +1376,18 @@ export default function MarketingStudioPage() {
 
             <div className="space-y-4">
               <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
-                <p className="font-bold text-white">Ảnh nền</p>
+                <p className="font-bold text-white">4 · Ảnh nền</p>
                 <p className="text-slate-400">Chọn nền mẫu có sẵn, hoặc tải ảnh của anh (sẽ tự làm mờ cho chữ nổi).</p>
-                <div className="grid grid-cols-2 gap-2 mv-stagger">
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                   {bgsFor(state.categoryId).map((url, i) => (
                     <button key={url} type="button" title={`Nền ${i + 1}`}
                       onClick={() => saveState({ ...state, bgUrl: url, backgroundImage: '' })}
-                      className={`mv-hover-zoom aspect-video rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
+                      className={`shrink-0 w-[72px] h-[72px] rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
                       <img src={url} alt={`Nền ${i + 1}`} className="w-full h-full object-cover"
                         onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
                     </button>
                   ))}
                 </div>
-                {(state.backgroundImage || state.bgUrl) && <div className="mv-hover-zoom rounded-lg"><img src={state.backgroundImage || state.bgUrl} alt="Ảnh nền của anh" className="w-full h-24 object-cover rounded-lg" /></div>}
                 <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh nền
                   <input aria-label="Tải ảnh nền" type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => {
                     const file=e.target.files?.[0]; if(!file) return;
@@ -1409,10 +1395,15 @@ export default function MarketingStudioPage() {
                   }} />
                 </label>
                 {(state.backgroundImage || state.bgUrl) && <>
-                  <label className="block text-slate-300 font-medium">Độ tối {state.backgroundDim ?? 35}%<input aria-label="Độ tối ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="85" value={state.backgroundDim ?? 35} onChange={e=>saveState({...state,backgroundDim:Number(e.target.value)})}/></label>
-                  <label className="block text-slate-300 font-medium">Độ mờ {state.backgroundBlur ?? 0}<input aria-label="Độ mờ ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="24" value={state.backgroundBlur ?? 0} onChange={e=>saveState({...state,backgroundBlur:Number(e.target.value)})}/></label>
-                  <label className="block text-slate-300 font-medium">Vị trí ngang<input aria-label="Vị trí ngang ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundX ?? 50} onChange={e=>saveState({...state,backgroundX:Number(e.target.value)})}/></label>
-                  <label className="block text-slate-300 font-medium">Vị trí dọc<input aria-label="Vị trí dọc ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundY ?? 50} onChange={e=>saveState({...state,backgroundY:Number(e.target.value)})}/></label>
+                  <details>
+                    <summary className="text-[11px] text-slate-400 cursor-pointer select-none py-1 hover:text-slate-200">⚙ Chỉnh nền (độ tối · mờ · vị trí)</summary>
+                    <div className="space-y-2.5 pt-2">
+                      <label className="block text-slate-300 font-medium">Độ tối {state.backgroundDim ?? 35}%<input aria-label="Độ tối ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="85" value={state.backgroundDim ?? 35} onChange={e=>saveState({...state,backgroundDim:Number(e.target.value)})}/></label>
+                      <label className="block text-slate-300 font-medium">Độ mờ {state.backgroundBlur ?? 0}<input aria-label="Độ mờ ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="24" value={state.backgroundBlur ?? 0} onChange={e=>saveState({...state,backgroundBlur:Number(e.target.value)})}/></label>
+                      <label className="block text-slate-300 font-medium">Vị trí ngang<input aria-label="Vị trí ngang ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundX ?? 50} onChange={e=>saveState({...state,backgroundX:Number(e.target.value)})}/></label>
+                      <label className="block text-slate-300 font-medium">Vị trí dọc<input aria-label="Vị trí dọc ảnh nền" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.backgroundY ?? 50} onChange={e=>saveState({...state,backgroundY:Number(e.target.value)})}/></label>
+                    </div>
+                  </details>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,backgroundImage:'',bgUrl:''})}>Gỡ ảnh nền</button>
                 </>}
               </div>
@@ -1421,7 +1412,9 @@ export default function MarketingStudioPage() {
                 <p className="text-slate-400">Sản phẩm, nhân vật hoặc hình minh họa nổi bật.</p>
                 {state.image && <div className="mv-hover-zoom rounded-lg"><img src={state.cutout || state.image} alt="Ảnh chính của anh" className="w-full h-32 object-contain rounded-lg" /></div>}
                 <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh chính<input aria-label="Tải ảnh chính" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="sr-only" /></label>
-                {(state.image || state.bgUrl || state.backgroundImage) && <div className="space-y-3">
+                {(state.image || state.bgUrl || state.backgroundImage) && <details>
+                  <summary className="text-[11px] text-slate-400 cursor-pointer select-none py-1 hover:text-slate-200">⚙ Chỉnh ảnh (phóng to · dịch · cách đặt)</summary>
+                  <div className="space-y-2.5 pt-2">
                   <label className="block text-slate-300 font-medium">Cách đặt ảnh
                     <select aria-label="Cách đặt ảnh chính" value={state.mainImageFit || (state.templateId === 'spotlight' ? 'contain' : 'cover')} onChange={e=>saveState({...state,mainImageFit:e.target.value as 'cover'|'contain',mainImageZoom:100,templateId:state.templateId || 'editorial'})} className="mv-input mt-1">
                       <option value="cover">Lấp đầy khung — cắt phần dư</option>
@@ -1432,7 +1425,8 @@ export default function MarketingStudioPage() {
                   <label className="block text-slate-300 font-medium">Dịch ảnh ngang<input aria-label="Dịch ảnh chính ngang" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
                   <label className="block text-slate-300 font-medium">Dịch ảnh dọc<input aria-label="Dịch ảnh chính dọc" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí ảnh</button>
-                </div>}
+                  </div>
+                </details>}
                 {state.image && <div className="flex flex-wrap gap-3">
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,backgroundImage:state.image,image:'',cutout:'',templateId:state.templateId || 'editorial'})}>Chuyển ảnh này làm nền</button>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs !text-rose-300" onClick={()=>saveState({...state,image:'',cutout:''})}>Gỡ ảnh chính</button>
@@ -1472,13 +1466,15 @@ export default function MarketingStudioPage() {
                   <label className="block text-[11px] text-slate-400">Giá gốc<input value={state.priceOld || ''} onChange={e => saveState({ ...state, priceOld: e.target.value })} placeholder="580K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
                   <label className="block text-[11px] text-slate-400">Giá sale<input value={state.priceNew || ''} onChange={e => saveState({ ...state, priceNew: e.target.value })} placeholder="419K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
                 </div>
-                {(state.products?.length ?? 0) > 0 && <div className="space-y-2.5 pt-1 border-t border-white/10 mt-1">
-                  <p className="text-[11px] text-slate-400 pt-1">Chỉnh vị trí sản phẩm</p>
+                {(state.products?.length ?? 0) > 0 && <details className="border-t border-white/10 mt-1 pt-1">
+                  <summary className="text-[11px] text-slate-400 cursor-pointer select-none py-1 hover:text-slate-200">⚙ Chỉnh vị trí sản phẩm</summary>
+                  <div className="space-y-2.5 pt-2">
                   <label className="block text-[11px] text-slate-300">Phóng to {((state.mainImageZoom ?? 100) - 100 > 0 ? '+' : '')}{(state.mainImageZoom ?? 100) - 100}<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="-100" max="100" value={(state.mainImageZoom ?? 100) - 100} onChange={e=>saveState({...state,mainImageZoom:100 + Number(e.target.value)})}/></label>
                   <label className="block text-[11px] text-slate-300">Dịch ngang<input aria-label="Dịch ảnh chính ngang" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageX ?? 50} onChange={e=>saveState({...state,mainImageX:Number(e.target.value)})}/></label>
                   <label className="block text-[11px] text-slate-300">Dịch dọc<input aria-label="Dịch ảnh chính dọc" className="w-full accent-indigo-500 cursor-pointer" type="range" min="0" max="100" value={state.mainImageY ?? 50} onChange={e=>saveState({...state,mainImageY:Number(e.target.value)})}/></label>
                   <button type="button" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs" onClick={()=>saveState({...state,mainImageZoom:100,mainImageX:50,mainImageY:50})}>Đặt lại vị trí</button>
-                </div>}
+                  </div>
+                </details>}
               </div>}
             </div>
 
@@ -1570,6 +1566,7 @@ export default function MarketingStudioPage() {
               </div>
             )}
           </div>
+          </>}
         </div>
           </>)}
         </div>
