@@ -10,8 +10,7 @@ import { loadBrand, saveBrand, type Palette } from '@/lib/brand-presets';
 import { LOGO_FONTS, LOGO_PALETTES, logoFontCss, useLogoFonts } from '@/lib/logo-engine';
 import { downloadBlob, embedFontCss } from '@/lib/html-export';
 import { slugify } from '@/lib/image-utils';
-import { BOARD, LogoMark, PRINT, SOCIAL, Scaled, type AssetDef, type PackCtx } from '@/components/BrandAssets';
-import { LogoMockups, type LogoMockupsHandle } from '@/components/LogoMockups';
+import { BOARD, DEFAULT_HIGHLIGHTS, HL_ICONS, LogoMark, PRINT, SOCIAL, Scaled, highlightAssets, hlIcon, type AssetDef, type HLItem, type PackCtx } from '@/components/BrandAssets';
 import { useLightbox } from '@/components/ImageLightbox';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
@@ -19,7 +18,6 @@ import { PageHeader } from '@/components/PageHeader';
 // font tiêu đề của bộ nhận diện (FONT_PRESETS) → font logo tương ứng
 const FONT_MAP: Record<string, string> = { 'be-vietnam': 'bevietnam', montserrat: 'montserrat', lora: 'lora', playfair: 'playfair' };
 const HEAD_FONTS = LOGO_FONTS.filter((f) => !f.script);
-const ALL_ASSETS: AssetDef[] = [BOARD, ...SOCIAL, ...PRINT];
 
 const kitPalette = (b: BrandKit): Palette => ({ name: 'Thương hiệu', colorPrimary: b.colorPrimary, colorSecondary: b.colorSecondary, colorAccent: b.colorAccent, colorInk: b.colorInk, colorSurface: b.colorSurface });
 
@@ -42,20 +40,20 @@ a: AssetDef; i: number; ctx: PackCtx; busy: string; loading: number | null;
 onOpen: (i: number) => void; onDownload: (a: AssetDef) => void; setNode: (id: string, el: HTMLDivElement | null) => void;
 }) {
 return (
-  <div>
+  <div className="glass-card !p-2 group">
     <button type="button" onClick={() => onOpen(i)} aria-label={`Xem lớn ${a.label}`} data-testid="asset-tile"
-      className="group relative block w-full cursor-zoom-in overflow-hidden rounded-xl border border-white/10 hover:border-indigo-400 transition-colors"
-      style={{ background: 'repeating-conic-gradient(#e2e8f0 0 25%, #f8fafc 0 50%) 0 0/16px 16px' }}>
+      className="relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-white/[0.06]"
+      style={{ background: 'repeating-conic-gradient(#20242c 0 25%, #171a20 0 50%) 0 0/16px 16px' }}>
       <Scaled w={a.w} h={a.h} nodeRef={(el) => setNode(a.id, el)}>{a.render(ctx)}</Scaled>
-      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover:bg-slate-950/35 group-hover:opacity-100">
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover:bg-slate-950/45 group-hover:opacity-100">
         <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900">
           {loading === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Maximize2 className="w-3.5 h-3.5" />} Xem lớn
         </span>
       </span>
     </button>
-    <div className="flex items-center justify-between mt-1 px-0.5">
-      <span className="text-[11px] text-slate-400">{a.label} <span className="text-slate-500">· {a.w}×{a.h}</span></span>
-      <button type="button" onClick={() => onDownload(a)} aria-label={`Tải ${a.label}`} title={`Tải ${a.label}`} className="text-slate-400 hover:text-white">
+    <div className="flex items-start justify-between gap-2 mt-2 px-1">
+      <span className="text-[11px] font-medium text-slate-300 leading-snug">{a.label} <span className="text-slate-500 font-normal">· {a.w}×{a.h}</span></span>
+      <button type="button" onClick={() => onDownload(a)} aria-label={`Tải ${a.label}`} title={`Tải ${a.label}`} className="text-slate-400 hover:text-indigo-300 shrink-0 mt-0.5">
         {busy === a.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
       </button>
     </div>
@@ -66,11 +64,10 @@ return (
 export default function BrandPackPage() {
   const ready = useLogoFonts();
   const [kit, setKit] = useState<BrandKit | null>(null);
-  const [c, setC] = useState<PackCtx>({ name: '', slogan: '', p: LOGO_PALETTES.find((p) => p.name === 'Xanh dương') || LOGO_PALETTES[0], headFontId: 'bevietnam' });
+  const [c, setC] = useState<PackCtx>({ name: '', slogan: '', p: LOGO_PALETTES.find((p) => p.name === 'Xanh dương') || LOGO_PALETTES[0], headFontId: 'bevietnam', highlights: DEFAULT_HIGHLIGHTS });
   const [busy, setBusy] = useState('');
   const [saved, setSaved] = useState(false);
   const nodes = useRef<Record<string, HTMLDivElement | null>>({});
-  const mockRef = useRef<LogoMockupsHandle | null>(null);
 
   useEffect(() => {
     const b = loadBrand();
@@ -79,14 +76,20 @@ export default function BrandPackPage() {
     setC({
       name: b.name || '', slogan: b.slogan || '', p: kitPalette(b), headFontId: FONT_MAP[b.fontHeadingId] || 'bevietnam', logo: b.logo,
       phone: b.contact?.phone || b.contact?.zalo, web: b.contact?.facebook || b.contact?.website, address: b.contact?.address,
+      highlights: DEFAULT_HIGHLIGHTS,
     });
   }, []);
 
   const set = (patch: Partial<PackCtx>) => setC((x) => ({ ...x, ...patch }));
-  const ctx: PackCtx = { ...c, name: c.name.trim() || 'Tên shop', slogan: c.slogan.trim() };
+  const ctx: PackCtx = { ...c, name: c.name.trim() || 'Tên shop', slogan: c.slogan.trim(), highlights: (c.highlights && c.highlights.length ? c.highlights : DEFAULT_HIGHLIGHTS) };
   const slug = slugify(ctx.name, 'thuong-hieu');
   const palettes = kit ? [kitPalette(kit), ...LOGO_PALETTES] : LOGO_PALETTES;
   const fontCss = logoFontCss([c.headFontId, 'dancing']);
+  const socialAll = [...SOCIAL, ...highlightAssets(ctx.highlights || DEFAULT_HIGHLIGHTS)];
+  const ALL: AssetDef[] = [BOARD, ...socialAll, ...PRINT];
+  const updateHL = (idx: number, patch: Partial<HLItem>) => setC((x) => ({ ...x, highlights: (x.highlights || DEFAULT_HIGHLIGHTS).map((h, i) => (i === idx ? { ...h, ...patch } : h)) }));
+  const addHL = () => setC((x) => ({ ...x, highlights: [...(x.highlights || DEFAULT_HIGHLIGHTS), { id: `hl-${Date.now()}`, icon: 'star', label: 'Mục mới' }] }));
+  const removeHL = (idx: number) => setC((x) => ({ ...x, highlights: (x.highlights || DEFAULT_HIGHLIGHTS).filter((_, i) => i !== idx) }));
 
   // ---------- xuất ----------
   const exportNode = async (key: string, w: number, h: number, pixelRatio = 1): Promise<Blob> => {
@@ -113,21 +116,18 @@ export default function BrandPackPage() {
     try { await fn(); } finally { setBusy(''); }
   };
   const downloadAsset = (a: AssetDef) => run(a.id, async () => downloadBlob(await renderAsset(a), `${slug}-${a.id}.png`));
-  const lb = useLightbox(ALL_ASSETS, (i) => renderAsset(ALL_ASSETS[i]), (i) => downloadAsset(ALL_ASSETS[i]));
+  const lb = useLightbox(ALL, (i) => renderAsset(ALL[i]), (i) => downloadAsset(ALL[i]));
 
   const downloadAll = () => run('zip', async () => {
     const files: Record<string, Uint8Array> = {};
     const add = async (name: string, b: Blob) => { files[name] = new Uint8Array(await b.arrayBuffer()); };
-    const steps = ALL_ASSETS.length + 4;
+    const steps = ALL.length + 3;
     let n = 0;
     const tick = () => setBusy(`zip:${++n}/${steps}`);
-    for (const a of ALL_ASSETS) { tick(); await add(`${a.folder ? a.folder + '/' : ''}${slug}-${a.id}.png`, await renderAsset(a)); }
+    for (const a of ALL) { tick(); await add(`${a.folder ? a.folder + '/' : ''}${slug}-${a.id}.png`, await renderAsset(a)); }
     tick(); await add(`01-logo/${slug}-logo-mau.png`, await logoPng());
     tick(); await add(`01-logo/${slug}-logo-den.png`, await logoPng('black'));
     tick(); await add(`01-logo/${slug}-logo-trang.png`, await logoPng('white'));
-    tick();
-    const mock = (await mockRef.current?.renderAll()) || {};
-    for (const [k, v] of Object.entries(mock)) files[`04-mockup/${k}`] = v;
     const p = ctx.p;
     const guide = [
       `BỘ NHẬN DIỆN THƯƠNG HIỆU — ${ctx.name}`, ctx.slogan && `Slogan: ${ctx.slogan}`, '',
@@ -184,26 +184,41 @@ export default function BrandPackPage() {
               </div>
             )}
             <CollapsibleSection title="1 · Brand board">
-              <Tile {...tileProps} a={BOARD} i={0} />
+              <div className="max-w-sm"><Tile {...tileProps} a={BOARD} i={0} /></div>
             </CollapsibleSection>
             <CollapsibleSection title="2 · Mạng xã hội">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SOCIAL.map((a, k) => (
-                  <div key={a.id} className={a.w > a.h * 1.5 ? 'col-span-2 sm:col-span-3' : ''}><Tile {...tileProps} a={a} i={1 + k} /></div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-5 gap-3">
+                {socialAll.map((a, k) => (
+                  <div key={a.id} className={a.w > a.h * 1.5 ? 'col-span-3 sm:col-span-2 xl:col-span-2' : ''}><Tile {...tileProps} a={a} i={1 + k} /></div>
                 ))}
+              </div>
+              {/* Tuỳ chỉnh bìa Highlight: chọn icon, sửa chữ, thêm/bớt */}
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 space-y-2">
+                <div className="mv-label">Tuỳ chỉnh bìa Highlight</div>
+                {(ctx.highlights || []).map((h, idx) => {
+                  const Ic = hlIcon(h.icon);
+                  return (
+                    <div key={h.id} className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="grid place-items-center w-8 h-8 rounded-lg shrink-0" style={{ background: ctx.p.colorAccent }}><Ic size={16} color="#ffffff" weight="bold" /></span>
+                        <input className="mv-input !py-1.5 !text-xs flex-1 min-w-0" value={h.label} onChange={(e) => updateHL(idx, { label: e.target.value })} placeholder="Tên mục" />
+                        <button type="button" onClick={() => removeHL(idx)} disabled={(ctx.highlights || []).length <= 1} className="text-slate-400 hover:text-rose-400 disabled:opacity-30 shrink-0" aria-label="Xoá mục"><X className="w-4 h-4" /></button>
+                      </div>
+                      <select className="mv-input !py-1.5 !text-xs w-full" value={h.icon} onChange={(e) => updateHL(idx, { icon: e.target.value })} aria-label="Icon">
+                        {HL_ICONS.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+                {(ctx.highlights || []).length < 6 && (
+                  <button type="button" onClick={addHL} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs">+ Thêm mục</button>
+                )}
               </div>
             </CollapsibleSection>
             <CollapsibleSection title="3 · Ấn phẩm in">
-              <div className="grid grid-cols-2 gap-3">
-                {PRINT.map((a, k) => <Tile key={a.id} {...tileProps} a={a} i={1 + SOCIAL.length + k} />)}
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {PRINT.map((a, k) => <Tile key={a.id} {...tileProps} a={a} i={1 + socialAll.length + k} />)}
               </div>
-            </CollapsibleSection>
-            <CollapsibleSection title="4 · Mockup">
-              <LogoMockups ref={mockRef} palette={ctx.p} fontCss={fontCss} fileSlug={slug}
-                logoKey={JSON.stringify([c.logo?.length, c.logo?.slice(-48), c.p, c.headFontId, ctx.name])}
-                renderLogo={({ tone, frame, style }) => <LogoMark c={ctx} tone={tone} frame={frame} style={style} />}
-                name={ctx.name} slogan={ctx.slogan} contact={[c.phone, c.web].filter(Boolean).join('  ·  ')}
-                makeLogoPng={() => logoPng()} />
             </CollapsibleSection>
           </div>
 

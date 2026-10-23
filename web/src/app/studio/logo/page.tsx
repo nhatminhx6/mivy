@@ -5,7 +5,7 @@ import { Check, Download, Loader2, Save, Shuffle } from 'lucide-react';
 import { BrandKit } from '@/types';
 import { DEFAULT_BRAND, contactLine, loadBrand, saveBrand } from '@/lib/brand-presets';
 import { LogoMockups } from '@/components/LogoMockups';
-import { LOGO_ICONS } from '@/lib/logo-icons';
+import { ICON_CATS, LOGO_ICONS } from '@/lib/logo-icons';
 import {
   ACCENTS, Gu, LOGO_FONTS, LOGO_GUS, LOGO_INDUSTRIES, LOGO_KINDS, LOGO_PALETTES, LogoSpec, LogoSvg, SHAPES,
   fontById, generateLogos, logoFontCss, useLogoFonts, usesIcon, usesShape,
@@ -146,8 +146,8 @@ export default function LogoMakerPage() {
 
         {/* CỘT PHẢI: tinh chỉnh + tải */}
         <div className="lg:sticky lg:top-4 self-start space-y-3">
-          <div className="glass-card p-4 rounded-2xl space-y-4 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <div className="flex items-center justify-between">
+          <div className="glass-card p-4 rounded-2xl hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06] flex flex-col lg:max-h-[calc(100vh-2rem)]">
+            <div className="flex items-center justify-between shrink-0">
               <span className="text-sm font-bold text-white">3 · Tinh chỉnh & tải</span>
               <div className="flex gap-1">
                 {(['light', 'dark', 'none'] as const).map((b) => (
@@ -157,10 +157,11 @@ export default function LogoMakerPage() {
                 ))}
               </div>
             </div>
-            <div className="h-56 rounded-xl p-5 border border-white/10" style={previewStyle} data-testid="logo-preview">
+            <div className="h-56 rounded-xl p-5 border border-white/10 shrink-0 mt-4" style={previewStyle} data-testid="logo-preview">
               {ready && <LogoSvg spec={cur} name={shopName} slogan={slogan} tone={previewBg === 'dark' ? 'white' : 'color'} style={{ width: '100%', height: '100%', display: 'block' }} />}
             </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto -mr-1 pr-1 space-y-4 mt-4">
             <div>
               <div className="mv-label mb-1.5">Kiểu</div>
               <div className="flex flex-wrap gap-1.5">{LOGO_KINDS.map((k) => <button key={k.id} type="button" onClick={() => upd({ kind: k.id })} className={chip(cur.kind === k.id)}>{k.name}</button>)}</div>
@@ -200,15 +201,28 @@ export default function LogoMakerPage() {
                 <div className="flex flex-wrap gap-1.5">{SHAPES.map((s) => <button key={s.id} type="button" onClick={() => upd({ shape: s.id })} className={chip(cur.shape === s.id)}>{s.name}</button>)}</div></div>
             )}
             {usesIcon(cur.kind) && (
-              <div><div className="mv-label mb-1.5">Biểu tượng</div>
-                <div className="grid grid-cols-10 gap-1 max-h-28 overflow-y-auto pr-1">
-                  {LOGO_ICONS.map(({ id, Comp }) => (
-                    <button key={id} type="button" title={id} onClick={() => upd({ icon: id })}
-                      className={`aspect-square rounded-md flex items-center justify-center border ${cur.icon === id ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/20'}`}>
-                      <Comp size={16} color="#e2e8f0" weight="fill" />
-                    </button>
-                  ))}
-                </div></div>
+              <div>
+                <div className="mv-label mb-1.5">Biểu tượng</div>
+                <div className="space-y-2.5">
+                  {ICON_CATS.map((cat) => {
+                    const items = LOGO_ICONS.filter((ic) => ic.cat === cat.id);
+                    if (!items.length) return null;
+                    return (
+                      <div key={cat.id}>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">{cat.name}</div>
+                        <div className="grid grid-cols-10 gap-1">
+                          {items.map(({ id, Comp }) => (
+                            <button key={id} type="button" title={id} onClick={() => upd({ icon: id })}
+                              className={`aspect-square rounded-md flex items-center justify-center border ${cur.icon === id ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/20'}`}>
+                              <Comp size={16} color="#e2e8f0" weight="fill" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             <div className="pt-3 border-t border-white/10 space-y-2">
@@ -234,6 +248,7 @@ export default function LogoMakerPage() {
               <label className="flex items-center gap-2 text-[11px] text-slate-400">
                 <input type="checkbox" checked={syncColors} onChange={(e) => setSyncColors(e.target.checked)} /> Đổi màu thương hiệu theo logo này
               </label>
+            </div>
             </div>
           </div>
         </div>

@@ -3,13 +3,14 @@
 // brand board, avatar, bìa Facebook, ảnh bìa highlight, name card 2 mặt, tem dán, thiệp cảm ơn.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { ChatCircleDots, Globe, MapPin, Phone, ShoppingBag, Tag, type Icon } from '@phosphor-icons/react';
+import { ChatCircleDots, Globe, MapPin, Phone, ShoppingBag, Tag, Star, Heart, Truck, Percent, Gift, Storefront, Camera, Sparkle, Crown, Coffee, Megaphone, type Icon } from '@phosphor-icons/react';
 import type { Palette } from '@/lib/brand-presets';
 import { LogoSvg, LogoTone, fontById, type LogoSpec } from '@/lib/logo-engine';
 
 export interface PackCtx {
   name: string; slogan: string; p: Palette; headFontId: string; logo?: string;
   phone?: string; web?: string; address?: string;
+  highlights?: HLItem[];
 }
 
 const B = "'Be Vietnam Pro', sans-serif";
@@ -131,18 +132,34 @@ function FbCover({ c }: { c: PackCtx }) {
 }
 
 // ---------- 4. Ảnh bìa highlight 1080×1080 ----------
-export const HIGHLIGHTS: { id: string; label: string; Icon: Icon }[] = [
-  { id: 'san-pham', label: 'Sản phẩm', Icon: ShoppingBag }, { id: 'feedback', label: 'Feedback', Icon: ChatCircleDots },
-  { id: 'uu-dai', label: 'Ưu đãi', Icon: Tag }, { id: 'lien-he', label: 'Liên hệ', Icon: Phone },
+export interface HLItem { id: string; icon: string; label: string }
+// Kho icon chọn cho bìa Highlight (phosphor)
+export const HL_ICONS: { id: string; name: string; Icon: Icon }[] = [
+  { id: 'bag', name: 'Túi mua sắm', Icon: ShoppingBag }, { id: 'store', name: 'Cửa hàng', Icon: Storefront },
+  { id: 'tag', name: 'Nhãn giá', Icon: Tag }, { id: 'percent', name: 'Giảm giá', Icon: Percent },
+  { id: 'gift', name: 'Quà tặng', Icon: Gift }, { id: 'chat', name: 'Tin nhắn', Icon: ChatCircleDots },
+  { id: 'star', name: 'Ngôi sao', Icon: Star }, { id: 'heart', name: 'Trái tim', Icon: Heart },
+  { id: 'phone', name: 'Điện thoại', Icon: Phone }, { id: 'truck', name: 'Giao hàng', Icon: Truck },
+  { id: 'mappin', name: 'Địa chỉ', Icon: MapPin }, { id: 'camera', name: 'Máy ảnh', Icon: Camera },
+  { id: 'sparkle', name: 'Lấp lánh', Icon: Sparkle }, { id: 'crown', name: 'Vương miện', Icon: Crown },
+  { id: 'coffee', name: 'Cà phê', Icon: Coffee }, { id: 'mega', name: 'Loa thông báo', Icon: Megaphone },
 ];
-function Highlight({ c, i }: { c: PackCtx; i: number }) {
-  const { Icon: I } = HIGHLIGHTS[i];
+export const hlIcon = (id: string): Icon => HL_ICONS.find((x) => x.id === id)?.Icon || ShoppingBag;
+export const DEFAULT_HIGHLIGHTS: HLItem[] = [
+  { id: 'san-pham', icon: 'bag', label: 'Sản phẩm' }, { id: 'feedback', icon: 'chat', label: 'Feedback' },
+  { id: 'uu-dai', icon: 'tag', label: 'Ưu đãi' }, { id: 'lien-he', icon: 'phone', label: 'Liên hệ' },
+];
+function Highlight({ c, h }: { c: PackCtx; h: HLItem }) {
+  const I = hlIcon(h.icon);
   return (
     <div style={{ width: 1080, height: 1080, background: `radial-gradient(circle at 30% 25%, ${c.p.colorAccent} 0%, ${c.p.colorPrimary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
       <div style={{ position: 'absolute', inset: 170, borderRadius: '50%', border: '6px solid rgba(255,255,255,.28)' }} />
       <I size={380} color="#ffffff" weight="bold" />
     </div>
   );
+}
+export function highlightAssets(list: HLItem[]): AssetDef[] {
+  return list.map((h) => ({ id: `highlight-${h.id}`, label: `Highlight · ${h.label}`, folder: '02-mang-xa-hoi', w: 1080, h: 1080, render: (c: PackCtx) => <Highlight c={c} h={h} /> }));
 }
 
 // ---------- 5. Name card 1050×600 (3.5×2 inch @300dpi) ----------
@@ -223,6 +240,67 @@ function ThankYou({ c }: { c: PackCtx }) {
   );
 }
 
+// ---------- 8. Phiếu ưu đãi (voucher) 1500×600 ----------
+function Voucher({ c }: { c: PackCtx }) {
+  const p = c.p;
+  const code = (c.name || 'SHOP').replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase() || 'SHOP';
+  return (
+    <div style={{ width: 1500, height: 600, display: 'flex', fontFamily: B, background: p.colorSurface, overflow: 'hidden' }}>
+      <div style={{ width: 520, flex: 'none', background: p.colorPrimary, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: 56, boxSizing: 'border-box' }}>
+        <div style={{ width: 320, height: 240 }}><LogoMark c={c} tone="white" style={box('100%', '100%')} /></div>
+        {c.slogan && <div style={{ fontWeight: 600, fontSize: 22, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,.7)', textAlign: 'center' }}>{c.slogan}</div>}
+      </div>
+      <div style={{ width: 0, borderLeft: `4px dashed ${p.colorSecondary}`, opacity: 0.45 }} />
+      <div style={{ flex: 1, minWidth: 0, padding: '56px 64px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center', color: p.colorInk }}>
+        <div style={{ fontWeight: 700, fontSize: 24, letterSpacing: '0.24em', color: p.colorAccent }}>PHIẾU ƯU ĐÃI</div>
+        <div style={{ ...head(c), fontSize: 112, lineHeight: 1, color: p.colorPrimary, marginTop: 6 }}>GIẢM 10%</div>
+        <div style={{ fontWeight: 500, fontSize: 28, color: p.colorSecondary, marginTop: 16 }}>Áp dụng cho đơn từ 200.000đ</div>
+        <div style={{ marginTop: 28, alignSelf: 'flex-start', border: `2px dashed ${p.colorAccent}`, borderRadius: 14, padding: '14px 28px', fontWeight: 700, fontSize: 30, letterSpacing: '0.12em', color: p.colorPrimary }}>MÃ: {code}10</div>
+        <div style={{ marginTop: 26 }}><ContactLines c={c} color={p.colorSecondary} size={22} iconColor={p.colorAccent} /></div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- 9. Thẻ tích điểm 1050×600 ----------
+function LoyaltyCard({ c }: { c: PackCtx }) {
+  const p = c.p;
+  return (
+    <div style={{ width: 1050, height: 600, background: p.colorSurface, boxSizing: 'border-box', padding: 56, display: 'flex', flexDirection: 'column', fontFamily: B, color: p.colorInk }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+        <div style={{ width: 300, height: 92 }}><LogoMark c={c} style={{ width: '100%', height: '100%', objectFit: 'contain' } as CSSProperties} /></div>
+        <div style={{ fontWeight: 700, fontSize: 22, letterSpacing: '0.18em', color: p.colorAccent }}>THẺ TÍCH ĐIỂM</div>
+      </div>
+      <div style={{ ...head(c), fontSize: 38, color: p.colorPrimary, marginTop: 16 }}>Tích đủ 10 tem — Tặng 1 phần</div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 22, width: '100%' }}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} style={{ aspectRatio: '1', borderRadius: '50%', border: `3px dashed ${p.colorAccent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 26, color: p.colorAccent, opacity: 0.55 }}>{i + 1}</div>
+          ))}
+        </div>
+      </div>
+      <div style={{ fontWeight: 500, fontSize: 20, color: p.colorSecondary }}>{[c.phone, c.web].filter(Boolean).join('  ·  ') || 'Cảm ơn bạn đã ủng hộ shop ♥'}</div>
+    </div>
+  );
+}
+
+// ---------- 10. Tag treo sản phẩm 650×920 (nền trong suốt ngoài thẻ) ----------
+function HangTag({ c }: { c: PackCtx }) {
+  const p = c.p;
+  return (
+    <div style={{ width: 650, height: 920, position: 'relative', fontFamily: B }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 44, background: p.colorPrimary }} />
+      <div style={{ position: 'absolute', top: 56, left: '50%', transform: 'translateX(-50%)', width: 54, height: 54, borderRadius: '50%', border: `9px solid ${p.colorSurface}` }} />
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, padding: '160px 54px 64px', boxSizing: 'border-box' }}>
+        <div style={{ width: 320, height: 280 }}><LogoMark c={c} tone="white" style={box('100%', '100%')} /></div>
+        {c.slogan && <div style={{ fontFamily: SCRIPT, fontWeight: 700, fontSize: 50, color: p.colorAccent, textAlign: 'center', lineHeight: 1.1 }}>{c.slogan}</div>}
+        <div style={{ width: 120, height: 4, borderRadius: 2, background: p.colorAccent }} />
+        <div style={{ fontWeight: 600, fontSize: 26, letterSpacing: '0.08em', color: 'rgba(255,255,255,.82)', textAlign: 'center', whiteSpace: 'pre-line' }}>{[c.phone, c.web].filter(Boolean).join('\n') || 'Cảm ơn bạn ♥'}</div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- danh mục ----------
 export interface AssetDef { id: string; label: string; folder: string; w: number; h: number; render: (c: PackCtx) => ReactNode }
 export const BOARD: AssetDef = { id: 'brand-board', label: 'Brand board', folder: '', w: 1600, h: 1200, render: (c) => <BrandBoard c={c} /> };
@@ -230,13 +308,15 @@ export const SOCIAL: AssetDef[] = [
   { id: 'avatar-nen-sang', label: 'Avatar nền sáng', folder: '02-mang-xa-hoi', w: 1000, h: 1000, render: (c) => <Avatar c={c} /> },
   { id: 'avatar-nen-toi', label: 'Avatar nền tối', folder: '02-mang-xa-hoi', w: 1000, h: 1000, render: (c) => <Avatar c={c} dark /> },
   { id: 'bia-facebook', label: 'Bìa Facebook', folder: '02-mang-xa-hoi', w: 1640, h: 624, render: (c) => <FbCover c={c} /> },
-  ...HIGHLIGHTS.map((h, i) => ({ id: `highlight-${h.id}`, label: `Highlight · ${h.label}`, folder: '02-mang-xa-hoi', w: 1080, h: 1080, render: (c: PackCtx) => <Highlight c={c} i={i} /> })),
 ];
 export const PRINT: AssetDef[] = [
   { id: 'namecard-mat-truoc', label: 'Name card · mặt trước', folder: '03-an-pham-in', w: 1050, h: 600, render: (c) => <CardFront c={c} /> },
   { id: 'namecard-mat-sau', label: 'Name card · mặt sau', folder: '03-an-pham-in', w: 1050, h: 600, render: (c) => <CardBack c={c} /> },
   { id: 'tem-dan-hop', label: 'Tem dán hộp', folder: '03-an-pham-in', w: 1000, h: 1000, render: (c) => <Sticker c={c} /> },
   { id: 'thiep-cam-on', label: 'Thiệp cảm ơn A6', folder: '03-an-pham-in', w: 1748, h: 1240, render: (c) => <ThankYou c={c} /> },
+  { id: 'voucher', label: 'Phiếu ưu đãi', folder: '03-an-pham-in', w: 1500, h: 600, render: (c) => <Voucher c={c} /> },
+  { id: 'the-tich-diem', label: 'Thẻ tích điểm', folder: '03-an-pham-in', w: 1050, h: 600, render: (c) => <LoyaltyCard c={c} /> },
+  { id: 'tag-treo', label: 'Tag treo sản phẩm', folder: '03-an-pham-in', w: 650, h: 920, render: (c) => <HangTag c={c} /> },
 ];
 
 // Xem trước thu nhỏ: node bên trong giữ ĐÚNG kích thước thật (xuất PNG từ node này, bỏ transform).

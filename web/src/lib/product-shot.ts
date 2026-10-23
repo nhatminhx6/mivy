@@ -9,10 +9,12 @@ export const SHOT_PLATFORMS: { id: ShotLayout; name: string; folder: string; w: 
   { id: '9:16', name: 'TikTok · Reels · Story', folder: 'tiktok-story-9x16', w: 1080, h: 1920 },
 ];
 
-export type BgKind = 'white' | 'gray' | 'cream' | 'gradient' | 'brand' | 'podium' | 'scene';
+export type BgKind = 'white' | 'gray' | 'cream' | 'gradient' | 'brand' | 'podium' | 'scene' | 'spotlight' | 'reflect' | 'pop' | 'sunlight' | 'wood' | 'marble';
 export const BG_KINDS: { id: BgKind; name: string }[] = [
   { id: 'white', name: 'Trắng studio' }, { id: 'gray', name: 'Xám nhạt' }, { id: 'cream', name: 'Kem' },
   { id: 'gradient', name: 'Gradient màu' }, { id: 'brand', name: 'Màu thương hiệu' }, { id: 'podium', name: 'Bục trưng bày' }, { id: 'scene', name: 'Cảnh thật' },
+  { id: 'wood', name: 'Mặt gỗ' }, { id: 'marble', name: 'Đá cẩm thạch' }, { id: 'spotlight', name: 'Sân khấu' },
+  { id: 'reflect', name: 'Phản chiếu' }, { id: 'pop', name: 'Khối màu' }, { id: 'sunlight', name: 'Nắng cửa sổ' },
 ];
 export type ShadowKind = 'soft' | 'contact' | 'none';
 
@@ -36,22 +38,69 @@ function zone(layout: ShotLayout, W: number, H: number) {
 
 function paintBg(ctx: CanvasRenderingContext2D, bg: ShotBg, W: number, H: number, S: number) {
   const lin = (stops: [number, string][]) => { const g = ctx.createLinearGradient(0, 0, 0, H); stops.forEach(([o, c]) => g.addColorStop(o, c)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
-  if (bg.kind === 'white') lin([[0, '#ffffff'], [0.62, '#ffffff'], [1, '#eef0f3']]);
-  else if (bg.kind === 'gray') lin([[0, '#f4f5f7'], [1, '#dfe3e8']]);
-  else if (bg.kind === 'cream') lin([[0, '#faf6ef'], [1, '#ece2d2']]);
-  else if (bg.kind === 'brand') lin([[0, bg.tint], [1, mix(bg.tint, bg.main, 0.28)]]);
-  else if (bg.kind === 'scene' && bg.scene) {
+  const glow = (cx: number, cy: number, r: number, stops: [number, string][]) => { const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); };
+  const k = bg.kind;
+  if (k === 'white') lin([[0, '#ffffff'], [0.62, '#ffffff'], [1, '#eef0f3']]);
+  else if (k === 'gray') lin([[0, '#f4f5f7'], [1, '#dfe3e8']]);
+  else if (k === 'cream') lin([[0, '#faf6ef'], [1, '#ece2d2']]);
+  else if (k === 'brand') lin([[0, bg.tint], [1, mix(bg.tint, bg.main, 0.28)]]);
+  else if (k === 'scene' && bg.scene) {
     ctx.save();
     ctx.filter = `blur(${Math.round(10 * S)}px)`;
     cover(ctx, bg.scene, W, H, bg.scene.naturalWidth, bg.scene.naturalHeight);
     ctx.restore();
     ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(0, 0, W, H);
+  } else if (k === 'spotlight') {
+    // nền tối, quầng sáng tụ vào sản phẩm (hợp nước hoa, đồng hồ, mỹ phẩm cao cấp)
+    lin([[0, mix(bg.main, '#050608', 0.6)], [0.55, mix(bg.main, '#050608', 0.8)], [1, '#050608']]);
+    glow(W / 2, H * 0.44, Math.max(W, H) * 0.5, [[0, 'rgba(255,255,255,0.32)'], [0.45, 'rgba(255,255,255,0.08)'], [1, 'rgba(255,255,255,0)']]);
+  } else if (k === 'pop') {
+    // khối màu rực + vòng tròn lớn + chấm bi (phong cách sale Shopee/TikTok)
+    ctx.fillStyle = bg.main; ctx.fillRect(0, 0, W, H);
+    const c = ctx.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.42, W * 0.6);
+    c.addColorStop(0, mix(bg.main, '#ffffff', 0.34)); c.addColorStop(1, bg.main);
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(W * 0.5, H * 0.42, W * 0.42, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = mix(bg.main, '#ffffff', 0.55);
+    for (const [px, py, r] of [[0.14, 0.17, 0.02], [0.87, 0.22, 0.015], [0.82, 0.8, 0.022], [0.13, 0.82, 0.016]] as [number, number, number][]) {
+      ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.arc(W * px, H * py, W * r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else if (k === 'sunlight') {
+    // nắng xuyên cửa sổ: nền kem ấm + vệt sáng chéo
+    lin([[0, '#fff8ee'], [1, '#f2e6d1']]);
+    ctx.save();
+    ctx.translate(W * 0.5, H * 0.5); ctx.rotate(-0.38);
+    const bw = W * 0.12;
+    for (let i = -7; i < 7; i++) {
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,241,210,0.55)' : 'rgba(150,110,60,0.05)';
+      ctx.fillRect(i * bw * 1.7 - bw / 2, -H, bw, H * 2.4);
+    }
+    ctx.restore();
+  } else if (k === 'wood') {
+    // mặt bàn gỗ ấm + tường sáng phía trên (bục B "mặt phẳng đẹp")
+    lin([[0, '#efe7db'], [0.57, '#e8dccb'], [0.57, '#b67f50'], [1, '#8a5630']]);
+    ctx.save();
+    const top = H * 0.57;
+    ctx.strokeStyle = 'rgba(70,40,18,0.13)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 16; i++) { const y = top + (H - top) * ((i + 0.5) / 16); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    glow(W / 2, top, Math.max(W, H) * 0.5, [[0, 'rgba(255,245,230,0.3)'], [1, 'rgba(255,245,230,0)']]);
+    ctx.restore();
+  } else if (k === 'marble') {
+    // đá cẩm thạch trắng + vân xám mảnh (sang, hợp mỹ phẩm, trang sức)
+    lin([[0, '#fbfbfc'], [1, '#e8e9ee']]);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,126,142,0.22)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    for (const [x0, y0, cx, cy, x1, y1] of [[0.05, 0.2, 0.4, 0.1, 0.95, 0.32], [0.1, 0.75, 0.5, 0.9, 0.9, 0.7], [0.6, 0.05, 0.5, 0.45, 0.72, 0.95]] as [number, number, number, number, number, number][]) {
+      ctx.beginPath(); ctx.moveTo(W * x0, H * y0); ctx.quadraticCurveTo(W * cx, H * cy, W * x1, H * y1); ctx.stroke();
+    }
+    ctx.restore();
+  } else if (k === 'reflect') {
+    // sàn bóng loáng để soi gương sản phẩm (phần soi vẽ trong drawProductShot)
+    lin([[0, '#f3f4f7'], [0.6, '#e8eaef'], [1, '#d6d9e1']]);
   } else {
     // gradient / podium: nền màu dịu + quầng sáng phía sau sản phẩm
     lin([[0, bg.tint], [1, bg.soft]]);
-    const g = ctx.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, Math.max(W, H) * 0.55);
-    g.addColorStop(0, 'rgba(255,255,255,0.85)'); g.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    glow(W / 2, H * 0.42, Math.max(W, H) * 0.55, [[0, 'rgba(255,255,255,0.85)'], [1, 'rgba(255,255,255,0)']]);
   }
 }
 
@@ -108,6 +157,18 @@ export function drawProductShot(canvas: HTMLCanvasElement, o: ShotOpts) {
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
       g.addColorStop(0, `rgba(0,0,0,${o.bg.kind === 'scene' ? 0.38 : 0.3})`); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    if (o.bg.kind === 'reflect') {
+      // soi gương: lật sản phẩm xuống dưới + mờ dần hoà vào sàn
+      const floor = y + dh;
+      ctx.save();
+      ctx.globalAlpha = 0.26;
+      ctx.translate(0, floor * 2); ctx.scale(1, -1);
+      ctx.drawImage(o.img, x, y, dw, dh);
+      ctx.restore();
+      const fade = ctx.createLinearGradient(0, floor, 0, floor + dh * 0.85);
+      fade.addColorStop(0, 'rgba(226,229,236,0)'); fade.addColorStop(1, 'rgba(214,217,225,1)');
+      ctx.fillStyle = fade; ctx.fillRect(x - 24, floor, dw + 48, dh * 0.9);
     }
     ctx.save();
     if (o.shadow === 'soft') { ctx.shadowColor = 'rgba(15,23,42,0.22)'; ctx.shadowBlur = 46 * S; ctx.shadowOffsetY = 22 * S; }

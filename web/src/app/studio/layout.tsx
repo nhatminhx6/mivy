@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, ShoppingBag, PanelTop, ListOrdered, Wand2, Package, ArrowUpRight, Flame, LayoutGrid } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, ShoppingBag, PanelTop, ListOrdered, Wand2, Package, ArrowUpRight, Flame, LayoutGrid, Signpost } from 'lucide-react';
 
 const GROUPS = [
   { title: '', items: [
@@ -25,6 +25,7 @@ const GROUPS = [
       { label: 'Thương hiệu', href: '/studio/brand', icon: Palette },
       { label: 'Bộ nhận diện', href: '/studio/brandpack', icon: Package },
       { label: 'Bìa & Avatar', href: '/studio/brand-assets', icon: PanelTop },
+      { label: 'Bảng hiệu', href: '/studio/signage', icon: Signpost },
     ],
   },
   { title: 'Khác', items: [{ label: 'Chiến dịch', href: '/studio/drafts', icon: BookmarkCheck }] },

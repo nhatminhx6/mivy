@@ -13,6 +13,22 @@ export const COVER_TEMPLATES: { id: string; label: string }[] = [
   { id: 'ribbon', label: '▞ Sọc chéo' },
   { id: 'minimal', label: '▭ Tối giản' },
   { id: 'brand', label: 'Thương hiệu' },
+  { id: 'bold', label: 'Aa Chữ khổng lồ' },
+  { id: 'pastel', label: '◍ Pastel dịu' },
+  { id: 'band', label: '▬ Băng ngang' },
+  { id: 'neon', label: '✧ Neon tối' },
+  { id: 'corner', label: '◣ Khối góc' },
+  { id: 'wave', label: '〰 Sóng lượn' },
+];
+
+export const AVATAR_TEMPLATES: { id: string; label: string }[] = [
+  { id: 'ring', label: '◎ Vòng accent' },
+  { id: 'solid', label: '● Tròn đặc' },
+  { id: 'squircle', label: '▢ Vuông bo' },
+  { id: 'outline', label: '○ Viền mảnh' },
+  { id: 'stamp', label: '✺ Huy hiệu chữ' },
+  { id: 'diagonal', label: '◩ Chéo 2 màu' },
+  { id: 'monogram', label: 'Aa Monogram' },
 ];
 
 export const ASSET_KINDS: AssetKind[] = [
@@ -36,7 +52,8 @@ export interface BrandAssetOpts {
   badge?: string; // badge khuyến mãi góc (tuỳ chọn)
   usps?: string[]; // điểm nổi bật (Freeship, Chính hãng...)
   cta?: string; // nút kêu gọi (vd MUA NGAY)
-  coverTemplate?: string; // mẫu bìa: burst | split | ribbon | minimal | brand
+  coverTemplate?: string; // mẫu bìa: xem COVER_TEMPLATES
+  avatarTemplate?: string; // kiểu avatar: xem AVATAR_TEMPLATES
   fontHeadingId?: string;
   fontBodyId?: string;
   style?: 'solid' | 'gradient' | 'photo';
@@ -388,6 +405,262 @@ function coverMinimal(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: numbe
   rr(ctx, cx - cw / 2, cyy, cw, chh, chh / 2); ctx.fillStyle = onA; ctx.fill(); ctx.fillStyle = onA === '#ffffff' ? shift(A, -12) : '#ffffff'; ctx.textBaseline = 'middle'; ctx.font = `800 ${cf}px ${HEAD}`; ctx.fillText(cta, cx, cyy + chh / 2 + 1);
 }
 
+// ===================== Mẫu bìa bổ sung =====================
+// Pill chữ (đặc hoặc viền). Trả về chiều rộng.
+function pill(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fs: number, bg: string, fg: string, font: string, outline = false): number {
+  ctx.save(); ctx.font = `800 ${fs}px ${font}`;
+  const w = ctx.measureText(text).width + fs * 2.2, h = fs * 2.1;
+  rr(ctx, x, y, w, h, h / 2);
+  if (outline) { ctx.lineWidth = Math.max(2, fs * 0.12); ctx.strokeStyle = bg; ctx.stroke(); } else { ctx.fillStyle = bg; ctx.fill(); }
+  ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + w / 2, y + h / 2 + 1);
+  ctx.restore(); return w;
+}
+const pillW = (ctx: CanvasRenderingContext2D, text: string, fs: number, font: string) => { ctx.save(); ctx.font = `800 ${fs}px ${font}`; const w = ctx.measureText(text).width + fs * 2.2; ctx.restore(); return w; };
+// trần cỡ chữ theo bề rộng khổ (bìa YouTube lớn hơn nhiều so với FB)
+const capOf = (W: number) => (v: number) => v * Math.max(0.75, W / 1640);
+
+// ---- Chữ khổng lồ: tên thương hiệu cực lớn, chữ vọng viền phía sau ----
+function coverBold(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const cap = capOf(W);
+  const T = toneTheme(P, A); paintTone(ctx, W, H, T);
+  const short = H < W * 0.32; const pad = short ? H * 0.14 : H * 0.12;
+  const name = (o.brandName || 'BRAND').toUpperCase();
+  ctx.save(); const ef = fitText(ctx, name, W * 1.15, H * 1.1, '900', HEAD);
+  ctx.font = `900 ${ef}px ${HEAD}`; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.lineWidth = Math.max(2, ef * 0.012); ctx.strokeStyle = T.dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)';
+  ctx.strokeText(name, W + ef * 0.05, H + ef * 0.18); ctx.restore();
+  let y = short ? H * 0.16 : pad * 1.2; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  if (o.slogan) { const sf = Math.min(H * (short ? 0.11 : 0.06), cap(34)); ctx.fillStyle = A; ctx.font = `700 ${sf}px ${BODY}`; ctx.fillText(o.slogan.toUpperCase(), pad, y); y += sf * 1.6; }
+  const nf = fitText(ctx, name, W * (short ? 0.5 : 0.7), short ? H * 0.42 : H * 0.3, '900', HEAD);
+  ctx.fillStyle = T.text; ctx.font = `900 ${nf}px ${HEAD}`; ctx.fillText(name, pad, y); y += nf * 1.02;
+  ctx.fillStyle = A; rr(ctx, pad, y + H * 0.01, Math.min(nf * 2.4, W * 0.16), Math.max(6, H * 0.018), H * 0.01); ctx.fill();
+  const fs = Math.min(H * (short ? 0.1 : 0.05), cap(32)); const cta = (o.cta || 'MUA NGAY').toUpperCase();
+  if (short) {
+    const cw = pillW(ctx, cta, fs, HEAD); const py = (H - fs * 2.1) / 2;
+    pill(ctx, cta, W - pad - cw, py, fs, A, T.onAccent, HEAD);
+    if (o.badge) { const b = o.badge.toUpperCase(); pill(ctx, b, W - pad - cw - fs - pillW(ctx, b, fs, HEAD), py, fs, T.text, T.text, HEAD, true); }
+  } else {
+    let bx = pad; const by = y + H * 0.08;
+    if (o.badge) bx += pill(ctx, o.badge.toUpperCase(), bx, by, fs, A, T.onAccent, HEAD) + fs * 0.8;
+    pill(ctx, cta, bx, by, fs, T.text, T.text, HEAD, true);
+    if (o.logoImg) drawLogoOrInitial(ctx, o, W - pad - H * 0.22, pad, H * 0.22, T.text, HEAD);
+  }
+}
+
+// ---- Pastel dịu: nền pastel + blob mềm + thẻ trắng bo góc, logo tròn bên phải ----
+function coverPastel(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const cap = capOf(W);
+  const short = H < W * 0.32; const pad = short ? H * 0.12 : H * 0.1;
+  ctx.fillStyle = mixHex(A, '#ffffff', 0.86); ctx.fillRect(0, 0, W, H);
+  const blob = (x: number, y: number, r: number, c: string, a: number) => { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.restore(); };
+  blob(W * 0.9, H * 0.15, H * 0.55, A, 0.28); blob(W * 0.72, H * 1.05, H * 0.5, mixHex(A, P, 0.5), 0.2); blob(W * 0.05, H * 0.95, H * 0.35, A, 0.18);
+  dotPattern(ctx, W, H, P, 0.04);
+  const ink = mixHex(P, '#000000', 0.2);
+  const cw = short ? W * 0.6 : W * 0.56, ch = H - pad * 2;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.08)'; ctx.shadowBlur = H * 0.08; ctx.shadowOffsetY = H * 0.02;
+  rr(ctx, pad, pad, cw, ch, Math.min(ch * 0.18, cap(48))); ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.fill(); ctx.restore();
+  const ip = short ? ch * 0.16 : ch * 0.12; let y = pad + ip; const x = pad + ip * 1.2;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const eb = Math.min(H * (short ? 0.1 : 0.055), cap(30)); ctx.fillStyle = A === '#ffffff' ? ink : shift(A, -18); ctx.font = `800 ${eb}px ${HEAD}`; ctx.fillText((o.brandName || '').toUpperCase(), x, y); y += eb * 1.4;
+  const hero = (o.badge || o.brandName || 'XIN CHÀO').toUpperCase(); const hf = fitText(ctx, hero, cw - ip * 2.4, short ? ch * 0.36 : ch * 0.26, '900', HEAD);
+  ctx.fillStyle = ink; ctx.font = `900 ${hf}px ${HEAD}`; ctx.fillText(hero, x, y); y += hf * 1.08;
+  if (o.slogan && !short) { const sf = fitText(ctx, o.slogan, cw - ip * 2.4, ch * 0.08, '500', BODY); ctx.fillStyle = '#6b7280'; ctx.font = `500 ${sf}px ${BODY}`; ctx.fillText(o.slogan, x, y); y += sf * 1.6; }
+  if (!short) { const fs = Math.min(H * 0.045, cap(28)); pill(ctx, (o.cta || 'MUA NGAY').toUpperCase(), x, y + ch * 0.03, fs, A, lum(A) > 0.6 ? '#141414' : '#ffffff', HEAD); }
+  const R = Math.min(H * 0.3, (W - cw - pad * 3) / 2.2);
+  if (R > 20) {
+    const cx = pad + cw + (W - cw - pad) / 2, cy = H / 2;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = R * 0.3; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    if (o.bgImg) maskedPhotoCircle(ctx, o.bgImg, cx, cy, R * 0.9, A); else drawLogoOrInitial(ctx, o, cx - R * 0.55, cy - R * 0.55, R * 1.1, shift(A, -18), HEAD);
+  }
+}
+
+// ---- Băng ngang: dải accent nghiêng giữa bìa, tên trái + offer/CTA phải ----
+function coverBand(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const onA = lum(A) > 0.6 ? '#141414' : '#ffffff'; const cap = capOf(W);
+  const short = H < W * 0.32; const pad = short ? H * 0.12 : H * 0.1;
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, mixHex(P, '#ffffff', 0.94)); g.addColorStop(1, mixHex(P, '#ffffff', 0.84)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const by0 = short ? H * 0.12 : H * 0.3, bh = short ? H * 0.76 : H * 0.42;
+  ctx.save(); ctx.beginPath(); ctx.moveTo(0, by0 + bh * 0.08); ctx.lineTo(W, by0 - bh * 0.06); ctx.lineTo(W, by0 + bh * 0.94); ctx.lineTo(0, by0 + bh * 1.06); ctx.closePath();
+  ctx.fillStyle = A; ctx.fill(); ctx.clip(); diagStripes(ctx, W, H, '#ffffff', 0.06, H * 0.06); ctx.restore();
+  const mid = by0 + bh / 2;
+  let x = pad; const ls = bh * 0.56;
+  if (o.logoImg) { drawLogoOrInitial(ctx, o, x, mid - ls / 2, ls, onA, HEAD); x += ls + pad * 0.6; }
+  const name = (o.brandName || 'BRAND').toUpperCase();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const nf = fitText(ctx, name, W * 0.34, bh * 0.36, '900', HEAD);
+  ctx.fillStyle = onA; ctx.font = `900 ${nf}px ${HEAD}`; ctx.fillText(name, x, o.slogan && !short ? mid - nf * 0.32 : mid);
+  if (o.slogan && !short) { ctx.font = `600 ${nf * 0.36}px ${BODY}`; ctx.fillStyle = onA === '#ffffff' ? 'rgba(255,255,255,0.85)' : '#333333'; ctx.fillText(o.slogan, x, mid + nf * 0.5); }
+  const fs = Math.min(bh * 0.16, cap(30)); const cta = (o.cta || 'MUA NGAY').toUpperCase(); const ctaX = W - pad - pillW(ctx, cta, fs, HEAD);
+  pill(ctx, cta, ctaX, mid - fs * 1.05, fs, onA, onA === '#ffffff' ? shift(A, -14) : '#ffffff', HEAD);
+  if (o.badge) {
+    const hero = o.badge.toUpperCase(); const hf = fitText(ctx, hero, W * 0.24, bh * 0.5, '900', HEAD);
+    ctx.font = `900 ${hf}px ${HEAD}`; ctx.fillStyle = onA; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(hero, ctaX - pad * 0.6, mid + 2);
+  }
+  if (!short) {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const tag = ((o.usps && o.usps[0]) || 'CHÍNH HÃNG').toUpperCase();
+    ctx.fillStyle = shift(A, -10); ctx.font = `800 ${Math.min(H * 0.05, cap(30))}px ${HEAD}`; ctx.save(); ctx.letterSpacing = '6px'; ctx.fillText(`★  ${tag}  ★`, W / 2, by0 / 2); ctx.restore();
+    if (o.contact) { ctx.fillStyle = mixHex(P, '#000000', 0.1); ctx.font = `600 ${Math.min(H * 0.045, cap(28))}px ${BODY}`; ctx.fillText(o.contact, W / 2, by0 + bh + (H - by0 - bh) / 2); }
+  }
+}
+
+// ---- Neon tối: nền gần đen + lưới mờ, tên phát sáng màu accent ----
+function coverNeon(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const cap = capOf(W);
+  const short = H < W * 0.32; const pad = short ? H * 0.14 : H * 0.12;
+  const neon = lum(A) < 0.3 ? mixHex(A, '#ffffff', 0.5) : A; const onNeon = lum(neon) > 0.6 ? '#0b0b0b' : '#ffffff';
+  ctx.fillStyle = mixHex(P, '#05060a', 0.82); ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.strokeStyle = hexA(neon, 0.08); ctx.lineWidth = 1; const gs = H * (short ? 0.2 : 0.1);
+  for (let gx = 0; gx < W; gx += gs) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+  for (let gy = 0; gy < H; gy += gs) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+  ctx.restore();
+  glowAt(ctx, W, H, W * 0.75, H * 0.5, Math.max(W, H) * 0.5, hexA(neon, 0.18));
+  let y = short ? H * 0.18 : pad * 1.1; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const eb = Math.min(H * (short ? 0.1 : 0.055), cap(32)); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = `700 ${eb}px ${BODY}`;
+  ctx.save(); ctx.letterSpacing = '4px'; ctx.fillText((o.slogan || 'OPEN NOW').toUpperCase(), pad, y); ctx.restore(); y += eb * 1.6;
+  const name = (o.brandName || 'BRAND').toUpperCase(); const nf = fitText(ctx, name, W * (short ? 0.55 : 0.6), short ? H * 0.4 : H * 0.28, '900', HEAD);
+  ctx.save(); ctx.font = `900 ${nf}px ${HEAD}`; ctx.fillStyle = neon; ctx.shadowColor = neon; ctx.shadowBlur = nf * 0.5; ctx.fillText(name, pad, y); ctx.shadowBlur = nf * 0.15; ctx.fillText(name, pad, y); ctx.restore();
+  y += nf * 1.15;
+  const fs = Math.min(H * (short ? 0.09 : 0.05), cap(30)); const cta = (o.cta || 'MUA NGAY').toUpperCase();
+  if (!short) {
+    let bx = pad; if (o.badge) bx += pill(ctx, o.badge.toUpperCase(), bx, y, fs, neon, neon, HEAD, true) + fs;
+    pill(ctx, cta, bx, y, fs, neon, onNeon, HEAD);
+    const R = Math.min(H * 0.3, W * 0.14), cx = W - pad - R * 1.1, cy = H / 2;
+    ctx.save(); ctx.strokeStyle = neon; ctx.lineWidth = Math.max(3, R * 0.04); ctx.shadowColor = neon; ctx.shadowBlur = R * 0.25; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    if (o.bgImg) maskedPhotoCircle(ctx, o.bgImg, cx, cy, R * 0.86, 'rgba(0,0,0,0)'); else drawLogoOrInitial(ctx, o, cx - R * 0.55, cy - R * 0.55, R * 1.1, '#ffffff', HEAD);
+  } else {
+    pill(ctx, cta, W - pad - pillW(ctx, cta, fs, HEAD), (H - fs * 2.1) / 2, fs, neon, onNeon, HEAD);
+  }
+}
+
+// ---- Khối góc: nền trắng, khối tròn accent lớn ở góc phải-dưới chứa logo ----
+function coverCorner(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const onA = lum(A) > 0.6 ? '#141414' : '#ffffff'; const cap = capOf(W);
+  const short = H < W * 0.32; const pad = short ? H * 0.14 : H * 0.12;
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+  glowAt(ctx, W, H, 0, 0, Math.max(W, H) * 0.6, hexA(A, 0.08));
+  const R = short ? H * 1.25 : H * 0.95; const ox = W + R * 0.05, oy = H + R * 0.08;
+  ctx.save(); ctx.fillStyle = mixHex(A, '#ffffff', 0.8); ctx.beginPath(); ctx.arc(ox, oy, R * 1.18, 0, Math.PI * 2); ctx.fill();
+  const g = ctx.createLinearGradient(W - R, H - R, W, H); g.addColorStop(0, shift(A, 10)); g.addColorStop(1, shift(A, -18)); ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(ox, oy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  const ls = short ? H * 0.42 : H * 0.28; const lx = W - pad - ls, ly = H - pad - ls;
+  if (o.bgImg) maskedPhotoCircle(ctx, o.bgImg, lx + ls / 2, ly + ls / 2, ls * 0.62, '#ffffff'); else drawLogoOrInitial(ctx, o, lx, ly, ls, onA, HEAD);
+  const ink = mixHex(P, '#000000', 0.15);
+  let y = short ? H * 0.16 : pad; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const eb = Math.min(H * (short ? 0.1 : 0.055), cap(32)); ctx.fillStyle = shift(A, -12); ctx.font = `800 ${eb}px ${HEAD}`; ctx.fillText((o.brandName || '').toUpperCase(), pad, y); y += eb * 1.4;
+  const hero = (o.badge || o.slogan || o.brandName || 'XIN CHÀO').toUpperCase(); const hf = fitText(ctx, hero, W * (short ? 0.5 : 0.55), short ? H * 0.4 : H * 0.28, '900', HEAD);
+  ctx.fillStyle = ink; ctx.font = `900 ${hf}px ${HEAD}`; ctx.fillText(hero, pad, y); y += hf * 1.08;
+  if (o.slogan && o.badge && !short) { const sf = fitText(ctx, o.slogan, W * 0.5, H * 0.07, '500', BODY); ctx.fillStyle = '#6b7280'; ctx.font = `500 ${sf}px ${BODY}`; ctx.fillText(o.slogan, pad, y); y += sf * 1.7; }
+  if (!short) {
+    pill(ctx, (o.cta || 'MUA NGAY').toUpperCase(), pad, y + H * 0.02, Math.min(H * 0.048, cap(30)), ink, '#ffffff', HEAD);
+    const usps = (o.usps || []).map((s) => s.trim()).filter(Boolean).slice(0, 3);
+    if (usps.length) { let ux = pad; const chH = H * 0.085; const uy = H - pad - chH; for (const u of usps) { const w = uspChip(ctx, u, ux, uy, chH, A, false, BODY); ux += w + H * 0.03; if (ux > W * 0.55) break; } }
+  }
+}
+
+// ---- Sóng lượn: nền tông thương hiệu + 2 lớp sóng accent ở đáy ----
+function coverWave(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const cap = capOf(W);
+  const T = toneTheme(P, A); paintTone(ctx, W, H, T);
+  const short = H < W * 0.32; const pad = short ? H * 0.14 : H * 0.12;
+  const wave = (yBase: number, amp: number, len: number, color: string, alpha: number) => {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, H);
+    for (let wx = 0; wx <= W + 8; wx += 8) ctx.lineTo(wx, yBase + Math.sin((wx / len) * Math.PI * 2) * amp);
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); ctx.restore();
+  };
+  wave(H * (short ? 0.78 : 0.74), H * 0.06, W * 0.45, T.accentLight, 0.35);
+  wave(H * (short ? 0.86 : 0.82), H * 0.05, W * 0.6, A, 0.95);
+  let y = short ? H * 0.14 : pad; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  const eb = Math.min(H * (short ? 0.1 : 0.055), cap(32)); ctx.fillStyle = T.accentLight; ctx.font = `800 ${eb}px ${HEAD}`; ctx.fillText((o.brandName || '').toUpperCase(), pad, y); y += eb * 1.4;
+  const hero = (o.badge || o.slogan || o.brandName || 'XIN CHÀO').toUpperCase(); const hf = fitText(ctx, hero, W * (short ? 0.55 : 0.6), short ? H * 0.34 : H * 0.26, '900', HEAD);
+  ctx.fillStyle = T.text; ctx.font = `900 ${hf}px ${HEAD}`; ctx.fillText(hero, pad, y); y += hf * 1.08;
+  if (o.slogan && o.badge && !short) { const sf = fitText(ctx, o.slogan, W * 0.55, H * 0.07, '500', BODY); ctx.fillStyle = T.textSec; ctx.font = `500 ${sf}px ${BODY}`; ctx.fillText(o.slogan, pad, y); y += sf * 1.6; }
+  const fs = Math.min(H * (short ? 0.085 : 0.048), cap(30)); const cta = (o.cta || 'MUA NGAY').toUpperCase();
+  if (!short) {
+    pill(ctx, cta, pad, y + H * 0.02, fs, A, T.onAccent, HEAD);
+    const R = Math.min(H * 0.22, W * 0.1), cx = W - pad - R, cy = pad + R;
+    ctx.save(); ctx.fillStyle = T.dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    if (o.bgImg) maskedPhotoCircle(ctx, o.bgImg, cx, cy, R * 0.9, A); else drawLogoOrInitial(ctx, o, cx - R * 0.6, cy - R * 0.6, R * 1.2, T.text, HEAD);
+  } else {
+    pill(ctx, cta, W - pad - pillW(ctx, cta, fs, HEAD), H * 0.18, fs, A, T.onAccent, HEAD);
+  }
+}
+
+// ===================== Kiểu avatar bổ sung =====================
+// Chữ chạy theo cung tròn phía trên (canvas không có textPath)
+function arcText(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, r: number, font: string, color: string, spacing: number) {
+  ctx.save(); ctx.font = font; ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const chars = Array.from(text); const widths = chars.map((c) => ctx.measureText(c).width + spacing);
+  const total = widths.reduce((a, b) => a + b, 0) / r; let ang = -Math.PI / 2 - total / 2;
+  chars.forEach((c, i) => { const w = widths[i] / r; ang += w / 2; ctx.save(); ctx.translate(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r); ctx.rotate(ang + Math.PI / 2); ctx.fillText(c, 0, 0); ctx.restore(); ang += w / 2; });
+  ctx.restore();
+}
+
+function drawAvatarStyle(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string) {
+  const P = o.colorPrimary || '#0f172a', A = o.colorAccent || '#10b981'; const T = toneTheme(P, A);
+  const cx = W / 2, cy = H / 2; const tpl = o.avatarTemplate; const onA = lum(A) > 0.6 ? '#141414' : '#ffffff';
+  const dy = o.badge && tpl !== 'stamp' ? -W * 0.06 : 0;
+  const logo = (size: number, ink: string) => {
+    if (o.style === 'photo' && o.bgImg && !o.logoImg) { maskedPhotoCircle(ctx, o.bgImg, cx, cy + dy, size / 2, 'rgba(0,0,0,0)'); return; }
+    drawLogoOrInitial(ctx, o, cx - size / 2, cy - size / 2 + dy, size, ink, HEAD);
+  };
+  if (tpl === 'solid') {
+    const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, shift(A, 12)); g.addColorStop(1, shift(A, -20)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    glowAt(ctx, W, H, W * 0.8, H * 0.15, W * 0.7, 'rgba(255,255,255,0.22)');
+    logo(W * 0.52, onA);
+  } else if (tpl === 'squircle') {
+    paintTone(ctx, W, H, T);
+    const s = W * 0.7;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = W * 0.05; ctx.shadowOffsetY = W * 0.015;
+    const g = ctx.createLinearGradient(cx - s / 2, cy - s / 2, cx + s / 2, cy + s / 2); g.addColorStop(0, shift(A, 14)); g.addColorStop(1, shift(A, -16));
+    rr(ctx, cx - s / 2, cy - s / 2, s, s, s * 0.26); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    logo(s * 0.62, onA);
+  } else if (tpl === 'outline') {
+    ctx.fillStyle = mixHex(A, '#ffffff', 0.9); ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.strokeStyle = A; ctx.lineWidth = W * 0.012; ctx.beginPath(); ctx.arc(cx, cy, W * 0.42, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = W * 0.004; ctx.beginPath(); ctx.arc(cx, cy, W * 0.385, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    logo(W * 0.46, mixHex(P, '#000000', 0.1));
+  } else if (tpl === 'stamp') {
+    paintTone(ctx, W, H, T, true);
+    const R = W * 0.44;
+    ctx.save(); ctx.fillStyle = A; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.strokeStyle = onA; ctx.globalAlpha = 0.5; ctx.lineWidth = W * 0.004; ctx.setLineDash([W * 0.012, W * 0.01]); ctx.beginPath(); ctx.arc(cx, cy, R * 0.94, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    const inner = R * 0.6;
+    ctx.save(); ctx.fillStyle = T.grad[1]; ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    const name = (o.brandName || 'BRAND').toUpperCase(); const n = Math.max(4, Array.from(name).length);
+    const fs = Math.min(W * 0.075, (Math.PI * R * 0.79 * 0.82) / (n * 0.95));
+    arcText(ctx, name, cx, cy, R * 0.79, `800 ${fs}px ${HEAD}`, onA, fs * 0.22);
+    sparkle(ctx, cx - R * 0.79, cy + fs * 0.1, fs * 0.32, onA); sparkle(ctx, cx + R * 0.79, cy + fs * 0.1, fs * 0.32, onA);
+    if (o.badge) { ctx.save(); ctx.font = `800 ${fs * 0.8}px ${HEAD}`; ctx.fillStyle = onA; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.badge.toUpperCase(), cx, cy + R * 0.79); ctx.restore(); }
+    logo(inner * 1.2, T.dark ? '#ffffff' : T.text);
+  } else if (tpl === 'diagonal') {
+    ctx.fillStyle = T.grad[1]; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.beginPath(); ctx.moveTo(W, 0); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+    const g = ctx.createLinearGradient(0, H, W, 0); g.addColorStop(0, shift(A, -10)); g.addColorStop(1, shift(A, 14)); ctx.fillStyle = g; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.arc(cx, cy + dy, W * 0.36, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    logo(W * 0.48, '#ffffff');
+  } else if (tpl === 'monogram') {
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    glowAt(ctx, W, H, W * 0.85, H * 0.1, W * 0.7, hexA(A, 0.12));
+    if (o.logoImg) logo(W * 0.55, P);
+    else {
+      const ini = (o.brandName || 'M').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+      ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = mixHex(P, '#000000', 0.1);
+      ctx.font = `700 ${W * (ini.length > 1 ? 0.42 : 0.56)}px ${SERIF}`; ctx.fillText(ini, cx, cy - W * 0.02 + dy);
+      ctx.fillStyle = A; ctx.beginPath(); ctx.arc(cx + W * (ini.length > 1 ? 0.27 : 0.2), cy + W * 0.15 + dy, W * 0.035, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    ctx.save(); ctx.strokeStyle = hexA(P, 0.15); ctx.lineWidth = W * 0.004; ctx.beginPath(); ctx.arc(cx, cy, W * 0.44, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  }
+  if (o.badge && tpl !== 'stamp') {
+    const light = tpl === 'solid' || tpl === 'diagonal';
+    ctx.save(); ctx.font = `800 ${W * 0.05}px ${HEAD}`; const bw = ctx.measureText(o.badge.toUpperCase()).width + W * 0.07;
+    const bx = cx - bw / 2, by = H * 0.76;
+    ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = W * 0.016; ctx.shadowOffsetY = W * 0.005;
+    rr(ctx, bx, by, bw, W * 0.09, W * 0.045); ctx.fillStyle = light ? '#ffffff' : A; ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.fillStyle = light ? shift(A, -14) : onA; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(o.badge.toUpperCase(), cx, by + W * 0.045 + 1); ctx.restore();
+  }
+}
+
 // Logo wordmark: mark tròn (logo/chữ cái) + tên brand + slogan. Nền trong suốt.
 export function drawWordmark(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
   const W = 1200, H = 420;
@@ -440,6 +713,7 @@ function drawBrandAssetCore(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
 
   // ===== AVATAR =====
   if (o.kind === 'avatar') {
+    if (o.avatarTemplate && o.avatarTemplate !== 'ring') { drawAvatarStyle(ctx, o, W, H, HEAD); return; }
     const cx = W / 2, cy = H / 2, r = W * 0.46;
     // đĩa tròn trung tâm: tông sáng hơn nền một nấc
     ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
@@ -479,6 +753,12 @@ function drawBrandAssetCore(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
   if (tpl === 'split') { coverSplit(ctx, o, W, H, HEAD, BODY); return; }
   if (tpl === 'ribbon') { coverRibbon(ctx, o, W, H, HEAD, BODY); return; }
   if (tpl === 'minimal') { coverMinimal(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'bold') { coverBold(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'pastel') { coverPastel(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'band') { coverBand(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'neon') { coverNeon(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'corner') { coverCorner(ctx, o, W, H, HEAD, BODY); return; }
+  if (tpl === 'wave') { coverWave(ctx, o, W, H, HEAD, BODY); return; }
 
   // ===== MẪU TIA SÁNG (offer-led): nền đậm theo tông accent + glow, chữ trắng to, accent điểm nhấn =====
   if (tpl !== 'brand') {

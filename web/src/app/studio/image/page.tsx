@@ -171,7 +171,7 @@ export default function ProductShotPage() {
 
           <CollapsibleSection title="2 · Nền">
             <div className="flex flex-wrap gap-1.5">{BG_KINDS.map((b) => <button key={b.id} type="button" onClick={() => setBgKind(b.id)} className={chip(bgKind === b.id)}>{b.name}</button>)}</div>
-            {(bgKind === 'gradient' || bgKind === 'podium') && themeChips}
+            {(['gradient', 'podium', 'pop', 'spotlight'] as BgKind[]).includes(bgKind) && themeChips}
             {bgKind === 'brand' && !kit && <p className="text-[11px] text-amber-200 mt-2">Chưa có bộ nhận diện — đang dùng màu mặc định.</p>}
             {bgKind === 'scene' && (
               <div className="mt-2.5 space-y-2">

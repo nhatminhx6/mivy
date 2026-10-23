@@ -2,7 +2,7 @@
 // Ảnh bìa (FB/Zalo/Shopee/YouTube) + Avatar — render code từ Brand Kit.
 import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, X, Sparkles } from 'lucide-react';
-import { ASSET_KINDS, COVER_TEMPLATES, drawBrandAsset } from '@/lib/brandasset-engine';
+import { ASSET_KINDS, AVATAR_TEMPLATES, COVER_TEMPLATES, drawBrandAsset } from '@/lib/brandasset-engine';
 import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
 import { marketingZip } from '@/lib/marketing-zip';
 import { PageHeader } from '@/components/PageHeader';
@@ -17,6 +17,7 @@ export default function BrandAssetsPage() {
   const [badge, setBadge] = useState('GIẢM 30%');
   const [cta, setCta] = useState('MUA NGAY');
   const [coverTemplate, setCoverTemplate] = useState('elegant');
+  const [avatarTemplate, setAvatarTemplate] = useState('ring');
   const [uspText, setUspText] = useState('Freeship toàn quốc\nHàng chính hãng\nĐổi trả 7 ngày');
   const [primary, setPrimary] = useState('#0f172a');
   const [accent, setAccent] = useState('#1f2937');
@@ -49,10 +50,10 @@ export default function BrandAssetsPage() {
     const im = new Image(); im.onload = () => { bgRef.current = im; setReady((n) => n + 1); }; im.onerror = () => { bgRef.current = null; setReady((n) => n + 1); }; im.src = bgUrl;
   }, [bgUrl]);
 
-  const opts = () => ({ kind, style, coverTemplate, colorPrimary: primary, colorSecondary: primary, colorAccent: accent, logoImg: logoRef.current, bgImg: bgRef.current, brandName, slogan, contact, badge, cta, usps: uspText.split('\n').map((s) => s.trim()).filter(Boolean), fontHeadingId: fontId, fontBodyId: fontId });
+  const opts = () => ({ kind, style, coverTemplate, avatarTemplate,colorPrimary: primary, colorSecondary: primary, colorAccent: accent, logoImg: logoRef.current, bgImg: bgRef.current, brandName, slogan, contact, badge, cta, usps: uspText.split('\n').map((s) => s.trim()).filter(Boolean), fontHeadingId: fontId, fontBodyId: fontId });
 
   useEffect(() => { (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts?.ready?.then(() => setReady((n) => n + 1)); }, []);
-  useEffect(() => { if (canvasRef.current) drawBrandAsset(canvasRef.current, opts()); }, [kind, style, coverTemplate, brandName, slogan, contact, badge, cta, uspText, primary, accent, fontId, ready]);
+  useEffect(() => { if (canvasRef.current) drawBrandAsset(canvasRef.current, opts()); }, [kind, style, coverTemplate, avatarTemplate, brandName, slogan, contact, badge, cta, uspText, primary, accent, fontId, ready]);
 
   const onFile = (set: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => set(String(r.result)); r.readAsDataURL(f);
@@ -123,6 +124,16 @@ export default function BrandAssetsPage() {
                     <button key={t.id} onClick={() => setCoverTemplate(t.id)} data-active={active} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+          {kind === 'avatar' && (
+            <div>
+              <div className="mv-label mb-2.5">Mẫu avatar</div>
+              <div className="mv-seg !flex flex-wrap w-full">
+                {AVATAR_TEMPLATES.map((t) => (
+                  <button key={t.id} onClick={() => setAvatarTemplate(t.id)} data-active={avatarTemplate === t.id} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
+                ))}
               </div>
             </div>
           )}
