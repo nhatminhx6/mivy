@@ -44,10 +44,11 @@ async function trimTransparent(blob: Blob, margin = 0.04): Promise<Blob> {
 }
 
 // Tách nền (WASM @imgly, chạy client) — CHỈ gọi khi user bấm nút.
-export async function cutoutImage(src: string): Promise<string> {
+// trim=false: giữ nguyên khổ ảnh gốc (để sửa vùng tách bằng cọ khớp từng pixel)
+export async function cutoutImage(src: string, trim = true): Promise<string> {
   const { removeBackground } = await import('@imgly/background-removal');
   const blob = await removeBackground(await (await fetch(src)).blob());
-  return URL.createObjectURL(await trimTransparent(blob));
+  return URL.createObjectURL(trim ? await trimTransparent(blob) : blob);
 }
 
 // "Bánh Mì Cô Ba!" → "banh-mi-co-ba"

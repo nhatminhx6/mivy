@@ -3,7 +3,7 @@
 // tải nhiều ảnh → (bấm) tách nền → chọn nền/bóng/cỡ → xuất đủ khổ Shopee·Lazada 1:1, FB·IG 4:5, TikTok 9:16 → ZIP theo sàn.
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, ImagePlus, Loader2, Maximize2, Package, Scissors, Trash2, Upload } from 'lucide-react';
+import { Download, ImagePlus, Loader2, Maximize2, Package, Paintbrush, Scissors, Trash2, Undo2, Upload } from 'lucide-react';
 import type { BrandKit } from '@/types';
 import { loadBrand } from '@/lib/brand-presets';
 import { POSTER_THEMES, type PosterThemeId } from '@/lib/infographic-engine';
@@ -13,10 +13,12 @@ import { cutoutImage, scaleImage, slugify } from '@/lib/image-utils';
 import { downloadBlob } from '@/lib/html-export';
 import { useLightbox } from '@/components/ImageLightbox';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
+import { MaskEditor } from '@/components/MaskEditor';
+import { getSamSession } from '@/lib/sam-select';
 import { PageHeader } from '@/components/PageHeader';
 
 interface Prod { id: string; name: string; src: string; cut?: string; status: 'raw' | 'cutting' | 'error' }
-const SAMPLES = ['04-sneaker', '02-dress', '01-tshirt'];
+const SAMPLES = ['10-perfume', '04-sneaker'];
 const SHADOWS: { id: ShadowKind; name: string }[] = [{ id: 'soft', name: 'Bóng mềm' }, { id: 'contact', name: 'Bóng chạm sàn' }, { id: 'none', name: 'Không bóng' }];
 const MAX = 30;
 const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`;
@@ -48,6 +50,7 @@ export default function ProductShotPage() {
   const [safeZone, setSafeZone] = useState(false);
   const [busy, setBusy] = useState('');
   const [drag, setDrag] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => { const b = loadBrand(); if (b) setKit(b); }, []);
@@ -70,7 +73,7 @@ export default function ProductShotPage() {
     : { kind: bgKind, tint: theme.tint, soft: theme.soft, main: theme.main, scene: bgKind === 'scene' ? sceneImg : null };
   const optsFor = (p: Prod, layout: ShotLayout, preview = true): ShotOpts | null => {
     const img = imgs[p.cut || p.src];
-    if (!img || (bgKind === 'scene' && p.cut && !sceneImg)) return null;
+    if (!img || (bgKind === 'scene' && !sceneImg)) return null;
     return { layout, img, cut: !!p.cut, bg, size, shadow, safeZone: preview && safeZone };
   };
 
@@ -79,20 +82,25 @@ export default function ProductShotPage() {
     const list = Array.from(files || []).filter((f) => f.type.startsWith('image/')).slice(0, Math.max(0, MAX - prods.length));
     for (const f of list) {
       const src = await scaleImage(f, 1600);
-      setProds((ps) => [...ps, { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: f.name.replace(/\.[^.]+$/, ''), src, status: 'raw' }]);
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setProds((ps) => [...ps, { id, name: f.name.replace(/\.[^.]+$/, ''), src, status: 'raw' }]);
+    }
+  };
+  const cutSrc = async (id: string, src: string) => {
+    setProds((ps) => ps.map((x) => (x.id === id ? { ...x, status: 'cutting' } : x)));
+    try {
+      const cut = await cutoutImage(src, false); // không cắt viền → sửa bằng cọ khớp ảnh gốc
+      setProds((ps) => ps.map((x) => (x.id === id ? { ...x, cut, status: 'raw' } : x)));
+      getSamSession(src).catch(() => null); // chuẩn bị sẵn AI chọn vật cho khung sửa
+    } catch {
+      setProds((ps) => ps.map((x) => (x.id === id ? { ...x, status: 'error' } : x)));
     }
   };
   const addSamples = () => setProds((ps) => [...ps, ...SAMPLES.map((s) => ({ id: `${s}-${Date.now()}`, name: s.replace(/^\d+-/, ''), src: `/sample-products/${s}.png`, cut: `/sample-products/${s}.png`, status: 'raw' as const }))]);
   const cutOne = async (id: string) => {
     const p = prods.find((x) => x.id === id);
     if (!p || p.status === 'cutting') return;
-    setProds((ps) => ps.map((x) => (x.id === id ? { ...x, status: 'cutting' } : x)));
-    try {
-      const cut = await cutoutImage(p.src);
-      setProds((ps) => ps.map((x) => (x.id === id ? { ...x, cut, status: 'raw' } : x)));
-    } catch {
-      setProds((ps) => ps.map((x) => (x.id === id ? { ...x, status: 'error' } : x)));
-    }
+    await cutSrc(id, p.src);
   };
   const cutAll = async () => { if (busy) return; setBusy('cutall'); try { for (const p of prods.filter((x) => !x.cut)) await cutOne(p.id); } finally { setBusy(''); } };
   const togglePlatform = (id: ShotLayout) => setPlatforms((l) => (l.includes(id) ? (l.length > 1 ? l.filter((x) => x !== id) : l) : SHOT_PLATFORMS.map((p) => p.id).filter((x) => x === id || l.includes(x))));
@@ -171,7 +179,7 @@ export default function ProductShotPage() {
 
           <CollapsibleSection title="2 · Nền">
             <div className="flex flex-wrap gap-1.5">{BG_KINDS.map((b) => <button key={b.id} type="button" onClick={() => setBgKind(b.id)} className={chip(bgKind === b.id)}>{b.name}</button>)}</div>
-            {(['gradient', 'podium', 'pop', 'spotlight'] as BgKind[]).includes(bgKind) && themeChips}
+            {(['gradient', 'podium', 'pop', 'spotlight', 'aurora', 'burst', 'neon', 'shapes', 'shelf'] as BgKind[]).includes(bgKind) && themeChips}
             {bgKind === 'brand' && !kit && <p className="text-[11px] text-amber-200 mt-2">Chưa có bộ nhận diện — đang dùng màu mặc định.</p>}
             {bgKind === 'scene' && (
               <div className="mt-2.5 space-y-2">
@@ -186,7 +194,7 @@ export default function ProductShotPage() {
                 </div>
               </div>
             )}
-            <p className="text-[11px] text-slate-500 mt-2.5">Ảnh chưa tách nền sẽ được chuẩn hoá khổ với nền mờ từ chính ảnh đó.</p>
+            <p className="text-[11px] text-slate-500 mt-2.5">Ảnh chưa tách nền sẽ đặt dạng khung ảnh viền trắng trên nền đã chọn. Bấm “Tách nền” để sản phẩm đứng tự nhiên trên nền.</p>
           </CollapsibleSection>
 
           <CollapsibleSection title="3 · Bố cục & khổ xuất">
@@ -233,8 +241,17 @@ export default function ProductShotPage() {
                     {p.status === 'cutting' ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tách…</> : <><Scissors className="w-3.5 h-3.5" /> Tách nền</>}
                   </button>
                 )}
+                {p.cut && p.cut !== p.src && (
+                  <>
+                    <button type="button" onClick={() => setEditing(p.id)} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs shrink-0" data-testid="shot-edit-mask"><Paintbrush className="w-3.5 h-3.5" /> Thêm / bớt vật</button>
+                    <button type="button" onClick={() => setProds((ps) => ps.map((x) => (x.id === p.id ? { ...x, cut: undefined } : x)))} title="Dùng lại ảnh gốc" className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs shrink-0"><Undo2 className="w-3.5 h-3.5" /> Bỏ tách</button>
+                  </>
+                )}
                 <button type="button" onClick={() => setProds((ps) => ps.filter((x) => x.id !== p.id))} aria-label="Xoá ảnh" className="mv-btn mv-btn-ghost !p-2 !text-rose-300 shrink-0"><Trash2 className="w-4 h-4" /></button>
               </div>
+              {p.cut && p.cut !== p.src && (
+                <p className="text-[11px] text-slate-400 -mt-1 mb-2">AI chỉ giữ vật chính. Thiếu vật (vd mấy cây nến phía sau) → bấm <b className="text-slate-200">Thêm / bớt vật</b> rồi bấm thẳng vào vật đó.</p>
+              )}
               <div className="flex gap-3 items-end overflow-x-auto pb-1">
                 {platforms.map((l) => {
                   const P = SHOT_PLATFORMS.find((x) => x.id === l)!;
@@ -261,6 +278,13 @@ export default function ProductShotPage() {
         </div>
       </div>
       {lb.node}
+      {(() => {
+        const ep = editing ? prods.find((x) => x.id === editing) : null;
+        return ep && ep.cut ? (
+          <MaskEditor original={ep.src} cut={ep.cut} onClose={() => setEditing(null)}
+            onSave={(url) => { setProds((ps) => ps.map((x) => (x.id === ep.id ? { ...x, cut: url } : x))); setEditing(null); }} />
+        ) : null;
+      })()}
     </div>
   );
 }
