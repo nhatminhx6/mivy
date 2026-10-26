@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, ShoppingBag, PanelTop, ListOrdered, Wand2, Package, ArrowUpRight, Flame, LayoutGrid, Signpost } from 'lucide-react';
+import { LayoutDashboard, Sparkles, Image as ImageIcon, BookmarkCheck, FlaskConical, ExternalLink, Palette, ShoppingBag, PanelTop, ListOrdered, Wand2, Package, ArrowUpRight, Flame, LayoutGrid, Signpost, Clapperboard } from 'lucide-react';
 
 const GROUPS = [
   { title: '', items: [
@@ -17,6 +17,7 @@ const GROUPS = [
       { label: 'Infographic', href: '/studio/infographic', icon: Flame },
       { label: 'Bảng giá', href: '/studio/pricelist', icon: ListOrdered },
       { label: 'Tạo ảnh', href: '/studio/image', icon: ImageIcon },
+      { label: 'Video ngắn', href: '/studio/video', icon: Clapperboard },
     ],
   },
   {

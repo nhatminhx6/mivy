@@ -401,3 +401,16 @@ export const SCENE_CATS: { id: string; name: string }[] = [
   { id: 'property', name: 'Nội thất' }, { id: 'fitness', name: 'Thể thao' }, { id: 'travel', name: 'Du lịch' }, { id: 'event', name: 'Sự kiện' },
 ];
 export const sceneUrl = (cat: string, i: number) => `/backgrounds/${cat}/${'abcdefghij'[i]}.jpg`;
+
+// Dùng lại nền studio cho video: vẽ nền (tường + sàn + ánh sáng + hạt) quanh 1 khung sản phẩm.
+export function paintStudioBg(ctx: CanvasRenderingContext2D, bg: ShotBg, W: number, H: number, box: { cx: number; top: number; w: number; h: number }) {
+  const base = box.top + box.h;
+  const hz = bg.kind === 'podium' ? base + H * 0.1 : Math.min(H * 0.82, base - Math.min(box.h * 0.14, H * 0.07));
+  paintStage(ctx, bg, { W, H, S: 1, hz, cx: box.cx, pw: box.w, ph: box.h, top: box.top });
+  if (bg.kind === 'podium') {
+    const rx = Math.max(box.w * 0.62, W * 0.2);
+    pool(ctx, box.cx + rx * 0.15, hz + H * 0.01, rx * 1.25, rx * 0.22, 'rgba(0,0,0,A)', 0.25);
+    podium(ctx, box.cx, base - rx * 0.05, rx, H * 0.12, bg.main);
+  }
+  grain(ctx, W, H, bg.kind === 'spotlight' || bg.kind === 'neon' ? 0.06 : 0.045);
+}

@@ -4,6 +4,7 @@
 import { useEffect, useId, useState } from 'react';
 import { COLOR_PRESETS, Palette } from '@/lib/brand-presets';
 import { iconById } from '@/lib/logo-icons';
+import { artInfo, artsForIndustry } from '@/lib/logo-art';
 
 export type Gu = 'toi-gian' | 'sang' | 'de-thuong' | 'manh-me';
 export const LOGO_GUS: { id: Gu; name: string }[] = [
@@ -84,11 +85,12 @@ export const LOGO_INDUSTRIES: { id: string; name: string; icons: string[] }[] = 
   { id: 'home', name: 'Nhà cửa / Nội thất', icons: ['home', 'building', 'tree', 'sprout', 'bulb', 'wrench'] },
 ];
 
-export type LogoKind = 'word-dot' | 'word-caps' | 'mono-h' | 'mono-stack' | 'badge' | 'icon-h' | 'icon-stack';
+export type LogoKind = 'word-dot' | 'word-caps' | 'mono-h' | 'mono-stack' | 'badge' | 'icon-h' | 'icon-stack' | 'illus';
 export const LOGO_KINDS: { id: LogoKind; name: string }[] = [
   { id: 'word-dot', name: 'Chữ + điểm nhấn' }, { id: 'word-caps', name: 'Chữ in hoa' },
   { id: 'mono-h', name: 'Monogram ngang' }, { id: 'mono-stack', name: 'Monogram đứng' },
   { id: 'badge', name: 'Huy hiệu' }, { id: 'icon-h', name: 'Icon ngang' }, { id: 'icon-stack', name: 'Icon đứng' },
+  { id: 'illus', name: 'Hình minh hoạ' },
 ];
 export type Shape = 'circle' | 'ring' | 'square' | 'diamond';
 export const SHAPES: { id: Shape; name: string }[] = [
@@ -97,9 +99,9 @@ export const SHAPES: { id: Shape; name: string }[] = [
 export type Accent = 'dot' | 'swoosh' | 'spark';
 export const ACCENTS: { id: Accent; name: string }[] = [{ id: 'dot', name: 'Chấm' }, { id: 'swoosh', name: 'Gạch cong' }, { id: 'spark', name: 'Ngôi sao' }];
 export const usesIcon = (k: LogoKind) => k === 'icon-h' || k === 'icon-stack' || k === 'badge';
-export const usesShape = (k: LogoKind) => k !== 'word-dot' && k !== 'word-caps';
+export const usesShape = (k: LogoKind) => k !== 'word-dot' && k !== 'word-caps' && k !== 'illus';
 
-export interface LogoSpec { id: string; kind: LogoKind; fontId: string; palette: Palette; icon: string; shape: Shape; accent: Accent }
+export interface LogoSpec { id: string; kind: LogoKind; fontId: string; palette: Palette; icon: string; shape: Shape; accent: Accent; art?: string }
 
 // ---------- sinh lưới gợi ý (seed cố định → bấm "xem bộ khác" là đổi seed) ----------
 function rng(seed: number) {
@@ -119,7 +121,8 @@ export function generateLogos(opts: { gus: Gu[]; industry: string; seed: number;
   const names = Array.from(new Set(gus.flatMap((g) => PALETTE_BY_GU[g])));
   const palettes = shuffle(LOGO_PALETTES.filter((p) => names.includes(p.name)), r);
   const icons = (LOGO_INDUSTRIES.find((i) => i.id === opts.industry) || LOGO_INDUSTRIES[0]).icons;
-  const kinds = shuffle(LOGO_KINDS.map((k) => k.id), r);
+  const kinds = shuffle(LOGO_KINDS.map((k) => k.id).filter((k) => k !== 'illus'), r);
+
   const out: LogoSpec[] = [];
   let fi = 0;
   for (let i = 0; i < (opts.count ?? 24); i++) {
@@ -137,6 +140,28 @@ export function generateLogos(opts: { gus: Gu[]; industry: string; seed: number;
   }
   return out;
 }
+
+// Logo hình minh hoạ: mỗi hình trong kho của ngành 1 gợi ý (font + màu xoay vòng theo seed).
+export function generateIllusLogos(opts: { gus: Gu[]; industry: string; seed: number }): LogoSpec[] {
+  const r = rng(opts.seed * 7919 + 3);
+  const gus = opts.gus.length ? opts.gus : LOGO_GUS.map((g) => g.id);
+  const fonts = shuffle(LOGO_FONTS.filter((f) => !f.script && f.gu.some((g) => gus.includes(g))), r);
+  const names = Array.from(new Set(gus.flatMap((g) => PALETTE_BY_GU[g])));
+  const palettes = shuffle(LOGO_PALETTES.filter((p) => names.includes(p.name)), r);
+  return artsForIndustry(opts.industry).map((art, i) => ({
+    id: `illus-${opts.seed}-${i}`, kind: 'illus' as const, fontId: fonts[i % fonts.length].id, palette: palettes[i % palettes.length],
+    icon: 'store', shape: 'circle' as const, accent: 'dot' as const, art,
+  }));
+}
+
+// Nhóm kiểu logo để chia lưới gợi ý cho dễ nhìn
+export const LOGO_GROUPS: { id: string; name: string; kinds: LogoKind[] }[] = [
+  { id: 'illus', name: 'Hình minh hoạ', kinds: ['illus'] },
+  { id: 'icon', name: 'Icon + tên', kinds: ['icon-h', 'icon-stack'] },
+  { id: 'word', name: 'Chữ', kinds: ['word-dot', 'word-caps'] },
+  { id: 'mono', name: 'Chữ cái đầu (monogram)', kinds: ['mono-h', 'mono-stack'] },
+  { id: 'badge', name: 'Huy hiệu', kinds: ['badge'] },
+];
 
 // ---------- đo chữ (canvas, cần font đã load) ----------
 let ctx: CanvasRenderingContext2D | null = null;
@@ -162,7 +187,7 @@ const SPARK = 'M12 0C13 7 17 11 24 12C17 13 13 17 12 24C11 17 7 13 0 12C7 11 11 
 const spark = (cx: number, cy: number, s: number, fill: string, key?: string) =>
   <path key={key} d={SPARK} fill={fill} transform={`translate(${cx - s / 2},${cy - s / 2}) scale(${s / 24})`} />;
 
-interface Colors { ink: string; accent: string; on: string }
+interface Colors { ink: string; accent: string; on: string; mono?: 'black' | 'white' }
 
 function T({ x, y, text, f, size, fill, anchor = 'start', ls = 0 }: { x: number; y: number; text: string; f: LogoFont; size: number; fill: string; anchor?: 'start' | 'middle'; ls?: number }) {
   // letter-spacing của SVG cộng cả sau ký tự cuối → bù nửa khoảng khi căn giữa
@@ -293,6 +318,27 @@ function layout(spec: LogoSpec, name: string, slogan: string, c: Colors, uid: st
     };
   }
 
+  if (spec.kind === 'illus') {
+    // hình minh hoạ to phía trên, tên đậm + slogan bên dưới (kiểu logo mascot)
+    const art = artInfo(spec.art || 'pets/betta');
+    const S = 340; const aw = art.ratio > 1 ? S / art.ratio : S, ah = art.ratio > 1 ? S : S * art.ratio;
+    const size = fit(name, f, 96, 720);
+    const m = measure(name, f, size);
+    const slSize = 26, slLs = 0.22;
+    const slm = sl ? measure(sl, SANS, slSize, slLs) : null;
+    const W = pad * 2 + Math.max(S, m.w, slm ? slm.w : 0);
+    const nb = pad + ah + 26 + m.asc;
+    const sb = nb + m.desc + 18 + (slm ? slm.asc : 0);
+    return {
+      W, H: (slm ? sb + slm.desc : nb + m.desc) + pad, body: <>
+        <image href={art.href} x={(W - aw) / 2} y={pad} width={aw} height={ah} filter={c.mono ? `url(#${uid}m)` : undefined} />
+        {c.mono && <defs><filter id={`${uid}m`}><feColorMatrix type="matrix" values={c.mono === 'white' ? '0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0' : '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'} /></filter></defs>}
+        <T x={W / 2} y={nb} text={name} f={f} size={size} fill={c.ink} anchor="middle" />
+        {slm && <T x={W / 2} y={sb} text={sl} f={SANS} size={slSize} fill={c.accent} anchor="middle" ls={slLs} />}
+      </>,
+    };
+  }
+
   // mono-* / icon-*: khối biểu tượng + tên (ngang hoặc đứng)
   const markKind = spec.kind.startsWith('icon') ? 'icon' : 'mono';
   const stacked = spec.kind.endsWith('stack');
@@ -341,7 +387,7 @@ export function LogoSvg({ spec, name, slogan = '', tone = 'color', frame, classN
   const uid = 'lg' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const p = spec.palette;
   const c: Colors = tone === 'color' ? { ink: p.colorPrimary, accent: p.colorAccent, on: '#ffffff' }
-    : tone === 'black' ? { ink: '#000000', accent: '#000000', on: '#ffffff' } : { ink: '#ffffff', accent: '#ffffff', on: '#000000' };
+    : tone === 'black' ? { ink: '#000000', accent: '#000000', on: '#ffffff', mono: 'black' } : { ink: '#ffffff', accent: '#ffffff', on: '#000000', mono: 'white' };
   const { W, H, body } = layout(spec, name.trim() || 'Tên shop', slogan, c, uid);
   if (frame === 'avatar') {
     const s = 760 / Math.max(W, H);
@@ -355,6 +401,44 @@ export function LogoSvg({ spec, name, slogan = '', tone = 'color', frame, classN
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${W} ${H}`} width={W} height={H} className={className} style={style} data-logo-kind={spec.kind}>
       {body}
+    </svg>
+  );
+}
+
+// ---------- icon vuông cho app / web (favicon, Android, iOS) ----------
+export type IconBg = 'brand' | 'light' | 'dark';
+export const ICON_BGS: { id: IconBg; name: string }[] = [{ id: 'brand', name: 'Nền màu thương hiệu' }, { id: 'light', name: 'Nền trắng' }, { id: 'dark', name: 'Nền tối' }];
+
+// Vẽ phần "dấu" của logo (hình minh hoạ / icon / chữ cái đầu) vào ô vuông 1024.
+// bg=false → nền trong suốt (lớp foreground của Android adaptive icon). scale = tỉ lệ dấu so với cạnh.
+export function LogoIconSvg({ spec, name, bg, transparent = false, scale = 0.62, style }: {
+  spec: LogoSpec; name: string; bg: IconBg; transparent?: boolean; scale?: number; style?: React.CSSProperties;
+}) {
+  const uid = 'ic' + useId().replace(/[^a-zA-Z0-9]/g, '');
+  const p = spec.palette; const N = 1024; const S = N * scale; const c0 = N / 2;
+  const isArt = spec.kind === 'illus';
+  const fill = bg === 'brand' ? (isArt ? p.colorSurface : p.colorAccent) : bg === 'light' ? '#ffffff' : p.colorPrimary;
+  const glyph = bg === 'light' ? p.colorAccent : isArt && bg === 'brand' ? p.colorPrimary : '#ffffff';
+  const useIcon = spec.kind === 'icon-h' || spec.kind === 'icon-stack' || (spec.kind === 'badge' && (spec.shape === 'circle' || spec.shape === 'ring'));
+  let mark: JSX.Element;
+  if (isArt) {
+    const art = artInfo(spec.art || 'pets/betta');
+    const aw = art.ratio > 1 ? S / art.ratio : S, ah = art.ratio > 1 ? S : S * art.ratio;
+    mark = <image href={art.href} x={c0 - aw / 2} y={c0 - ah / 2} width={aw} height={ah} />;
+  } else if (useIcon) {
+    const Icon = iconById(spec.icon);
+    mark = <g transform={`translate(${c0 - S / 2},${c0 - S / 2})`}><Icon size={S} color={glyph} weight="fill" /></g>;
+  } else {
+    const f = fontById(spec.fontId); const ini = initials(name || 'A');
+    const m0 = measure(ini, f, 100);
+    const size = 100 * Math.min(S / Math.max(1, m0.w), (S * 0.9) / Math.max(1, m0.asc + m0.desc));
+    const m = measure(ini, f, size);
+    mark = <T x={c0} y={c0 + (m.asc - m.desc) / 2} text={ini} f={f} size={size} fill={glyph} anchor="middle" />;
+  }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${N} ${N}`} width={N} height={N} style={style} data-icon-uid={uid}>
+      {!transparent && <rect width={N} height={N} fill={fill} />}
+      {mark}
     </svg>
   );
 }
