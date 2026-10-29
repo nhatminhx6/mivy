@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "researched": "2026-10-29",
+  "note": "Draft presets for Fotoz. Values come from official pages where possible; 'uncertain' lists what still needs checking. Re-verify before release.",
+  "visa_destinations": [
+    {
+      "id": "kr", "name_vi": "Hàn Quốc",
+      "print": { "w_mm": 35, "h_mm": 45 }, "head_mm": [25, 35],
+      "background": "white", "glasses": "no sunglasses; frames must not cover pupils",
+      "head_covering": "none; both ears visible", "recency_months": 6,
+      "digital": null,
+      "uncertain": ["e-visa (visa.go.kr) upload limits", "source is MOJ foreigner-registration guide, not visa page"],
+      "sources": ["https://www.moj.go.kr/sites/immigration/file/photo-size.html"]
+    },
+    {
+      "id": "jp", "name_vi": "Nhật Bản",
+      "print": { "w_mm": 35, "h_mm": 45 }, "head_mm": null,
+      "background": "plain white (not stated by VN missions)", "glasses": null,
+      "head_covering": "no hat", "recency_months": 6,
+      "digital": null,
+      "alt_presets": [{ "label": "MOFA generic form", "w_mm": 45, "h_mm": 45 }],
+      "notes": "Missions in VN, PH, ID ask 4.5 cm high x 3.5 cm wide. Edited photos rejected. eVISA not open to VN/ID/PH residents.",
+      "uncertain": ["background colour for VN missions", "head size"],
+      "sources": ["https://www.vn.emb-japan.go.jp/itpr_ja/VN_SVisaTOUR.html", "https://www.hcmcgj.vn.emb-japan.go.jp/itpr_vi/visa_dulich_tutuc.html", "https://www.ph.emb-japan.go.jp/files/100508281.pdf", "https://www.denpasar.id.emb-japan.go.jp/itpr_id/02_02visa_02.html", "https://www.mofa.go.jp/j_info/visit/visa/pdfs/application1.pdf"]
+    },
+    {
+      "id": "tw", "name_vi": "Đài Loan",
+      "print": { "w_mm": 35, "h_mm": 45 }, "head_mm": [32, 36],
+      "background": "white", "glasses": "no glare/tint, frames not over eyes, no coloured lenses",
+      "head_covering": "religious/medical only, full face visible", "recency_months": 6,
+      "digital": null,
+      "uncertain": ["eVisa upload limits", "head size is from passport-photo guideline"],
+      "sources": ["https://www.roc-taiwan.org/uploads/sites/233/2026/03/dulich.pdf", "https://roc-taiwan.org/uploads/sites/76/2023/04/4.-20250307-updated-Visitor-Visa-for-Tourism-Purpose.pdf", "https://www.roc-taiwan.org/uploads/sites/59/2024/03/guidline.pdf"]
+    },
+    {
+      "id": "cn", "name_vi": "Trung Quốc",
+      "print": { "w_mm": 33, "h_mm": 48 }, "head_mm": [28, 33], "head_width_mm": [15, 22],
+      "background": "white or near-white", "glasses": "allowed; no thick frames, tint or glare",
+      "head_covering": "religious only", "recency_months": 6,
+      "digital": { "format": "jpeg", "max_px": [354, 472], "kb": [40, 120] },
+      "sources": ["https://visaforchina.cn/SGP2_EN/generalinformation/news/282849.shtml", "https://visaforchina.cn/FRA2_EN/generalinformation/faq/283162.shtml"]
+    },
+    {
+      "id": "us", "name_vi": "Mỹ",
+      "print": { "w_mm": 51, "h_mm": 51, "label": "2x2 inch" }, "head_ratio": [0.50, 0.69],
+      "background": "white or off-white", "glasses": "not allowed (rare medical exceptions)",
+      "head_covering": "religious daily wear only", "recency_months": 6,
+      "digital": { "format": "jpeg", "square_px": [600, 1200], "max_kb": 240, "color": "sRGB 24-bit" },
+      "notes": "DS-160 (nonimmigrant) uses the digital photo; DS-260 needs print.",
+      "sources": ["https://adoption.state.gov/content/travel/en/us-visas/visa-information-resources/photos.html", "https://adoption.state.gov/content/travel/en/us-visas/visa-information-resources/photos/digital-image-requirements.html"]
+    },
+    {
+      "id": "au", "name_vi": "Úc",
+      "print": { "w_mm": [35, 40], "h_mm": [45, 50] }, "head_mm": [32, 36],
+      "background": "plain light grey or neutral, contrasting", "glasses": "remove unless medical",
+      "head_covering": "religious only, plain", "recency_months": 6,
+      "digital": { "format": "jpeg", "kb": [70, 3500], "preferred_px": [1200, 1600], "scope": "citizenship page" },
+      "uncertain": ["visa-specific ImmiAccount photo rules"],
+      "sources": ["https://immi.homeaffairs.gov.au/citizenship/photo-requirements-for-citizenship-applications", "https://immi.homeaffairs.gov.au/form-listing/forms/1195.pdf"]
+    },
+    {
+      "id": "schengen", "name_vi": "Schengen (châu Âu)",
+      "print": { "w_mm": 35, "h_mm": 45 }, "face_ratio": [0.70, 0.80],
+      "background": "plain, light-coloured", "glasses": "no tint or reflection, frames not over eyes",
+      "head_covering": "religious only", "recency_months": 6, "standard": "ICAO Doc 9303",
+      "digital": null,
+      "notes": "Often a live photo is taken at VFS/consulate during fingerprinting.",
+      "uncertain": ["national online upload limits vary by country"],
+      "sources": ["https://home-affairs.ec.europa.eu/document/download/5bb16566-c8c2-4afb-b038-530f488cb72a_en?filename=icao_photograph_guidelines_en.pdf", "https://hongkong.diplo.de/resource/blob/2572988/11fbf86d05a1668f0488a650e7d50aa6/biometric-passport-photos-d-e-data.pdf"]
+    },
+    {
+      "id": "uk", "name_vi": "Anh",
+      "print": null,
+      "background": "plain, light, contrasting, no shadows", "glasses": "avoid; no tint",
+      "head_covering": "religious/medical only",
+      "digital": { "format": "jpeg", "min_px": [600, 750], "kb": [50, 6000], "no_filters": true },
+      "notes": "Digital only (upload or taken at visa centre).",
+      "sources": ["https://www.gov.uk/guidance/how-to-take-a-photo-for-a-visa-application-or-permission"]
+    }
+  ],
+  "origin_passports": [
+    { "id": "vn", "name_vi": "Việt Nam", "photo": "self_supplied", "print": { "w_mm": 40, "h_mm": 60 }, "background": "white", "glasses": false, "head_covering": false, "ears_visible": true, "recency_months": 6, "digital": { "format": "jpg", "max_mb": 4, "min_dpi": 300, "face_ratio": 0.75 }, "uncertain": ["online portal format (jpg vs jpeg2000) and pixel size — from press summaries, portal not confirmed"], "sources": ["https://lsvn.vn/thu-tuc-cap-ho-chieu-pho-thong-o-trong-nuoc-a175844.html", "https://baoquocte.vn/huong-dan-cach-chup-anh-de-lam-ho-chieu-pho-thong-online-231375.html"] },
+    { "id": "id", "name_vi": "Indonesia", "photo": "live_capture", "notes": "Taken at immigration office; child applications need 4x6 cm colour photo within 3 months.", "sources": ["https://karawang.imigrasi.go.id/fakta-penting-yang-harus-kamu-ketahui-saat-foto-paspor-di-kantor-imigrasi/", "https://consular.embassyofindonesia.org/page/penerbitanpaspor.html"] },
+    { "id": "ph", "name_vi": "Philippines", "photo": "live_capture", "sources": ["https://consular.dfa.gov.ph/guidelines-on-photo-capturing"] },
+    { "id": "th", "name_vi": "Thái Lan", "photo": "live_capture", "sources": ["https://washingtondc.thaiembassy.org/en/page/thai-passport"] },
+    { "id": "my", "name_vi": "Malaysia", "photo": "live_capture", "online_renewal": { "photo": "self_supplied", "background": "white", "recency_months": 1, "glasses": false, "ai_edited_rejected": true }, "child_under4": { "w_mm": 35, "h_mm": 50, "face_mm": [25, 30] }, "uncertain": ["online renewal pixel/file limits"], "sources": ["https://www.imi.gov.my/index.php/en/main-services/passport/malaysian-international-passport/", "https://imigresen-online.imi.gov.my/eservices/myPasport?lang=ms"] },
+    { "id": "kh", "name_vi": "Campuchia", "photo": "live_capture", "uncertain": ["requirements when applying abroad"], "sources": ["https://www.phnompenhpost.com/national/online-passport-applications-fast-track-process"] },
+    { "id": "mm", "name_vi": "Myanmar", "photo": "self_supplied_abroad", "print": { "w_mm": 40, "h_mm": 60 }, "background": "white", "uncertain": ["rules inside Myanmar", "some embassies may photograph at counter"], "sources": ["https://mephnompenh.org/issuance-of-new-passport-renewal-passport/"] },
+    { "id": "la", "name_vi": "Lào", "photo": "uncertain", "uncertain": ["no official source found"], "sources": [] }
+  ]
+}
