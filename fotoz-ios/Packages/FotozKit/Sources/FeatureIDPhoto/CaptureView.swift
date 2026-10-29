@@ -7,7 +7,7 @@ public struct CaptureView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: CaptureViewModel
     @State private var pickedItem: PhotosPickerItem?
-    @State private var showEditSoon = false
+    @State private var showEdit = false
 
     public init(target: CaptureTarget) {
         _model = State(initialValue: CaptureViewModel(target: target))
@@ -39,10 +39,10 @@ public struct CaptureView: View {
         .onChange(of: pickedItem) { _, item in
             Task { await model.analyzePicked(item) }
         }
-        .alert("Chỉnh ảnh — Bước 3", isPresented: $showEditSoon) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Màn chỉnh nền, trang phục và cắt khung sẽ có ở bước tiếp theo.")
+        .fullScreenCover(isPresented: $showEdit) {
+            if let image = model.capturedImage {
+                EditView(target: model.target, image: image)
+            }
         }
     }
 
@@ -224,7 +224,7 @@ public struct CaptureView: View {
                     .buttonStyle(.plain)
 
                     PillButton("Dùng ảnh này", systemImage: "arrow.right") {
-                        showEditSoon = true
+                        showEdit = true
                     }
                 }
                 .padding(.top, 6)
