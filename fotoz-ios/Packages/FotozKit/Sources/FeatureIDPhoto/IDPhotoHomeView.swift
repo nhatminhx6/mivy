@@ -5,6 +5,7 @@ import FotozDesign
 public struct IDPhotoHomeView: View {
     @Environment(\.presetStore) private var store
     @State private var model = IDPhotoViewModel()
+    @State private var router = IDPhotoRouter()
     @State private var showCountrySheet = false
     @State private var showVisaSheet = false
 
@@ -16,18 +17,23 @@ public struct IDPhotoHomeView: View {
     ]
 
     public var body: some View {
-        ZStack {
-            FotozBackground()
-            ScrollView {
-                VStack(spacing: 18) {
-                    header
-                    hero
-                    grid
-                    quickTools
+        NavigationStack(path: $router.path) {
+            ZStack {
+                FotozBackground()
+                ScrollView {
+                    VStack(spacing: 18) {
+                        header
+                        hero
+                        grid
+                        quickTools
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 96)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 96)
+            }
+            .navigationDestination(for: CaptureTarget.self) { target in
+                CaptureView(target: target)
             }
         }
         .task { model.loadIfNeeded(using: store) }
@@ -38,7 +44,10 @@ public struct IDPhotoHomeView: View {
             }
         }
         .sheet(isPresented: $showVisaSheet) {
-            VisaPickerSheet(destinations: model.visaDestinations)
+            VisaPickerSheet(destinations: model.visaDestinations) { destination in
+                showVisaSheet = false
+                router.push(.visa(destination))
+            }
         }
     }
 
@@ -90,20 +99,33 @@ public struct IDPhotoHomeView: View {
             .shadow(color: Fotoz.Palette.heroStart.opacity(0.45), radius: 24, y: 14)
 
             PillButton("Bắt đầu", systemImage: "arrow.right") {
-                // starts the capture flow in a later step
+                router.push(startTarget)
             }
             .offset(y: 24)
         }
         .padding(.bottom, 8)
     }
 
+    private var startTarget: CaptureTarget {
+        if let origin = model.selectedOrigin, origin.print != nil {
+            return .passport(origin)
+        }
+        return .idCard4x6
+    }
+
     // MARK: 2×2 grid
 
     private var grid: some View {
         LazyVGrid(columns: columns, spacing: 14) {
-            GlassTile(title: "3×4", subtitle: "Hồ sơ", systemImage: "person.text.rectangle", tint: Fotoz.Palette.green)
-            GlassTile(title: "4×6", subtitle: "Hộ chiếu", systemImage: "book.closed", tint: Fotoz.Palette.link)
-            GlassTile(title: "Xin việc", subtitle: "Ghép vest", systemImage: "briefcase", tint: Fotoz.Palette.orange)
+            GlassTile(title: "3×4", subtitle: "Hồ sơ", systemImage: "person.text.rectangle", tint: Fotoz.Palette.green) {
+                router.push(.idCard3x4)
+            }
+            GlassTile(title: "4×6", subtitle: "Hộ chiếu", systemImage: "book.closed", tint: Fotoz.Palette.link) {
+                router.push(.idCard4x6)
+            }
+            GlassTile(title: "Xin việc", subtitle: "Ghép vest", systemImage: "briefcase", tint: Fotoz.Palette.orange) {
+                router.push(.jobApplication)
+            }
             GlassTile(title: "Visa", subtitle: "\(model.visaDestinations.count) nước", systemImage: "airplane", tint: Fotoz.Palette.purple) {
                 showVisaSheet = true
             }

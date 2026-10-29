@@ -39,16 +39,22 @@ struct CountryPickerSheet: View {
 /// "Xin visa đi đâu?" — pick a visa destination (8 countries from presets.json).
 struct VisaPickerSheet: View {
     let destinations: [VisaDestination]
+    let onPick: (VisaDestination) -> Void
 
     var body: some View {
         SheetScaffold(title: "Xin visa đi đâu?", subtitle: "Kích thước & nền theo cơ quan lãnh sự") {
             ForEach(destinations) { destination in
-                PickerRow(
-                    title: destination.nameVi,
-                    detail: visaDetail(destination),
-                    leading: destination.id.uppercased(),
-                    isSelected: false
-                )
+                Button {
+                    onPick(destination)
+                } label: {
+                    PickerRow(
+                        title: destination.nameVi,
+                        detail: visaDetail(destination),
+                        leading: destination.id.uppercased(),
+                        isSelected: false
+                    )
+                }
+                .buttonStyle(.plain)
             }
         }
     }
