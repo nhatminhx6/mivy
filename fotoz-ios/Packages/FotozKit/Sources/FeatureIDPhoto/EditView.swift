@@ -8,7 +8,7 @@ public struct EditView: View {
     @State private var model: EditViewModel
     @State private var tab: Tab = .background
     @State private var showChecklist = false
-    @State private var showExportSoon = false
+    @State private var showExport = false
 
     enum Tab: String, CaseIterable, Identifiable {
         case background = "Nền & áo"
@@ -40,17 +40,17 @@ public struct EditView: View {
                 Spacer(minLength: 0)
 
                 PillButton("Xuất ảnh", systemImage: "arrow.right") {
-                    showExportSoon = true
+                    showExport = true
                 }
                 .padding(.bottom, 10)
             }
             .padding(.top, 8)
         }
         .task { await model.onAppear() }
-        .alert("Xuất ảnh — Bước 4", isPresented: $showExportSoon) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Dàn ảnh in 10×15, xuất file số đúng px/KB và đặt in sẽ có ở bước tiếp theo.")
+        .fullScreenCover(isPresented: $showExport) {
+            if let image = model.preview {
+                ExportView(target: model.target, image: image)
+            }
         }
     }
 

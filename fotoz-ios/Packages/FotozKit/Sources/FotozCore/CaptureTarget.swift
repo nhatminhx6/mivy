@@ -10,6 +10,10 @@ public struct CaptureTarget: Hashable, Sendable, Identifiable {
     public let heightMm: Double
     public let background: String
     public let headRatio: ClosedRange<Double>?
+    /// Target pixels for the online/digital file, if the authority specifies one.
+    public let digitalPixels: CGSize?
+    /// Max file size (KB) for the online/digital file, if specified.
+    public let digitalMaxKB: Int?
 
     public init(
         id: String,
@@ -18,7 +22,9 @@ public struct CaptureTarget: Hashable, Sendable, Identifiable {
         widthMm: Double,
         heightMm: Double,
         background: String = "trắng",
-        headRatio: ClosedRange<Double>? = nil
+        headRatio: ClosedRange<Double>? = nil,
+        digitalPixels: CGSize? = nil,
+        digitalMaxKB: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -27,6 +33,8 @@ public struct CaptureTarget: Hashable, Sendable, Identifiable {
         self.heightMm = heightMm
         self.background = background
         self.headRatio = headRatio
+        self.digitalPixels = digitalPixels
+        self.digitalMaxKB = digitalMaxKB
     }
 
     /// width / height, for sizing the preview crop frame.
@@ -66,7 +74,9 @@ public struct CaptureTarget: Hashable, Sendable, Identifiable {
             subtitle: destination.sizeLabel,
             widthMm: destination.print?.wMm.min ?? 35,
             heightMm: destination.print?.hMm.min ?? 45,
-            headRatio: destination.faceRatio.map { $0.min...$0.max }
+            headRatio: destination.faceRatio.map { $0.min...$0.max },
+            digitalPixels: digitalPixels(destination.digital),
+            digitalMaxKB: digitalKB(destination.digital)
         )
     }
 
@@ -77,7 +87,26 @@ public struct CaptureTarget: Hashable, Sendable, Identifiable {
             subtitle: origin.print?.summary ?? "ảnh theo quy chuẩn",
             widthMm: origin.print?.wMm.min ?? 40,
             heightMm: origin.print?.hMm.min ?? 60,
-            headRatio: nil
+            headRatio: nil,
+            digitalPixels: digitalPixels(origin.digital),
+            digitalMaxKB: digitalKB(origin.digital)
         )
+    }
+
+    private static func digitalPixels(_ spec: DigitalSpec?) -> CGSize? {
+        guard let spec else { return nil }
+        if let square = spec.squarePx, let side = square.max() {
+            return CGSize(width: side, height: side)
+        }
+        for dims in [spec.maxPx, spec.preferredPx, spec.minPx] {
+            if let dims, dims.count >= 2 {
+                return CGSize(width: dims[0], height: dims[1])
+            }
+        }
+        return nil
+    }
+
+    private static func digitalKB(_ spec: DigitalSpec?) -> Int? {
+        spec?.maxKb ?? spec?.kb?.last
     }
 }

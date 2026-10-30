@@ -53,7 +53,12 @@ xcodebuild -project Fotoz.xcodeproj -scheme Fotoz \
 - Card bo 26–30pt, nút viên tròn, chữ trắng, phụ `#C2C5D8`. Font hệ thống (SF Pro).
 
 ## Lộ trình màn hình (làm lần lượt, mỗi màn xong là build + chạy sim + báo anh)
-Trang chủ ✅ → Chụp (AVFoundation + Vision) → Chỉnh (tiêu chí + nền/áo/sáng/cắt) → Xuất (dàn in + JPG theo px/KB + StoreKit 2) → Giấy tờ (VisionKit/CCCD/nén/PencilKit) → Avatar.
+Trang chủ ✅ → Chụp ✅ (AVFoundation + Vision) → Chỉnh ✅ (tiêu chí + nền/áo/sáng/cắt) → Xuất ✅ (dàn in 10×15 + JPG theo px/KB + watermark + StoreKit 2 placeholder) → **Giấy tờ** (VisionKit/CCCD/nén/PencilKit) → Avatar.
+
+### Việc còn treo
+- **Template trang phục** (Vest/Sơ mi/Áo dài): engine ghép đã có, cần bộ PNG tạo sẵn offline + anh duyệt gu rồi đặt vào asset `outfit-vest/shirt/aodai`.
+- **Gói HD (StoreKit)**: product id `com.mivy.fotoz.hd` là placeholder — cần cấu hình App Store Connect / file `.storekit` để test mua.
+- Camera trực tiếp + tách nền (Vision) chỉ chạy trên **máy thật**, không chạy trên simulator.
 
 ## Localization & privacy
 - String Catalog, `vi` mặc định, có `en`; chừa `id, th, ms, km, my, lo`.
