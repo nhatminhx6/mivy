@@ -25,7 +25,7 @@ public struct SettingsHomeView: View {
                             title: "Phiên bản", value: "1.0")
                     }
                     Text("Kích thước ảnh theo hướng dẫn của cơ quan lãnh sự, cập nhật \(researched). Fotowork không đảm bảo 100% đạt chuẩn.")
-                        .font(.footnote)
+                        .font(.bvp(.footnote))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 8)
@@ -44,7 +44,7 @@ public struct SettingsHomeView: View {
     private var header: some View {
         HStack {
             Text("Cài đặt")
-                .font(.largeTitle.bold())
+                .font(.bvp(.largeTitle, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
         }

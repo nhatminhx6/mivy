@@ -25,7 +25,7 @@ struct CompressView: View {
                     if image != nil {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Dung lượng mục tiêu")
-                                .font(.subheadline.weight(.semibold))
+                                .font(.bvp(.subheadline, .semibold))
                                 .foregroundStyle(Fotowork.Palette.textPrimary)
                             FlowChipsSimple(presets, selected: targetKB) { kb in targetKB = kb }
                         }
@@ -33,7 +33,7 @@ struct CompressView: View {
 
                         if let resultKB {
                             Text("\(originalKB) KB → \(resultKB) KB")
-                                .font(.headline)
+                                .font(.bvp(.headline, .semibold))
                                 .foregroundStyle(Fotowork.Palette.green)
                         }
 
@@ -47,6 +47,7 @@ struct CompressView: View {
         }
         .navigationTitle("Nén file")
         .navigationBarTitleDisplayMode(.inline)
+        .fotoHidesTabBar()
         .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadImage(newItem) } }
         .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
@@ -58,8 +59,8 @@ struct CompressView: View {
                 Image(uiImage: image).resizable().scaledToFit()
             } else {
                 VStack(spacing: 10) {
-                    Image(systemName: "photo.badge.plus").font(.system(size: 40))
-                    Text("Chọn ảnh cần nén").font(.subheadline)
+                    Image(systemName: "photo.badge.plus").font(.bvp(size: 40))
+                    Text("Chọn ảnh cần nén").font(.bvp(.subheadline))
                 }
                 .foregroundStyle(Fotowork.Palette.textSecondary)
             }
@@ -100,7 +101,7 @@ private struct FlowChipsSimple: View {
             ForEach(values, id: \.self) { kb in
                 Button { action(kb) } label: {
                     Text("\(kb) KB")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.bvp(.subheadline, .semibold))
                         .foregroundStyle(selected == kb ? .white : Fotowork.Palette.primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)

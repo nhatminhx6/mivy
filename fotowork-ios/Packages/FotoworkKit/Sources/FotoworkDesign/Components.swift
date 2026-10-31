@@ -22,7 +22,7 @@ public struct PillButton: View {
                     Image(systemName: systemImage)
                 }
             }
-            .font(.headline)
+            .font(.bvp(.headline, .semibold))
             .foregroundStyle(.white)
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
@@ -51,10 +51,10 @@ public struct GlassPill: View {
             HStack(spacing: 6) {
                 Text(title).fontWeight(.semibold)
                 if let systemImage {
-                    Image(systemName: systemImage).font(.caption2.bold()).foregroundStyle(Fotowork.Palette.textSecondary)
+                    Image(systemName: systemImage).font(.bvp(.caption2, .bold)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
             }
-            .font(.subheadline)
+            .font(.bvp(.subheadline))
             .foregroundStyle(Fotowork.Palette.textPrimary)
             .padding(.horizontal, 14)
             .frame(height: 48)
@@ -92,16 +92,16 @@ public struct GlassTile: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 12) {
                 Image(systemName: systemImage)
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(tint)
                     .frame(width: 44, height: 44)
                     .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 Spacer(minLength: 6)
                 Text(title)
-                    .font(.headline)
+                    .font(.bvp(.headline, .semibold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(subtitle)
-                    .font(.footnote)
+                    .font(.bvp(.footnote))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }
             .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
@@ -135,12 +135,12 @@ public struct CircleToolButton: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(tint)
                     .frame(width: 60, height: 60)
                     .background(Fotowork.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 Text(title)
-                    .font(.caption)
+                    .font(.bvp(.caption))
                     .fontWeight(.semibold)
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                     .lineLimit(1)
@@ -167,12 +167,12 @@ public struct SectionHeader: View {
     public var body: some View {
         HStack {
             Text(title)
-                .font(.headline)
+                .font(.bvp(.headline, .semibold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             if let action, let actionTitle {
                 Button(actionTitle, action: action)
-                    .font(.subheadline)
+                    .font(.bvp(.subheadline))
                     .foregroundStyle(Fotowork.Palette.primary)
             }
         }
@@ -195,19 +195,19 @@ public struct ComingSoonScreen: View {
             FotoworkBackground()
             VStack(spacing: 16) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 44))
+                    .font(.bvp(size: 44))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 92, height: 92)
                     .background(Fotowork.Palette.primaryTint, in: .circle)
                 Text(title)
-                    .font(.largeTitle.bold())
+                    .font(.bvp(.largeTitle, .bold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(subtitle)
-                    .font(.body)
+                    .font(.bvp(.body))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Fotowork.Palette.textSecondary)
                 Text("Sắp ra mắt")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.bvp(.subheadline, .semibold))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 9)

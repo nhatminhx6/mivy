@@ -60,7 +60,7 @@ public struct IDPhotoHomeView: View {
                 // menu — later
             } label: {
                 Image(systemName: "square.grid.2x2.fill")
-                    .font(.system(size: 16))
+                    .font(.bvp(size: 16))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 48, height: 48)
                     .fotoCardCircle()
@@ -69,7 +69,7 @@ public struct IDPhotoHomeView: View {
 
             Spacer()
             Text("Fotowork")
-                .font(.title3.bold())
+                .font(.bvp(.title3, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
 
@@ -84,17 +84,17 @@ public struct IDPhotoHomeView: View {
         ZStack(alignment: .bottom) {
             HStack(spacing: 18) {
                 Image(systemName: "camera.fill")
-                    .font(.system(size: 30))
+                    .font(.bvp(size: 30))
                     .foregroundStyle(.white)
                     .frame(width: 68, height: 68)
                     .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.28)))
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Chụp ảnh thẻ")
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.bvp(size: 24, .bold))
                         .foregroundStyle(.white)
                     Text("Hộ chiếu · \(model.passportSizeText) · nền trắng")
-                        .font(.subheadline)
+                        .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.onPrimarySoft)
                 }
                 Spacer(minLength: 0)
@@ -108,9 +108,9 @@ public struct IDPhotoHomeView: View {
                 router.push(startTarget)
             } label: {
                 HStack(spacing: 12) {
-                    Text("Bắt đầu").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.primary)
+                    Text("Bắt đầu").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.primary)
                     Image(systemName: "arrow.right")
-                        .font(.caption.bold())
+                        .font(.bvp(.caption, .bold))
                         .foregroundStyle(.white)
                         .frame(width: 36, height: 36)
                         .background(Fotowork.Palette.primary, in: .circle)
@@ -158,17 +158,17 @@ public struct IDPhotoHomeView: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(spacing: 8) {
-                    Image(systemName: icon).font(.system(size: 18)).foregroundStyle(Fotowork.Palette.primary)
-                    Text(title).font(.title3.bold()).foregroundStyle(Fotowork.Palette.textPrimary)
+                    Image(systemName: icon).font(.bvp(size: 18)).foregroundStyle(Fotowork.Palette.primary)
+                    Text(title).font(.bvp(.title3, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
                 }
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(label).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.primary)
-                        Text(caption).font(.footnote).foregroundStyle(Fotowork.Palette.textSecondary)
+                        Text(label).font(.bvp(.subheadline, .semibold)).foregroundStyle(Fotowork.Palette.primary)
+                        Text(caption).font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.textSecondary)
                     }
                     Spacer()
                     Image(systemName: "arrow.right")
-                        .font(.caption2.bold())
+                        .font(.bvp(.caption2, .bold))
                         .foregroundStyle(Fotowork.Palette.primary)
                         .frame(width: 34, height: 34)
                         .background(Fotowork.Palette.primaryTint, in: .circle)
@@ -186,7 +186,7 @@ public struct IDPhotoHomeView: View {
     private var quickTools: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Công cụ nhanh")
-                .font(.headline)
+                .font(.bvp(.headline, .semibold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             HStack(alignment: .top, spacing: 4) {
                 CircleToolButton(title: "Scan", systemImage: "doc.viewfinder")

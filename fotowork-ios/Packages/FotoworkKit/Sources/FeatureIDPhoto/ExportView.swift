@@ -43,7 +43,7 @@ public struct ExportView: View {
                     privacyNote
                     ctaBlock
                     if let note = model.statusNote {
-                        Text(note).font(.footnote).foregroundStyle(Fotowork.Palette.textSecondary)
+                        Text(note).font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.textSecondary)
                             .multilineTextAlignment(.center)
                     }
                 }
@@ -66,13 +66,13 @@ public struct ExportView: View {
         HStack(spacing: 14) {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
-                    .font(.headline.weight(.semibold))
+                    .font(.bvp(.headline, .semibold))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 48, height: 48)
                     .fotoCardCircle()
             }
             .buttonStyle(.plain)
-            Text("Xuất ảnh").font(.title3.bold()).foregroundStyle(Fotowork.Palette.textPrimary)
+            Text("Xuất ảnh").font(.bvp(.title3, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
         }
     }
@@ -84,7 +84,7 @@ public struct ExportView: View {
                 .frame(maxHeight: 180)
                 .clipShape(.rect(cornerRadius: 8))
                 .shadow(color: Fotowork.cardShadow, radius: 8, y: 4)
-            Text(model.previewCaption).font(.footnote.weight(.semibold)).foregroundStyle(Fotowork.Palette.textSecondary)
+            Text(model.previewCaption).font(.bvp(.footnote, .semibold)).foregroundStyle(Fotowork.Palette.textSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(18)
@@ -96,16 +96,16 @@ public struct ExportView: View {
         return Button { model.mode = option.mode } label: {
             HStack(spacing: 14) {
                 Image(systemName: option.icon)
-                    .font(.system(size: 18))
+                    .font(.bvp(size: 18))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 42, height: 42)
                     .background(Fotowork.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(option.title).font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.textPrimary)
-                    Text(option.desc).font(.caption).foregroundStyle(Fotowork.Palette.textSecondary)
+                    Text(option.title).font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
+                    Text(option.desc).font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 Spacer(minLength: 6)
-                Text(option.price).font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.primary)
+                Text(option.price).font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.primary)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,9 +117,9 @@ public struct ExportView: View {
 
     private var privacyNote: some View {
         HStack(spacing: 8) {
-            Image(systemName: "checkmark.shield.fill").font(.footnote).foregroundStyle(Fotowork.Palette.success)
+            Image(systemName: "checkmark.shield.fill").font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.success)
             Text("Ảnh xử lý trên máy, không tải lên máy chủ.")
-                .font(.caption).foregroundStyle(Fotowork.Palette.textSecondary)
+                .font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textSecondary)
             Spacer()
         }
     }
@@ -130,7 +130,7 @@ public struct ExportView: View {
             if model.mode != .ship {
                 Button { model.exportFree() } label: {
                     Text("Tải bản có watermark, miễn phí")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.bvp(.subheadline, .semibold))
                         .foregroundStyle(Fotowork.Palette.primary)
                         .frame(height: 44)
                 }

@@ -82,10 +82,10 @@ private struct SheetScaffold<Content: View>: View {
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 8)
                     Text(title)
-                        .font(.title2.bold())
+                        .font(.bvp(.title2, .bold))
                         .foregroundStyle(Fotowork.Palette.textPrimary)
                     Text(subtitle)
-                        .font(.subheadline)
+                        .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                     VStack(spacing: 8) {
                         content
@@ -109,16 +109,16 @@ private struct PickerRow: View {
     var body: some View {
         HStack(spacing: 14) {
             Text(leading)
-                .font(.caption.bold())
+                .font(.bvp(.caption, .bold))
                 .foregroundStyle(Fotowork.Palette.primary)
                 .frame(width: 42, height: 42)
                 .background(Fotowork.Palette.primaryTint, in: .circle)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.body.weight(.semibold))
+                    .font(.bvp(.body, .semibold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(detail)
-                    .font(.footnote)
+                    .font(.bvp(.footnote))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }
             Spacer()

@@ -53,8 +53,8 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
 - CTA: navy đặc bo 16, chữ trắng, bóng `rgba(30,58,138,.28)`.
 - Status: success `#1F7A4D` (check `#46C27C`), warning `#B45309`, PRO `#C2710C`.
 - Màn **Chụp** là bề mặt TỐI `#2A313E`, control translucent trắng (`rgba(255,255,255,.16)` + viền `.32`).
-- Font: hệ thống (SF Pro) tạm; design gốc dùng **Be Vietnam Pro** (bundle sau nếu cần).
-- Tab bar: giữ native TabView (light + tint navy) để màn con push ẩn bar đúng.
+- Font: **Be Vietnam Pro** bundle trong FotoworkDesign/Resources/Fonts (4 weight), đăng ký `FotoFonts.register()` lúc launch; dùng qua `Font.bvp(.style, .weight)` / `Font.bvp(size:_:)`. KHÔNG dùng `.font(.system/.headline…)` trực tiếp nữa.
+- Tab bar: **custom trắng nổi** (`FotoworkTabBar` trong RootView), active = tint pill navy. Màn push gọi `.fotoHidesTabBar()` để ẩn bar (RootView đọc `TabBarHiddenKey`). Content đổi tab bằng switch (không giữ state giữa tab — chấp nhận v1).
 
 ## Lộ trình màn hình (làm lần lượt, mỗi màn xong là build + chạy sim + báo anh)
 Trang chủ ✅ → Chụp ✅ → Chỉnh ✅ → Xuất ✅ → Giấy tờ ✅ (Scan→PDF, CCCD→A4, Nén, Ký tên PencilKit, Bộ hồ sơ SwiftData) → Avatar ✅ (tab + template nền code + consent + tách nền ghép). **v1 đủ các màn chính.**

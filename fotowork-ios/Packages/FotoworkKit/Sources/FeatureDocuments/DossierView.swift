@@ -45,6 +45,7 @@ struct DossierView: View {
         }
         .navigationTitle("Bộ hồ sơ")
         .navigationBarTitleDisplayMode(.inline)
+        .fotoHidesTabBar()
         .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
     }
 
@@ -59,7 +60,7 @@ struct DossierView: View {
                 .onSubmit(add)
             Button(action: add) {
                 Image(systemName: "plus")
-                    .font(.headline.weight(.bold))
+                    .font(.bvp(.headline, .bold))
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
                     .background(Fotowork.Palette.primary, in: .circle)
@@ -73,7 +74,7 @@ struct DossierView: View {
         let done = items.filter(\.isDone).count
         return HStack {
             Text("Đã có \(done)/\(items.count)")
-                .font(.subheadline.weight(.bold))
+                .font(.bvp(.subheadline, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
         }
@@ -85,7 +86,7 @@ struct DossierView: View {
                 item.isDone.toggle()
             } label: {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(item.isDone ? Fotowork.Palette.success : Fotowork.Palette.textMuted)
             }
             .buttonStyle(.plain)
@@ -112,14 +113,14 @@ struct DossierView: View {
     private var suggestionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Gợi ý thêm nhanh")
-                .font(.subheadline.weight(.bold))
+                .font(.bvp(.subheadline, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             FlowChips(suggestions.filter { title in !items.contains { $0.title == title } }) { title in
                 Button {
                     context.insert(DossierItem(title: title))
                 } label: {
                     Text(title)
-                        .font(.footnote.weight(.medium))
+                        .font(.bvp(.footnote, .medium))
                         .foregroundStyle(Fotowork.Palette.primary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 9)

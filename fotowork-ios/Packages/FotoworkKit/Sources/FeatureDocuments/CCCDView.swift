@@ -16,7 +16,7 @@ struct CCCDView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     Text("Ghép 2 mặt CCCD/CMND lên một trang A4 đúng kích thước thẻ (85.6 × 54 mm) để in.")
-                        .font(.subheadline)
+                        .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 4)
@@ -35,6 +35,7 @@ struct CCCDView: View {
         }
         .navigationTitle("CCCD 2 mặt")
         .navigationBarTitleDisplayMode(.inline)
+        .fotoHidesTabBar()
         .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: frontItem) { _, item in Task { front = await load(item) } }
         .onChange(of: backItem) { _, item in Task { back = await load(item) } }
@@ -44,14 +45,14 @@ struct CCCDView: View {
     private func cardSlot(title: String, image: UIImage?, item: Binding<PhotosPickerItem?>) -> some View {
         PhotosPicker(selection: item, matching: .images) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
+                Text(title).font(.bvp(.subheadline, .semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
                 ZStack {
                     if let image {
                         Image(uiImage: image).resizable().scaledToFill()
                     } else {
                         VStack(spacing: 8) {
-                            Image(systemName: "plus.viewfinder").font(.largeTitle)
-                            Text("Chọn ảnh").font(.footnote)
+                            Image(systemName: "plus.viewfinder").font(.bvp(.largeTitle))
+                            Text("Chọn ảnh").font(.bvp(.footnote))
                         }
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                     }

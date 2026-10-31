@@ -53,18 +53,18 @@ public struct EditView: View {
         HStack {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
-                    .font(.headline.weight(.semibold))
+                    .font(.bvp(.headline, .semibold))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 48, height: 48)
                     .fotoCardCircle()
             }
             .buttonStyle(.plain)
             Spacer()
-            Text("Chỉnh ảnh").font(.title3.bold()).foregroundStyle(Fotowork.Palette.textPrimary)
+            Text("Chỉnh ảnh").font(.bvp(.title3, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             Button { model.reset() } label: {
                 Text("Đặt lại")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.bvp(.subheadline, .semibold))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .padding(.horizontal, 16)
                     .frame(height: 48)
@@ -92,22 +92,22 @@ public struct EditView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(model.passedCount)").font(.system(size: 30, weight: .bold)).foregroundStyle(Fotowork.Palette.success)
-                    Text("/\(model.total) tiêu chí").font(.subheadline).foregroundStyle(Fotowork.Palette.textSecondary)
+                    Text("\(model.passedCount)").font(.bvp(size: 30, .bold)).foregroundStyle(Fotowork.Palette.success)
+                    Text("/\(model.total) tiêu chí").font(.bvp(.subheadline)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 ProgressBar(value: Double(model.passedCount) / Double(max(model.total, 1)))
                 if !model.hasPerson {
                     Text("Chưa thấy người trong ảnh")
-                        .font(.caption)
+                        .font(.bvp(.caption))
                         .foregroundStyle(Fotowork.Palette.warning)
                 }
                 VStack(alignment: .leading, spacing: 7) {
                     ForEach(model.checklist.prefix(4)) { item in
                         HStack(spacing: 6) {
                             Image(systemName: item.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                .font(.caption)
+                                .font(.bvp(.caption))
                                 .foregroundStyle(item.ok ? Fotowork.Palette.success : Fotowork.Palette.warning)
-                            Text(item.label).font(.caption).foregroundStyle(Fotowork.Palette.textPrimary).lineLimit(1)
+                            Text(item.label).font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textPrimary).lineLimit(1)
                         }
                     }
                 }
@@ -126,7 +126,7 @@ public struct EditView: View {
             ForEach(EditTab.allCases) { item in
                 Button { tab = item } label: {
                     Text(item.rawValue)
-                        .font(.subheadline.weight(tab == item ? .bold : .semibold))
+                        .font(tab == item ? .bvp(.subheadline, .bold) : .bvp(.subheadline, .semibold))
                         .foregroundStyle(tab == item ? Fotowork.Palette.primary : Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 38)
@@ -152,18 +152,18 @@ public struct EditView: View {
 
     private var backgroundControls: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Màu nền").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.textPrimary)
+            Text("Màu nền").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
             HStack(spacing: 16) {
                 ForEach(BackgroundOption.allCases) { option in swatch(option) }
             }
 
-            Text("Trang phục").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
+            Text("Trang phục").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
             HStack(spacing: 10) {
                 ForEach(OutfitOption.allCases) { option in outfitCell(option) }
             }
             if model.settings.outfit != .keep {
                 Text("Bộ trang phục dùng template tạo sẵn — sẽ bổ sung sau.")
-                    .font(.caption)
+                    .font(.bvp(.caption))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }
         }
@@ -184,7 +184,7 @@ public struct EditView: View {
                 }
                 .frame(width: 46, height: 46)
                 .overlay(Circle().stroke(selected ? Fotowork.Palette.primary : Fotowork.Palette.borderStrong, lineWidth: selected ? 3 : 1))
-                Text(option.label).font(.caption).fontWeight(.semibold).foregroundStyle(Fotowork.Palette.textPrimary)
+                Text(option.label).font(.bvp(.caption)).fontWeight(.semibold).foregroundStyle(Fotowork.Palette.textPrimary)
             }
         }
         .buttonStyle(.plain)
@@ -204,10 +204,10 @@ public struct EditView: View {
         return Button { model.settings.outfit = option } label: {
             VStack(spacing: 6) {
                 Image(systemName: "person.fill")
-                    .font(.title2)
+                    .font(.bvp(.title2))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
                 Text(option == .aodai ? "Áo dài" : option.label)
-                    .font(.caption).fontWeight(.semibold)
+                    .font(.bvp(.caption)).fontWeight(.semibold)
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                     .lineLimit(1)
             }
@@ -217,7 +217,7 @@ public struct EditView: View {
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fotowork.Palette.primary, lineWidth: selected ? 2 : 0))
             .overlay(alignment: .topTrailing) {
                 if option == .aodai {
-                    Text("PRO").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                    Text("PRO").font(.bvp(size: 10, .bold)).foregroundStyle(.white)
                         .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Fotowork.Palette.pro, in: .rect(cornerRadius: 8))
                         .padding(6)
@@ -247,7 +247,7 @@ public struct EditView: View {
 
     private func sliderRow(title: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.subheadline).foregroundStyle(Fotowork.Palette.textSecondary)
+            Text(title).font(.bvp(.subheadline)).foregroundStyle(Fotowork.Palette.textSecondary)
             Slider(value: value, in: range).tint(Fotowork.Palette.primary)
         }
     }

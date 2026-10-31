@@ -24,7 +24,8 @@ let package = Package(
             dependencies: ["FotoworkCore"]
         ),
         .target(
-            name: "FotoworkDesign"
+            name: "FotoworkDesign",
+            resources: [.process("Resources")]
         ),
         .target(
             name: "FeatureIDPhoto",

@@ -35,7 +35,7 @@ public struct AvatarHomeView: View {
                     consentRow
                     createButton
                     Text("Ảnh xử lý ngay trên máy, không gửi lên máy chủ. Nền ghép bằng code.")
-                        .font(.caption)
+                        .font(.bvp(.caption))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 .padding(.horizontal, 20)
@@ -56,10 +56,10 @@ public struct AvatarHomeView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Avatar")
-                .font(.largeTitle.bold())
+                .font(.bvp(.largeTitle, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Text("Ảnh đại diện từ ảnh của bạn, xử lý ngay trên máy.")
-                .font(.subheadline)
+                .font(.bvp(.subheadline))
                 .foregroundStyle(Fotowork.Palette.textSecondary)
         }
     }
@@ -69,7 +69,7 @@ public struct AvatarHomeView: View {
             ForEach(AvatarCategory.allCases) { cat in
                 Button { category = cat } label: {
                     Text(cat.rawValue)
-                        .font(.caption.weight(.bold))
+                        .font(.bvp(.caption, .bold))
                         .foregroundStyle(category == cat ? Fotowork.Palette.primary : Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 38)
@@ -90,10 +90,10 @@ public struct AvatarHomeView: View {
                 shape
                     .fill(LinearGradient(colors: template.swiftColors, startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: 92, height: 92)
-                    .overlay(Image(systemName: "person.fill").font(.system(size: 40)).foregroundStyle(.white.opacity(0.9)))
+                    .overlay(Image(systemName: "person.fill").font(.bvp(size: 40)).foregroundStyle(.white.opacity(0.9)))
                     .overlay(shape.stroke(Fotowork.Palette.borderStrong, lineWidth: 1))
                 Text(template.name)
-                    .font(.footnote.weight(.bold))
+                    .font(.bvp(.footnote, .bold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
             }
             .frame(maxWidth: .infinity)
@@ -108,10 +108,10 @@ public struct AvatarHomeView: View {
         Button { consent.toggle() } label: {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: consent ? "checkmark.square.fill" : "square")
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(consent ? Fotowork.Palette.primary : Fotowork.Palette.textMuted)
                 Text("Đây là ảnh của tôi, hoặc tôi được người trong ảnh cho phép sử dụng.")
-                    .font(.footnote)
+                    .font(.bvp(.footnote))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
                     .multilineTextAlignment(.leading)
                 Spacer()
@@ -123,7 +123,7 @@ public struct AvatarHomeView: View {
     private var createButton: some View {
         PhotosPicker(selection: $pickerItem, matching: .images) {
             Text("Chọn ảnh và tạo avatar")
-                .font(.headline)
+                .font(.bvp(.headline, .semibold))
                 .foregroundStyle(ready ? .white : Fotowork.Palette.textMuted)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)

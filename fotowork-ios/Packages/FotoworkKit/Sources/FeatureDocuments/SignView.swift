@@ -15,7 +15,7 @@ struct SignView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     Text("Chọn tài liệu rồi ký trực tiếp lên đó bằng bút/ngón tay, xuất ra PDF.")
-                        .font(.subheadline)
+                        .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -26,7 +26,7 @@ struct SignView: View {
                                 canvasView.drawing = PKDrawing()
                             } label: {
                                 Text("Xoá chữ ký")
-                                    .font(.headline)
+                                    .font(.bvp(.headline, .semibold))
                                     .foregroundStyle(Fotowork.Palette.primary)
                                     .padding(.horizontal, 20).frame(height: 52)
                                     .fotoCardCapsule()
@@ -40,8 +40,8 @@ struct SignView: View {
                     } else {
                         PhotosPicker(selection: $item, matching: .images) {
                             VStack(spacing: 10) {
-                                Image(systemName: "doc.badge.plus").font(.system(size: 40))
-                                Text("Chọn tài liệu").font(.subheadline)
+                                Image(systemName: "doc.badge.plus").font(.bvp(size: 40))
+                                Text("Chọn tài liệu").font(.bvp(.subheadline))
                             }
                             .foregroundStyle(Fotowork.Palette.textSecondary)
                             .frame(maxWidth: .infinity, minHeight: 220)
@@ -55,6 +55,7 @@ struct SignView: View {
         }
         .navigationTitle("Ký tên")
         .navigationBarTitleDisplayMode(.inline)
+        .fotoHidesTabBar()
         .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadDocument(newItem) } }
         .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }

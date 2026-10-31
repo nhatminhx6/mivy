@@ -15,7 +15,7 @@ struct ScanView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     Text("Quét tài liệu thành PDF nhiều trang. Trên máy thật dùng camera; ở đây anh chọn ảnh có sẵn.")
-                        .font(.subheadline)
+                        .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -34,7 +34,7 @@ struct ScanView: View {
 
                     if !pages.isEmpty {
                         Text("\(pages.count) trang")
-                            .font(.subheadline.weight(.semibold))
+                            .font(.bvp(.subheadline, .semibold))
                             .foregroundStyle(Fotowork.Palette.textPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 10)], spacing: 10) {
@@ -53,6 +53,7 @@ struct ScanView: View {
         }
         .navigationTitle("Scan tài liệu")
         .navigationBarTitleDisplayMode(.inline)
+        .fotoHidesTabBar()
         .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: pickerItems) { _, items in Task { await loadPicked(items) } }
         .sheet(isPresented: $showScanner) {
@@ -92,8 +93,8 @@ private struct DocActionTile: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            Image(systemName: icon).font(.title2).foregroundStyle(tint)
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
+            Image(systemName: icon).font(.bvp(.title2)).foregroundStyle(tint)
+            Text(title).font(.bvp(.subheadline, .semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
         }
         .frame(maxWidth: .infinity, minHeight: 92)
         .fotoCard(18)

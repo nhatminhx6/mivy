@@ -11,7 +11,7 @@ struct AvatarResultView: View {
             FotoworkBackground()
             VStack(spacing: 22) {
                 Text("Avatar của anh")
-                    .font(.title3.bold())
+                    .font(.bvp(.title3, .bold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
 
                 Image(uiImage: image)
@@ -25,7 +25,7 @@ struct AvatarResultView: View {
                         dismiss()
                     } label: {
                         Text("Tạo lại")
-                            .font(.headline)
+                            .font(.bvp(.headline, .semibold))
                             .foregroundStyle(Fotowork.Palette.primary)
                             .padding(.horizontal, 24).frame(height: 52)
                             .fotoCardCapsule()

@@ -59,14 +59,14 @@ public struct DocumentsHomeView: View {
     private var header: some View {
         HStack {
             Text("Giấy tờ")
-                .font(.largeTitle.bold())
+                .font(.bvp(.largeTitle, .bold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             Button {
                 // search — later
             } label: {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.bvp(size: 18, .semibold))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 48, height: 48)
                     .fotoCardCircle()
@@ -82,13 +82,13 @@ public struct DocumentsHomeView: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: "checklist")
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(Fotowork.Palette.primary)
                     .frame(width: 44, height: 44)
                     .background(Fotowork.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Bộ hồ sơ").font(.headline).foregroundStyle(Fotowork.Palette.textPrimary)
-                    Text("Checklist giấy tờ cần chuẩn bị").font(.footnote).foregroundStyle(Fotowork.Palette.textSecondary)
+                    Text("Bộ hồ sơ").font(.bvp(.headline, .semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
+                    Text("Checklist giấy tờ cần chuẩn bị").font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(Fotowork.Palette.textMuted)

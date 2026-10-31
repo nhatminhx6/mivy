@@ -31,7 +31,7 @@ public struct CaptureView: View {
                 if model.cameraAvailable {
                     checksRow
                     Text("Giữ yên, tự chụp khi đạt")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.bvp(.subheadline, .semibold))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.6), radius: 6)
                         .padding(.top, 10)
@@ -51,7 +51,7 @@ public struct CaptureView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .toolbar(.hidden, for: .tabBar)
+        .fotoHidesTabBar()
         .task { await model.onAppear() }
         .onDisappear { model.onDisappear() }
         .onChange(of: pickedItem) { _, item in Task { await model.analyzePicked(item) } }
@@ -68,7 +68,7 @@ public struct CaptureView: View {
         HStack(spacing: 10) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.headline.weight(.semibold))
+                    .font(.bvp(.headline, .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
                     .background(ctrlFill, in: .circle)
@@ -78,9 +78,9 @@ public struct CaptureView: View {
 
             Spacer()
             VStack(spacing: 1) {
-                Text(model.target.title).font(.subheadline.weight(.bold)).foregroundStyle(.white)
+                Text(model.target.title).font(.bvp(.subheadline, .bold)).foregroundStyle(.white)
                 Text("\(model.target.sizeText) · nền \(model.target.background)")
-                    .font(.caption2).foregroundStyle(.white.opacity(0.85))
+                    .font(.bvp(.caption2)).foregroundStyle(.white.opacity(0.85))
             }
             .padding(.horizontal, 18)
             .frame(height: 48)
@@ -90,7 +90,7 @@ public struct CaptureView: View {
 
             Button {} label: {
                 Image(systemName: "bolt.fill")
-                    .font(.headline)
+                    .font(.bvp(.headline, .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
                     .background(ctrlFill, in: .circle)
@@ -108,9 +108,9 @@ public struct CaptureView: View {
             ForEach(model.result.checks, id: \.label) { check in
                 HStack(spacing: 6) {
                     Image(systemName: check.ok ? "checkmark" : "exclamationmark.triangle.fill")
-                        .font(.caption.bold())
+                        .font(.bvp(.caption, .bold))
                         .foregroundStyle(check.ok ? Fotowork.Palette.successBright : Fotowork.Palette.warningSoft)
-                    Text(check.label).font(.caption.weight(.semibold)).foregroundStyle(.white)
+                    Text(check.label).font(.bvp(.caption, .semibold)).foregroundStyle(.white)
                 }
                 .padding(.horizontal, 12)
                 .frame(height: 34)
@@ -126,7 +126,7 @@ public struct CaptureView: View {
         HStack {
             PhotosPicker(selection: $pickedItem, matching: .images) {
                 Image(systemName: "photo.on.rectangle")
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(.white)
                     .frame(width: 52, height: 52)
                     .background(ctrlFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -149,7 +149,7 @@ public struct CaptureView: View {
 
             Button { model.switchCamera() } label: {
                 Image(systemName: "arrow.triangle.2.circlepath.camera")
-                    .font(.title3)
+                    .font(.bvp(.title3))
                     .foregroundStyle(.white)
                     .frame(width: 52, height: 52)
                     .background(ctrlFill, in: .circle)
@@ -170,18 +170,18 @@ public struct CaptureView: View {
     private var fallbackCard: some View {
         VStack(spacing: 16) {
             Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 40))
+                .font(.bvp(size: 40))
                 .foregroundStyle(.white)
                 .frame(width: 78, height: 78)
                 .background(ctrlFill, in: .circle)
                 .overlay(Circle().stroke(ctrlStroke))
             Text(model.permissionDenied ? "Chưa cấp quyền camera" : "Camera không khả dụng ở đây")
-                .font(.title3.bold())
+                .font(.bvp(.title3, .bold))
                 .foregroundStyle(.white)
             Text(model.permissionDenied
                  ? "Bật quyền camera trong Cài đặt, hoặc chọn một ảnh có sẵn."
                  : "Trên máy thật sẽ mở camera. Giờ anh chọn một ảnh có sẵn để thử các bước.")
-                .font(.subheadline)
+                .font(.bvp(.subheadline))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
@@ -191,7 +191,7 @@ public struct CaptureView: View {
                     Image(systemName: "photo.on.rectangle")
                     Text("Chọn ảnh có sẵn").fontWeight(.bold)
                 }
-                .font(.headline)
+                .font(.bvp(.headline, .semibold))
                 .foregroundStyle(Fotowork.Palette.primary)
                 .padding(.horizontal, 24)
                 .frame(height: 52)
@@ -211,7 +211,7 @@ public struct CaptureView: View {
         ZStack {
             Fotowork.Palette.cameraBg.ignoresSafeArea()
             VStack(spacing: 18) {
-                Text("Xem lại ảnh").font(.title3.bold()).foregroundStyle(.white)
+                Text("Xem lại ảnh").font(.bvp(.title3, .bold)).foregroundStyle(.white)
                 if let image = model.capturedImage {
                     Image(uiImage: image)
                         .resizable().scaledToFill()
@@ -225,7 +225,7 @@ public struct CaptureView: View {
                         model.retake()
                     } label: {
                         Text("Chụp lại")
-                            .font(.headline)
+                            .font(.bvp(.headline, .semibold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 24).frame(height: 52)
                             .background(ctrlFill, in: .capsule)
@@ -235,7 +235,7 @@ public struct CaptureView: View {
 
                     Button { showEdit = true } label: {
                         HStack(spacing: 8) { Text("Dùng ảnh này").fontWeight(.bold); Image(systemName: "arrow.right") }
-                            .font(.headline)
+                            .font(.bvp(.headline, .semibold))
                             .foregroundStyle(Fotowork.Palette.primary)
                             .padding(.horizontal, 24).frame(height: 52)
                             .background(.white, in: .capsule)
@@ -277,7 +277,7 @@ private struct FaceGuideOverlay: View {
         ZStack {
             Rectangle().fill(.white.opacity(0.45)).frame(width: width, height: 1.5)
             Text(label)
-                .font(.caption2.weight(.semibold))
+                .font(.bvp(.caption2, .semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(.white.opacity(0.16), in: .capsule)
