@@ -161,10 +161,10 @@ public struct EditView: View {
             HStack(spacing: 10) {
                 ForEach(OutfitOption.allCases) { option in outfitCell(option) }
             }
-            if model.settings.outfit != .keep {
-                Text("Áo ghép nhanh bằng code (bản thử); template ảnh thật thêm sau.")
+            if model.settings.outfit != .keep && model.outfitMissing {
+                Text("Mẫu áo thật đang cập nhật — sẽ ghép khi có ảnh áo mẫu.")
                     .font(.bvp(.caption))
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
+                    .foregroundStyle(Fotowork.Palette.warning)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -44,7 +44,7 @@ public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
     }
 
     /// Asset name for the pre-made outfit template PNG (generated offline).
-    var templateAsset: String? {
+    public var templateAsset: String? {
         switch self {
         case .keep: nil
         case .vest: "outfit-vest"

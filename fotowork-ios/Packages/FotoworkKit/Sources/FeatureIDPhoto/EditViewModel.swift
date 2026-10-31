@@ -13,6 +13,7 @@ public final class EditViewModel {
     public var preview: UIImage?
     public var isProcessing = false
     public var hasPerson = false
+    public var outfitMissing = false
     public var checklist: [ChecklistItem] = []
 
     private let source: UIImage
@@ -61,7 +62,16 @@ public final class EditViewModel {
         let aspect = target.aspect
         if let cgImage = await editor.render(settings: current, targetAspect: aspect) {
             let base = UIImage(cgImage: cgImage)
-            preview = current.outfit == .keep ? base : OutfitOverlay.apply(base, outfit: current.outfit)
+            if current.outfit == .keep {
+                preview = base
+                outfitMissing = false
+            } else if let composed = OutfitCompositor.apply(base, outfit: current.outfit) {
+                preview = composed
+                outfitMissing = false
+            } else {
+                preview = base
+                outfitMissing = true
+            }
         }
         checklist = StandardChecklist.build(
             face: face,
