@@ -17,7 +17,6 @@ enum ExportMode: String, CaseIterable, Identifiable {
 public final class ExportViewModel {
     public let target: CaptureTarget
     let image: UIImage
-    let store = StoreManager()
 
     var mode: ExportMode = .print
     public var isBusy = false
@@ -37,54 +36,26 @@ public final class ExportViewModel {
 
     var previewCaption: String {
         switch mode {
-        case .print: "Tờ in 10×15 cm · 8 ảnh"
+        case .print: "Tờ in 10×15 cm"
         case .digital: "JPG · \(target.sizeText) · 300 dpi"
         case .ship: "In trên giấy ảnh · giao tận nơi"
         }
     }
 
-    public func onAppear() async {
-        await store.load()
-    }
-
-    /// Paid / HD path (StoreKit placeholder).
-    func exportPaid() {
+    /// Everything is free while testing — export the full-quality file (no watermark, no payment).
+    func exportFile() {
         if mode == .ship {
             statusNote = "Đặt in & giao cần đối tác in — sắp có."
             return
         }
-        if store.isEntitled {
-            makeFile(hd: true)
-        } else {
-            Task { await buyHD() }
-        }
-    }
-
-    /// Free watermarked path.
-    func exportFree() {
-        guard mode != .ship else { return }
-        makeFile(hd: false)
-    }
-
-    private func makeFile(hd: Bool) {
-        let kind: ExportKind = (mode == .digital) ? .digital : .print10x15
         isBusy = true
         defer { isBusy = false }
-        guard let result = ExportRenderer.makeFile(kind: kind, image: image, target: target, hd: hd) else {
+        let kind: ExportKind = (mode == .digital) ? .digital : .print10x15
+        guard let result = ExportRenderer.makeFile(kind: kind, image: image, target: target, hd: true) else {
             statusNote = "Không tạo được file."
             return
         }
         statusNote = result.note
         shareItem = ShareItem(url: result.url)
-    }
-
-    private func buyHD() async {
-        guard store.isConfigured else {
-            statusNote = "Gói HD đang là placeholder — cần cấu hình App Store Connect."
-            return
-        }
-        let ok = await store.purchase()
-        statusNote = ok ? nil : "Chưa mua được gói HD."
-        if ok { makeFile(hd: true) }
     }
 }

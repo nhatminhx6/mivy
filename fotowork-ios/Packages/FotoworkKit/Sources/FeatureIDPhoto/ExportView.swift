@@ -16,17 +16,16 @@ public struct ExportView: View {
         let icon: String
         let title: String
         let desc: String
-        let price: String
     }
 
     private var options: [Option] {
         [
             .init(mode: .print, icon: "printer.fill", title: "File in khổ 10×15",
-                  desc: "8 ảnh 4×6 trên một tờ, in ở tiệm khoảng 3.000đ", price: "19.000đ"),
+                  desc: "8 ảnh 4×6 trên một tờ, in ở tiệm khoảng 3.000đ"),
             .init(mode: .digital, icon: "arrow.down.doc.fill", title: "File số nộp online",
-                  desc: model.digitalInfoText, price: "19.000đ"),
+                  desc: model.digitalInfoText),
             .init(mode: .ship, icon: "shippingbox.fill", title: "In và giao tận nhà",
-                  desc: "Giao tận nơi · phí giao tính sau", price: "—"),
+                  desc: "Giao tận nơi · phí giao tính sau"),
         ]
     }
 
@@ -41,7 +40,7 @@ public struct ExportView: View {
                         ForEach(options, id: \.mode) { optionCard($0) }
                     }
                     privacyNote
-                    ctaBlock
+                    PillButton(ctaLabel, systemImage: "square.and.arrow.down") { model.exportFile() }
                     if let note = model.statusNote {
                         Text(note).font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.textSecondary)
                             .multilineTextAlignment(.center)
@@ -56,7 +55,6 @@ public struct ExportView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .task { await model.onAppear() }
         .sheet(item: Binding(get: { model.shareItem }, set: { model.shareItem = $0 })) { item in
             ShareSheet(items: [item.url])
         }
@@ -105,7 +103,7 @@ public struct ExportView: View {
                     Text(option.desc).font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 Spacer(minLength: 6)
-                Text(option.price).font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.primary)
+                Text("Miễn phí").font(.bvp(.caption, .bold)).foregroundStyle(Fotowork.Palette.success)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -118,31 +116,16 @@ public struct ExportView: View {
     private var privacyNote: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.shield.fill").font(.bvp(.footnote)).foregroundStyle(Fotowork.Palette.success)
-            Text("Ảnh xử lý trên máy, không tải lên máy chủ.")
+            Text("Ảnh xử lý trên máy, không tải lên máy chủ. Đang miễn phí để thử.")
                 .font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textSecondary)
             Spacer()
         }
     }
 
-    private var ctaBlock: some View {
-        VStack(spacing: 6) {
-            PillButton(ctaLabel) { model.exportPaid() }
-            if model.mode != .ship {
-                Button { model.exportFree() } label: {
-                    Text("Tải bản có watermark, miễn phí")
-                        .font(.bvp(.subheadline, .semibold))
-                        .foregroundStyle(Fotowork.Palette.primary)
-                        .frame(height: 44)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
     private var ctaLabel: String {
         switch model.mode {
-        case .print: "Thanh toán và tải file in"
-        case .digital: "Thanh toán và tải file số"
+        case .print: "Tải file in"
+        case .digital: "Tải file số"
         case .ship: "Đặt in"
         }
     }
