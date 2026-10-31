@@ -48,3 +48,23 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_NSCameraUsageDescription: "Fotowork dùng camera để chụp ảnh thẻ ngay trên máy. Ảnh không được gửi lên máy chủ."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Fotowork cần truy cập thư viện ảnh để bạn chọn ảnh có sẵn. Ảnh được xử lý ngay trên máy."
+    scheme:
+      testTargets:
+        - FotoworkTests
+
+  FotoworkTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - package: FotoworkKit
+        product: FotoworkCore
+      - package: FotoworkKit
+        product: FotoworkImaging
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.mivy.fotowork.tests
+        CODE_SIGNING_ALLOWED: "NO"

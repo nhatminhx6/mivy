@@ -131,7 +131,7 @@ public actor PortraitEditor {
         return CIImage(cvPixelBuffer: buffer)
     }
 
-    static func aspectCropRect(in extent: CGRect, aspect: CGFloat, zoom: Double, offsetY: Double) -> CGRect {
+    public static func aspectCropRect(in extent: CGRect, aspect: CGFloat, zoom: Double, offsetY: Double) -> CGRect {
         let sourceAspect = extent.width / extent.height
         var cropW: CGFloat
         var cropH: CGFloat

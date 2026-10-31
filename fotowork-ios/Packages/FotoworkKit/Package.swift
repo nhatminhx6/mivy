@@ -43,9 +43,5 @@ let package = Package(
             name: "FeatureSettings",
             dependencies: ["FotoworkCore", "FotoworkDesign"]
         ),
-        .testTarget(
-            name: "FotoworkCoreTests",
-            dependencies: ["FotoworkCore"]
-        ),
     ]
 )

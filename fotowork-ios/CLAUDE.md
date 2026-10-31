@@ -43,8 +43,12 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   -derivedDataPath .build-xcode build
 ```
-- Validate nhanh model + preset trên host: `cd Packages/FotoworkKit && swift build --target FotoworkCore`.
-- Test (Swift Testing): `swift test` trong `Packages/FotoworkKit`.
+- Test (Swift Testing, target `FotoworkTests` ở `Tests/`, chạy trên simulator):
+  ```bash
+  cd fotowork-ios && xcodebuild test -project Fotowork.xcodeproj -scheme Fotowork \
+    -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath .build-xcode
+  ```
+  Test headless phần logic (FotoworkCore + FotoworkImaging): preset, model, CaptureTarget, crop math, PhotoExporter, FaceChecker (ảnh synthetic), StandardChecklist. KHÔNG `swift test` được vì các Feature target import UIKit/VisionKit (iOS-only).
 
 ## Design tokens (light theme — nguồn: canvas design claude.ai/artifact/4NBGzixMCngFJKprkTNVpo)
 - Nền `#F4F6FB`, chữ chính `#121726`, phụ `#5B6579`, mờ `#8A92A6`.
