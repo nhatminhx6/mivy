@@ -14,8 +14,8 @@ public struct AvatarHomeView: View {
     public init() {}
 
     private let columns = [
-        GridItem(.flexible(), spacing: 14),
-        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
     ]
 
     private var ready: Bool { selected != nil && consent }
@@ -24,51 +24,26 @@ public struct AvatarHomeView: View {
         ZStack {
             FotoworkBackground()
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("Avatar")
-                        .font(.largeTitle.bold())
-                        .foregroundStyle(.white)
-                        .padding(.top, 8)
-
-                    Picker("", selection: $category) {
-                        ForEach(AvatarCategory.allCases) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-
-                    LazyVGrid(columns: columns, spacing: 14) {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    categoryTabs
+                    LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(AvatarCatalog.templates(for: category)) { template in
                             cell(template)
                         }
                     }
-
                     consentRow
-
-                    PhotosPicker(selection: $pickerItem, matching: .images) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "wand.and.stars")
-                            Text("Chọn ảnh & tạo").fontWeight(.semibold)
-                        }
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(Fotowork.heroGradient, in: .capsule)
-                        .shadow(color: Fotowork.Palette.heroStart.opacity(0.5), radius: 14, y: 6)
-                    }
-                    .disabled(!ready)
-                    .opacity(ready ? 1 : 0.4)
-
-                    Text("Ảnh được xử lý ngay trên máy, không gửi lên máy chủ. Nền được ghép bằng code.")
+                    createButton
+                    Text("Ảnh xử lý ngay trên máy, không gửi lên máy chủ. Nền ghép bằng code.")
                         .font(.caption)
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 .padding(.horizontal, 20)
+                .padding(.top, 8)
                 .padding(.bottom, 96)
             }
             if isBusy {
-                ProgressView().tint(.white)
-                    .padding(20)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                ProgressView().tint(Fotowork.Palette.primary).padding(20).fotoCard()
             }
         }
         .onChange(of: category) { _, _ in selected = nil }
@@ -78,52 +53,84 @@ public struct AvatarHomeView: View {
         }
     }
 
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Avatar")
+                .font(.largeTitle.bold())
+                .foregroundStyle(Fotowork.Palette.textPrimary)
+            Text("Ảnh đại diện từ ảnh của bạn, xử lý ngay trên máy.")
+                .font(.subheadline)
+                .foregroundStyle(Fotowork.Palette.textSecondary)
+        }
+    }
+
+    private var categoryTabs: some View {
+        HStack(spacing: 4) {
+            ForEach(AvatarCategory.allCases) { cat in
+                Button { category = cat } label: {
+                    Text(cat.rawValue)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(category == cat ? Fotowork.Palette.primary : Fotowork.Palette.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(category == cat ? Fotowork.Palette.primaryTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(5)
+        .fotoCard(16)
+    }
+
     private func cell(_ template: AvatarTemplate) -> some View {
         let isSelected = selected?.id == template.id
-        let shape: AnyShape = template.shape == .circle
-            ? AnyShape(Circle())
-            : AnyShape(RoundedRectangle(cornerRadius: 22))
-        return Button {
-            selected = template
-        } label: {
-            VStack(spacing: 8) {
+        let shape: AnyShape = template.shape == .circle ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        return Button { selected = template } label: {
+            VStack(spacing: 10) {
                 shape
                     .fill(LinearGradient(colors: template.swiftColors, startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(height: 120)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 44))
-                            .foregroundStyle(.white.opacity(0.85))
-                    )
-                    .overlay(
-                        shape.stroke(isSelected ? Color.white : .clear, lineWidth: 3)
-                    )
+                    .frame(width: 92, height: 92)
+                    .overlay(Image(systemName: "person.fill").font(.system(size: 40)).foregroundStyle(.white.opacity(0.9)))
+                    .overlay(shape.stroke(Fotowork.Palette.borderStrong, lineWidth: 1))
                 Text(template.name)
-                    .font(.footnote)
-                    .foregroundStyle(isSelected ? .white : Fotowork.Palette.textSecondary)
+                    .font(.footnote.weight(.bold))
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 156)
+            .fotoCard()
+            .overlay(RoundedRectangle(cornerRadius: Fotowork.Radius.card, style: .continuous).stroke(Fotowork.Palette.primary, lineWidth: isSelected ? 2 : 0))
         }
         .buttonStyle(.plain)
     }
 
     private var consentRow: some View {
-        Button {
-            consent.toggle()
-        } label: {
-            HStack(spacing: 12) {
+        Button { consent.toggle() } label: {
+            HStack(alignment: .top, spacing: 10) {
                 Image(systemName: consent ? "checkmark.square.fill" : "square")
                     .font(.title3)
-                    .foregroundStyle(consent ? Fotowork.Palette.green : Fotowork.Palette.textSecondary)
-                Text("Tôi xác nhận đây là ảnh của tôi hoặc tôi được phép sử dụng.")
+                    .foregroundStyle(consent ? Fotowork.Palette.primary : Fotowork.Palette.textMuted)
+                Text("Đây là ảnh của tôi, hoặc tôi được người trong ảnh cho phép sử dụng.")
                     .font(.footnote)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Fotowork.Palette.textSecondary)
                     .multilineTextAlignment(.leading)
                 Spacer()
             }
-            .padding(14)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+    }
+
+    private var createButton: some View {
+        PhotosPicker(selection: $pickerItem, matching: .images) {
+            Text("Chọn ảnh và tạo avatar")
+                .font(.headline)
+                .foregroundStyle(ready ? .white : Fotowork.Palette.textMuted)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(ready ? Fotowork.Palette.primary : Fotowork.Palette.track, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: ready ? Fotowork.ctaShadow : .clear, radius: 16, y: 6)
+        }
+        .disabled(!ready)
     }
 
     private func create(_ item: PhotosPickerItem?) async {

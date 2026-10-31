@@ -9,7 +9,7 @@ struct CountryPickerSheet: View {
     let onPick: (OriginPassport) -> Void
 
     var body: some View {
-        SheetScaffold(title: "Bạn đang ở đâu?", subtitle: "Chọn nơi bạn làm hộ chiếu") {
+        SheetScaffold(title: "Bạn đang ở đâu?", subtitle: "Dùng để chọn ngôn ngữ, mẫu giấy tờ và giá.") {
             ForEach(origins) { origin in
                 Button {
                     onPick(origin)
@@ -29,7 +29,7 @@ struct CountryPickerSheet: View {
     private func originDetail(_ origin: OriginPassport) -> String {
         switch origin.photoMode {
         case .selfSupplied: return origin.print?.summary ?? "Tự chuẩn bị ảnh"
-        case .selfSuppliedAbroad: return origin.print?.summary ?? "Tự chuẩn bị (ở nước ngoài)"
+        case .selfSuppliedAbroad: return origin.print?.summary ?? "Tự chuẩn bị"
         case .liveCapture: return "Chụp tại cơ quan"
         case .uncertain: return "Chưa có quy chuẩn"
         }
@@ -42,7 +42,7 @@ struct VisaPickerSheet: View {
     let onPick: (VisaDestination) -> Void
 
     var body: some View {
-        SheetScaffold(title: "Xin visa đi đâu?", subtitle: "Kích thước & nền theo cơ quan lãnh sự") {
+        SheetScaffold(title: "Xin visa đi đâu?", subtitle: "Kích thước & nền theo cơ quan lãnh sự.") {
             ForEach(destinations) { destination in
                 Button {
                     onPick(destination)
@@ -60,11 +60,7 @@ struct VisaPickerSheet: View {
     }
 
     private func visaDetail(_ destination: VisaDestination) -> String {
-        let size = destination.sizeLabel
-        if let background = destination.background {
-            return "\(size) · nền \(background.contains("white") ? "trắng" : background)"
-        }
-        return size
+        destination.sizeLabel
     }
 }
 
@@ -76,27 +72,31 @@ private struct SheetScaffold<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             FotoworkBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
+                    Capsule()
+                        .fill(Fotowork.Palette.borderStrong)
+                        .frame(width: 40, height: 5)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, 8)
                     Text(title)
                         .font(.title2.bold())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Fotowork.Palette.textPrimary)
                     Text(subtitle)
                         .font(.subheadline)
                         .foregroundStyle(Fotowork.Palette.textSecondary)
-                    VStack(spacing: 10) {
+                    VStack(spacing: 8) {
                         content
                     }
                     .padding(.top, 12)
                 }
-                .padding(22)
+                .padding(20)
             }
         }
         .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(.clear)
+        .presentationDragIndicator(.hidden)
     }
 }
 
@@ -110,13 +110,13 @@ private struct PickerRow: View {
         HStack(spacing: 14) {
             Text(leading)
                 .font(.caption.bold())
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(Fotowork.Palette.heroStart.opacity(0.35), in: .circle)
+                .foregroundStyle(Fotowork.Palette.primary)
+                .frame(width: 42, height: 42)
+                .background(Fotowork.Palette.primaryTint, in: .circle)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.body.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(detail)
                     .font(.footnote)
                     .foregroundStyle(Fotowork.Palette.textSecondary)
@@ -124,12 +124,16 @@ private struct PickerRow: View {
             Spacer()
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Fotowork.Palette.green)
+                    .foregroundStyle(Fotowork.Palette.primary)
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .fotoCard(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Fotowork.Palette.primary, lineWidth: isSelected ? 2 : 0)
+        )
     }
 }

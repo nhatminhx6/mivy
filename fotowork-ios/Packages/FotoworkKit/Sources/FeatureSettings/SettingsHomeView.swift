@@ -12,16 +12,16 @@ public struct SettingsHomeView: View {
         ZStack {
             FotoworkBackground()
             ScrollView {
-                VStack(spacing: 14) {
+                VStack(spacing: 16) {
                     header
                     card {
-                        row(icon: "checkmark.seal", tint: Fotowork.Palette.green,
+                        row(icon: "checkmark.seal.fill", tint: Fotowork.Palette.success,
                             title: "Bản quy chuẩn ảnh", value: researched)
                         divider
-                        row(icon: "lock.shield", tint: Fotowork.Palette.link,
+                        row(icon: "lock.shield.fill", tint: Fotowork.Palette.primary,
                             title: "Xử lý trên máy", value: "Ảnh không rời thiết bị")
                         divider
-                        row(icon: "info.circle", tint: Fotowork.Palette.purple,
+                        row(icon: "info.circle.fill", tint: Fotowork.Palette.textSecondary,
                             title: "Phiên bản", value: "1.0")
                     }
                     Text("Kích thước ảnh theo hướng dẫn của cơ quan lãnh sự, cập nhật \(researched). Fotowork không đảm bảo 100% đạt chuẩn.")
@@ -31,6 +31,7 @@ public struct SettingsHomeView: View {
                         .padding(.horizontal, 8)
                 }
                 .padding(20)
+                .padding(.bottom, 96)
             }
         }
         .task {
@@ -44,16 +45,16 @@ public struct SettingsHomeView: View {
         HStack {
             Text("Cài đặt")
                 .font(.largeTitle.bold())
-                .foregroundStyle(.white)
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
         }
-        .padding(.top, 8)
+        .frame(height: 48)
     }
 
     private func card<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) { content() }
             .padding(6)
-            .glassEffect(.regular, in: .rect(cornerRadius: Fotowork.Radius.tile))
+            .fotoCard(Fotowork.Radius.tile)
     }
 
     private func row(icon: String, tint: Color, title: String, value: String) -> some View {
@@ -61,9 +62,9 @@ public struct SettingsHomeView: View {
             Image(systemName: icon)
                 .foregroundStyle(tint)
                 .frame(width: 38, height: 38)
-                .background(tint.opacity(0.18), in: .circle)
+                .background(tint.opacity(0.12), in: .circle)
             Text(title)
-                .foregroundStyle(.white)
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             Text(value)
                 .foregroundStyle(Fotowork.Palette.textSecondary)
@@ -74,7 +75,7 @@ public struct SettingsHomeView: View {
 
     private var divider: some View {
         Rectangle()
-            .fill(.white.opacity(0.08))
+            .fill(Fotowork.Palette.border)
             .frame(height: 1)
             .padding(.leading, 64)
     }

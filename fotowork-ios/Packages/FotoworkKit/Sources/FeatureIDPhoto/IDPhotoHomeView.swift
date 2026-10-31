@@ -12,8 +12,8 @@ public struct IDPhotoHomeView: View {
     public init() {}
 
     private let columns = [
-        GridItem(.flexible(), spacing: 14),
-        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
     ]
 
     public var body: some View {
@@ -31,10 +31,11 @@ public struct IDPhotoHomeView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 96)
                 }
+                .navigationDestination(for: CaptureTarget.self) { target in
+                    CaptureView(target: target)
+                }
             }
-            .navigationDestination(for: CaptureTarget.self) { target in
-                CaptureView(target: target)
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .task { model.loadIfNeeded(using: store) }
         .sheet(isPresented: $showCountrySheet) {
@@ -56,54 +57,75 @@ public struct IDPhotoHomeView: View {
     private var header: some View {
         HStack {
             Button {
-                // menu — hooked up in a later step
+                // menu — later
             } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                Image(systemName: "square.grid.2x2.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .frame(width: 48, height: 48)
+                    .fotoCardCircle()
             }
             .buttonStyle(.plain)
 
             Spacer()
-
             Text("Fotowork")
-                .font(.title2.bold())
-                .foregroundStyle(.white)
-
+                .font(.title3.bold())
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
 
-            GlassPill(model.originCode) {
-                showCountrySheet = true
-            }
+            GlassPill(model.originCode) { showCountrySheet = true }
         }
+        .frame(height: 48)
     }
 
     // MARK: Hero
 
     private var hero: some View {
         ZStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Chụp ảnh thẻ")
-                    .font(.largeTitle.bold())
+            HStack(spacing: 18) {
+                Image(systemName: "camera.fill")
+                    .font(.system(size: 30))
                     .foregroundStyle(.white)
-                Text("Hộ chiếu · \(model.passportSizeText) · nền trắng")
-                    .font(.headline.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .frame(width: 68, height: 68)
+                    .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.28)))
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Chụp ảnh thẻ")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("Hộ chiếu · \(model.passportSizeText) · nền trắng")
+                        .font(.subheadline)
+                        .foregroundStyle(Fotowork.Palette.onPrimarySoft)
+                }
+                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(24)
-            .padding(.bottom, 30)
-            .background(Fotowork.heroGradient, in: .rect(cornerRadius: Fotowork.Radius.card))
-            .shadow(color: Fotowork.Palette.heroStart.opacity(0.45), radius: 24, y: 14)
+            .padding(.horizontal, 22)
+            .padding(.top, 26)
+            .padding(.bottom, 42)
+            .background(Fotowork.Palette.primary, in: RoundedRectangle(cornerRadius: Fotowork.Radius.hero, style: .continuous))
 
-            PillButton("Bắt đầu", systemImage: "arrow.right") {
+            Button {
                 router.push(startTarget)
+            } label: {
+                HStack(spacing: 12) {
+                    Text("Bắt đầu").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.primary)
+                    Image(systemName: "arrow.right")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Fotowork.Palette.primary, in: .circle)
+                }
+                .padding(.leading, 22)
+                .padding(.trailing, 8)
+                .frame(height: 52)
+                .background(.white, in: .capsule)
+                .overlay(Capsule().stroke(Fotowork.Palette.border))
+                .shadow(color: Fotowork.barShadow, radius: 18, y: 8)
             }
-            .offset(y: 24)
+            .buttonStyle(.plain)
+            .offset(y: 26)
         }
-        .padding(.bottom, 8)
+        .padding(.bottom, 26)
     }
 
     private var startTarget: CaptureTarget {
@@ -116,35 +138,62 @@ public struct IDPhotoHomeView: View {
     // MARK: 2×2 grid
 
     private var grid: some View {
-        LazyVGrid(columns: columns, spacing: 14) {
-            GlassTile(title: "3×4", subtitle: "Hồ sơ", systemImage: "person.text.rectangle", tint: Fotowork.Palette.green) {
+        LazyVGrid(columns: columns, spacing: 12) {
+            homeTile(title: "3×4", icon: "person.text.rectangle", label: "Hồ sơ", caption: "Thẻ sinh viên") {
                 router.push(.idCard3x4)
             }
-            GlassTile(title: "4×6", subtitle: "Hộ chiếu", systemImage: "book.closed", tint: Fotowork.Palette.link) {
+            homeTile(title: "4×6", icon: "book.closed", label: "Hộ chiếu", caption: "Nền trắng") {
                 router.push(.idCard4x6)
             }
-            GlassTile(title: "Xin việc", subtitle: "Ghép vest", systemImage: "briefcase", tint: Fotowork.Palette.orange) {
+            homeTile(title: "Xin việc", icon: "briefcase.fill", label: "Ghép vest", caption: "40×60 mm") {
                 router.push(.jobApplication)
             }
-            GlassTile(title: "Visa", subtitle: "\(model.visaDestinations.count) nước", systemImage: "airplane", tint: Fotowork.Palette.purple) {
+            homeTile(title: "Visa", icon: "airplane", label: "\(model.visaDestinations.count) nước", caption: "Hàn, Nhật, Đài…") {
                 showVisaSheet = true
             }
         }
     }
 
+    private func homeTile(title: String, icon: String, label: String, caption: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon).font(.system(size: 18)).foregroundStyle(Fotowork.Palette.primary)
+                    Text(title).font(.title3.bold()).foregroundStyle(Fotowork.Palette.textPrimary)
+                }
+                HStack(alignment: .bottom) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(label).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.primary)
+                        Text(caption).font(.footnote).foregroundStyle(Fotowork.Palette.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.right")
+                        .font(.caption2.bold())
+                        .foregroundStyle(Fotowork.Palette.primary)
+                        .frame(width: 34, height: 34)
+                        .background(Fotowork.Palette.primaryTint, in: .circle)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fotoCard(Fotowork.Radius.tile)
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: Quick tools
 
     private var quickTools: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionHeader("Công cụ nhanh")
-            GlassEffectContainer(spacing: 14) {
-                HStack(alignment: .top, spacing: 6) {
-                    CircleToolButton(title: "Scan", systemImage: "doc.viewfinder", tint: Fotowork.Palette.link)
-                    CircleToolButton(title: "CCCD", systemImage: "person.crop.rectangle", tint: Fotowork.Palette.green)
-                    CircleToolButton(title: "Nén file", systemImage: "archivebox", tint: Fotowork.Palette.orange)
-                    CircleToolButton(title: "Ký tên", systemImage: "signature", tint: Fotowork.Palette.yellow)
-                    CircleToolButton(title: "Avatar", systemImage: "person.crop.circle", tint: Fotowork.Palette.purple)
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Công cụ nhanh")
+                .font(.headline)
+                .foregroundStyle(Fotowork.Palette.textPrimary)
+            HStack(alignment: .top, spacing: 4) {
+                CircleToolButton(title: "Scan", systemImage: "doc.viewfinder")
+                CircleToolButton(title: "CCCD", systemImage: "person.crop.rectangle")
+                CircleToolButton(title: "Nén file", systemImage: "arrow.down.right.and.arrow.up.left")
+                CircleToolButton(title: "Ký tên", systemImage: "signature")
+                CircleToolButton(title: "Avatar", systemImage: "person.crop.circle")
             }
         }
     }

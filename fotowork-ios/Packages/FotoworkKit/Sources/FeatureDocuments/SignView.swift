@@ -27,9 +27,9 @@ struct SignView: View {
                             } label: {
                                 Text("Xoá chữ ký")
                                     .font(.headline)
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 20).padding(.vertical, 14)
-                                    .glassEffect(.regular.interactive(), in: .capsule)
+                                    .foregroundStyle(Fotowork.Palette.primary)
+                                    .padding(.horizontal, 20).frame(height: 52)
+                                    .fotoCardCapsule()
                             }
                             .buttonStyle(.plain)
 
@@ -45,7 +45,7 @@ struct SignView: View {
                             }
                             .foregroundStyle(Fotowork.Palette.textSecondary)
                             .frame(maxWidth: .infinity, minHeight: 220)
-                            .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                            .fotoCard()
                         }
                         .buttonStyle(.plain)
                     }
@@ -55,6 +55,7 @@ struct SignView: View {
         }
         .navigationTitle("Ký tên")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadDocument(newItem) } }
         .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
     }

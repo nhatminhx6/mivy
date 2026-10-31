@@ -7,6 +7,11 @@ struct ShareItem: Identifiable {
     let url: URL
 }
 
+enum ExportMode: String, CaseIterable, Identifiable {
+    case print, digital, ship
+    var id: String { rawValue }
+}
+
 @MainActor
 @Observable
 public final class ExportViewModel {
@@ -14,7 +19,7 @@ public final class ExportViewModel {
     let image: UIImage
     let store = StoreManager()
 
-    public var hd = false
+    var mode: ExportMode = .print
     public var isBusy = false
     public var statusNote: String?
     var shareItem: ShareItem?
@@ -30,15 +35,39 @@ public final class ExportViewModel {
         return "\(Int(size.width))×\(Int(size.height)) px · \(budget)"
     }
 
+    var previewCaption: String {
+        switch mode {
+        case .print: "Tờ in 10×15 cm · 8 ảnh"
+        case .digital: "JPG · \(target.sizeText) · 300 dpi"
+        case .ship: "In trên giấy ảnh · giao tận nơi"
+        }
+    }
+
     public func onAppear() async {
         await store.load()
     }
 
-    func export(_ kind: ExportKind) {
-        if hd && !store.isEntitled {
-            Task { await buyHD() }
+    /// Paid / HD path (StoreKit placeholder).
+    func exportPaid() {
+        if mode == .ship {
+            statusNote = "Đặt in & giao cần đối tác in — sắp có."
             return
         }
+        if store.isEntitled {
+            makeFile(hd: true)
+        } else {
+            Task { await buyHD() }
+        }
+    }
+
+    /// Free watermarked path.
+    func exportFree() {
+        guard mode != .ship else { return }
+        makeFile(hd: false)
+    }
+
+    private func makeFile(hd: Bool) {
+        let kind: ExportKind = (mode == .digital) ? .digital : .print10x15
         isBusy = true
         defer { isBusy = false }
         guard let result = ExportRenderer.makeFile(kind: kind, image: image, target: target, hd: hd) else {
@@ -49,16 +78,13 @@ public final class ExportViewModel {
         shareItem = ShareItem(url: result.url)
     }
 
-    func buyHD() async {
+    private func buyHD() async {
         guard store.isConfigured else {
-            statusNote = "Gói HD đang là placeholder — cần cấu hình trên App Store Connect."
-            hd = false
+            statusNote = "Gói HD đang là placeholder — cần cấu hình App Store Connect."
             return
         }
         let ok = await store.purchase()
-        if !ok {
-            statusNote = "Chưa mua được gói HD."
-            hd = false
-        }
+        statusNote = ok ? nil : "Chưa mua được gói HD."
+        if ok { makeFile(hd: true) }
     }
 }

@@ -9,8 +9,8 @@ public struct DocumentsHomeView: View {
     @State private var path = NavigationPath()
 
     private let columns = [
-        GridItem(.flexible(), spacing: 14),
-        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
     ]
 
     public init() {}
@@ -21,29 +21,25 @@ public struct DocumentsHomeView: View {
                 FotoworkBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("Giấy tờ")
-                            .font(.largeTitle.bold())
-                            .foregroundStyle(.white)
-                            .padding(.top, 8)
-
-                        LazyVGrid(columns: columns, spacing: 14) {
-                            GlassTile(title: "Scan tài liệu", subtitle: "Quét ra PDF", systemImage: "doc.viewfinder", tint: Fotowork.Palette.link) {
+                        header
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            GlassTile(title: "Scan tài liệu", subtitle: "PDF nhiều trang", systemImage: "doc.viewfinder") {
                                 path.append(DocRoute.scan)
                             }
-                            GlassTile(title: "CCCD 2 mặt", subtitle: "Ghép 1 trang A4", systemImage: "person.crop.rectangle", tint: Fotowork.Palette.green) {
+                            GlassTile(title: "CCCD hai mặt", subtitle: "Lên 1 trang A4", systemImage: "person.crop.rectangle") {
                                 path.append(DocRoute.cccd)
                             }
-                            GlassTile(title: "Nén file", subtitle: "Giảm dung lượng", systemImage: "archivebox", tint: Fotowork.Palette.orange) {
+                            GlassTile(title: "Nén file", subtitle: "Đúng giới hạn nơi nộp", systemImage: "arrow.down.right.and.arrow.up.left") {
                                 path.append(DocRoute.compress)
                             }
-                            GlassTile(title: "Ký tên", subtitle: "Ký lên tài liệu", systemImage: "signature", tint: Fotowork.Palette.yellow) {
+                            GlassTile(title: "Ký tên", subtitle: "Lên file PDF", systemImage: "signature") {
                                 path.append(DocRoute.sign)
                             }
                         }
-
                         dossierCard
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 8)
                     .padding(.bottom, 96)
                 }
                 .toolbar(.hidden, for: .navigationBar)
@@ -60,6 +56,26 @@ public struct DocumentsHomeView: View {
         }
     }
 
+    private var header: some View {
+        HStack {
+            Text("Giấy tờ")
+                .font(.largeTitle.bold())
+                .foregroundStyle(Fotowork.Palette.textPrimary)
+            Spacer()
+            Button {
+                // search — later
+            } label: {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .frame(width: 48, height: 48)
+                    .fotoCardCircle()
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(height: 48)
+    }
+
     private var dossierCard: some View {
         Button {
             path.append(DocRoute.dossier)
@@ -67,19 +83,19 @@ public struct DocumentsHomeView: View {
             HStack(spacing: 14) {
                 Image(systemName: "checklist")
                     .font(.title3)
-                    .foregroundStyle(Fotowork.Palette.purple)
-                    .frame(width: 48, height: 48)
-                    .background(Fotowork.Palette.purple.opacity(0.18), in: .circle)
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .frame(width: 44, height: 44)
+                    .background(Fotowork.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Bộ hồ sơ").font(.headline).foregroundStyle(.white)
+                    Text("Bộ hồ sơ").font(.headline).foregroundStyle(Fotowork.Palette.textPrimary)
                     Text("Checklist giấy tờ cần chuẩn bị").font(.footnote).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").foregroundStyle(Fotowork.Palette.textSecondary)
+                Image(systemName: "chevron.right").foregroundStyle(Fotowork.Palette.textMuted)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 20))
+            .fotoCard()
         }
         .buttonStyle(.plain)
     }

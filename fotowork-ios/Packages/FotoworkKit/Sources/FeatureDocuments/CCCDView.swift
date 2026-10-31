@@ -19,6 +19,7 @@ struct CCCDView: View {
                         .font(.subheadline)
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
 
                     cardSlot(title: "Mặt trước", image: front, item: $frontItem)
                     cardSlot(title: "Mặt sau", image: back, item: $backItem)
@@ -34,6 +35,7 @@ struct CCCDView: View {
         }
         .navigationTitle("CCCD 2 mặt")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: frontItem) { _, item in Task { front = await load(item) } }
         .onChange(of: backItem) { _, item in Task { back = await load(item) } }
         .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
@@ -42,7 +44,7 @@ struct CCCDView: View {
     private func cardSlot(title: String, image: UIImage?, item: Binding<PhotosPickerItem?>) -> some View {
         PhotosPicker(selection: item, matching: .images) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
                 ZStack {
                     if let image {
                         Image(uiImage: image).resizable().scaledToFill()
@@ -57,7 +59,7 @@ struct CCCDView: View {
                 .frame(height: 150)
                 .frame(maxWidth: .infinity)
                 .clipShape(.rect(cornerRadius: 16))
-                .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                .fotoCard(16)
             }
         }
         .buttonStyle(.plain)

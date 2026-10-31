@@ -29,6 +29,10 @@ public final class EditViewModel {
     public var passedCount: Int { checklist.filter(\.ok).count }
     public var total: Int { checklist.count }
 
+    public func reset() {
+        settings = EditSettings()
+    }
+
     public func onAppear() async {
         guard !prepared, let cgImage = source.cgImage else { return }
         isProcessing = true

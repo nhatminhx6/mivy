@@ -21,8 +21,8 @@ struct DossierView: View {
     @State private var newTitle = ""
 
     private let suggestions = [
-        "Ảnh thẻ 4×6", "Ảnh thẻ 3×4", "CMND/CCCD (2 mặt)", "Hộ chiếu",
-        "Sổ hộ khẩu", "Giấy khai sinh", "Bằng lái xe",
+        "Ảnh 35×45 mm", "Hộ chiếu", "CCCD hai mặt", "Đơn xin visa",
+        "Chứng minh tài chính", "Xác nhận công việc",
     ]
 
     var body: some View {
@@ -31,16 +31,12 @@ struct DossierView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     addRow
-
                     if !items.isEmpty {
                         progressBar
                         VStack(spacing: 10) {
-                            ForEach(items) { item in
-                                row(item)
-                            }
+                            ForEach(items) { item in row(item) }
                         }
                     }
-
                     suggestionsSection
                 }
                 .padding(20)
@@ -49,23 +45,24 @@ struct DossierView: View {
         }
         .navigationTitle("Bộ hồ sơ")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
     }
 
     private var addRow: some View {
         HStack(spacing: 10) {
             TextField("Thêm giấy tờ…", text: $newTitle)
                 .textFieldStyle(.plain)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .glassEffect(.regular, in: .capsule)
+                .foregroundStyle(Fotowork.Palette.textPrimary)
+                .padding(.horizontal, 16)
+                .frame(height: 48)
+                .fotoCardCapsule()
                 .onSubmit(add)
             Button(action: add) {
                 Image(systemName: "plus")
                     .font(.headline.weight(.bold))
                     .foregroundStyle(.white)
-                    .frame(width: 46, height: 46)
-                    .background(Fotowork.heroGradient, in: .circle)
+                    .frame(width: 48, height: 48)
+                    .background(Fotowork.Palette.primary, in: .circle)
             }
             .buttonStyle(.plain)
             .disabled(newTitle.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -76,8 +73,8 @@ struct DossierView: View {
         let done = items.filter(\.isDone).count
         return HStack {
             Text("Đã có \(done)/\(items.count)")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
         }
     }
@@ -89,12 +86,12 @@ struct DossierView: View {
             } label: {
                 Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(item.isDone ? Fotowork.Palette.green : Fotowork.Palette.textSecondary)
+                    .foregroundStyle(item.isDone ? Fotowork.Palette.success : Fotowork.Palette.textMuted)
             }
             .buttonStyle(.plain)
 
             Text(item.title)
-                .foregroundStyle(item.isDone ? Fotowork.Palette.textSecondary : .white)
+                .foregroundStyle(item.isDone ? Fotowork.Palette.textMuted : Fotowork.Palette.textPrimary)
                 .strikethrough(item.isDone)
 
             Spacer()
@@ -103,30 +100,30 @@ struct DossierView: View {
                 context.delete(item)
             } label: {
                 Image(systemName: "trash")
-                    .foregroundStyle(Fotowork.Palette.red.opacity(0.9))
+                    .foregroundStyle(Fotowork.Palette.red)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .fotoCard(16)
     }
 
     private var suggestionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Gợi ý thêm nhanh")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             FlowChips(suggestions.filter { title in !items.contains { $0.title == title } }) { title in
                 Button {
                     context.insert(DossierItem(title: title))
                 } label: {
                     Text(title)
-                        .font(.footnote)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(Fotowork.Palette.primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 9)
+                        .background(Fotowork.Palette.primaryTint, in: .capsule)
                 }
                 .buttonStyle(.plain)
             }
@@ -141,7 +138,6 @@ struct DossierView: View {
     }
 }
 
-/// Lightweight wrapping chip layout.
 private struct FlowChips<Item: Hashable, Content: View>: View {
     let items: [Item]
     @ViewBuilder let content: (Item) -> Content

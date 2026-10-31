@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Buttons
 
-/// Primary pill CTA with the hero gradient.
+/// Primary CTA: solid navy capsule with white label.
 public struct PillButton: View {
     private let title: String
     private let systemImage: String?
@@ -17,7 +17,7 @@ public struct PillButton: View {
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Text(title).fontWeight(.semibold)
+                Text(title).fontWeight(.bold)
                 if let systemImage {
                     Image(systemName: systemImage)
                 }
@@ -25,15 +25,16 @@ public struct PillButton: View {
             .font(.headline)
             .foregroundStyle(.white)
             .padding(.horizontal, 24)
-            .padding(.vertical, 15)
-            .background(Fotowork.heroGradient, in: .capsule)
-            .shadow(color: Fotowork.Palette.heroStart.opacity(0.55), radius: 16, y: 8)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity)
+            .background(Fotowork.Palette.primary, in: .capsule)
+            .shadow(color: Fotowork.ctaShadow, radius: 16, y: 6)
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Glass pill used for the country selector in the header.
+/// White chip used for the header country selector.
 public struct GlassPill: View {
     private let title: String
     private let systemImage: String?
@@ -47,17 +48,17 @@ public struct GlassPill: View {
 
     public var body: some View {
         Button(action: action) {
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 Text(title).fontWeight(.semibold)
                 if let systemImage {
-                    Image(systemName: systemImage).font(.caption2.bold())
+                    Image(systemName: systemImage).font(.caption2.bold()).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
             }
             .font(.subheadline)
-            .foregroundStyle(.white)
+            .foregroundStyle(Fotowork.Palette.textPrimary)
             .padding(.horizontal, 14)
-            .padding(.vertical, 9)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .frame(height: 48)
+            .fotoCardCapsule()
         }
         .buttonStyle(.plain)
     }
@@ -65,7 +66,7 @@ public struct GlassPill: View {
 
 // MARK: - Tiles
 
-/// Square-ish glass feature tile for the 2×2 home grid.
+/// White feature tile: tinted icon badge, title, subtitle.
 public struct GlassTile: View {
     private let title: String
     private let subtitle: String
@@ -77,7 +78,7 @@ public struct GlassTile: View {
         title: String,
         subtitle: String,
         systemImage: String,
-        tint: Color,
+        tint: Color = Fotowork.Palette.primary,
         action: @escaping () -> Void = {}
     ) {
         self.title = title
@@ -89,29 +90,29 @@ public struct GlassTile: View {
 
     public var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 Image(systemName: systemImage)
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(tint)
-                    .frame(width: 48, height: 48)
-                    .background(tint.opacity(0.18), in: .circle)
-                Spacer(minLength: 8)
+                    .frame(width: 44, height: 44)
+                    .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                Spacer(minLength: 6)
                 Text(title)
-                    .font(.title3.bold())
-                    .foregroundStyle(.white)
+                    .font(.headline)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(.footnote)
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }
             .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
-            .padding(18)
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: Fotowork.Radius.tile))
+            .padding(16)
+            .fotoCard(Fotowork.Radius.tile)
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Round glass button for the quick-tools row.
+/// Quick-tool button: tinted rounded square with navy glyph + label.
 public struct CircleToolButton: View {
     private let title: String
     private let systemImage: String
@@ -121,7 +122,7 @@ public struct CircleToolButton: View {
     public init(
         title: String,
         systemImage: String,
-        tint: Color = Fotowork.Palette.link,
+        tint: Color = Fotowork.Palette.primary,
         action: @escaping () -> Void = {}
     ) {
         self.title = title
@@ -136,11 +137,12 @@ public struct CircleToolButton: View {
                 Image(systemName: systemImage)
                     .font(.title3)
                     .foregroundStyle(tint)
-                    .frame(width: 58, height: 58)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .frame(width: 60, height: 60)
+                    .background(Fotowork.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
@@ -166,18 +168,17 @@ public struct SectionHeader: View {
         HStack {
             Text(title)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             if let action, let actionTitle {
                 Button(actionTitle, action: action)
                     .font(.subheadline)
-                    .foregroundStyle(Fotowork.Palette.link)
+                    .foregroundStyle(Fotowork.Palette.primary)
             }
         }
     }
 }
 
-/// Simple placeholder screen for features still to come.
 public struct ComingSoonScreen: View {
     private let title: String
     private let subtitle: String
@@ -194,21 +195,23 @@ public struct ComingSoonScreen: View {
             FotoworkBackground()
             VStack(spacing: 16) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 52))
-                    .foregroundStyle(Fotowork.Palette.link)
+                    .font(.system(size: 44))
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .frame(width: 92, height: 92)
+                    .background(Fotowork.Palette.primaryTint, in: .circle)
                 Text(title)
                     .font(.largeTitle.bold())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
                 Text(subtitle)
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Fotowork.Palette.textSecondary)
                 Text("Sắp ra mắt")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Fotowork.Palette.primary)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 9)
-                    .glassEffect(.regular, in: .capsule)
+                    .background(Fotowork.Palette.primaryTint, in: .capsule)
             }
             .padding(32)
         }

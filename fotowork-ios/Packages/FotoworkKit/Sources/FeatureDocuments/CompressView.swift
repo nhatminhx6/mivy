@@ -26,7 +26,7 @@ struct CompressView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Dung lượng mục tiêu")
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Fotowork.Palette.textPrimary)
                             FlowChipsSimple(presets, selected: targetKB) { kb in targetKB = kb }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -47,6 +47,7 @@ struct CompressView: View {
         }
         .navigationTitle("Nén file")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadImage(newItem) } }
         .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
     }
@@ -64,7 +65,7 @@ struct CompressView: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 220)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .fotoCard()
     }
 
     private func loadImage(_ item: PhotosPickerItem?) async {
@@ -99,11 +100,11 @@ private struct FlowChipsSimple: View {
             ForEach(values, id: \.self) { kb in
                 Button { action(kb) } label: {
                     Text("\(kb) KB")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 9)
-                        .glassEffect(selected == kb ? .regular.tint(Fotowork.Palette.heroMid).interactive() : .regular.interactive(), in: .capsule)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selected == kb ? .white : Fotowork.Palette.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(selected == kb ? Fotowork.Palette.primary : Fotowork.Palette.primaryTint, in: .capsule)
                 }
                 .buttonStyle(.plain)
             }

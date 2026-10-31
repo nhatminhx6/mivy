@@ -6,11 +6,10 @@ import FotoworkDesign
 public struct EditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: EditViewModel
-    @State private var tab: Tab = .background
-    @State private var showChecklist = false
+    @State private var tab: EditTab = .background
     @State private var showExport = false
 
-    enum Tab: String, CaseIterable, Identifiable {
+    enum EditTab: String, CaseIterable, Identifiable {
         case background = "Nền & áo"
         case light = "Ánh sáng"
         case crop = "Cắt khung"
@@ -24,28 +23,22 @@ public struct EditView: View {
     public var body: some View {
         ZStack {
             FotoworkBackground()
-            VStack(spacing: 16) {
-                topBar
-                previewArea
-                scoreCard
-                Picker("", selection: $tab) {
-                    ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+            ScrollView {
+                VStack(spacing: 16) {
+                    topBar
+                    previewCard
+                    segmented
+                    controls
+                    PillButton("Tiếp tục", systemImage: "arrow.right") { showExport = true }
+                        .padding(.top, 4)
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal, 20)
-
-                controls
-                    .padding(.horizontal, 20)
-
-                Spacer(minLength: 0)
-
-                PillButton("Xuất ảnh", systemImage: "arrow.right") {
-                    showExport = true
-                }
-                .padding(.bottom, 10)
+                .padding(.top, 8)
+                .padding(.bottom, 28)
             }
-            .padding(.top, 8)
         }
+        .toolbar(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
         .task { await model.onAppear() }
         .fullScreenCover(isPresented: $showExport) {
             if let image = model.preview {
@@ -61,89 +54,92 @@ public struct EditView: View {
             Button { dismiss() } label: {
                 Image(systemName: "chevron.left")
                     .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .frame(width: 48, height: 48)
+                    .fotoCardCircle()
             }
             .buttonStyle(.plain)
-
             Spacer()
-            VStack(spacing: 2) {
-                Text("Chỉnh ảnh").font(.headline).foregroundStyle(.white)
-                Text("\(model.target.sizeText) · nền \(model.target.background)")
-                    .font(.caption).foregroundStyle(Fotowork.Palette.textSecondary)
+            Text("Chỉnh ảnh").font(.title3.bold()).foregroundStyle(Fotowork.Palette.textPrimary)
+            Spacer()
+            Button { model.reset() } label: {
+                Text("Đặt lại")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Fotowork.Palette.primary)
+                    .padding(.horizontal, 16)
+                    .frame(height: 48)
+                    .fotoCardCapsule()
             }
-            Spacer()
-            Color.clear.frame(width: 42, height: 42)
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
     }
 
-    // MARK: Preview
+    // MARK: Preview + score
 
-    private var previewArea: some View {
-        ZStack {
-            if let image = model.preview {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 300)
-                    .clipShape(.rect(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(.white.opacity(0.18)))
-            } else {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.white.opacity(0.05))
-                    .frame(width: 210, height: 210 / model.target.aspect)
-            }
-            if model.isProcessing {
-                ProgressView().tint(.white)
-            }
-        }
-        .frame(maxHeight: 300)
-        .padding(.horizontal, 20)
-    }
-
-    // MARK: Score
-
-    private var scoreCard: some View {
-        VStack(spacing: 0) {
-            Button { withAnimation(.snappy) { showChecklist.toggle() } } label: {
-                HStack {
-                    Text("\(model.passedCount)/\(model.total) tiêu chí")
-                        .font(.headline).foregroundStyle(.white)
-                    if !model.hasPerson {
-                        Text("· chưa thấy người")
-                            .font(.caption).foregroundStyle(Fotowork.Palette.orange)
-                    }
-                    Spacer()
-                    Image(systemName: showChecklist ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(Fotowork.Palette.textSecondary)
+    private var previewCard: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                if let image = model.preview {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Fotowork.Palette.track
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                if model.isProcessing { ProgressView().tint(Fotowork.Palette.primary) }
             }
-            .buttonStyle(.plain)
+            .frame(width: 128, height: 128 / model.target.aspect)
+            .clipShape(.rect(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Fotowork.Palette.border))
 
-            if showChecklist {
-                VStack(spacing: 8) {
-                    ForEach(model.checklist) { item in
-                        HStack(spacing: 10) {
-                            Image(systemName: item.ok ? (item.advisory ? "checkmark.circle" : "checkmark.circle.fill") : "exclamationmark.circle")
-                                .foregroundStyle(item.ok ? Fotowork.Palette.green : Fotowork.Palette.orange)
-                            Text(item.label).font(.subheadline).foregroundStyle(.white)
-                            Spacer()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(model.passedCount)").font(.system(size: 30, weight: .bold)).foregroundStyle(Fotowork.Palette.success)
+                    Text("/\(model.total) tiêu chí").font(.subheadline).foregroundStyle(Fotowork.Palette.textSecondary)
+                }
+                ProgressBar(value: Double(model.passedCount) / Double(max(model.total, 1)))
+                if !model.hasPerson {
+                    Text("Chưa thấy người trong ảnh")
+                        .font(.caption)
+                        .foregroundStyle(Fotowork.Palette.warning)
+                }
+                VStack(alignment: .leading, spacing: 7) {
+                    ForEach(model.checklist.prefix(4)) { item in
+                        HStack(spacing: 6) {
+                            Image(systemName: item.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(item.ok ? Fotowork.Palette.success : Fotowork.Palette.warning)
+                            Text(item.label).font(.caption).foregroundStyle(Fotowork.Palette.textPrimary).lineLimit(1)
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 14)
+                .padding(.top, 2)
             }
+            Spacer(minLength: 0)
         }
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-        .padding(.horizontal, 20)
+        .padding(16)
+        .fotoCard()
     }
 
-    // MARK: Controls per tab
+    // MARK: Segmented
+
+    private var segmented: some View {
+        HStack(spacing: 4) {
+            ForEach(EditTab.allCases) { item in
+                Button { tab = item } label: {
+                    Text(item.rawValue)
+                        .font(.subheadline.weight(tab == item ? .bold : .semibold))
+                        .foregroundStyle(tab == item ? Fotowork.Palette.primary : Fotowork.Palette.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(tab == item ? Fotowork.Palette.primaryTint : .clear, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(5)
+        .fotoCard(16)
+    }
+
+    // MARK: Controls
 
     @ViewBuilder
     private var controls: some View {
@@ -156,28 +152,17 @@ public struct EditView: View {
 
     private var backgroundControls: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Màu nền").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
-            HStack(spacing: 12) {
-                ForEach(BackgroundOption.allCases) { option in
-                    backgroundSwatch(option)
-                }
+            Text("Màu nền").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.textPrimary)
+            HStack(spacing: 16) {
+                ForEach(BackgroundOption.allCases) { option in swatch(option) }
             }
 
-            Text("Trang phục").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
-                .padding(.top, 4)
-            FlowChips {
-                ForEach(OutfitOption.allCases) { option in
-                    OutfitChip(
-                        label: option == .aodai ? "Áo dài · Pro" : option.label,
-                        selected: model.settings.outfit == option
-                    ) {
-                        model.settings.outfit = option
-                    }
-                }
+            Text("Trang phục").font(.subheadline.weight(.bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
+            HStack(spacing: 10) {
+                ForEach(OutfitOption.allCases) { option in outfitCell(option) }
             }
             if model.settings.outfit != .keep {
-                Label("Bộ trang phục dùng template tạo sẵn — sẽ bổ sung sau khi anh duyệt gu.",
-                      systemImage: "sparkles")
+                Text("Bộ trang phục dùng template tạo sẵn — sẽ bổ sung sau.")
                     .font(.caption)
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }
@@ -185,25 +170,21 @@ public struct EditView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func backgroundSwatch(_ option: BackgroundOption) -> some View {
+    private func swatch(_ option: BackgroundOption) -> some View {
         let selected = model.settings.background == option
-        return Button {
-            model.settings.background = option
-        } label: {
+        return Button { model.settings.background = option } label: {
             VStack(spacing: 6) {
-                ZStack {
+                Group {
                     if let rgb = swatchRGB(option) {
                         Circle().fill(Color(.sRGB, red: rgb.0, green: rgb.1, blue: rgb.2))
                     } else {
-                        Image(systemName: "photo")
-                            .foregroundStyle(.white)
-                            .frame(width: 48, height: 48)
-                            .background(.white.opacity(0.1), in: .circle)
+                        Image(systemName: "photo").foregroundStyle(Fotowork.Palette.textSecondary)
+                            .frame(width: 46, height: 46).background(Fotowork.Palette.track, in: .circle)
                     }
                 }
-                .frame(width: 48, height: 48)
-                .overlay(Circle().stroke(selected ? Fotowork.Palette.link : .white.opacity(0.25), lineWidth: selected ? 3 : 1))
-                Text(option.label).font(.caption).foregroundStyle(Fotowork.Palette.textSecondary)
+                .frame(width: 46, height: 46)
+                .overlay(Circle().stroke(selected ? Fotowork.Palette.primary : Fotowork.Palette.borderStrong, lineWidth: selected ? 3 : 1))
+                Text(option.label).font(.caption).fontWeight(.semibold).foregroundStyle(Fotowork.Palette.textPrimary)
             }
         }
         .buttonStyle(.plain)
@@ -212,71 +193,76 @@ public struct EditView: View {
     private func swatchRGB(_ option: BackgroundOption) -> (Double, Double, Double)? {
         switch option {
         case .white: (1, 1, 1)
-        case .blue: (0.227, 0.431, 0.647)
-        case .gray: (0.788, 0.804, 0.839)
+        case .blue: (0.29, 0.525, 0.851)
+        case .gray: (0.788, 0.804, 0.831)
         case .original: nil
         }
     }
 
+    private func outfitCell(_ option: OutfitOption) -> some View {
+        let selected = model.settings.outfit == option
+        return Button { model.settings.outfit = option } label: {
+            VStack(spacing: 6) {
+                Image(systemName: "person.fill")
+                    .font(.title2)
+                    .foregroundStyle(Fotowork.Palette.textSecondary)
+                Text(option == .aodai ? "Áo dài" : option.label)
+                    .font(.caption).fontWeight(.semibold)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 84)
+            .fotoCard(16)
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fotowork.Palette.primary, lineWidth: selected ? 2 : 0))
+            .overlay(alignment: .topTrailing) {
+                if option == .aodai {
+                    Text("PRO").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 1)
+                        .background(Fotowork.Palette.pro, in: .rect(cornerRadius: 8))
+                        .padding(6)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
     private var lightControls: some View {
         VStack(alignment: .leading, spacing: 18) {
-            sliderRow(title: "Độ sáng", value: Binding(
-                get: { model.settings.brightness },
-                set: { model.settings.brightness = $0 }
-            ), range: -0.3...0.3)
-            sliderRow(title: "Tương phản", value: Binding(
-                get: { model.settings.contrast },
-                set: { model.settings.contrast = $0 }
-            ), range: 0.8...1.2)
+            sliderRow(title: "Độ sáng", value: Binding(get: { model.settings.brightness }, set: { model.settings.brightness = $0 }), range: -0.3...0.3)
+            sliderRow(title: "Tương phản", value: Binding(get: { model.settings.contrast }, set: { model.settings.contrast = $0 }), range: 0.8...1.2)
         }
+        .padding(16)
+        .fotoCard()
     }
 
     private var cropControls: some View {
         VStack(alignment: .leading, spacing: 18) {
-            sliderRow(title: "Thu phóng", value: Binding(
-                get: { model.settings.zoom },
-                set: { model.settings.zoom = $0 }
-            ), range: 1.0...1.6)
-            sliderRow(title: "Dời dọc", value: Binding(
-                get: { model.settings.offsetY },
-                set: { model.settings.offsetY = $0 }
-            ), range: -0.2...0.2)
+            sliderRow(title: "Thu phóng", value: Binding(get: { model.settings.zoom }, set: { model.settings.zoom = $0 }), range: 1.0...1.6)
+            sliderRow(title: "Dời dọc", value: Binding(get: { model.settings.offsetY }, set: { model.settings.offsetY = $0 }), range: -0.2...0.2)
         }
+        .padding(16)
+        .fotoCard()
     }
 
     private func sliderRow(title: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.subheadline).foregroundStyle(Fotowork.Palette.textSecondary)
-            Slider(value: value, in: range).tint(Fotowork.Palette.link)
+            Slider(value: value, in: range).tint(Fotowork.Palette.primary)
         }
     }
 }
 
-// MARK: - Small components
-
-private struct OutfitChip: View {
-    let label: String
-    let selected: Bool
-    let action: () -> Void
-
+struct ProgressBar: View {
+    let value: Double
     var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(selected ? .white : Fotowork.Palette.textSecondary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .glassEffect(selected ? .regular.tint(Fotowork.Palette.heroMid).interactive() : .regular.interactive(), in: .capsule)
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(Fotowork.Palette.track)
+                Capsule().fill(Fotowork.Palette.success)
+                    .frame(width: max(0, min(1, value)) * geo.size.width)
+            }
         }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Simple wrapping row for the outfit chips.
-private struct FlowChips<Content: View>: View {
-    @ViewBuilder let content: Content
-    var body: some View {
-        HStack(spacing: 8) { content }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 6)
     }
 }

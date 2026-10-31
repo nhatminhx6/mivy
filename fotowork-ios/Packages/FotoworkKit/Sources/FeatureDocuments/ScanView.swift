@@ -35,7 +35,7 @@ struct ScanView: View {
                     if !pages.isEmpty {
                         Text("\(pages.count) trang")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Fotowork.Palette.textPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 10)], spacing: 10) {
                             ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
@@ -53,6 +53,7 @@ struct ScanView: View {
         }
         .navigationTitle("Scan tài liệu")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Fotowork.Palette.background, for: .navigationBar)
         .onChange(of: pickerItems) { _, items in Task { await loadPicked(items) } }
         .sheet(isPresented: $showScanner) {
             DocumentScanner { scanned in
@@ -92,10 +93,10 @@ private struct DocActionTile: View {
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: icon).font(.title2).foregroundStyle(tint)
-            Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.white)
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(Fotowork.Palette.textPrimary)
         }
         .frame(maxWidth: .infinity, minHeight: 92)
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
+        .fotoCard(18)
     }
 }
 

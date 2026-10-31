@@ -13,33 +13,38 @@ public struct CaptureView: View {
         _model = State(initialValue: CaptureViewModel(target: target))
     }
 
+    private let ctrlFill = Color.white.opacity(0.16)
+    private let ctrlStroke = Color.white.opacity(0.32)
+
     public var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Fotowork.Palette.cameraBg.ignoresSafeArea()
 
             if model.cameraAvailable {
-                CameraPreview(session: model.session)
-                    .ignoresSafeArea()
-                FaceGuideOverlay()
-                    .allowsHitTesting(false)
-            } else {
-                FotoworkBackground()
-                    .ignoresSafeArea()
+                CameraPreview(session: model.session).ignoresSafeArea()
+                FaceGuideOverlay().allowsHitTesting(false)
             }
 
             VStack(spacing: 0) {
                 topBar
                 Spacer(minLength: 0)
                 if model.cameraAvailable {
-                    checksPanel
-                    controls
+                    checksRow
+                    Text("Giữ yên, tự chụp khi đạt")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.6), radius: 6)
+                        .padding(.top, 10)
+                        .padding(.bottom, 14)
+                    controlBar
                 } else {
                     fallbackCard
                     Spacer(minLength: 0)
+                    controlBar
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 18)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
 
             if model.capturedImage != nil {
                 reviewOverlay
@@ -49,14 +54,115 @@ public struct CaptureView: View {
         .toolbar(.hidden, for: .tabBar)
         .task { await model.onAppear() }
         .onDisappear { model.onDisappear() }
-        .onChange(of: pickedItem) { _, item in
-            Task { await model.analyzePicked(item) }
-        }
+        .onChange(of: pickedItem) { _, item in Task { await model.analyzePicked(item) } }
         .fullScreenCover(isPresented: $showEdit) {
             if let image = model.capturedImage {
                 EditView(target: model.target, image: image)
             }
         }
+    }
+
+    // MARK: Top bar
+
+    private var topBar: some View {
+        HStack(spacing: 10) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(ctrlFill, in: .circle)
+                    .overlay(Circle().stroke(ctrlStroke))
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+            VStack(spacing: 1) {
+                Text(model.target.title).font(.subheadline.weight(.bold)).foregroundStyle(.white)
+                Text("\(model.target.sizeText) · nền \(model.target.background)")
+                    .font(.caption2).foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 48)
+            .background(ctrlFill, in: .capsule)
+            .overlay(Capsule().stroke(ctrlStroke))
+            Spacer()
+
+            Button {} label: {
+                Image(systemName: "bolt.fill")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(ctrlFill, in: .circle)
+                    .overlay(Circle().stroke(ctrlStroke))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: Checks
+
+    private var checksRow: some View {
+        HStack(spacing: 8) {
+            ForEach(model.result.checks, id: \.label) { check in
+                HStack(spacing: 6) {
+                    Image(systemName: check.ok ? "checkmark" : "exclamationmark.triangle.fill")
+                        .font(.caption.bold())
+                        .foregroundStyle(check.ok ? Fotowork.Palette.successBright : Fotowork.Palette.warningSoft)
+                    Text(check.label).font(.caption.weight(.semibold)).foregroundStyle(.white)
+                }
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background(ctrlFill, in: .capsule)
+                .overlay(Capsule().stroke(ctrlStroke))
+            }
+        }
+    }
+
+    // MARK: Control bar
+
+    private var controlBar: some View {
+        HStack {
+            PhotosPicker(selection: $pickedItem, matching: .images) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(ctrlFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(ctrlStroke))
+            }
+
+            Spacer()
+
+            Button { model.shutter() } label: {
+                ZStack {
+                    Circle().stroke(.white.opacity(0.95), lineWidth: 4).frame(width: 80, height: 80)
+                    Circle().fill(.white).frame(width: 62, height: 62)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.cameraAvailable)
+            .opacity(model.cameraAvailable ? 1 : 0.4)
+
+            Spacer()
+
+            Button { model.switchCamera() } label: {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(ctrlFill, in: .circle)
+                    .overlay(Circle().stroke(ctrlStroke))
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.cameraAvailable)
+            .opacity(model.cameraAvailable ? 1 : 0.4)
+        }
+        .padding(.horizontal, 22)
+        .frame(height: 104)
+        .background(ctrlFill, in: RoundedRectangle(cornerRadius: 40, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 40, style: .continuous).stroke(ctrlStroke))
     }
 
     // MARK: Fallback (no camera)
@@ -65,176 +171,54 @@ public struct CaptureView: View {
         VStack(spacing: 16) {
             Image(systemName: "photo.on.rectangle.angled")
                 .font(.system(size: 40))
-                .foregroundStyle(Fotowork.Palette.link)
+                .foregroundStyle(.white)
                 .frame(width: 78, height: 78)
-                .glassEffect(.regular, in: .circle)
-
-            VStack(spacing: 6) {
-                Text(model.permissionDenied ? "Chưa cấp quyền camera" : "Camera không khả dụng ở đây")
-                    .font(.title3.bold())
-                    .foregroundStyle(.white)
-                Text(model.permissionDenied
-                     ? "Bật quyền camera trong Cài đặt để chụp trực tiếp, hoặc chọn một ảnh có sẵn."
-                     : "Trên máy thật sẽ mở camera. Giờ anh chọn một ảnh có sẵn để thử các bước.")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+                .background(ctrlFill, in: .circle)
+                .overlay(Circle().stroke(ctrlStroke))
+            Text(model.permissionDenied ? "Chưa cấp quyền camera" : "Camera không khả dụng ở đây")
+                .font(.title3.bold())
+                .foregroundStyle(.white)
+            Text(model.permissionDenied
+                 ? "Bật quyền camera trong Cài đặt, hoặc chọn một ảnh có sẵn."
+                 : "Trên máy thật sẽ mở camera. Giờ anh chọn một ảnh có sẵn để thử các bước.")
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.8))
+                .fixedSize(horizontal: false, vertical: true)
 
             PhotosPicker(selection: $pickedItem, matching: .images) {
                 HStack(spacing: 8) {
                     Image(systemName: "photo.on.rectangle")
-                    Text("Chọn ảnh có sẵn").fontWeight(.semibold)
+                    Text("Chọn ảnh có sẵn").fontWeight(.bold)
                 }
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(Fotowork.Palette.primary)
                 .padding(.horizontal, 24)
-                .padding(.vertical, 15)
-                .background(Fotowork.heroGradient, in: .capsule)
-                .shadow(color: Fotowork.Palette.heroStart.opacity(0.5), radius: 14, y: 6)
+                .frame(height: 52)
+                .background(.white, in: .capsule)
             }
             .padding(.top, 4)
         }
         .padding(28)
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: Fotowork.Radius.card))
-    }
-
-    // MARK: Top bar
-
-    private var topBar: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 42, height: 42)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            VStack(spacing: 2) {
-                Text(model.target.title)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text("\(model.target.sizeText) · nền \(model.target.background)")
-                    .font(.caption)
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
-            }
-
-            Spacer()
-
-            Color.clear.frame(width: 42, height: 42)
-        }
-        .padding(.top, 8)
-    }
-
-    // MARK: Checks
-
-    private var checksPanel: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("\(model.result.passedCount)/\(model.result.total) tiêu chí")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                Spacer()
-                Label("Tự chụp khi đạt", systemImage: "wand.and.stars")
-                    .font(.caption)
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
-            }
-            .padding(.horizontal, 4)
-
-            FlowRow(spacing: 8) {
-                ForEach(model.result.checks, id: \.label) { check in
-                    CheckChip(label: check.label, ok: check.ok)
-                }
-            }
-        }
-        .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 22))
-        .padding(.bottom, 16)
-    }
-
-    // MARK: Bottom controls
-
-    private var controls: some View {
-        HStack {
-            PhotosPicker(selection: $pickedItem, matching: .images) {
-                VStack(spacing: 5) {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .frame(width: 52, height: 52)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                    Text("Ảnh có sẵn").font(.caption2).foregroundStyle(Fotowork.Palette.textSecondary)
-                }
-            }
-
-            Spacer()
-
-            Button {
-                model.shutter()
-            } label: {
-                ZStack {
-                    Circle().stroke(.white.opacity(0.9), lineWidth: 4).frame(width: 78, height: 78)
-                    Circle().fill(.white).frame(width: 64, height: 64)
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(!model.cameraAvailable)
-            .opacity(model.cameraAvailable ? 1 : 0.4)
-
-            Spacer()
-
-            Button {
-                model.switchCamera()
-            } label: {
-                VStack(spacing: 5) {
-                    Image(systemName: "arrow.triangle.2.circlepath.camera")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .frame(width: 52, height: 52)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                    Text("Đổi").font(.caption2).foregroundStyle(Fotowork.Palette.textSecondary)
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(!model.cameraAvailable)
-            .opacity(model.cameraAvailable ? 1 : 0.4)
-        }
+        .background(ctrlFill, in: RoundedRectangle(cornerRadius: Fotowork.Radius.hero, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Fotowork.Radius.hero, style: .continuous).stroke(ctrlStroke))
     }
 
     // MARK: Review
 
     private var reviewOverlay: some View {
         ZStack {
-            FotoworkBackground()
+            Fotowork.Palette.cameraBg.ignoresSafeArea()
             VStack(spacing: 18) {
-                Text("Xem lại ảnh")
-                    .font(.title3.bold())
-                    .foregroundStyle(.white)
-
+                Text("Xem lại ảnh").font(.title3.bold()).foregroundStyle(.white)
                 if let image = model.capturedImage {
                     Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
+                        .resizable().scaledToFill()
                         .frame(width: 240, height: 240 / model.target.aspect)
                         .clipShape(.rect(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.2)))
                 }
-
-                HStack(spacing: 10) {
-                    ForEach(model.result.checks, id: \.label) { check in
-                        CheckChip(label: check.label, ok: check.ok)
-                    }
-                }
-                .font(.caption2)
-
                 HStack(spacing: 14) {
                     Button {
                         pickedItem = nil
@@ -243,45 +227,29 @@ public struct CaptureView: View {
                         Text("Chụp lại")
                             .font(.headline)
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 24).padding(.vertical, 14)
-                            .glassEffect(.regular.interactive(), in: .capsule)
+                            .padding(.horizontal, 24).frame(height: 52)
+                            .background(ctrlFill, in: .capsule)
+                            .overlay(Capsule().stroke(ctrlStroke))
                     }
                     .buttonStyle(.plain)
 
-                    PillButton("Dùng ảnh này", systemImage: "arrow.right") {
-                        showEdit = true
+                    Button { showEdit = true } label: {
+                        HStack(spacing: 8) { Text("Dùng ảnh này").fontWeight(.bold); Image(systemName: "arrow.right") }
+                            .font(.headline)
+                            .foregroundStyle(Fotowork.Palette.primary)
+                            .padding(.horizontal, 24).frame(height: 52)
+                            .background(.white, in: .capsule)
                     }
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 6)
             }
             .padding(28)
         }
-        .ignoresSafeArea()
-        .transition(.opacity)
     }
 }
 
-// MARK: - Small components
-
-private struct CheckChip: View {
-    let label: String
-    let ok: Bool
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: ok ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(ok ? Fotowork.Palette.green : Fotowork.Palette.textSecondary)
-            Text(label)
-                .foregroundStyle(.white)
-        }
-        .font(.footnote.weight(.medium))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .glassEffect(.regular, in: .capsule)
-    }
-}
-
-/// Oval head guide with crown and chin markers, sized relative to the oval.
+/// Oval head guide with crown and chin markers (over the live camera).
 private struct FaceGuideOverlay: View {
     var body: some View {
         GeometryReader { geo in
@@ -291,7 +259,7 @@ private struct FaceGuideOverlay: View {
             let ovalH = ovalW * 1.3
             let cx = w / 2
             let cy = h * 0.42
-            let lineW = ovalW * 1.22
+            let lineW = ovalW * 1.3
 
             ZStack {
                 Ellipse()
@@ -299,64 +267,23 @@ private struct FaceGuideOverlay: View {
                     .frame(width: ovalW, height: ovalH)
                     .position(x: cx, y: cy)
 
-                marker(y: cy - ovalH / 2, label: "đỉnh đầu", width: lineW, cx: cx)
-                marker(y: cy + ovalH / 2, label: "cằm", width: lineW, cx: cx)
+                marker(y: cy - ovalH / 2, label: "Đỉnh đầu", width: lineW, cx: cx)
+                marker(y: cy + ovalH / 2, label: "Cằm", width: lineW, cx: cx)
             }
         }
     }
 
     private func marker(y: CGFloat, label: String, width: CGFloat, cx: CGFloat) -> some View {
-        ZStack(alignment: .topLeading) {
-            Rectangle()
-                .fill(.white.opacity(0.4))
-                .frame(width: width, height: 1)
+        ZStack {
+            Rectangle().fill(.white.opacity(0.45)).frame(width: width, height: 1.5)
             Text(label)
-                .font(.caption2)
-                .foregroundStyle(.white.opacity(0.8))
-                .offset(y: -15)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10).padding(.vertical, 4)
+                .background(.white.opacity(0.16), in: .capsule)
+                .position(x: cx + width / 2 - 34, y: y - 16)
         }
-        .frame(width: width, alignment: .leading)
+        .frame(width: width, height: 1)
         .position(x: cx, y: y)
-    }
-}
-
-/// Minimal wrapping HStack so the four chips wrap to a second line on narrow widths.
-private struct FlowRow: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
-        var rowWidth: CGFloat = 0
-        var rowHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if rowWidth + size.width > maxWidth, rowWidth > 0 {
-                totalHeight += rowHeight + spacing
-                rowWidth = 0
-                rowHeight = 0
-            }
-            rowWidth += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
-        totalHeight += rowHeight
-        return CGSize(width: maxWidth == .infinity ? rowWidth : maxWidth, height: totalHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowHeight: CGFloat = 0
-        for view in subviews {
-            let size = view.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX, x > bounds.minX {
-                x = bounds.minX
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            view.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowHeight = max(rowHeight, size.height)
-        }
     }
 }

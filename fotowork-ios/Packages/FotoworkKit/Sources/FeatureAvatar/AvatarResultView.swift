@@ -12,7 +12,7 @@ struct AvatarResultView: View {
             VStack(spacing: 22) {
                 Text("Avatar của anh")
                     .font(.title3.bold())
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
 
                 Image(uiImage: image)
                     .resizable()
@@ -26,9 +26,9 @@ struct AvatarResultView: View {
                     } label: {
                         Text("Tạo lại")
                             .font(.headline)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 24).padding(.vertical, 14)
-                            .glassEffect(.regular.interactive(), in: .capsule)
+                            .foregroundStyle(Fotowork.Palette.primary)
+                            .padding(.horizontal, 24).frame(height: 52)
+                            .fotoCardCapsule()
                     }
                     .buttonStyle(.plain)
 

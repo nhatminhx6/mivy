@@ -21,8 +21,8 @@ struct RootView: View {
                 SettingsHomeView()
             }
         }
-        .tint(Fotowork.Palette.link)
-        .preferredColorScheme(.dark)
+        .tint(Fotowork.Palette.primary)
+        .preferredColorScheme(.light)
     }
 }
 

@@ -20,7 +20,7 @@ Nằm trong repo `mivy` nhưng **độc lập hoàn toàn với web/ và back-en
 ## Stack & kiến trúc
 - Xcode 27, **Swift 6.2** (strict concurrency `complete`), deployment target **iOS 26**.
 - SwiftUI thuần · Observation (`@Observable`) · async/await + actors. **Không dùng Combine** cho state mới.
-- Liquid Glass chính thức của iOS 26 (`glassEffect`, `GlassEffectContainer`, tab bar mặc định) — không tự giả lập bằng blur.
+- **Theme SÁNG** (design duyệt 2026-10-31): KHÔNG dùng Liquid Glass tối nữa. Thẻ trắng phẳng viền mảnh + bóng nhẹ qua modifier `.fotoCard()/.fotoCardCircle()/.fotoCardCapsule()` trong FotoworkDesign. `glassEffect` chỉ còn (nếu cần) cho bề mặt tối.
 - Modular bằng **một local Swift Package `Packages/FotoworkKit`**, mỗi module là 1 target:
   - `FotoworkCore` — models, PresetStore (đọc presets.json), DI qua Environment (`\.presetStore`).
   - `FotoworkImaging` — xử lý ảnh on-device (Vision/Core Image). Protocol-based để sau cắm Core ML (BiRefNet/MODNet) không đổi UI.
@@ -46,11 +46,15 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
 - Validate nhanh model + preset trên host: `cd Packages/FotoworkKit && swift build --target FotoworkCore`.
 - Test (Swift Testing): `swift test` trong `Packages/FotoworkKit`.
 
-## Design tokens (iOS 26 Liquid Glass)
-- Nền tối `#07080F` + vệt màu mờ lớn (xanh `#2B72C2`, tím `#6B3FD6`, teal `#1E8F9E`) sau lớp kính.
-- Hero & CTA: gradient `#2B72C2 → #3D56D6 → #4A3BBE`, bo lớn, bóng xanh.
-- Nhấn theo loại: lime `#C8F051`, green `#3DDC84`, cam `#FFA53B`, đỏ `#FF5C5C/#FF8A8A`, tím `#B57CFF`, vàng `#F5D547`, link `#8CC4FF`.
-- Card bo 26–30pt, nút viên tròn, chữ trắng, phụ `#C2C5D8`. Font hệ thống (SF Pro).
+## Design tokens (light theme — nguồn: canvas design claude.ai/artifact/4NBGzixMCngFJKprkTNVpo)
+- Nền `#F4F6FB`, chữ chính `#121726`, phụ `#5B6579`, mờ `#8A92A6`.
+- Thẻ: trắng `#FFFFFF`, viền `#E4E8F1`, bóng `0 1px 2px rgba(18,23,38,.05)`; bar/sheet bóng `0 8px 24px rgba(18,23,38,.10)`.
+- Brand navy `#1E3A8A` (dark `#15306F`), tint `#EAF0FB`. Hero = khối navy đặc bo 24, nút "Bắt đầu" trắng đè mép.
+- CTA: navy đặc bo 16, chữ trắng, bóng `rgba(30,58,138,.28)`.
+- Status: success `#1F7A4D` (check `#46C27C`), warning `#B45309`, PRO `#C2710C`.
+- Màn **Chụp** là bề mặt TỐI `#2A313E`, control translucent trắng (`rgba(255,255,255,.16)` + viền `.32`).
+- Font: hệ thống (SF Pro) tạm; design gốc dùng **Be Vietnam Pro** (bundle sau nếu cần).
+- Tab bar: giữ native TabView (light + tint navy) để màn con push ẩn bar đúng.
 
 ## Lộ trình màn hình (làm lần lượt, mỗi màn xong là build + chạy sim + báo anh)
 Trang chủ ✅ → Chụp ✅ → Chỉnh ✅ → Xuất ✅ → Giấy tờ ✅ (Scan→PDF, CCCD→A4, Nén, Ký tên PencilKit, Bộ hồ sơ SwiftData) → Avatar ✅ (tab + template nền code + consent + tách nền ghép). **v1 đủ các màn chính.**
