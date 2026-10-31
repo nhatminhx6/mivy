@@ -13,7 +13,9 @@ import FotoworkImaging
 /// Returns `nil` when no template asset is available yet (caller keeps the photo
 /// unchanged and shows a "coming soon" note) — we never draw a fake garment.
 enum OutfitCompositor {
-    static func apply(_ photo: UIImage, outfit: OutfitOption) -> UIImage? {
+    /// `collarTopRatio`: where the garment's top (collar line) sits, as a fraction
+    /// of photo height. On device you can derive it from the chin position.
+    static func apply(_ photo: UIImage, outfit: OutfitOption, collarTopRatio: CGFloat = 0.46) -> UIImage? {
         guard let name = outfit.templateAsset, let garment = loadTemplate(name) else { return nil }
 
         let size = photo.size
@@ -24,8 +26,8 @@ enum OutfitCompositor {
             photo.draw(at: .zero)
             let gw = size.width
             let gh = gw * (garment.size.height / max(garment.size.width, 1))
-            let rect = CGRect(x: 0, y: size.height - gh, width: gw, height: gh)
-            garment.draw(in: rect)
+            let top = size.height * collarTopRatio
+            garment.draw(in: CGRect(x: 0, y: top, width: gw, height: gh))
         }
     }
 

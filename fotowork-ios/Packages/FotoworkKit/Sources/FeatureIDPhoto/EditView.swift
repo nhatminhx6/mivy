@@ -10,7 +10,7 @@ public struct EditView: View {
     @State private var showExport = false
 
     enum EditTab: String, CaseIterable, Identifiable {
-        case background = "Nền"
+        case background = "Nền & áo"
         case light = "Ánh sáng"
         case crop = "Cắt khung"
         var id: String { rawValue }
@@ -156,12 +156,48 @@ public struct EditView: View {
             HStack(spacing: 16) {
                 ForEach(BackgroundOption.allCases) { option in swatch(option) }
             }
-            Text("Nền trắng/xanh/xám chuẩn ảnh thẻ. Ghép trang phục sẽ thêm sau.")
-                .font(.bvp(.caption))
-                .foregroundStyle(Fotowork.Palette.textSecondary)
-                .padding(.top, 2)
+
+            Text("Trang phục").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
+            HStack(spacing: 12) {
+                outfitCell(.keep)
+                outfitCell(.vest)
+            }
+            if model.settings.outfit != .keep && model.outfitMissing {
+                Text("Mẫu áo đang cập nhật.")
+                    .font(.bvp(.caption))
+                    .foregroundStyle(Fotowork.Palette.warning)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func outfitCell(_ option: OutfitOption) -> some View {
+        let selected = model.settings.outfit == option
+        return Button { model.settings.outfit = option } label: {
+            VStack(spacing: 6) {
+                Group {
+                    if option == .keep {
+                        Image(systemName: "person.fill")
+                            .font(.bvp(.title2))
+                            .foregroundStyle(Fotowork.Palette.textSecondary)
+                    } else if let name = option.templateAsset, let img = UIImage(named: name) {
+                        Image(uiImage: img).resizable().scaledToFit()
+                    } else {
+                        Image(systemName: "tshirt").font(.bvp(.title2)).foregroundStyle(Fotowork.Palette.textSecondary)
+                    }
+                }
+                .frame(height: 50)
+                Text(option.label)
+                    .font(.bvp(.caption, .semibold))
+                    .foregroundStyle(Fotowork.Palette.textPrimary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 92)
+            .fotoCard(16)
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fotowork.Palette.primary, lineWidth: selected ? 2 : 0))
+        }
+        .buttonStyle(.plain)
     }
 
     private func swatch(_ option: BackgroundOption) -> some View {
