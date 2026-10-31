@@ -1,4 +1,6 @@
 import SwiftUI
+import SwiftData
+import FeatureDocuments
 
 @main
 struct FotoworkApp: App {
@@ -6,5 +8,6 @@ struct FotoworkApp: App {
         WindowGroup {
             RootView()
         }
+        .modelContainer(for: DossierItem.self)
     }
 }
