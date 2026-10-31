@@ -5,6 +5,7 @@ import { fontFamilyById, contactLine } from './brand-presets';
 import { resolveStorySource, stripLeadingEnumeration } from './balanced-pages';
 import { normalizeCanvasContext } from './poster-font';
 import { qcBox } from './qc-capture';
+import { getSeason } from './season-engine';
 
 const DEFAULT_FONT = '"Be Vietnam Pro", sans-serif';
 
@@ -25,8 +26,12 @@ export function drawCatalogPoster(canvas: HTMLCanvasElement, state: MarketingSta
 
   // Brand kit: dùng CẢ palette + font đôi.
   const bk = state.brandKit;
-  const ACCENT = bk?.colorAccent || t.accent;
-  const SECONDARY = bk?.colorSecondary || t.accent;
+  // Dịp sale nhuộm tông màu nhấn (CTA/số/badge/offer) để ra chất sự kiện,
+  // dù vẫn giữ nền + brand tên shop. Dịp thắng accent template/brand.
+  const season = getSeason(state.season);
+  const seasonOn = !!season && season.id !== 'none' && !!season.c1;
+  const ACCENT = seasonOn ? season!.c1 : (bk?.colorAccent || t.accent);
+  const SECONDARY = seasonOn ? season!.c2 : (bk?.colorSecondary || t.accent);
   const HEAD = state.headingFontId ? fontFamilyById(state.headingFontId) : bk ? fontFamilyById(bk.fontHeadingId) : DEFAULT_FONT;
   const BODY = state.bodyFontId ? fontFamilyById(state.bodyFontId) : state.headingFontId ? fontFamilyById(state.headingFontId) : bk ? fontFamilyById(bk.fontBodyId) : DEFAULT_FONT;
   const onAccent = luminance(ACCENT) > 0.6 ? '#141414' : '#ffffff';

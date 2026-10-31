@@ -4,8 +4,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
+import { AsyncButton } from '@/components/AsyncButton';
 
-export function useLightbox(items: { label: string }[], render: (i: number) => Promise<Blob>, onDownload: (i: number) => void) {
+export function useLightbox(items: { label: string }[], render: (i: number) => Promise<Blob>, onDownload: (i: number) => unknown) {
   const [view, setView] = useState<{ idx: number; url: string } | null>(null);
   const [loading, setLoading] = useState<number | null>(null);
   const idxRef = useRef(0);
@@ -49,7 +50,7 @@ export function useLightbox(items: { label: string }[], render: (i: number) => P
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => open(idxRef.current - 1)} aria-label="Ảnh trước" className="mv-btn mv-btn-ghost !p-2"><ChevronLeft className="w-4 h-4" /></button>
             <button type="button" onClick={() => open(idxRef.current + 1)} aria-label="Ảnh sau" className="mv-btn mv-btn-ghost !p-2"><ChevronRight className="w-4 h-4" /></button>
-            <button type="button" onClick={() => onDownload(view.idx)} className="mv-btn mv-btn-primary !px-3 !py-2 !text-xs"><Download className="w-3.5 h-3.5" /> Tải ảnh này</button>
+            <AsyncButton onClick={() => onDownload(view.idx)} loadingText="Đang tải…" className="mv-btn mv-btn-primary !px-3 !py-2 !text-xs disabled:opacity-70"><Download className="w-3.5 h-3.5" /> Tải ảnh này</AsyncButton>
           </div>
         </div>
         <button type="button" onClick={close} aria-label="Đóng" className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white text-slate-900 flex items-center justify-center shadow-lg"><X className="w-4 h-4" /></button>

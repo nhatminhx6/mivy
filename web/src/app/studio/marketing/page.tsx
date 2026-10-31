@@ -11,8 +11,8 @@ import { balancedPages, resolveStorySource, clampStoryPageInState, normalizePoin
 import { IndustryForm } from '@/components/marketing/IndustryForm';
 import { makeIndustryCopy } from '@/lib/industry-concepts';
 import { STICKER_PRESETS, getPreset } from '@/lib/sticker-engine';
-import { SEASON_PRESETS } from '@/lib/season-engine';
-import { SEASON_VARIANTS } from '@/lib/season-decor';
+import { SEASON_PRESETS, getSeason } from '@/lib/season-engine';
+import { SEASON_MOTIFS, SEASON_VARIANTS, motifIconSvg, seasonMotifOf } from '@/lib/season-decor';
 import { FONT_PRESETS } from '@/lib/brand-presets';
 import { StickerCorner } from '@/types';
 import { CATEGORIES } from '@/lib/template-catalog';
@@ -20,19 +20,12 @@ import { CATEGORY_SAMPLES } from '@/lib/category-samples';
 import { loadBrand } from '@/lib/brand-presets';
 import { DraftController } from '@/lib/draft-controller';
 import { PageHeader } from '@/components/PageHeader';
-import { COPY_TONES, suggestPosterCopy, CopyTone } from '@/lib/copy-library';
 import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
 import { AD_LAYOUTS, AD_BACKGROUNDS, AdContent } from '@/lib/ad-skins';
 import { buildAdTemplate, AD_SKIN_CSS, AD_SIZES } from '@/lib/ad-poster';
+import { AsyncButton } from '@/components/AsyncButton';
 
 // skin groups cho băng chọn phong cách
-// Map ngành (categoryId) -> "ngành copy" của kho gợi ý tiêu đề (tự suy, khỏi hỏi lại)
-const CAT_TO_COPY: Record<string, string> = {
-  food: 'do-an', beauty: 'spa', technology: 'dien-tu', property: 'noi-that',
-  retail: 'thoi-trang', personal: 'phu-kien',
-};
-const copyIndOf = (catId: string) => CAT_TO_COPY[catId] || 'chung';
-
 const SKIN_GROUPS = Array.from(new Set(AD_LAYOUTS.map((s) => s.group)));
 const BG_GROUPS = Array.from(new Set(AD_BACKGROUNDS.filter((b) => b.id !== 'none').map((b) => b.group)));
 
@@ -84,8 +77,6 @@ export default function MarketingStudioPage() {
   const [cuttingIdx, setCuttingIdx] = useState<number | null>(null); // đang tách nền ảnh sản phẩm thứ idx
   const [noiDungOpen, setNoiDungOpen] = useState(true); // thu/mở khối Nội dung
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [copyTone, setCopyTone] = useState<CopyTone>('sale');
-  const [copyIdx, setCopyIdx] = useState(0);
   const [htmlStyleId, setHtmlStyleId] = useState<string>('minimal_light'); // luôn render bằng skin (đã bỏ canvas cũ)
   const [htmlSizeId, setHtmlSizeId] = useState<string>('feed45'); // khổ xuất: 4:5 / 1:1 / 9:16 / 16:9
   const [htmlBgId, setHtmlBgId] = useState<string>('none'); // màu nền áp lên bố cục (tách riêng)
@@ -167,18 +158,6 @@ export default function MarketingStudioPage() {
   }, []);
 
   // Save state on change
-  // Gợi ý copy cho poster chính (launch) — offline, 0 AI
-  const applySuggestion = (industry: string, tone: CopyTone, idx: number) => {
-    const s = suggestPosterCopy(industry, tone, idx);
-    const sel = state.selected;
-    saveState({ ...state, copies: { ...state.copies, [sel]: { ...state.copies[sel], headline: s.headline, subline: s.subline, cta: s.cta } } });
-  };
-  const suggestPoster = () => {
-    const next = copyIdx + 1; setCopyIdx(next);
-    const s = getController().getState();
-    applySuggestion(copyIndOf(s.categoryId || (s.industry === 'general' ? 'retail' : s.industry)), copyTone, next);
-  };
-
   const saveState = (newState: MarketingState) => {
     getController().saveState(clampStoryPageInState(newState));
   };
@@ -241,6 +220,8 @@ export default function MarketingStudioPage() {
   const setStickerCorner = (corner: StickerCorner) => saveState({ ...state, sticker: { preset: state.sticker?.preset || 'none', text: state.sticker?.text || '', corner } });
   const setSeason = (seasonId: string) => saveState({ ...state, season: seasonId });
   const setSeasonStyle = (v: string) => saveState({ ...state, seasonStyle: v });
+  const setDecor = (p: Pick<MarketingState, 'seasonC1' | 'seasonC2' | 'seasonMotif'>) => saveState({ ...state, ...p });
+  const decorOpts = { variant: state.seasonStyle, c1: state.seasonC1, c2: state.seasonC2, motif: state.seasonMotif };
   const setFont = (id: string) => saveState({ ...state, headingFontId: id === 'default' ? undefined : id, bodyFontId: id === 'default' ? undefined : id });
   const setBorder = (v: number) => saveState({ ...state, borderWidth: v });
   const setRadius = (v: number) => saveState({ ...state, borderRadius: v });
@@ -458,7 +439,7 @@ export default function MarketingStudioPage() {
   // Trigger render on visual state changes (step: vẽ lại khi canvas vừa mount ở bước 3)
   useEffect(() => {
     renderAllCanvases();
-  }, [step, state.selected, state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit, state.sticker, state.season, state.headingFontId, state.bodyFontId, state.borderWidth, state.borderRadius, state.borderColor]);
+  }, [step, state.selected, state.conceptId, state.industryFields, state.mainImageFit, state.mainImageZoom, state.mainImageX, state.mainImageY, state.backgroundImage, state.backgroundDim, state.backgroundBlur, state.backgroundX, state.backgroundY, state.templateId, state.categoryId, state.brand, state.offer, state.details, state.facts, state.storyPerPage, state.theme, state.aspect, state.copies, state.image, state.cutout, state.bgUrl, state.industry, state.layoutMode, state.storyPage, state.outputLanguage, state.brandKit, state.sticker, state.season, state.seasonStyle, state.seasonC1, state.seasonC2, state.seasonMotif, state.headingFontId, state.bodyFontId, state.borderWidth, state.borderRadius, state.borderColor]);
 
   // Dựng nội dung 100% bằng CODE từ data có sẵn — KHÔNG gọi AI realtime (đúng kiến trúc Mivy).
   // Trả về state đã có copies + nền mặc định. Dùng chung cho nút "Tiếp" (bước 1) và "Tạo lại" (bước 2).
@@ -754,7 +735,7 @@ export default function MarketingStudioPage() {
     bgY: state.backgroundY,
   };
   const htmlFrameOpts = { borderWidth: state.borderWidth, borderColor: state.borderColor, borderRadius: state.borderRadius };
-  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, state.seasonStyle, htmlFrameOpts, htmlSizeId, htmlBgId) : null;
+  const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, decorOpts, htmlFrameOpts, htmlSizeId, htmlBgId) : null;
   const isProductLayout = AD_LAYOUTS.find((s) => s.id === htmlStyleId)?.layout === 'product';
   const styleList = styleGroup === 'Tất cả' ? AD_LAYOUTS : AD_LAYOUTS.filter((s) => s.group === styleGroup);
   const bgList = AD_BACKGROUNDS.filter((b) => b.id === 'none' || b.group === bgGroup);
@@ -802,7 +783,7 @@ export default function MarketingStudioPage() {
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1">
             {styleList.map((s) => {
-              const tpl = buildAdTemplate(adContent, s.id, state.season, state.seasonStyle)!;
+              const tpl = buildAdTemplate(adContent, s.id, state.season, decorOpts)!;
               const w = 72; const sc = w / tpl.w;
               return (
                 <button key={s.id} type="button" onClick={() => setHtmlStyleId(s.id)} title={s.name}
@@ -861,14 +842,14 @@ export default function MarketingStudioPage() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
+            <AsyncButton
               onClick={handleDownloadSingle}
-              className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm"
+              loadingText="Đang xuất ảnh…"
+              className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-70"
             >
               <Download className="w-4 h-4" />
               <span>Tải ảnh PNG</span>
-            </button>
+            </AsyncButton>
           </div>
 
           <div className="glass-panel rounded-2xl p-3 border border-white/10 space-y-2.5">
@@ -986,17 +967,6 @@ export default function MarketingStudioPage() {
       {editTab === 'design' && (
       <CollapsibleSection tone="card" title="🎨 Thiết kế & Trang trí">
       <div className="space-y-4 mv-fade">
-        {/* Gợi ý nội dung bắt mắt (offline) cho poster chính */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="mv-label mr-1">Gợi ý tiêu đề:</span>
-          <select value={copyTone} onChange={(e) => { setCopyTone(e.target.value as CopyTone); applySuggestion(copyIndOf(catOf(state)), e.target.value as CopyTone, copyIdx); }} className="mv-chip-select !py-1.5 text-[11px]" title="Tông giọng">
-            {COPY_TONES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-          <button onClick={suggestPoster} className="mv-btn mv-btn-ghost !gap-1 !px-2.5 !py-1.5 !text-[11px] !text-indigo-200 !border-indigo-500/30" title="Gợi ý câu chữ bắt mắt">
-            <Sparkles className="w-3.5 h-3.5" /> Gợi ý
-          </button>
-        </div>
-
         {/* Nhóm điều khiển có nhãn cho dễ tìm */}
         <div className="space-y-2.5 border-t border-white/10 pt-4">
           {/* ===== Nhóm 1: KIỂU (layout + theme) — chỉ cho bản canvas ===== */}
@@ -1131,42 +1101,59 @@ export default function MarketingStudioPage() {
           </div>
 
           {/* ===== Nhóm 4: TRANG TRÍ ===== */}
-          {/* Dịp (2 cấp: chọn dịp → chọn kiểu) */}
-          <div className="flex items-start gap-3 flex-wrap">
-            <span className="mv-label w-24 shrink-0 pt-2">Dịp</span>
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex flex-wrap gap-2">
-                {SEASON_PRESETS.map((s) => {
-                  const active = (state.season || 'none') === s.id;
-                  const isNone = s.id === 'none';
-                  const label = s.label.replace(/^[^\wÀ-ỹ]+\s*/, '') || 'Không';
-                  return (
-                    <button key={s.id} type="button" onClick={() => setSeason(s.id)}
-                      className={`inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150 ${active ? 'text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}
-                      style={active && !isNone
-                        ? { background: `${s.c1}26`, borderColor: s.c1, boxShadow: `0 0 0 1px ${s.c1}66, 0 6px 16px ${s.c1}2e` }
-                        : active && isNone
-                        ? { background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.45)' }
-                        : undefined}>
-                      {isNone
-                        ? <span className={`w-5 h-5 rounded-full grid place-items-center text-[11px] leading-none ${active ? 'bg-white/15 text-white' : 'bg-white/5 text-slate-500'}`}>∅</span>
-                        : <span className="w-5 h-5 rounded-full shrink-0" style={{ background: `linear-gradient(135deg, ${s.c1}, ${s.c2})`, boxShadow: active ? `0 0 0 2px ${s.c1}80` : '0 0 0 1px rgba(255,255,255,0.14)' }} />}
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              {state.season && state.season !== 'none' && (
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] text-slate-500 self-center mr-1">Kiểu:</span>
-                  {SEASON_VARIANTS.map((v) => (
-                    <button key={v.id} type="button" onClick={() => setSeasonStyle(v.id)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${(state.seasonStyle || 'ribbon') === v.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{v.label}</button>
-                  ))}
+          {/* Dịp: chọn dịp (dropdown) → tinh chỉnh kiểu / hình / màu trong 1 khối gọn */}
+          {(() => {
+            const cur = getSeason(state.season);
+            const on = !!cur && cur.id !== 'none';
+            const c1 = state.seasonC1 || cur?.c1 || '#000000', c2 = state.seasonC2 || cur?.c2 || '#ffffff';
+            const motif = state.seasonMotif || seasonMotifOf(state.season);
+            const swatch = (val: string, key: 'seasonC1' | 'seasonC2', title: string) => (
+              <label title={title} className="relative w-8 h-8 rounded-lg cursor-pointer border border-white/20 hover:border-white/50 transition-colors" style={{ background: val }}>
+                <input type="color" value={val} onChange={(e) => setDecor({ [key]: e.target.value })} aria-label={title} data-testid={key === 'seasonC1' ? 'decor-c1' : 'decor-c2'} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </label>
+            );
+            return (
+              <div className="flex items-start gap-3 flex-wrap">
+                <span className="mv-label w-24 shrink-0 pt-3">Dịp</span>
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full shrink-0 border border-white/15" style={{ background: on ? `linear-gradient(135deg, ${c1}, ${c2})` : 'rgba(255,255,255,0.05)' }} />
+                    <select value={state.season || 'none'} onChange={(e) => setSeason(e.target.value)} data-testid="season-select"
+                      title="Trang trí theo dịp" className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold">
+                      {SEASON_PRESETS.map((s) => <option key={s.id} value={s.id}>{s.id === 'none' ? 'Không trang trí' : s.label}</option>)}
+                    </select>
+                    {on && (
+                      <select value={state.seasonStyle || 'corner'} onChange={(e) => setSeasonStyle(e.target.value)} data-testid="season-style"
+                        title="Kiểu trang trí" className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold">
+                        {SEASON_VARIANTS.map((v) => <option key={v.id} value={v.id}>Kiểu: {v.label}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  {on && (
+                    <div className="flex items-center gap-x-5 gap-y-3 flex-wrap" data-testid="decor-custom">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-500 mr-1">Hình</span>
+                        {SEASON_MOTIFS.map((m) => (
+                          <button key={m.id} type="button" title={m.label} aria-label={m.label} data-active={motif === m.id}
+                            onClick={() => setDecor({ seasonMotif: m.id === seasonMotifOf(state.season) ? undefined : m.id })}
+                            className={`w-8 h-8 p-1.5 rounded-lg border transition-colors ${motif === m.id ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 hover:border-white/30'}`}
+                            dangerouslySetInnerHTML={{ __html: motifIconSvg(m.id, c1) }} />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-slate-500 mr-1">Màu</span>
+                        {swatch(c1, 'seasonC1', 'Màu chính')}
+                        {swatch(c2, 'seasonC2', 'Màu phụ')}
+                        {(state.seasonC1 || state.seasonC2) && (
+                          <button type="button" onClick={() => setDecor({ seasonC1: undefined, seasonC2: undefined })} className="text-[11px] text-slate-400 hover:text-white underline ml-1">Màu theo dịp</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            );
+          })()}
 
           {/* Sticker — chỉ cho bản canvas */}
           {!htmlStyleId && (

@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     pollinations_base_url: str = "https://image.pollinations.ai"
     # Token cho provider gen ảnh (Pollinations/fal/Replicate/OpenAI/Google). Để trống = free tier.
     image_gen_token: str = ""
+    # Tài khoản + ví: 1 đồng Mivy = 1.000đ
+    signup_bonus: int = 2  # tặng khi đăng ký = 1 lượt gen AI
+    tryon_price: int = 2  # 1 lần Người mẫu AI (FASHN)
+    admin_emails: str = ""  # email admin, cách nhau dấu phẩy (được cộng tiền cho user)
+    session_days: int = 30
+    cookie_secure: bool = False  # bật khi chạy https
+    # Người mẫu AI: FASHN VTON 1.5 trên Hugging Face (đổi sang Space riêng/Modal khi có)
+    fashn_space: str = "fashn-ai/fashn-vton-1.5"
+    hf_token: str = ""  # token HF của Mivy → nhiều lượt GPU hơn
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

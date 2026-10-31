@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Download, Plus, Trash2, Flame, Package, Upload, X, Loader2, BadgeCheck } from 'lucide-react';
+import { Download, Plus, Trash2, Flame, Package, Upload, X, Loader2, BadgeCheck, Maximize2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { renderFeatureInfographic, renderListInfographic, AD_BACKGROUNDS, getBackground, POSTER_THEMES, POSTER_VARIANTS, InfographicData, InfographicRow, PosterCard, PosterThemeId } from '@/lib/infographic-engine';
 import { renderPosterInfographic, posterColorsFromBrand, isCustomHero } from '@/lib/poster-engine';
 import { loadBrand } from '@/lib/brand-presets';
@@ -11,6 +12,7 @@ import type { BrandKit } from '@/types';
 import { ILLUSTRATIONS, illustrationUrl } from '@/lib/illustrations';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/TemplateHtmlPreview';
+import { AsyncButton } from '@/components/AsyncButton';
 
 type Aspect = '1:1' | '4:5' | '9:16';
 
@@ -251,6 +253,23 @@ export default function InfographicStudio() {
   const [themeId, setThemeId] = useState<PosterThemeId | 'brand'>(TEMPLATES[0].theme || 'blue');
   const [aspect, setAspect] = useState<Aspect>('4:5');
   const [data, setData] = useState<InfographicData>(TEMPLATES[0].data);
+  const [full, setFull] = useState(false); // xem toàn màn hình
+  const [heroSlot, setHeroSlot] = useState(0);
+  // Cột xem trước (màn rộng) cao vừa khít phần màn hình còn lại → ảnh luôn hiện trọn, không bị cắt đáy
+  const [colEl, setColEl] = useState<HTMLDivElement | null>(null);
+  const [colH, setColH] = useState<number | null>(null);
+  useEffect(() => {
+    const el = colEl; if (!el) return;
+    const scroller = el.closest('main') || window;
+    const fit = () => setColH(window.innerWidth >= 1024 ? Math.max(360, Math.round(window.innerHeight - el.getBoundingClientRect().top - 16)) : null);
+    fit(); scroller.addEventListener('scroll', fit, { passive: true }); window.addEventListener('resize', fit);
+    return () => { scroller.removeEventListener('scroll', fit); window.removeEventListener('resize', fit); };
+  }, [colEl]);
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFull(false); };
+    window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
+  }, [full]); // ô hình chính đang chọn để thay
   const [kit, setKit] = useState<BrandKit | null>(null);
   const [useKit, setUseKit] = useState(false);
   const [cutting, setCutting] = useState<string | null>(null);
@@ -300,6 +319,16 @@ export default function InfographicStudio() {
     if (h.includes(id)) return { ...d, hero: h.filter((x) => x !== id) };
     return { ...d, hero: h.length < 3 ? [...h, id] : [...h.slice(0, 2), id] };
   });
+  // Bấm hình minh hoạ: đã chọn → bỏ; chưa → đặt vào ô đang chọn rồi nhảy sang ô kế.
+  const pickHero = (id: string) => {
+    const h = data.hero || [];
+    const at = h.indexOf(id);
+    if (at >= 0) { setData((d) => ({ ...d, hero: h.filter((x) => x !== id) })); setHeroSlot(Math.min(at, h.length - 1)); return; }
+    const s = Math.min(heroSlot, h.length);
+    const next = s < h.length ? h.map((x, i) => (i === s ? id : x)) : [...h, id];
+    setData((d) => ({ ...d, hero: next }));
+    setHeroSlot(next.length < 3 ? next.length : (s + 1) % 3);
+  };
 
   const loadTemplate = (t: typeof TEMPLATES[number]) => {
     setBgId(t.bg);
@@ -509,12 +538,27 @@ export default function InfographicStudio() {
                 <p className="text-[11px] text-slate-400">Ảnh thật sẽ thay hình 3D làm hình chính. Ảnh còn nền thì bấm &quot;✂ Tách nền&quot;.</p>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 mb-2.5">Hoặc chọn hình minh hoạ 3D (tối đa 3 hình, hình đầu là hình chính, to nhất).</p>
+            <p className="text-[11px] text-slate-400 mb-2">Hoặc chọn hình minh hoạ 3D: bấm ô cần thay, rồi bấm hình bên dưới (ô 1 là hình chính, to nhất).</p>
+            <div className="flex gap-2 mb-2.5" data-testid="hero-slots">
+              {[0, 1, 2].map((i) => {
+                const v = (data.hero || [])[i]; const on = heroSlot === i;
+                return (
+                  <button key={i} type="button" onClick={() => setHeroSlot(i)}
+                    className={`relative w-16 h-16 rounded-lg border-2 p-1.5 transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 border-dashed hover:border-white/30'}`}>
+                    {v ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={isCustomHero(v) ? v : illustrationUrl(v)} alt="" className="w-full h-full object-contain" />
+                    ) : <span className="text-[10px] text-slate-500">Trống</span>}
+                    <span className={`absolute -top-1.5 -left-1.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center ${on ? 'bg-indigo-500' : 'bg-slate-600'}`}>{i === 0 ? '1 · chính' : i + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
             <div className="grid grid-cols-8 sm:grid-cols-10 gap-1.5 max-h-56 overflow-y-auto pr-1">
               {ILLUSTRATIONS.map((il) => {
                 const idx = (data.hero || []).indexOf(il.id);
                 return (
-                  <button key={il.id} type="button" onClick={() => toggleHero(il.id)} title={`${il.name} · ${il.group}`}
+                  <button key={il.id} type="button" onClick={() => pickHero(il.id)} title={`${il.name} · ${il.group}`}
                     className={`relative aspect-square rounded-lg border p-1 transition-colors ${idx >= 0 ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 hover:border-white/30 bg-white/[0.03]'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={illustrationUrl(il.id)} alt={il.name} className="w-full h-full object-contain" loading="lazy" />
@@ -587,27 +631,42 @@ export default function InfographicStudio() {
           </>)}
         </div>
 
-        {/* CỘT PHẢI: preview ghim + tải */}
-        <div className="lg:sticky lg:top-4 self-start space-y-3">
-          <div className="glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-white">Xem trước</span>
-              <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">PNG · 2×</span>
+        {/* CỘT PHẢI: preview ghim + tải — cao đúng bằng màn hình để luôn thấy trọn ảnh */}
+        <div ref={setColEl} style={colH ? { height: colH } : undefined} className="lg:sticky lg:top-4 self-start flex flex-col gap-3">
+          <div className="glass-card p-3 rounded-2xl space-y-2 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06] shrink-0">
+            <div className="grid grid-cols-2 gap-2">
+              <AsyncButton onClick={download} loadingText="Đang xuất…" className="mv-btn mv-btn-primary w-full !flex justify-center !py-2.5 !text-sm disabled:opacity-70">
+                <Download className="w-4 h-4" /> <span>Tải PNG</span>
+              </AsyncButton>
+              <button type="button" onClick={downloadAll} disabled={!!zipState} className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-sm disabled:opacity-60" title="1080×1080 Shopee · Lazada · TikTok Shop — 1080×1350 Facebook · Instagram — 1080×1920 TikTok · Story · Zalo">
+                {zipState ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} <span className="truncate">{zipState || 'Bộ đa sàn (.zip)'}</span>
+              </button>
             </div>
-            <button type="button" onClick={download} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm">
-              <Download className="w-4 h-4" /> <span>Tải ảnh PNG</span>
-            </button>
-            <button type="button" onClick={downloadAll} disabled={!!zipState} className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-sm disabled:opacity-60">
-              {zipState ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} <span>{zipState || 'Tải trọn bộ đa sàn (.zip)'}</span>
-            </button>
             {zipErr && <p className="text-[11px] text-rose-300 text-center">{zipErr}</p>}
-            <p className="text-[10px] leading-relaxed text-slate-400 text-center">1080×1080 Shopee · Lazada · TikTok Shop — 1080×1350 Facebook · Instagram — 1080×1920 TikTok · Story · Zalo</p>
           </div>
-          <div className="glass-panel rounded-2xl p-3 border border-white/10">
-            <TemplateHtmlPreview ref={htmlPreviewRef} template={tpl} content={{}} noFill maxHeightVh={62} />
+          <div className="glass-panel rounded-2xl p-3 border border-white/10 flex flex-col min-h-0 lg:flex-1">
+            <div className="flex items-center justify-between mb-2 shrink-0">
+              <span className="text-sm font-bold text-white">Xem trước <span className="ml-1 text-[10px] font-semibold text-indigo-200">PNG · 2×</span></span>
+              <button type="button" onClick={() => setFull(true)} data-testid="preview-full" className="mv-btn mv-btn-ghost !px-2.5 !py-1.5 !text-xs"><Maximize2 className="w-3.5 h-3.5" /> Toàn màn hình</button>
+            </div>
+            <div className="min-h-0 lg:flex-1 cursor-zoom-in" onClick={() => setFull(true)} data-testid="preview-box">
+              <TemplateHtmlPreview ref={htmlPreviewRef} template={tpl} content={{}} noFill maxHeightVh={62} fitHeight={!!colH} />
+            </div>
           </div>
         </div>
       </div>
+
+      {full && typeof document !== 'undefined' && createPortal((
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setFull(false)} data-testid="preview-overlay">
+          <button type="button" onClick={() => setFull(false)}
+            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20">
+            <X className="w-4 h-4" /> Đóng
+          </button>
+          <div className="w-full h-full pointer-events-none">
+            <TemplateHtmlPreview template={tpl} content={{}} noFill fitHeight />
+          </div>
+        </div>
+      ), document.body)}
     </div>
   );
 }

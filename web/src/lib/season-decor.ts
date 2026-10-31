@@ -7,12 +7,31 @@ export const SEASON_VARIANTS = [
   { id: 'hang', label: 'Treo' },
   { id: 'stamp', label: 'Tem' },
   { id: 'scatter', label: 'Rải' },
+  { id: 'column', label: 'Hai mép' },
+  { id: 'seal', label: 'Ấn tròn' },
   { id: 'tile', label: 'Lặp mờ' },
   { id: 'giant', label: 'Dấu ấn lớn' },
   { id: 'arc', label: 'Vòng cung' },
+  { id: 'frame', label: 'Viền hoạ tiết' },
+  { id: 'bunting', label: 'Dây cờ' },
+  { id: 'ribbon', label: 'Băng chéo' },
+  { id: 'rays', label: 'Tia sáng' },
+  { id: 'confetti', label: 'Giấy vụn' },
   { id: 'falling', label: 'Hoa rơi' },
   { id: 'snow', label: 'Tuyết rơi' },
 ];
+
+// hình hoạ tiết user chọn thay cho hình mặc định của dịp (id = id dịp có motif đó)
+export const SEASON_MOTIFS = [
+  { id: 'star', label: 'Sao' },
+  { id: '8thang3', label: 'Tim' },
+  { id: 'tet', label: 'Hoa mai' },
+  { id: 'trungthu', label: 'Lồng đèn' },
+  { id: 'noel', label: 'Cây thông' },
+  { id: '1111', label: 'Tia sét' },
+];
+/** Tuỳ chỉnh trang trí: kiểu + màu chính/phụ + hình (bỏ trống = theo dịp). */
+export interface SeasonDecorOpts { variant?: string; c1?: string; c2?: string; motif?: string }
 
 // hoạ tiết riêng từng dịp — vẽ quanh gốc trong khung -50..50, tô màu `col`
 function motifInner(seasonId: string, col: string): string {
@@ -35,6 +54,12 @@ function motifInner(seasonId: string, col: string): string {
       return `<path d="M0 -46 L13 -14 L47 -14 L19 8 L30 42 L0 22 L-30 42 L-19 8 L-47 -14 L-13 -14 Z" fill="${col}"/>`;
   }
 }
+/** Hình mặc định của dịp (khớp các case trong motifInner). */
+export const seasonMotifOf = (seasonId?: string) =>
+  ['tet', 'trungthu', '8thang3', 'noel'].includes(seasonId || '') ? seasonId! : ['blackfriday', '1111', '1212'].includes(seasonId || '') ? '1111' : 'star';
+/** Icon SVG của 1 hình hoạ tiết (cho nút chọn). */
+export const motifIconSvg = (motif: string, col: string) =>
+  `<svg viewBox="-54 -54 108 108" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">${motifInner(motif, col)}</svg>`;
 function motifG(id: string, x: number, y: number, r: number, col: string): string {
   return `<g transform="translate(${x},${y}) scale(${(r / 50).toFixed(3)})">${motifInner(id, col)}</g>`;
 }
@@ -51,11 +76,12 @@ const sparkleG = (x: number, y: number, r: number, col: string) => `<g transform
 const flourish = (cx: number, cy: number, sx: number, sy: number, A: number, col: string, lw: number) =>
   `<g transform="translate(${cx},${cy}) scale(${sx},${sy})" fill="none" stroke="${col}" stroke-width="${lw}" stroke-linecap="round"><path d="M0 ${A} C0 ${A * 0.42} ${A * 0.42} 0 ${A} 0"/><path d="M${A} 0 Q${A - A * 0.32} 0 ${A - A * 0.32} ${A * 0.32}"/><circle cx="${A * 0.6}" cy="${A * 0.27}" r="${lw * 1.3}" fill="${col}" stroke="none"/></g>`;
 
-export function renderSeasonDecor(seasonId: string | undefined, variant: string | undefined): string {
+export function renderSeasonDecor(seasonId: string | undefined, opts: string | SeasonDecorOpts | undefined): string {
   const s = getSeason(seasonId);
   if (!s || s.id === 'none') return '';
-  const v = variant || 'corner';
-  const { c1, c2, id } = s;
+  const o: SeasonDecorOpts = typeof opts === 'object' ? opts : { variant: opts };
+  const v = o.variant || 'corner';
+  const c1 = o.c1 || s.c1, c2 = o.c2 || s.c2, id = o.motif || s.id;
   let body = '';
 
   if (v === 'hang') {
@@ -106,6 +132,33 @@ export function renderSeasonDecor(seasonId: string | undefined, variant: string 
       dots += `<circle cx="${Math.round(rx * 1080)}" cy="${Math.round(ry * 1350)}" r="${(4 + 10 * rs).toFixed(1)}" fill="#ffffff" opacity="${(0.3 + 0.5 * rs).toFixed(2)}"/>`;
     }
     body = flakes + dots;
+  } else if (v === 'frame') {
+    const pad = 45, lw = 4.3;
+    const rr = (x: number, y: number, w: number, h: number, r: number, st: string, sw: number) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="none" stroke="${st}" stroke-width="${sw}"/>`;
+    body = rr(pad, pad, 1080 - 2 * pad, 1350 - 2 * pad, 22, c1, lw) + rr(pad + 10, pad + 10, 1080 - 2 * pad - 20, 1350 - 2 * pad - 20, 18, c2, 2.2)
+      + motifG(id, pad + 42, pad + 42, 35, c1) + motifG(id, 1080 - pad - 42, pad + 42, 35, c1);
+  } else if (v === 'bunting') {
+    const n = 11, fw = 1080 / n, y = 14, fh = 52;
+    let line = `M0 ${y}`;
+    for (let i = 0; i < n; i++) line += ` Q${(i + 0.5) * fw} ${y + fh * 0.42} ${(i + 1) * fw} ${y}`;
+    let flags = '';
+    for (let i = 0; i < n; i++) { const x = i * fw, col = i % 2 ? c1 : c2; flags += `<polygon points="${x + fw * 0.12},${y + fh * 0.08} ${x + fw * 0.88},${y + fh * 0.08} ${x + fw * 0.5},${y + fh}" fill="${col}"/>`; }
+    body = `<path d="${line}" fill="none" stroke="${c1}" stroke-width="3.2"/>` + flags;
+  } else if (v === 'ribbon') {
+    const label = (s.suggest || '').toUpperCase();
+    body = `<g transform="translate(1080,0) rotate(45)"><rect x="-258" y="150" width="560" height="60" fill="${c1}"/><rect x="-258" y="150" width="560" height="8" fill="${c2}"/><rect x="-258" y="202" width="560" height="8" fill="${c2}"/>${label ? `<text x="22" y="190" fill="#fff" font-size="33" font-weight="800" text-anchor="middle" font-family="'Be Vietnam Pro',sans-serif">${label}</text>` : ''}</g>`;
+  } else if (v === 'rays') {
+    let r = '';
+    for (let i = 0; i < 24; i += 2) r += `<g transform="translate(540,-108) rotate(${Math.round((i / 24) * 360)})"><polygon points="0,0 -59,2160 59,2160" fill="${c1}"/></g>`;
+    body = `<g opacity="0.08">${r}</g>`;
+  } else if (v === 'confetti') {
+    let c = '';
+    for (let i = 0; i < 46; i++) {
+      const rx = fr(Math.sin(i * 12.9) * 43758.5), ry = fr(Math.sin(i * 78.2) * 12543.1), rrr = fr(Math.sin(i * 33.3) * 9999.9);
+      const col = i % 3 === 0 ? c1 : i % 3 === 1 ? c2 : '#ffffff', sz = 10 + 12 * rrr, x = Math.round(rx * 1080), y = Math.round(ry * 1350), rot = Math.round(rrr * 340), op = (0.45 + 0.4 * rrr).toFixed(2);
+      c += i % 2 ? `<rect x="${(-sz / 2).toFixed(1)}" y="${(-sz / 2).toFixed(1)}" width="${sz.toFixed(1)}" height="${(sz * 0.62).toFixed(1)}" fill="${col}" opacity="${op}" transform="translate(${x},${y}) rotate(${rot})"/>` : `<circle cx="${x}" cy="${y}" r="${(sz * 0.52).toFixed(1)}" fill="${col}" opacity="${op}"/>`;
+    }
+    body = c;
   } else {
     // corner — hoa văn góc cổ điển (không nhét motif dịp)
     const off = 46, A = 66, lw = 3.4;

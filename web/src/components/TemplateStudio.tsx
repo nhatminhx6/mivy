@@ -1,7 +1,10 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, LayoutGrid, X, ImagePlus, Pencil } from 'lucide-react';
+import { Download, LayoutGrid, X, ImagePlus, Pencil, Printer } from 'lucide-react';
 import { TEMPLATES, TEMPLATE_GROUPS, TemplateDef } from '@/lib/templates-data';
+import { AsyncButton } from '@/components/AsyncButton';
+import { PRINT_SIZES, exportPrintPdf } from '@/lib/print-export';
+import { downloadBlob } from '@/lib/html-export';
 
 const ALL_CSS = Array.from(new Set(TEMPLATES.map((t) => t.css).filter(Boolean))).join('\n');
 const FONT_URLS = Array.from(new Set(Array.from(ALL_CSS.matchAll(/@import url\(['"]?([^'")]+)['"]?\)/g)).map((m) => m[1])));
@@ -11,6 +14,7 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
   const [group, setGroup] = useState<string>('Tất cả');
   const [editing, setEditing] = useState<TemplateDef | null>(null);
   const [busy, setBusy] = useState(false);
+  const [printSizeId, setPrintSizeId] = useState<string>(PRINT_SIZES[2].id); // mặc định A4
   const [fontCss, setFontCss] = useState<string>('');
   const stageRef = useRef<HTMLDivElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -77,6 +81,22 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
     } finally { setBusy(false); }
   };
 
+  const downloadPrint = async () => {
+    if (!editing) return;
+    const size = PRINT_SIZES.find((s) => s.id === printSizeId) || PRINT_SIZES[2];
+    setBusy(true);
+    try {
+      if ((document as any).fonts?.ready) await (document as any).fonts.ready;
+      const node = stageRef.current!.firstElementChild as HTMLElement;
+      const blob = await exportPrintPdf(node, {
+        size, designW: editing.w, designH: editing.h, fontEmbedCSS: fontCss,
+      });
+      downloadBlob(blob, `mivy-${editing.id}-${size.id}-in.pdf`);
+    } catch (err: any) {
+      alert('Lỗi tạo file in: ' + (err?.message || err));
+    } finally { setBusy(false); }
+  };
+
   const scale = editing ? Math.min((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.72 / editing.h, 520 / editing.w) : 1;
 
   return (
@@ -119,7 +139,20 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
             <div className="text-sm text-white font-semibold">{editing.title}</div>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => fileRef.current?.click()} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs"><ImagePlus className="w-4 h-4" /> Thả ảnh</button>
-              <button type="button" onClick={download} disabled={busy} className="mv-btn mv-btn-primary !px-4 !py-1.5 !text-xs disabled:opacity-50"><Download className="w-4 h-4" /> {busy ? 'Đang tạo…' : 'Tải PNG'}</button>
+              <AsyncButton onClick={download} disabled={busy} loadingText="Đang tạo…" className="mv-btn mv-btn-ghost !px-4 !py-1.5 !text-xs disabled:opacity-50"><Download className="w-4 h-4" /> Tải PNG</AsyncButton>
+              <div className="flex items-center rounded-lg border border-white/15 overflow-hidden">
+                <select value={printSizeId} onChange={(e) => setPrintSizeId(e.target.value)} disabled={busy}
+                  className="bg-white/5 text-slate-200 text-xs px-2 py-1.5 focus:outline-none max-w-[190px]">
+                  {Array.from(new Set(PRINT_SIZES.map((s) => s.group))).map((g) => (
+                    <optgroup key={g} label={g} className="bg-slate-900">
+                      {PRINT_SIZES.filter((s) => s.group === g).map((s) => (
+                        <option key={s.id} value={s.id} className="bg-slate-900">{s.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <AsyncButton onClick={downloadPrint} disabled={busy} loadingText="Đang tạo…" className="mv-btn mv-btn-primary !rounded-none !px-3 !py-1.5 !text-xs disabled:opacity-50"><Printer className="w-4 h-4" /> Tải file in</AsyncButton>
+              </div>
               <button type="button" onClick={() => setEditing(null)} className="mv-btn mv-btn-ghost !p-2"><X className="w-4 h-4" /></button>
             </div>
           </div>
@@ -130,7 +163,7 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
               </div>
             </div>
           </div>
-          <div className="text-center text-[11px] text-slate-500 pb-3">Bấm vào chữ để sửa trực tiếp · bấm vùng ảnh để thay ảnh · xong bấm Tải PNG</div>
+          <div className="text-center text-[11px] text-slate-500 pb-3">Bấm chữ để sửa · bấm vùng ảnh để thay · <b className="text-slate-300">Tải PNG</b> để xem online, <b className="text-slate-300">Tải file in</b> (PDF có lề tràn + vạch cắt) để gửi xưởng in</div>
         </div>
       )}
     </div>

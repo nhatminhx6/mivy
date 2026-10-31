@@ -21,7 +21,31 @@ export const BG_KINDS: { id: BgKind; name: string }[] = [
 export type ShadowKind = 'soft' | 'contact' | 'none';
 
 export interface ShotBg { kind: BgKind; tint: string; soft: string; main: string; scene?: HTMLImageElement | null }
-export interface ShotOpts { layout: ShotLayout; img: HTMLImageElement; cut: boolean; bg: ShotBg; size: number; shadow: ShadowKind; safeZone?: boolean; scale?: number }
+export type MarkPos = 'br' | 'bl' | 'tr' | 'tl' | 'tile';
+/** Logo shop đóng lên ảnh (chống lấy ảnh). tile = lặp chéo mờ khắp ảnh. */
+export interface ShotMark { img: HTMLImageElement; pos: MarkPos; opacity: number }
+export interface ShotOpts { layout: ShotLayout; img: HTMLImageElement; cut: boolean; bg: ShotBg; size: number; shadow: ShadowKind; safeZone?: boolean; scale?: number; mark?: ShotMark }
+
+export function drawMark(ctx: CanvasRenderingContext2D, W: number, H: number, layout: ShotLayout, m: ShotMark) {
+  const iw = m.img.naturalWidth || m.img.width, ih = m.img.naturalHeight || m.img.height;
+  if (!iw || !ih) return;
+  ctx.save(); ctx.globalAlpha = m.opacity;
+  if (m.pos === 'tile') {
+    const h = H * 0.06, w = Math.min((iw / ih) * h, W * 0.3), hh = (w / iw) * ih;
+    ctx.translate(W / 2, H / 2); ctx.rotate(-Math.PI / 7);
+    const R = Math.hypot(W, H) / 2, sx = w * 2.2, sy = hh * 3.2;
+    for (let y = -R, row = 0; y < R; y += sy, row++) for (let x = -R + (row % 2) * sx / 2; x < R; x += sx) ctx.drawImage(m.img, x - w / 2, y - hh / 2, w, hh);
+  } else {
+    const h = H * (layout === '9:16' ? 0.06 : 0.085), w = Math.min((iw / ih) * h, W * 0.24), hh = (w / iw) * ih, pad = W * 0.04;
+    const x = m.pos.endsWith('l') ? pad : W - pad - w;
+    // 9:16: góc dưới bị nút/chú thích TikTok che → nâng lên trên vùng đó
+    const bottom = layout === '9:16' ? H * 0.74 : H - pad;
+    const y = m.pos.startsWith('t') ? pad : bottom - hh;
+    ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = h * 0.15;
+    ctx.drawImage(m.img, x, y, w, hh);
+  }
+  ctx.restore();
+}
 
 const hex = (h: string) => { const s = h.replace('#', ''); return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16)); };
 // trả về hex để lồng mix(mix(...)) được
@@ -385,6 +409,7 @@ export function drawProductShot(canvas: HTMLCanvasElement, o: ShotOpts) {
   }
   ctx.drawImage(lit, x, y, dw, dh);
   grain(ctx, W, H, dark ? 0.06 : 0.045);
+  if (o.mark) drawMark(ctx, W, H, o.layout, o.mark);
 
   if (o.safeZone && o.layout === '9:16') {
     // chỉ để XEM (không xuất): thanh nút bên phải + vùng chú thích/giỏ hàng bên dưới

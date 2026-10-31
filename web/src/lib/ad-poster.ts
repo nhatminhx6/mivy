@@ -1,7 +1,7 @@
 // Bố cục poster quảng cáo CHUẨN (slot) — khoác "skin" nghệ thuật.
 // Nội dung ngành đổ vào slot; vibe (màu/font/hoa văn) lấy từ skin.
 import { AD_SKINS, AdContent, AdSkin, getSkin, getBackground } from './ad-skins';
-import { renderSeasonDecor } from './season-decor';
+import { renderSeasonDecor, type SeasonDecorOpts } from './season-decor';
 
 export interface AdTemplateDef { id: string; title: string; group: string; w: number; h: number; css: string; html: string; }
 
@@ -59,7 +59,7 @@ function bylineChip(brand: string | undefined, skin: AdSkin, sub?: string, onDar
   </div>`;
 }
 
-export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, frame?: AdFrameOpts, size: AdSize = DEF): string {
+export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, frame?: AdFrameOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const u = vUnit(h);
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
@@ -135,7 +135,7 @@ export function renderAdPoster(content: AdContent, skin: AdSkin, seasonId?: stri
 }
 
 // LAYOUT TỐI GIẢN THƯƠNG MẠI — ảnh làm chủ đạo (bo góc + bóng mềm), chữ tối giản, nhiều khoảng thở.
-export function renderAdPosterMinimal(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderAdPosterMinimal(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const u = vUnit(h);
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
@@ -244,7 +244,7 @@ function ipadFrame(img: string): string {
 }
 
 // 2. KHUNG THIẾT BỊ — ảnh lồng khung điện thoại/laptop trên nền
-export function renderAdDevice(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderAdDevice(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const dk = clamp(h / 1350, 0.6, 1.1); // thu/phóng khung máy theo chiều cao
   const { bg, ink, muted, fontDisplay, fontBody } = skin;
@@ -274,7 +274,7 @@ export function renderAdDevice(content: AdContent, skin: AdSkin, seasonId?: stri
 }
 
 // 3. APP STORE — tiêu đề lớn trên + khung điện thoại dưới (cắt đáy)
-export function renderAppstore(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderAppstore(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const ph = clamp(Math.round(h * 0.53), 360, 980); // cao khung điện thoại
   const pw = Math.round(ph * 0.75);
@@ -294,7 +294,7 @@ export function renderAppstore(content: AdContent, skin: AdSkin, seasonId?: stri
 }
 
 // 5. CHIA ĐÔI — nửa ảnh / nửa chữ
-export function renderSplit(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderSplit(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const iw = Math.round(w * 0.46);
   const { bg, ink, muted, fontDisplay, fontBody } = skin;
@@ -314,7 +314,7 @@ export function renderSplit(content: AdContent, skin: AdSkin, seasonId?: string,
 }
 
 // 7. REVIEW — card trích dẫn / testimonial
-export function renderReview(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderReview(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { bg, ink, muted, accent, fontDisplay, fontBody } = skin;
   const bgCss = skin.bgGradient || bg;
@@ -334,7 +334,7 @@ export function renderReview(content: AdContent, skin: AdSkin, seasonId?: string
 }
 
 // 8. COLLAGE — ghép nhiều ô ảnh + ô chữ
-export function renderCollage(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderCollage(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
   const bgCss = skin.bgGradient || bg;
@@ -356,7 +356,7 @@ export function renderCollage(content: AdContent, skin: AdSkin, seasonId?: strin
 }
 
 // 4. ẢNH TRÀN VIỀN — ảnh full + chữ overlay (lớp phủ mờ)
-export function renderFullbleed(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderFullbleed(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { muted, accent, accentInk, fontDisplay, fontBody } = skin;
   const img = imgBg(content.image, muted, 'center', frameOf(content));
@@ -376,7 +376,7 @@ export function renderFullbleed(content: AdContent, skin: AdSkin, seasonId?: str
 }
 
 // 6. CHÚ THÍCH — ảnh + nhãn ưu đãi + mũi tên khoanh vùng
-export function renderAnnotate(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderAnnotate(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
   const bgCss = skin.bgGradient || bg;
@@ -399,7 +399,7 @@ export function renderAnnotate(content: AdContent, skin: AdSkin, seasonId?: stri
 }
 
 // BLOG / LIFESTYLE — ảnh lớn + hộp chữ (card) nổi, nhãn + tiêu đề serif + byline (kiểu brandbird blog)
-export function renderBlog(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderBlog(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { bg, muted, fontDisplay } = skin;
   const bgCss = skin.bgGradient || bg;
@@ -427,7 +427,7 @@ export function renderBlog(content: AdContent, skin: AdSkin, seasonId?: string, 
 }
 
 // SẢN PHẨM — nền riêng + 1–3 ảnh sản phẩm (cutout) nổi ở trung tâm + promo/giá (kiểu poster sàn TMĐT)
-export function renderProduct(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string, size: AdSize = DEF): string {
+export function renderProduct(content: AdContent, skin: AdSkin, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, size: AdSize = DEF): string {
   const { w, h } = size;
   const { bg, ink, muted, accent, accentInk, fontDisplay, fontBody } = skin;
   const onLight = skin.ink.toLowerCase() !== '#ffffff';
@@ -472,7 +472,7 @@ export function renderProduct(content: AdContent, skin: AdSkin, seasonId?: strin
   </div>`;
 }
 
-export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: string, seasonVariant?: string, frame?: AdFrameOpts, sizeId?: string, bgId?: string): AdTemplateDef | null {
+export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: string, seasonVariant?: string | SeasonDecorOpts, frame?: AdFrameOpts, sizeId?: string, bgId?: string): AdTemplateDef | null {
   const base = getSkin(skinId);
   if (!base) return null;
   const size = getAdSize(sizeId);
@@ -488,7 +488,7 @@ export function buildAdTemplate(content: AdContent, skinId: string, seasonId?: s
         grain: true, imageTilt: true, imageReflect: true,
       }
     : base;
-  const byLayout: Record<string, (c: AdContent, s: AdSkin, si?: string, sv?: string, sz?: AdSize) => string> = {
+  const byLayout: Record<string, (c: AdContent, s: AdSkin, si?: string, sv?: string | SeasonDecorOpts, sz?: AdSize) => string> = {
     minimal: renderAdPosterMinimal, device: renderAdDevice, appstore: renderAppstore, split: renderSplit, review: renderReview, collage: renderCollage, fullbleed: renderFullbleed, annotate: renderAnnotate, blog: renderBlog, product: renderProduct,
   };
   const r = skin.layout ? byLayout[skin.layout] : undefined;

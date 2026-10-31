@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.account import router as account_router
 from app.api.creative import router as creative_router
 from app.api.generations import router as generations_router
 from app.api.health import router as health_router
@@ -17,10 +18,12 @@ from app.engines.base import GenerationEngine
 from app.engines.comfyui_engine import ComfyUIEngine
 from app.engines.mock_engine import MockGenerationEngine
 from app.engines.product_engine import ProductImageEngine
+from app.services.account_service import AccountService
 from app.services.generation_service import GenerationService
 from app.services.job_queue import JobQueue
 from app.services.storage_service import StorageService
 from app.services.text_service import TextService
+from app.services.tryon_service import TryOnService
 from app.services.visual_service import VisualService
 
 
@@ -76,6 +79,12 @@ def create_app(
         app.state.generation_service = generation_service
         app.state.job_queue = job_queue
         app.state.visual_service = visual_service
+        app.state.accounts = AccountService(
+            database.sessions, resolved_settings.signup_bonus,
+            resolved_settings.admin_emails, resolved_settings.session_days,
+        )
+        if not hasattr(app.state, "tryon"):  # test có thể thay bằng bản giả
+            app.state.tryon = TryOnService(resolved_settings.fashn_space, resolved_settings.hf_token)
 
         job_queue.start()
         for job_id in await generation_service.recover_jobs():
@@ -103,6 +112,7 @@ def create_app(
         allow_headers=["*"],
     )
     app.include_router(health_router)
+    app.include_router(account_router)
     app.include_router(creative_router)
     app.include_router(generations_router)
 

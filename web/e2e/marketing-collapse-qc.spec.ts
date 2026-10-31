@@ -17,7 +17,7 @@ test('Card editor marketing gập/mở được', async ({ page }) => {
 
   // Card "Thiết kế & Trang trí": nút đầu là tab, nút sau là tiêu đề card gập
   await page.getByRole('button', { name: '🎨 Thiết kế & Trang trí' }).first().click();
-  const hint = page.getByText('Gợi ý tiêu đề:', { exact: true });
+  const hint = page.locator('[data-testid="season-select"]');
   const designCard = page.getByRole('button', { name: '🎨 Thiết kế & Trang trí' }).nth(1);
   await expect(hint).toBeVisible();
   await designCard.click();

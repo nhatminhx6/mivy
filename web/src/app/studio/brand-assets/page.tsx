@@ -7,6 +7,7 @@ import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
 import { marketingZip } from '@/lib/marketing-zip';
 import { PageHeader } from '@/components/PageHeader';
 import { COPY_TONES, COPY_INDUSTRIES, suggestCoverCopy, CopyTone } from '@/lib/copy-library';
+import { AsyncButton } from '@/components/AsyncButton';
 
 export default function BrandAssetsPage() {
   const [kind, setKind] = useState('fb');
@@ -58,10 +59,10 @@ export default function BrandAssetsPage() {
   const onFile = (set: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => set(String(r.result)); r.readAsDataURL(f);
   };
-  const downloadOne = () => {
+  const downloadOne = () => new Promise<void>((done) => {
     const c = document.createElement('canvas'); drawBrandAsset(c, { ...opts(), scale: 2 });
-    c.toBlob((b) => { if (!b) return; const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `mivy-${kind}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); });
-  };
+    c.toBlob((b) => { if (b) { const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `mivy-${kind}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); } done(); });
+  });
   const downloadAll = async () => {
     const files: { name: string; data: Uint8Array }[] = [];
     for (const k of ASSET_KINDS) {
@@ -85,7 +86,7 @@ export default function BrandAssetsPage() {
       <PageHeader
         title="Ảnh bìa & Avatar"
         sub="Bìa Facebook / Zalo / Shopee / YouTube + Avatar — lấy sẵn từ Brand Kit, tải về đăng ngay."
-        actions={<button onClick={downloadAll} className="mv-btn mv-btn-primary"><Download className="w-4 h-4" /> Tải cả bộ</button>}
+        actions={<AsyncButton onClick={downloadAll} loadingText="Đang đóng gói…" className="mv-btn mv-btn-primary disabled:opacity-70"><Download className="w-4 h-4" /> Tải cả bộ</AsyncButton>}
       />
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-7 items-start">
@@ -96,7 +97,7 @@ export default function BrandAssetsPage() {
           </div>
           <div className="w-full flex items-center justify-between mt-4">
             <span className="text-xs text-slate-500">{cur.label} · {cur.w}×{cur.h}px</span>
-            <button onClick={downloadOne} className="mv-btn mv-btn-ghost"><Download className="w-4 h-4" /> Tải khổ này</button>
+            <AsyncButton onClick={downloadOne} loadingText="Đang xuất…" className="mv-btn mv-btn-ghost disabled:opacity-70"><Download className="w-4 h-4" /> Tải khổ này</AsyncButton>
           </div>
         </div>
 

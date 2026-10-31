@@ -13,12 +13,29 @@ export interface SeasonPreset {
 export const SEASON_PRESETS: SeasonPreset[] = [
   { id: 'none', label: 'Không', c1: '', c2: '', suggest: '' },
   { id: 'tet', label: '🌸 Tết', c1: '#c81e1e', c2: '#fbbf24', suggest: 'SALE TẾT' },
+  { id: '99', label: '🛒 9.9', c1: '#db2777', c2: '#f59e0b', suggest: '9.9' },
+  { id: '1010', label: '🛒 10.10', c1: '#f43f5e', c2: '#fbbf24', suggest: '10.10' },
   { id: '1111', label: '🛒 11.11', c1: '#7c3aed', c2: '#f472b6', suggest: '11.11' },
   { id: '1212', label: '🛒 12.12', c1: '#2563eb', c2: '#f59e0b', suggest: '12.12' },
+  { id: 'flashsale', label: '⚡ Flash Sale', c1: '#eab308', c2: '#ef4444', suggest: 'FLASH SALE' },
+  { id: 'payday', label: '💸 Pay Day', c1: '#16a34a', c2: '#fbbf24', suggest: 'PAY DAY SALE' },
   { id: 'blackfriday', label: '🖤 Black Friday', c1: '#111827', c2: '#fbbf24', suggest: 'BLACK FRIDAY' },
   { id: 'trungthu', label: '🏮 Trung Thu', c1: '#b91c1c', c2: '#f59e0b', suggest: 'SALE TRUNG THU' },
   { id: '8thang3', label: '🌹 8/3', c1: '#db2777', c2: '#f9a8d4', suggest: 'QUÀ 8/3' },
+  { id: 'valentine', label: '💝 Valentine', c1: '#e11d48', c2: '#fb7185', suggest: 'VALENTINE' },
+  { id: '2010', label: '🌷 20/10', c1: '#c026d3', c2: '#f0abfc', suggest: 'QUÀ 20/10' },
+  { id: '2011', label: '🎓 20/11', c1: '#1d4ed8', c2: '#93c5fd', suggest: 'TRI ÂN 20/11' },
+  { id: '16', label: '🎈 1/6 Thiếu nhi', c1: '#0ea5e9', c2: '#fb7185', suggest: 'QUÀ 1/6' },
+  { id: 'vulan', label: '🪷 Vu Lan', c1: '#db2777', c2: '#22c55e', suggest: 'VU LAN' },
+  { id: '29', label: '🇻🇳 Quốc khánh 2/9', c1: '#da251d', c2: '#ffcd00', suggest: 'ĐẠI LỄ 2/9' },
+  { id: '304', label: '🇻🇳 30/4 - 1/5', c1: '#da251d', c2: '#ffcd00', suggest: 'MỪNG LỄ 30/4' },
+  { id: 'halloween', label: '🎃 Halloween', c1: '#ea580c', c2: '#7c3aed', suggest: 'HALLOWEEN' },
   { id: 'noel', label: '🎄 Giáng Sinh', c1: '#9f1239', c2: '#caa64a', suggest: 'MERRY XMAS' },
+  { id: 'newyear', label: '🎆 Tết Dương lịch', c1: '#e11d48', c2: '#fbbf24', suggest: 'HAPPY NEW YEAR' },
+  { id: 'yearend', label: '🏷️ Year End Sale', c1: '#111827', c2: '#f59e0b', suggest: 'YEAR END SALE' },
+  { id: 'sinhnhat', label: '🎂 Sinh nhật shop', c1: '#ec4899', c2: '#fbbf24', suggest: 'SINH NHẬT SHOP' },
+  { id: 'backtoschool', label: '🎒 Mùa tựu trường', c1: '#0d9488', c2: '#fcd34d', suggest: 'BACK TO SCHOOL' },
+  { id: 'khaitruong', label: '🎉 Khai trương', c1: '#dc2626', c2: '#f59e0b', suggest: 'KHAI TRƯƠNG' },
 ];
 
 export function getSeason(id?: string): SeasonPreset | undefined {
@@ -100,6 +117,8 @@ function drawMotif(ctx: CanvasRenderingContext2D, id: string, r: number, col: st
       ctx.moveTo(r * 0.34, -r * 0.4); ctx.quadraticCurveTo(r * 0.52, -r * 0.02, r * 0.34, r * 0.4); ctx.stroke();
       break;
     case '8thang3': // trái tim + highlight
+    case 'valentine':
+    case '2010':
       ctx.beginPath(); ctx.moveTo(0, r * 0.6);
       ctx.bezierCurveTo(-r * 1.1, -r * 0.2, -r * 0.5, -r * 0.8, 0, -r * 0.3);
       ctx.bezierCurveTo(r * 0.5, -r * 0.8, r * 1.1, -r * 0.2, 0, r * 0.6);
@@ -120,9 +139,48 @@ function drawMotif(ctx: CanvasRenderingContext2D, id: string, r: number, col: st
       break;
     case 'blackfriday':
     case '1111':
-    case '1212': // tia sét + viền sáng
+    case '1212':
+    case '99':
+    case '1010':
+    case 'flashsale':
+    case 'payday':
+    case 'yearend': // tia sét + viền sáng
       ctx.beginPath(); ctx.moveTo(r * 0.15, -r); ctx.lineTo(-r * 0.55, r * 0.2); ctx.lineTo(0, r * 0.2); ctx.lineTo(-r * 0.15, r); ctx.lineTo(r * 0.6, -r * 0.25); ctx.lineTo(0, -r * 0.25); ctx.closePath(); ctx.fill();
       ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = r * 0.04; ctx.lineJoin = 'round'; ctx.stroke(); ctx.restore();
+      break;
+    case 'halloween': // bí ngô jack-o-lantern
+      ctx.beginPath(); ctx.ellipse(0, r * 0.12, r * 0.86, r * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.strokeStyle = 'rgba(0,0,0,0.16)'; ctx.lineWidth = r * 0.05;
+      ctx.beginPath(); ctx.ellipse(-r * 0.36, r * 0.12, r * 0.26, r * 0.74, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(r * 0.36, r * 0.12, r * 0.26, r * 0.74, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = '#4d7c0f'; ctx.fillRect(-r * 0.09, -r * 0.78, r * 0.18, r * 0.32);
+      ctx.fillStyle = '#1a1a1a'; // mắt + miệng
+      ctx.beginPath(); ctx.moveTo(-r * 0.46, -r * 0.1); ctx.lineTo(-r * 0.18, -r * 0.1); ctx.lineTo(-r * 0.32, r * 0.14); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(r * 0.46, -r * 0.1); ctx.lineTo(r * 0.18, -r * 0.1); ctx.lineTo(r * 0.32, r * 0.14); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.4); ctx.lineTo(-r * 0.22, r * 0.28); ctx.lineTo(-r * 0.04, r * 0.42); ctx.lineTo(r * 0.14, r * 0.28); ctx.lineTo(r * 0.34, r * 0.42); ctx.lineTo(r * 0.44, r * 0.34); ctx.lineTo(r * 0.3, r * 0.56); ctx.lineTo(-r * 0.26, r * 0.56); ctx.closePath(); ctx.fill();
+      break;
+    case 'newyear': // pháo hoa
+      ctx.save(); ctx.lineWidth = r * 0.07; ctx.lineCap = 'round';
+      for (let i = 0; i < 12; i++) { ctx.save(); ctx.rotate((i * Math.PI) / 6); ctx.beginPath(); ctx.moveTo(0, -r * 0.34); ctx.lineTo(0, -r * 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(0, -r, r * 0.08, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      ctx.restore(); ctx.beginPath(); ctx.arc(0, 0, r * 0.13, 0, Math.PI * 2); ctx.fill();
+      break;
+    case '16': // bóng bay
+      ctx.beginPath(); ctx.ellipse(0, -r * 0.2, r * 0.6, r * 0.72, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, r * 0.5); ctx.lineTo(-r * 0.08, r * 0.56); ctx.lineTo(r * 0.08, r * 0.56); ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = r * 0.04; ctx.beginPath(); ctx.moveTo(0, r * 0.56); ctx.quadraticCurveTo(r * 0.2, r * 0.82, 0, r); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.ellipse(-r * 0.22, -r * 0.42, r * 0.11, r * 0.17, -0.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      break;
+    case 'vulan': // hoa sen
+      for (let i = 0; i < 5; i++) { ctx.save(); ctx.rotate((i - 2) * 0.52); ctx.beginPath(); ctx.ellipse(0, -r * 0.48, r * 0.22, r * 0.56, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      for (let i = 0; i < 3; i++) { ctx.save(); ctx.rotate((i - 1) * 0.5); ctx.beginPath(); ctx.ellipse(0, -r * 0.34, r * 0.14, r * 0.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+      ctx.restore();
+      break;
+    case '29':
+    case '304': // sao vàng 5 cánh đầy đặn
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) { const ang = (Math.PI / 5) * i - Math.PI / 2; const rad = i % 2 ? r * 0.4 : r; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(ang) * rad, Math.sin(ang) * rad); }
+      ctx.closePath(); ctx.fill();
       break;
     default: // sao
       ctx.beginPath();
@@ -140,8 +198,10 @@ function drawMotif(ctx: CanvasRenderingContext2D, id: string, r: number, col: st
  * Mỗi kiểu dùng hoạ tiết (motif) riêng của dịp + tông màu dịp.
  */
 export function drawSeasonDecor(canvas: HTMLCanvasElement, marketing: MarketingState) {
-  const s = getSeason(marketing.season);
-  if (!s || s.id === 'none') return;
+  const base = getSeason(marketing.season);
+  if (!base || base.id === 'none') return;
+  // màu + hình user tự chọn đè lên mặc định của dịp
+  const s = { ...base, c1: marketing.seasonC1 || base.c1, c2: marketing.seasonC2 || base.c2, id: marketing.seasonMotif || base.id };
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const S = canvas.width / 1080;
@@ -235,11 +295,61 @@ export function drawSeasonDecor(canvas: HTMLCanvasElement, marketing: MarketingS
       ctx.beginPath(); ctx.arc(rx * W, ry * H, W * (0.0035 + 0.009 * rs), 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
+  } else if (variant === 'frame') {
+    // Viền hoạ tiết: khung đôi inset + motif dịp 2 góc trên (tránh CTA ở đáy)
+    const pad = W * 0.042, lw = Math.max(2, W * 0.004);
+    ctx.strokeStyle = s.c1; ctx.lineWidth = lw;
+    roundRect(ctx, pad, pad, W - 2 * pad, H - 2 * pad, W * 0.02); ctx.stroke();
+    ctx.strokeStyle = s.c2; ctx.lineWidth = Math.max(1.5, lw * 0.5);
+    roundRect(ctx, pad + lw * 2.2, pad + lw * 2.2, W - 2 * pad - lw * 4.4, H - 2 * pad - lw * 4.4, W * 0.016); ctx.stroke();
+    const cm = W * 0.032;
+    drawMotifAt(ctx, s.id, pad + cm + 6, pad + cm + 6, cm, s.c1);
+    drawMotifAt(ctx, s.id, W - pad - cm - 6, pad + cm + 6, cm, s.c1);
+  } else if (variant === 'bunting') {
+    // Dây cờ tam giác treo ngang sát mép trên
+    const n = 11, fw = W / n, y = W * 0.012, fh = W * 0.048;
+    ctx.strokeStyle = s.c1; ctx.lineWidth = Math.max(2, W * 0.003);
+    ctx.beginPath(); ctx.moveTo(0, y);
+    for (let i = 0; i < n; i++) ctx.quadraticCurveTo((i + 0.5) * fw, y + fh * 0.42, (i + 1) * fw, y);
+    ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const x = i * fw; ctx.fillStyle = i % 2 ? s.c1 : s.c2;
+      ctx.beginPath(); ctx.moveTo(x + fw * 0.12, y + fh * 0.08); ctx.lineTo(x + fw * 0.88, y + fh * 0.08); ctx.lineTo(x + fw * 0.5, y + fh); ctx.closePath(); ctx.fill();
+    }
+  } else if (variant === 'confetti') {
+    // Giấy vụn rơi: mảnh vuông + tròn 2 tông + trắng, rải khắp
+    for (let i = 0; i < 46; i++) {
+      const rx = frac(Math.sin(i * 12.9) * 43758.5), ry = frac(Math.sin(i * 78.2) * 12543.1), rr = frac(Math.sin(i * 33.3) * 9999.9);
+      ctx.save(); ctx.globalAlpha = 0.45 + 0.4 * rr; ctx.translate(rx * W, ry * H); ctx.rotate(rr * 6);
+      ctx.fillStyle = i % 3 === 0 ? s.c1 : i % 3 === 1 ? s.c2 : '#ffffff';
+      const sz = W * (0.009 + 0.011 * rr);
+      if (i % 2) ctx.fillRect(-sz / 2, -sz / 2, sz, sz * 0.62); else { ctx.beginPath(); ctx.arc(0, 0, sz * 0.52, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+  } else if (variant === 'ribbon') {
+    // Băng chéo góc trên-phải mang chữ dịp
+    ctx.save(); ctx.translate(W, 0); ctx.rotate(Math.PI / 4);
+    const bw = W * 0.055, len = W * 0.52, ox = -len * 0.46, oy = W * 0.14;
+    ctx.fillStyle = s.c1; ctx.fillRect(ox, oy, len, bw);
+    ctx.fillStyle = s.c2; ctx.fillRect(ox, oy, len, bw * 0.14); ctx.fillRect(ox, oy + bw * 0.86, len, bw * 0.14);
+    const label = (s.suggest || '').toUpperCase();
+    if (label) { ctx.fillStyle = '#ffffff'; ctx.font = `800 ${Math.round(W * 0.03)}px "Be Vietnam Pro", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, ox + len / 2, oy + bw / 2); }
+    ctx.restore();
+  } else if (variant === 'rays') {
+    // Tia sáng toả mờ từ đỉnh (sau nội dung)
+    ctx.save(); ctx.globalAlpha = 0.08; ctx.fillStyle = s.c1;
+    const cx = W / 2, cy = -H * 0.08, n = 24;
+    for (let i = 0; i < n; i++) { if (i % 2) continue; ctx.save(); ctx.translate(cx, cy); ctx.rotate((i / n) * Math.PI * 2); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-W * 0.055, H * 1.6); ctx.lineTo(W * 0.055, H * 1.6); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    ctx.restore();
   } else {
-    // corner — hoa văn góc cổ điển (nét cong + cuộn), không nhét motif dịp
-    const off = 46, A = W * 0.06, lw = Math.max(2, W * 0.0032);
+    // corner — hoa văn góc cổ điển + CỤM hoạ tiết dịp ở góc trên-phải (vùng an toàn, không đè brand/CTA)
+    const off = 46, A = W * 0.055, lw = Math.max(2, W * 0.0032);
     const fl = (cx: number, cy: number, sx: number, sy: number) => { ctx.save(); ctx.translate(cx, cy); ctx.scale(sx, sy); drawCornerFlourish(ctx, A, s.c2, lw); ctx.restore(); };
     fl(off, off, 1, 1); fl(W - off, off, -1, 1); fl(off, H - off, 1, -1); fl(W - off, H - off, -1, -1);
+    // Cụm hoạ tiết dịp: to-mờ sau + nhỏ-rõ trước, 2 tông, toả từ góc trên-phải
+    drawMotifAt(ctx, s.id, W * 0.9, W * 0.08, W * 0.055, s.c1);
+    drawMotifAt(ctx, s.id, W * 0.8, W * 0.055, W * 0.032, s.c2);
+    drawMotifAt(ctx, s.id, W * 0.86, W * 0.15, W * 0.026, s.c2);
   }
 
   ctx.restore();

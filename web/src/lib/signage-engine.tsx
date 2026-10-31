@@ -111,7 +111,7 @@ export interface SignData { name: string; sub: string; number: string; street: s
 export type SignKind = 'cnc' | 'neon' | 'lightbox' | 'channel' | 'engrave' | 'chalk' | 'print';
 export interface SignSpec {
   tpl: string; w: number; h: number; fontId: string; material: string; style: 'cut' | 'raised'; letter: string; wall: string;
-  kind?: SignKind; color?: string; ink?: string; halo?: boolean;
+  kind?: SignKind; color?: string; ink?: string; accent?: string; halo?: boolean;
 }
 // Loại bảng hiệu (mỗi loại render khác nhau trên cùng bố cục mẫu)
 export const SIGN_KINDS: { id: SignKind; name: string; desc: string }[] = [
@@ -126,6 +126,18 @@ export const SIGN_KINDS: { id: SignKind; name: string; desc: string }[] = [
 export const NEON_COLORS = ['#ff4fa3', '#4fc3ff', '#ffb347', '#f4f1ea', '#b46bff', '#ff5a4f', '#3ff0d0'];
 export const FACE_COLORS = ['#c62828', '#1d3557', '#141414', '#f4b400', '#ffffff', '#7b2cbf', '#ff7a00', '#8d5524'];
 export const INK_COLORS = ['#ffffff', '#141414', '#f4c95d', '#c62828'];
+// Phối màu in sẵn (nền / chữ / nhấn) — phối tay, tránh nền xanh nhạt nhoà
+export const PRINT_PALETTES: { id: string; name: string; face: string; ink: string; accent: string }[] = [
+  { id: 'black-gold', name: 'Đen vàng', face: '#141414', ink: '#ffffff', accent: '#e8b730' },
+  { id: 'red-cream', name: 'Đỏ kem', face: '#a8201a', ink: '#fff4e0', accent: '#f6c453' },
+  { id: 'cream-brown', name: 'Kem nâu', face: '#f3e9dc', ink: '#3e2415', accent: '#b5651d' },
+  { id: 'white-red', name: 'Trắng đỏ', face: '#faf7f2', ink: '#161616', accent: '#d62828' },
+  { id: 'navy-gold', name: 'Navy vàng', face: '#14213d', ink: '#ffffff', accent: '#fca311' },
+  { id: 'orange-black', name: 'Cam đen', face: '#ff6b1a', ink: '#161616', accent: '#ffffff' },
+  { id: 'plum-gold', name: 'Tím vàng', face: '#3c1a5b', ink: '#ffffff', accent: '#fbb13c' },
+  { id: 'pink-wine', name: 'Hồng đô', face: '#f7d9d9', ink: '#5a1a2b', accent: '#a4133c' },
+  { id: 'teal-sand', name: 'Xanh két cát', face: '#0b3d4a', ink: '#f1faee', accent: '#e9c46a' },
+];
 export const CHALK_COLORS = ['#f3f1ea', '#ffd166', '#ff9ec7', '#9ad7ff'];
 export const HALO_COLORS = ['#ffd9a0', '#ffffff', '#4fc3ff', '#ff4fa3'];
 const hexMix = (a: string, b: string, t: number) => {
@@ -160,12 +172,15 @@ function platePath(W: number, H: number, shape: SignTemplate['shape']): string {
 }
 
 // Nội dung cần cắt (chữ + icon), tô bằng `fill`. Toạ độ trong khung tấm W×H.
-function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignData; W: number; H: number; font: SignFont; fill: string; arcId: string }) {
+function Content({ t, d, W, H, font, fill, arcId, accent }: { t: SignTemplate; d: SignData; W: number; H: number; font: SignFont; fill: string; arcId: string; accent?: string }) {
+  const acc = accent || fill; // chữ phụ + thanh/hạt trang trí
+  const subUp = (d.sub || '').toUpperCase();
+  const isSub = (s: string) => !!d.sub && (s === d.sub || s === subUp);
   const main = { family: font.family, weight: font.weight };
   const sub = font.group === 'script' ? main : SUB;
   const pad = Math.min(W, H) * 0.1;
   const T = (text: string, x: number, y: number, size: number, f: { family: string; weight: number }, anchor: 'start' | 'middle' = 'middle', spacing = 0) => text ? (
-    <text x={x} y={y} fontFamily={`"${f.family}"`} fontWeight={f.weight} fontSize={size} textAnchor={anchor} letterSpacing={spacing ? spacing * size : undefined} fill={fill}>{text}</text>
+    <text x={x} y={y} fontFamily={`"${f.family}"`} fontWeight={f.weight} fontSize={size} textAnchor={anchor} letterSpacing={spacing ? spacing * size : undefined} fill={isSub(text) ? acc : fill}>{text}</text>
   ) : null;
   const Ic = d.icon && d.icon !== 'none' ? iconById(d.icon) : null;
   const icon = (x: number, y: number, s: number) => Ic ? <Ic x={x} y={y} width={s} height={s} size={s} weight="fill" color={fill} /> : null;
@@ -173,24 +188,24 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
 
   if (t.id === 'villa') {
     const s = Ic ? H * 0.72 : 0; const x1 = W - pad - (Ic ? s + pad * 0.4 : 0); const cx = (pad + x1) / 2; const tw = x1 - pad;
-    const ns = fit(d.name, main, tw, H * 0.36); const ss = fit(d.sub, sub, tw * 0.6, H * 0.17);
+    const ns = fit(d.name, main, tw, H * 0.36); const ss = fit(d.sub, sub, tw * 0.75, H * 0.19);
     out.push(T(d.name, cx, d.sub ? H * 0.5 : H * 0.6, ns, main), T(d.sub, cx, H * 0.5 + ss * 1.25, ss, sub));
     out.push(icon(W - pad - s, (H - s) / 2, s));
   } else if (t.id === 'houseno') {
     const ns = fit(d.number, main, W * 0.7, H * 0.5); const ss = fit(d.street.toUpperCase(), main, W - pad * 2, H * 0.19);
     out.push(T(d.number, W / 2, H * 0.52, ns, main));
-    out.push(<rect key="rule" x={pad} y={H * 0.6} width={W - pad * 2} height={Math.max(3, H * 0.022)} fill={fill} />);
+    out.push(<rect key="rule" x={pad} y={H * 0.6} width={W - pad * 2} height={Math.max(3, H * 0.022)} fill={acc} />);
     out.push(T(d.street.toUpperCase(), W / 2, H * 0.6 + H * 0.06 + ss * 0.78, ss, main));
   } else if (t.id === 'shop') {
-    const ns = fit(d.name, main, W - pad * 2, H * 0.27); const ss = fit(d.sub, SUB, W * 0.75, H * 0.075, 0.35);
+    const ns = fit(d.name, main, W - pad * 2, H * 0.27); const ss = fit(d.sub, SUB, W * 0.75, H * 0.095, 0.3);
     out.push(T(d.name, W / 2, d.sub ? H * 0.53 : H * 0.6, ns, main), T(d.sub, W / 2, H * 0.53 + ns * 0.35 + ss * 1.4, ss, SUB, 'middle', 0.35));
   } else if (t.id === 'long') {
     const s = Ic ? H * 0.62 : 0; const x0 = pad + (Ic ? s + pad * 0.7 : 0); const tw = W - x0 - pad;
-    const ns = fit(d.name.toUpperCase(), main, tw, H * 0.42); const ss = fit(d.sub, SUB, tw, H * 0.13, 0.12);
+    const ns = fit(d.name.toUpperCase(), main, tw, H * 0.42); const ss = fit(d.sub, SUB, tw, H * 0.16, 0.12);
     out.push(icon(pad, (H - s) / 2, s));
     out.push(T(d.name.toUpperCase(), x0, d.sub ? H * 0.5 + ns * 0.12 : H * 0.5 + ns * 0.36, ns, main, 'start'), T(d.sub, x0, H * 0.5 + ns * 0.12 + ss * 1.6, ss, SUB, 'start', 0.12));
   } else if (t.id === 'logo') {
-    const s = Ic ? H * 0.4 : 0; const ns = fit(d.name.toUpperCase(), main, W - pad * 2, Ic ? H * 0.16 : H * 0.3); const ss = fit(d.sub, SUB, W * 0.7, H * 0.06, 0.2);
+    const s = Ic ? H * 0.4 : 0; const ns = fit(d.name.toUpperCase(), main, W - pad * 2, Ic ? H * 0.16 : H * 0.3); const ss = fit(d.sub, SUB, W * 0.7, H * 0.075, 0.2);
     out.push(icon((W - s) / 2, pad * 1.1, s));
     const ny = Ic ? pad * 1.1 + s + H * 0.06 + ns * 0.75 : H * 0.55;
     out.push(T(d.name.toUpperCase(), W / 2, ny, ns, main), T(d.sub, W / 2, ny + ss * 2, ss, SUB, 'middle', 0.2));
@@ -198,7 +213,7 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
     const s = Ic ? W * 0.3 : 0; const ns = fit(d.number, main, W * 0.72, H * 0.32); const ss = fit(d.street.toUpperCase(), main, W - pad * 2, H * 0.085);
     out.push(icon((W - s) / 2, W * 0.16, s));
     out.push(T(d.number, W / 2, H * 0.66, ns, main));
-    out.push(<rect key="rule" x={pad * 1.2} y={H * 0.72} width={W - pad * 2.4} height={Math.max(3, H * 0.014)} fill={fill} />);
+    out.push(<rect key="rule" x={pad * 1.2} y={H * 0.72} width={W - pad * 2.4} height={Math.max(3, H * 0.014)} fill={acc} />);
     out.push(T(d.street.toUpperCase(), W / 2, H * 0.72 + H * 0.04 + ss * 0.8, ss, main));
   } else if (t.id === 'round') {
     const r = Math.min(W, H) / 2; const cx = W / 2, cy = H / 2;
@@ -211,19 +226,18 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
         <textPath href={`#${arcId}`} startOffset="50%" textAnchor="middle">{d.street.toUpperCase()}</textPath>
       </text>,
     );
-    out.push(<circle key="d1" cx={cx - ar} cy={cy + r * 0.08} r={r * 0.035} fill={fill} />, <circle key="d2" cx={cx + ar} cy={cy + r * 0.08} r={r * 0.035} fill={fill} />);
+    out.push(<circle key="d1" cx={cx - ar} cy={cy + r * 0.08} r={r * 0.035} fill={acc} />, <circle key="d2" cx={cx + ar} cy={cy + r * 0.08} r={r * 0.035} fill={acc} />);
   }
   // ---- mẫu bổ sung ----
-  const bar = (x: number, y: number, w: number, h = Math.max(3, Math.min(W, H) * 0.014)) => <rect x={x} y={y - h / 2} width={w} height={h} fill={fill} />;
-  const diamond = (x: number, y: number, s: number) => <rect x={x - s / 2} y={y - s / 2} width={s} height={s} fill={fill} transform={`rotate(45 ${x} ${y})`} />;
-  const subUp = (d.sub || '').toUpperCase();
+  const bar = (x: number, y: number, w: number, h = Math.max(3, Math.min(W, H) * 0.014)) => <rect x={x} y={y - h / 2} width={w} height={h} fill={acc} />;
+  const diamond = (x: number, y: number, s: number) => <rect x={x - s / 2} y={y - s / 2} width={s} height={s} fill={acc} transform={`rotate(45 ${x} ${y})`} />;
   if (t.id === 'frame') {
     // khung 4 thanh rời (chừa khe ở góc để lõi không rơi) + hạt kim cương ở góc
     const b = Math.min(W, H) * 0.07, g = Math.min(W, H) * 0.05, th = Math.max(3, Math.min(W, H) * 0.014);
     out.push(bar(b + g, b, W - 2 * (b + g), th), bar(b + g, H - b, W - 2 * (b + g), th));
-    out.push(<rect x={b - th / 2} y={b + g} width={th} height={H - 2 * (b + g)} fill={fill} />, <rect x={W - b - th / 2} y={b + g} width={th} height={H - 2 * (b + g)} fill={fill} />);
+    out.push(<rect x={b - th / 2} y={b + g} width={th} height={H - 2 * (b + g)} fill={acc} />, <rect x={W - b - th / 2} y={b + g} width={th} height={H - 2 * (b + g)} fill={acc} />);
     for (const [x, y] of [[b, b], [W - b, b], [b, H - b], [W - b, H - b]]) out.push(diamond(x, y, g * 0.7));
-    const ns = fit(d.name, main, W - pad * 3.2, H * 0.3); const ss = fit(subUp, SUB, W * 0.55, H * 0.075, 0.3);
+    const ns = fit(d.name, main, W - pad * 3.2, H * 0.3); const ss = fit(subUp, SUB, W * 0.6, H * 0.09, 0.3);
     out.push(T(d.name, W / 2, d.sub ? H * 0.53 : H * 0.6, ns, main), T(subUp, W / 2, H * 0.53 + ns * 0.3 + ss * 1.5, ss, SUB, 'middle', 0.3));
   } else if (t.id === 'ornament') {
     const ns = fit(d.name, main, W * 0.66, H * 0.3); const ss = fit(subUp, SUB, W * 0.4, H * 0.09, 0.3);
@@ -240,14 +254,14 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
     words.forEach((w, i) => out.push(T(w.toUpperCase(), W / 2, y0 + lh * i + lh / 2 + ws * 0.36, ws, main)));
     if (d.sub) { const ss = fit(subUp, SUB, W - pad * 2, H * 0.03, 0.2); out.push(bar(W * 0.3, y1 + H * 0.005, W * 0.4), T(subUp, W / 2, y1 + H * 0.045, ss, SUB, 'middle', 0.2)); }
   } else if (t.id === 'oval') {
-    const ns = fit(d.name, main, W * 0.66, H * 0.3); const ss = fit(subUp, SUB, W * 0.38, H * 0.075, 0.3);
+    const ns = fit(d.name, main, W * 0.66, H * 0.3); const ss = fit(subUp, SUB, W * 0.42, H * 0.09, 0.3);
     out.push(T(d.name, W / 2, d.sub ? H * 0.52 : H * 0.58, ns, main));
     if (d.sub) { const sw = textW(subUp, SUB.family, SUB.weight, ss, 0.3); const sy = H * 0.52 + ns * 0.28 + ss * 1.5; out.push(T(subUp, W / 2, sy, ss, SUB, 'middle', 0.3), diamond(W / 2 - sw / 2 - ss, sy - ss * 0.35, ss * 0.45), diamond(W / 2 + sw / 2 + ss, sy - ss * 0.35, ss * 0.45)); }
     out.push(bar(W * 0.4, H * 0.16, W * 0.2), bar(W * 0.4, H * 0.84, W * 0.2));
   } else if (t.id === 'hanging') {
     const hr = Math.min(W, H) * 0.028;
     out.push(<circle cx={W * 0.12} cy={H * 0.12} r={hr} fill={fill} />, <circle cx={W * 0.88} cy={H * 0.12} r={hr} fill={fill} />);
-    const s = Ic ? H * 0.2 : 0; const ns = fit(d.name, main, W - pad * 2.4, H * 0.3); const ss = fit(d.sub, SUB, W * 0.6, H * 0.08, 0.15);
+    const s = Ic ? H * 0.2 : 0; const ns = fit(d.name, main, W - pad * 2.4, H * 0.3); const ss = fit(d.sub, SUB, W * 0.62, H * 0.095, 0.15);
     out.push(icon((W - s) / 2, H * 0.08, s));
     out.push(T(d.name, W / 2, H * 0.64, ns, main), T(d.sub, W / 2, H * 0.64 + ns * 0.3 + ss * 1.5, ss, SUB, 'middle', 0.15));
   } else if (t.id === 'split') {
@@ -255,7 +269,7 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
     const dx = pad + nw + pad * 0.7; const x2 = dx + pad * 0.7; const tw = W - x2 - pad;
     const ss = fit(d.street.toUpperCase(), main, tw, H * 0.2); const bs = fit(subUp, SUB, tw, H * 0.1, 0.12);
     out.push(T(d.number, pad, H / 2 + ns * 0.36, ns, main, 'start'));
-    out.push(<rect x={dx} y={H * 0.18} width={Math.max(3, Math.min(W, H) * 0.02)} height={H * 0.64} fill={fill} />);
+    out.push(<rect x={dx} y={H * 0.18} width={Math.max(3, Math.min(W, H) * 0.02)} height={H * 0.64} fill={acc} />);
     out.push(T(d.street.toUpperCase(), x2, d.sub ? H * 0.5 : H / 2 + ss * 0.36, ss, main, 'start'), T(subUp, x2, H * 0.5 + bs * 1.7, bs, SUB, 'start', 0.12));
   } else if (t.id === 'pattern') {
     // hoa văn lặp (icon hoặc hạt kim cương) phủ tấm, chừa dải giữa cho tên
@@ -274,7 +288,7 @@ function Content({ t, d, W, H, font, fill, arcId }: { t: SignTemplate; d: SignDa
     const ns = fit(d.name.toUpperCase(), main, W - pad * 3, band * 0.62);
     out.push(T(d.name.toUpperCase(), W / 2, H / 2 + ns * 0.36, ns, main));
   } else if (t.id === 'chamfer') {
-    const ns = fit(d.name.toUpperCase(), main, W - pad * 2.6, H * 0.26); const ss = fit(d.sub, SUB, W * 0.65, H * 0.075, 0.2);
+    const ns = fit(d.name.toUpperCase(), main, W - pad * 2.6, H * 0.26); const ss = fit(d.sub, SUB, W * 0.65, H * 0.09, 0.2);
     out.push(bar(W * 0.38, H * 0.2, W * 0.24), bar(W * 0.38, H * 0.8, W * 0.24));
     out.push(T(d.name.toUpperCase(), W / 2, d.sub ? H * 0.53 : H / 2 + ns * 0.36, ns, main), T(d.sub, W / 2, H * 0.53 + ss * 1.9, ss, SUB, 'middle', 0.2));
   } else if (t.id === 'shield') {
@@ -346,11 +360,18 @@ function wallFill(id: string, uid: string, VW: number) {
         </filter>
       </defs>
       <rect width="100%" height="100%" filter={`url(#${uid}-wall)`} />
+      <defs>
+        <radialGradient id={`${uid}-light`} cx="50%" cy="15%" r="80%"><stop offset="0" stopColor="#fff" stopOpacity={w.id === 'dark' ? 0.08 : 0.24} /><stop offset="0.65" stopColor="#fff" stopOpacity={0} /></radialGradient>
+        <radialGradient id={`${uid}-vig`} cx="50%" cy="42%" r="78%"><stop offset="0.5" stopColor="#000" stopOpacity={0} /><stop offset="1" stopColor="#000" stopOpacity={w.id === 'dark' ? 0.6 : 0.34} /></radialGradient>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${uid}-light)`} />
+      <rect width="100%" height="100%" fill={`url(#${uid}-vig)`} />
     </>
   );
 }
 
-export function SignSvg({ spec, data, mode = 'preview', style, className }: { spec: SignSpec; data: SignData; mode?: 'preview' | 'cut'; style?: React.CSSProperties; className?: string }) {
+// aspect: ép khung cảnh theo tỉ lệ ô chứa (vd 4/3) → tường phủ kín, không hở viền
+export function SignSvg({ spec, data, mode = 'preview', style, className, aspect }: { spec: SignSpec; data: SignData; mode?: 'preview' | 'cut'; style?: React.CSSProperties; className?: string; aspect?: number }) {
   const uid = 's' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const t = tplById(spec.tpl); const W = spec.w, H = spec.h; const font = signFont(spec.fontId);
   const m = matById(spec.material); const L = matById(spec.letter);
@@ -367,9 +388,11 @@ export function SignSvg({ spec, data, mode = 'preview', style, className }: { sp
   }
 
   const M = Math.max(W, H) * 0.14; const th = Math.max(W, H) * 0.007; // lề tường + độ dày tấm
-  const VW = W + M * 2, VH = H + M * 2;
+  let VW = W + M * 2, VH = H + M * 2;
+  if (aspect) { if (VW / VH < aspect) VW = VH * aspect; else VH = VW / aspect; }
+  const ox = (VW - W) / 2, oy = (VH - H) / 2;
   const kind = spec.kind || 'cnc';
-  if (kind !== 'cnc') return <SignKindSvg spec={spec} data={data} uid={uid} t={t} W={W} H={H} M={M} th={th} VW={VW} VH={VH} shape={shape} font={font} m={m} L={L} style={style} className={className} />;
+  if (kind !== 'cnc') return <SignKindSvg spec={spec} data={data} uid={uid} t={t} W={W} H={H} ox={ox} oy={oy} th={th} VW={VW} VH={VH} shape={shape} font={font} m={m} L={L} style={style} className={className} />;
   const plate = (
     <>
       <path d={shape} fill={fillOf(m, uid, 'plate')} />
@@ -383,7 +406,7 @@ export function SignSvg({ spec, data, mode = 'preview', style, className }: { sp
         {gradDef(m, uid, 'plate')}
         {gradDef(L, uid, 'letter')}
         <clipPath id={`${uid}-clip`}><path d={shape} /></clipPath>
-        <mask id={`${uid}-mask`} maskUnits="userSpaceOnUse" x={-M} y={-M} width={VW} height={VH}>
+        <mask id={`${uid}-mask`} maskUnits="userSpaceOnUse" x={-ox} y={-oy} width={VW} height={VH}>
           <path d={shape} fill="#ffffff" />
           <Content t={t} d={data} W={W} H={H} font={font} fill="#000000" arcId={`${arcId}m`} />
         </mask>
@@ -391,7 +414,8 @@ export function SignSvg({ spec, data, mode = 'preview', style, className }: { sp
         <filter id={`${uid}-lift`} x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx={0} dy={th * 0.6} stdDeviation={th * 0.5} floodOpacity={0.45} /></filter>
       </defs>
       {wallFill(spec.wall, uid, VW)}
-      <g transform={`translate(${M} ${M})`}>
+      <g transform={`translate(${ox} ${oy})`}>
+        <path d={shape} fill="none" data-plate="" />
         <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />
         {spec.style === 'cut' ? (
           <>
@@ -411,12 +435,12 @@ export function SignSvg({ spec, data, mode = 'preview', style, className }: { sp
 }
 
 // Các loại bảng hiệu ngoài CNC: neon, hộp đèn, chữ nổi LED, khắc laser, bảng phấn, in màu
-function SignKindSvg({ spec, data, uid, t, W, H, M, th, VW, VH, shape, font, m, L, style, className }: {
-  spec: SignSpec; data: SignData; uid: string; t: SignTemplate; W: number; H: number; M: number; th: number; VW: number; VH: number;
+function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font, m, L, style, className }: {
+  spec: SignSpec; data: SignData; uid: string; t: SignTemplate; W: number; H: number; ox: number; oy: number; th: number; VW: number; VH: number;
   shape: string; font: SignFont; m: Material; L: Material; style?: React.CSSProperties; className?: string;
 }) {
   const kind = spec.kind || 'cnc';
-  const C = (fill: string, arc: string) => <Content t={t} d={data} W={W} H={H} font={font} fill={fill} arcId={`${uid}-${arc}`} />;
+  const C = (fill: string, arc: string, accent?: string) => <Content t={t} d={data} W={W} H={H} font={font} fill={fill} accent={accent} arcId={`${uid}-${arc}`} />;
   const minWH = Math.min(W, H);
   const shadow = <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />;
   const plate = (
@@ -509,17 +533,25 @@ function SignKindSvg({ spec, data, uid, t, W, H, M, th, VW, VH, shape, font, m, 
       </>
     );
   } else if (kind === 'print') {
-    const face = spec.color || FACE_COLORS[1]; const ink = spec.ink || INK_COLORS[0];
-    defs.push(
-      <linearGradient key="pg" id={`${uid}-pg`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={hexMix(face, '#ffffff', 0.12)} /><stop offset="1" stopColor={hexMix(face, '#000000', 0.18)} /></linearGradient>,
-    );
+    const pal = PRINT_PALETTES[0];
+    const face = spec.color || pal.face; const ink = spec.ink || pal.ink; const acc = spec.accent || ink;
+    const ins = minWH * 0.075, sx = (W - ins * 2) / W, sy = (H - ins * 2) / H;
+    const rect = !t.shape || t.shape === 'rect' || t.shape === 'chamfer';
+    const br = minWH * 0.02, bi = minWH * 0.038;
     body = (
       <>
         {shadow}
         <path d={shape} fill={hexMix(face, '#000000', 0.45)} transform={`translate(${th * 0.4} ${th * 0.6})`} />
-        <path d={shape} fill={`url(#${uid}-pg)`} />
-        <g clipPath={`url(#${uid}-clip)`}><circle cx={W * 0.95} cy={H * 0.05} r={minWH * 0.6} fill={hexMix(face, '#ffffff', 0.1)} opacity={0.5} /></g>
-        {C(ink, 'p1')}
+        <path d={shape} fill={face} />
+        {t.id !== 'frame' && <path d={shape} fill="none" stroke={acc} strokeWidth={(minWH * 0.009) / Math.min(sx, sy)} transform={`translate(${ins} ${ins}) scale(${sx} ${sy})`} />}
+        {C(ink, 'p1', acc)}
+        {rect && [[bi, bi], [W - bi, bi], [bi, H - bi], [W - bi, H - bi]].map(([x, y], i) => (
+          <g key={i}>
+            <circle cx={x + br * 0.25} cy={y + br * 0.4} r={br} fill="#000" opacity={0.35} />
+            <circle cx={x} cy={y} r={br} fill="#b9bdc3" stroke="#6f747a" strokeWidth={br * 0.18} />
+            <circle cx={x - br * 0.3} cy={y - br * 0.3} r={br * 0.35} fill="#fff" opacity={0.75} />
+          </g>
+        ))}
       </>
     );
   }
@@ -535,7 +567,7 @@ function SignKindSvg({ spec, data, uid, t, W, H, M, th, VW, VH, shape, font, m, 
         {defs}
       </defs>
       {wallFill(spec.wall, uid, VW)}
-      <g transform={`translate(${M} ${M})`}>{body}</g>
+      <g transform={`translate(${ox} ${oy})`}><path d={shape} fill="none" data-plate="" />{body}</g>
     </svg>
   );
 }

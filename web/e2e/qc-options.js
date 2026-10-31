@@ -50,12 +50,6 @@ const BASE = 'http://localhost:3009';
   await check('Gợi ý: Ngành (select)', async () => {
     await page.locator('select[title="Ngành hàng"]').selectOption({ index: 2 });
   });
-  await check('Gợi ý: Tông (select)', async () => {
-    await page.locator('select[title="Tông giọng"]').selectOption({ label: 'Sang trọng' });
-  });
-  await check('Gợi ý (button)', async () => {
-    await page.getByRole('button', { name: 'Gợi ý' }).click();
-  });
   await check('Đổi nền (button)', async () => {
     await page.getByRole('button', { name: 'Đổi nền' }).click();
   });
@@ -74,8 +68,8 @@ const BASE = 'http://localhost:3009';
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
   });
-  await check('Dịp: Tết (chip)', async () => {
-    await page.getByRole('button', { name: 'Tết', exact: true }).click();
+  await check('Dịp: Tết (dropdown)', async () => {
+    await page.locator('[data-testid="season-select"]').selectOption('tet');
   });
   await check('Kiểu decor: Huy hiệu', async () => {
     await page.getByRole('button', { name: 'Huy hiệu' }).click();
@@ -115,8 +109,8 @@ const BASE = 'http://localhost:3009';
   // Trên canvas sạch trước (chưa có decor dịp):
   { const k = page.getByRole('button', { name: /Bảng Ma Trận/ }); if (await k.count()) await checkC('[canvas] Kiểu (layout)', async () => k.click()); }
   { const t = page.getByRole('button', { name: 'Warm Editorial' }); if (await t.count()) await checkC('[canvas] Phong cách (theme)', async () => t.click()); }
-  await page.getByRole('button', { name: '8/3', exact: true }).click(); await page.waitForTimeout(600);
-  await checkC('[canvas] Dịp (8/3→Tết)', async () => page.getByRole('button', { name: 'Tết', exact: true }).click());
+  await page.locator('[data-testid="season-select"]').selectOption('8thang3'); await page.waitForTimeout(600);
+  await checkC('[canvas] Dịp (8/3→Tết)', async () => page.locator('[data-testid="season-select"]').selectOption('tet'));
   await checkC('[canvas] Kiểu decor: Huy hiệu', async () => page.getByRole('button', { name: 'Huy hiệu' }).click());
   await checkC('[canvas] Kiểu decor: Dải ngang', async () => page.getByRole('button', { name: 'Dải ngang' }).click());
   await checkC('[canvas] Viền', async () => setRange(page.locator('input[type=range]').nth(0), 20));

@@ -108,6 +108,9 @@ export interface MarketingState {
   sticker?: StickerConfig;
   season?: string; // id trong SEASON_PRESETS, 'none' = không trang trí
   seasonStyle?: string; // kiểu trang trí dịp: ribbon|badge|banner|corners (áp cho cả canvas & skin)
+  seasonC1?: string; // màu chính hoạ tiết tự chọn (trống = theo dịp)
+  seasonC2?: string; // màu phụ hoạ tiết tự chọn
+  seasonMotif?: string; // hình hoạ tiết tự chọn, id trong SEASON_MOTIFS (trống = theo dịp)
   headingFontId?: string; // id trong FONT_PRESETS; override font cho poster
   bodyFontId?: string;
   borderWidth?: number; // px viền khung (0 = tắt). undefined = mặc định theo mẫu

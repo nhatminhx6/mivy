@@ -21,6 +21,12 @@ export const COPY_INDUSTRIES: { id: string; name: string }[] = [
   { id: 'noi-that', name: 'Nhà cửa' },
   { id: 'spa', name: 'Spa / Làm đẹp' },
   { id: 'nha-hang', name: 'Quán ăn / Nhà hàng' },
+  { id: 'du-lich', name: 'Du lịch' },
+  { id: 'the-hinh', name: 'Thể hình / Gym' },
+  { id: 'giao-duc', name: 'Giáo dục' },
+  { id: 'su-kien', name: 'Sự kiện' },
+  { id: 'tuyen-dung', name: 'Tuyển dụng' },
+  { id: 'dich-vu', name: 'Dịch vụ' },
 ];
 
 export interface ProductCopySet { headline: string; saleTag: string; cta: string; }
@@ -141,6 +147,54 @@ const INDUSTRY: Record<string, IndustryCopy> = {
     },
     saleTag: ['COMBO 2 NGƯỜI', 'TẶNG MÓN KHAI VỊ', 'GIẢM 20% HÓA ĐƠN', 'FREE ĐỒ UỐNG'],
     usp: ['Tươi mỗi ngày', 'Không gian đẹp', 'Phục vụ tận tình'],
+  },
+  'tuyen-dung': {
+    headline: {
+      sale: ['TUYỂN GẤP — NHẬN NGAY', 'LƯƠNG HẤP DẪN — VÀO LÀM LIỀN', 'CƠ HỘI VIỆC LÀM HOT', 'ỨNG TUYỂN NGAY HÔM NAY', 'THƯỞNG NÓNG KHI NHẬN VIỆC'],
+      pro: ['GIA NHẬP ĐỘI NGŨ CHÚNG TÔI', 'CƠ HỘI PHÁT TRIỂN SỰ NGHIỆP', 'MÔI TRƯỜNG CHUYÊN NGHIỆP', 'CHÚNG TÔI ĐANG TUYỂN DỤNG', 'LỘ TRÌNH THĂNG TIẾN RÕ RÀNG'],
+      luxury: ['TÌM KIẾM NHÂN TÀI', 'KIẾN TẠO TƯƠNG LAI CÙNG NHAU', 'NƠI TÀI NĂNG TỎA SÁNG', 'ĐỒNG HÀNH CÙNG NGƯỜI GIỎI'],
+      friendly: ['VỀ ĐỘI MÌNH NHÉ', 'TEAM ĐANG CHỜ BẠN NÈ', 'LÀM VUI — LƯƠNG ỔN', 'CÙNG LÀM CÙNG LỚN NHA'],
+    },
+  },
+  'giao-duc': {
+    headline: {
+      sale: ['GIẢM HỌC PHÍ ĐẾN 50%', 'ĐĂNG KÝ SỚM — GIÁ ƯU ĐÃI', 'HỌC THỬ MIỄN PHÍ', 'KHAI GIẢNG — SLOT CÓ HẠN', 'TẶNG KHÓA HỌC KÈM THEO'],
+      pro: ['CAM KẾT ĐẦU RA', 'LỘ TRÌNH HỌC CÁ NHÂN HÓA', 'GIÁO VIÊN GIÀU KINH NGHIỆM', 'HỌC THẬT — GIỎI THẬT', 'KHAI GIẢNG KHÓA MỚI'],
+      luxury: ['ĐẦU TƯ CHO TƯƠNG LAI', 'CHUẨN QUỐC TẾ', 'NÂNG TẦM TRI THỨC', 'HỌC CÙNG CHUYÊN GIA'],
+      friendly: ['HỌC MÀ VUI NHƯ CHƠI', 'TIẾN BỘ MỖI NGÀY', 'CÙNG HỌC NHA BẠN ƠI', 'LỚP XINH — HỌC DỄ'],
+    },
+  },
+  'su-kien': {
+    headline: {
+      sale: ['VÉ EARLY BIRD GIẢM SỐC', 'SỐ VÉ CÓ HẠN', 'ĐĂNG KÝ NGAY KẺO LỠ', 'MIỄN PHÍ VÉ VÀO CỬA', 'SỰ KIỆN HOT NHẤT THÁNG'],
+      pro: ['SỰ KIỆN SẮP DIỄN RA', 'TRÂN TRỌNG KÍNH MỜI', 'HỘI THẢO CHUYÊN ĐỀ', 'KẾT NỐI — CHIA SẺ — LAN TỎA', 'ĐỪNG BỎ LỠ SỰ KIỆN'],
+      luxury: ['ĐÊM TIỆC ĐẲNG CẤP', 'SỰ KIỆN ĐỘC QUYỀN', 'GALA THƯỢNG LƯU', 'KHOẢNH KHẮC ĐÁNG NHỚ'],
+      friendly: ['QUẨY HẾT MÌNH NÀO', 'HẸN GẶP NHAU NHA', 'RỦ BẠN ĐI CHUNG NÈ', 'VUI HẾT NẤC LUÔN'],
+    },
+  },
+  'du-lich': {
+    headline: {
+      sale: ['TOUR GIÁ SỐC HÈ NÀY', 'SĂN TOUR GIÁ HỜI', 'GIẢM ĐẾN 30% TOUR HOT', 'ĐI LIỀN KẺO LỠ', 'COMBO VÉ + KHÁCH SẠN'],
+      pro: ['HÀNH TRÌNH TRỌN GÓI', 'LỊCH TRÌNH CHUẨN — DỊCH VỤ TẬN TÂM', 'KHÁM PHÁ VIỆT NAM', 'ĐẶT TOUR UY TÍN', 'TOUR KHỞI HÀNH HẰNG TUẦN'],
+      luxury: ['NGHỈ DƯỠNG ĐẲNG CẤP', 'HÀNH TRÌNH THƯỢNG LƯU', 'KỲ NGHỈ TRONG MƠ', 'RESORT 5 SAO TRỌN GÓI'],
+      friendly: ['XÁCH BALO LÊN VÀ ĐI', 'ĐI ĐÂU CŨNG ĐƯỢC NÈ', 'TRỐN PHỐ CUỐI TUẦN', 'CHILL HẾT CỠ'],
+    },
+  },
+  'the-hinh': {
+    headline: {
+      sale: ['TẬP THỬ MIỄN PHÍ', 'GIẢM 50% THẺ TẬP', 'ĐĂNG KÝ 1 TẶNG 1', 'ƯU ĐÃI HỘI VIÊN MỚI', 'GIÁ SỐC THẺ NĂM'],
+      pro: ['HLV CÁ NHÂN 1 KÈM 1', 'LỘ TRÌNH GIẢM CÂN KHOA HỌC', 'THIẾT BỊ HIỆN ĐẠI', 'CAM KẾT KẾT QUẢ', 'KHỎE ĐẸP BỀN VỮNG'],
+      luxury: ['PHÒNG TẬP CAO CẤP', 'NÂNG TẦM VÓC DÁNG', 'ĐẲNG CẤP SỨC KHỎE', 'TRẢI NGHIỆM PREMIUM'],
+      friendly: ['ĐI TẬP CÙNG NHAU NHA', 'ĐỐT MỠ VUI VẺ', 'KHỎE MỖI NGÀY', 'DÁNG XINH KHÔNG KHÓ'],
+    },
+  },
+  'dich-vu': {
+    headline: {
+      sale: ['ƯU ĐÃI KHÁCH MỚI', 'GIẢM 20% LẦN ĐẦU', 'MIỄN PHÍ KHẢO SÁT', 'DEAL DỊCH VỤ HOT', 'ĐẶT LỊCH NHẬN QUÀ'],
+      pro: ['DỊCH VỤ CHUYÊN NGHIỆP', 'NHANH CHÓNG — UY TÍN', 'TẬN TÂM TỪNG KHÁCH HÀNG', 'BẢO HÀNH DÀI HẠN', 'ĐỘI NGŨ GIÀU KINH NGHIỆM'],
+      luxury: ['DỊCH VỤ ĐẲNG CẤP', 'TRẢI NGHIỆM KHÁC BIỆT', 'CHUẨN 5 SAO', 'TINH TẾ TỪNG CHI TIẾT'],
+      friendly: ['CỨ ĐỂ TỤI MÌNH LO', 'GỌI LÀ CÓ MẶT', 'NHANH GỌN LẸ NHA', 'PHỤC VỤ TẬN NƠI'],
+    },
   },
 };
 

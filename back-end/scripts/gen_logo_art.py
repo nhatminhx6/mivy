@@ -5,6 +5,8 @@ Z-Image-Turbo (Apache 2.0) chạy tại máy qua ComfyUI + GGUF (mặc định) 
 Đã thử và anh loại: Flux qua Pollinations, OmniSVG, Flux + vtracer. Z-Image được anh duyệt (2026-10-26).
 
 Chạy:  .venv/bin/python scripts/gen_logo_art.py [id ...] [--theme pets] [--force]
+       .venv/bin/python scripts/gen_logo_art.py --queue 3 [--themes pets,salon]   # xoay vòng mọi ngành, tối đa 3 hình/ngành (0 = hết)
+Máy khác (Mac mini…): bash scripts/logo_art_batch.sh — tự cài ComfyUI + model rồi chạy --queue (xem docs/LOGO_ART_GEN.md).
 """
 
 from __future__ import annotations
@@ -232,6 +234,12 @@ PALETTES_OF = {k: i for i, k in enumerate(THEMES)}
 COMFY = "http://127.0.0.1:8188"
 
 
+# Model GGUF trong ComfyUI — máy RAM 8GB dùng bản Q4_K_M (logo_art_batch.sh tự đặt)
+UNET = os.environ.get("ZIMAGE_UNET", "z-image-turbo-Q6_K.gguf")
+CLIP = os.environ.get("ZIMAGE_CLIP", "Qwen3-4B-Q6_K.gguf")
+TIMEOUT = int(os.environ.get("ZIMAGE_TIMEOUT", "3600"))  # máy yếu 1 hình có thể >15 phút
+
+
 def fetch_local(prompt: str, seed: int) -> bytes:
     """Z-Image-Turbo chạy TẠI MÁY qua ComfyUI (GGUF Q6, free, không giới hạn). Cần ComfyUI đang chạy ở :8188."""
     import json
@@ -239,8 +247,8 @@ def fetch_local(prompt: str, seed: int) -> bytes:
     import uuid
 
     wf = {
-        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": "z-image-turbo-Q6_K.gguf"}},
-        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": "Qwen3-4B-Q6_K.gguf", "type": "lumina2"}},
+        "1": {"class_type": "UnetLoaderGGUF", "inputs": {"unet_name": UNET}},
+        "2": {"class_type": "CLIPLoaderGGUF", "inputs": {"clip_name": CLIP, "type": "lumina2"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "z_image_ae.safetensors"}},
         "4": {"class_type": "ModelSamplingAuraFlow", "inputs": {"model": ["1", 0], "shift": 3.0}},
         "5": {"class_type": "CLIPTextEncode", "inputs": {"clip": ["2", 0], "text": prompt}},
@@ -254,7 +262,7 @@ def fetch_local(prompt: str, seed: int) -> bytes:
     body = json.dumps({"prompt": wf, "client_id": uuid.uuid4().hex}).encode()
     pid = json.load(urllib.request.urlopen(urllib.request.Request(f"{COMFY}/prompt", data=body, headers={"Content-Type": "application/json"})))["prompt_id"]
     t0 = time.time()
-    while time.time() - t0 < 900:
+    while time.time() - t0 < TIMEOUT:
         h = json.load(urllib.request.urlopen(f"{COMFY}/history/{pid}"))
         if pid in h:
             st = h[pid].get("status", {})
@@ -266,7 +274,7 @@ def fetch_local(prompt: str, seed: int) -> bytes:
                 q = urllib.parse.urlencode({"filename": im["filename"], "subfolder": im["subfolder"], "type": im["type"]})
                 return urllib.request.urlopen(f"{COMFY}/view?{q}").read()
         time.sleep(2)
-    raise RuntimeError("ComfyUI quá 15 phút chưa xong")
+    raise RuntimeError(f"ComfyUI quá {TIMEOUT // 60} phút chưa xong")
 
 
 _client = None
@@ -338,37 +346,44 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("ids", nargs="*")
     ap.add_argument("--theme", default="pets")
+    ap.add_argument("--queue", type=int, metavar="N", help="xoay vòng mọi ngành, tối đa N hình/ngành (0 = hết), bỏ qua hình đã có")
+    ap.add_argument("--themes", help="--queue: chỉ các ngành này, cách nhau dấu phẩy")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--svg", action="store_true", help="thêm bản SVG vtracer (thử nghiệm)")
     ap.add_argument("--engine", choices=["local", "space"], default="local", help="local = ComfyUI tại máy (mặc định), space = HF Space free (giới hạn lượt)")
     a = ap.parse_args()
-    theme = THEMES[a.theme]
-    subjects = theme["subjects"]
-    ids = a.ids or list(subjects)
+    if a.queue is not None:  # (ngành, id) xen kẽ: hình 1 mọi ngành, rồi hình 2 mọi ngành…
+        names = a.themes.split(",") if a.themes else list(THEMES)
+        lists = {t: list(THEMES[t]["subjects"])[: a.queue or None] for t in names}
+        jobs = [(t, ids[i]) for i in range(max(map(len, lists.values()))) for t, ids in lists.items() if i < len(ids)]
+    else:
+        jobs = [(a.theme, id_) for id_ in (a.ids or list(THEMES[a.theme]["subjects"]))]
 
     from rembg import new_session
 
     session = new_session("birefnet-general", providers=["CPUExecutionProvider"])
-    base = OUT_ROOT / a.theme
-    for sub in ("raw", "png") + (("svg",) if a.svg else ()):
-        (base / sub).mkdir(parents=True, exist_ok=True)
     failed = []
-    for n, id_ in enumerate(ids, 1):
+    for n, (theme_id, id_) in enumerate(jobs, 1):
+        theme, base = THEMES[theme_id], OUT_ROOT / theme_id
+        subjects = theme["subjects"]
+        for sub in ("raw", "png") + (("svg",) if a.svg else ()):
+            (base / sub).mkdir(parents=True, exist_ok=True)
         png = base / "png" / f"{id_}.png"
+        tag = f"[{n}/{len(jobs)}] {theme_id}/{id_}"
         if png.exists() and not a.force:
-            print(f"[{n}/{len(ids)}] {id_}: có rồi, bỏ qua", flush=True)
+            print(f"{tag}: có rồi, bỏ qua", flush=True)
             continue
         try:
             t = time.time()
-            prompt = STYLE.format(subject=subjects[id_], shop=theme["shop"], palette=PALETTES[(list(subjects).index(id_) + PALETTES_OF[a.theme]) % len(PALETTES)])
+            prompt = STYLE.format(subject=subjects[id_], shop=theme["shop"], palette=PALETTES[(list(subjects).index(id_) + PALETTES_OF[theme_id]) % len(PALETTES)])
             raw = (fetch_local if a.engine == "local" else fetch)(prompt, seed=7)
             (base / "raw" / f"{id_}.png").write_bytes(raw)
             cutout(raw, session).save(png, optimize=True)
             extra = f", {to_svg(png, base / 'svg' / f'{id_}.svg')} path" if a.svg else ""
-            print(f"[{n}/{len(ids)}] {id_}: ok ({time.time() - t:.0f}s{extra})", flush=True)
+            print(f"{time.strftime('%H:%M')} {tag}: ok ({time.time() - t:.0f}s{extra})", flush=True)
         except Exception as e:  # noqa: BLE001
             failed.append(id_)
-            print(f"[{n}/{len(ids)}] {id_}: LỖI {e}", flush=True)
+            print(f"{time.strftime('%H:%M')} {tag}: LỖI {e}", flush=True)
     return 1 if failed else 0
 
 
