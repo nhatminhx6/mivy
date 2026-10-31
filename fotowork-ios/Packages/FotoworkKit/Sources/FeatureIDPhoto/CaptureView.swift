@@ -16,14 +16,27 @@ public struct CaptureView: View {
     public var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            cameraLayer
-            FaceGuideOverlay()
-                .allowsHitTesting(false)
+
+            if model.cameraAvailable {
+                CameraPreview(session: model.session)
+                    .ignoresSafeArea()
+                FaceGuideOverlay()
+                    .allowsHitTesting(false)
+            } else {
+                FotoworkBackground()
+                    .ignoresSafeArea()
+            }
+
             VStack(spacing: 0) {
                 topBar
-                Spacer()
-                checksPanel
-                controls
+                Spacer(minLength: 0)
+                if model.cameraAvailable {
+                    checksPanel
+                    controls
+                } else {
+                    fallbackCard
+                    Spacer(minLength: 0)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 18)
@@ -46,34 +59,46 @@ public struct CaptureView: View {
         }
     }
 
-    // MARK: Camera / fallback
+    // MARK: Fallback (no camera)
 
-    @ViewBuilder
-    private var cameraLayer: some View {
-        if model.cameraAvailable {
-            CameraPreview(session: model.session)
-                .ignoresSafeArea()
-        } else {
-            ZStack {
-                FotoworkBackground()
-                VStack(spacing: 14) {
-                    Image(systemName: "camera.metering.unknown")
-                        .font(.system(size: 46))
-                        .foregroundStyle(Fotowork.Palette.textSecondary)
-                    Text(model.permissionDenied ? "Chưa cấp quyền camera" : "Camera không khả dụng ở đây")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    Text(model.permissionDenied
-                         ? "Bật quyền camera trong Cài đặt để chụp trực tiếp."
-                         : "Trên máy thật sẽ mở camera. Giờ bạn chọn ảnh có sẵn để thử.")
-                        .font(.footnote)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(Fotowork.Palette.textSecondary)
-                        .padding(.horizontal, 32)
-                }
+    private var fallbackCard: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "photo.on.rectangle.angled")
+                .font(.system(size: 40))
+                .foregroundStyle(Fotowork.Palette.link)
+                .frame(width: 78, height: 78)
+                .glassEffect(.regular, in: .circle)
+
+            VStack(spacing: 6) {
+                Text(model.permissionDenied ? "Chưa cấp quyền camera" : "Camera không khả dụng ở đây")
+                    .font(.title3.bold())
+                    .foregroundStyle(.white)
+                Text(model.permissionDenied
+                     ? "Bật quyền camera trong Cài đặt để chụp trực tiếp, hoặc chọn một ảnh có sẵn."
+                     : "Trên máy thật sẽ mở camera. Giờ anh chọn một ảnh có sẵn để thử các bước.")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Fotowork.Palette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .ignoresSafeArea()
+
+            PhotosPicker(selection: $pickedItem, matching: .images) {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.on.rectangle")
+                    Text("Chọn ảnh có sẵn").fontWeight(.semibold)
+                }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 15)
+                .background(Fotowork.heroGradient, in: .capsule)
+                .shadow(color: Fotowork.Palette.heroStart.opacity(0.5), radius: 14, y: 6)
+            }
+            .padding(.top, 4)
         }
+        .padding(28)
+        .frame(maxWidth: .infinity)
+        .glassEffect(.regular, in: .rect(cornerRadius: Fotowork.Radius.card))
     }
 
     // MARK: Top bar
@@ -256,40 +281,42 @@ private struct CheckChip: View {
     }
 }
 
-/// Oval head guide with crown and chin lines.
+/// Oval head guide with crown and chin markers, sized relative to the oval.
 private struct FaceGuideOverlay: View {
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
-            let ovalW = w * 0.62
-            let ovalH = h * 0.46
-            let centerY = h * 0.42
+            let ovalW = min(w * 0.58, h * 0.40)
+            let ovalH = ovalW * 1.3
+            let cx = w / 2
+            let cy = h * 0.42
+            let lineW = ovalW * 1.22
 
             ZStack {
                 Ellipse()
-                    .stroke(.white.opacity(0.85), style: StrokeStyle(lineWidth: 2, dash: [7, 6]))
+                    .stroke(.white.opacity(0.9), style: StrokeStyle(lineWidth: 2.5, dash: [9, 7]))
                     .frame(width: ovalW, height: ovalH)
-                    .position(x: w / 2, y: centerY)
+                    .position(x: cx, y: cy)
 
-                guideLine(y: centerY - ovalH / 2, label: "đỉnh đầu", width: w)
-                guideLine(y: centerY + ovalH / 2, label: "cằm", width: w)
+                marker(y: cy - ovalH / 2, label: "đỉnh đầu", width: lineW, cx: cx)
+                marker(y: cy + ovalH / 2, label: "cằm", width: lineW, cx: cx)
             }
         }
     }
 
-    private func guideLine(y: CGFloat, label: String, width: CGFloat) -> some View {
-        ZStack(alignment: .leading) {
+    private func marker(y: CGFloat, label: String, width: CGFloat, cx: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
             Rectangle()
-                .fill(.white.opacity(0.35))
-                .frame(width: width * 0.7, height: 1)
+                .fill(.white.opacity(0.4))
+                .frame(width: width, height: 1)
             Text(label)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.75))
-                .offset(y: -10)
+                .foregroundStyle(.white.opacity(0.8))
+                .offset(y: -15)
         }
-        .frame(width: width * 0.7, alignment: .leading)
-        .position(x: width / 2, y: y)
+        .frame(width: width, alignment: .leading)
+        .position(x: cx, y: y)
     }
 }
 
