@@ -162,7 +162,7 @@ public struct EditView: View {
                 ForEach(OutfitOption.allCases) { option in outfitCell(option) }
             }
             if model.settings.outfit != .keep {
-                Text("Bộ trang phục dùng template tạo sẵn — sẽ bổ sung sau.")
+                Text("Áo ghép nhanh bằng code (bản thử); template ảnh thật thêm sau.")
                     .font(.bvp(.caption))
                     .foregroundStyle(Fotowork.Palette.textSecondary)
             }

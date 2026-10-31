@@ -60,7 +60,8 @@ public final class EditViewModel {
         let current = settings
         let aspect = target.aspect
         if let cgImage = await editor.render(settings: current, targetAspect: aspect) {
-            preview = UIImage(cgImage: cgImage)
+            let base = UIImage(cgImage: cgImage)
+            preview = current.outfit == .keep ? base : OutfitOverlay.apply(base, outfit: current.outfit)
         }
         checklist = StandardChecklist.build(
             face: face,
