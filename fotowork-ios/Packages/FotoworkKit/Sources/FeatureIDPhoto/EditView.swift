@@ -10,7 +10,7 @@ public struct EditView: View {
     @State private var showExport = false
 
     enum EditTab: String, CaseIterable, Identifiable {
-        case background = "Nền & áo"
+        case background = "Nền"
         case light = "Ánh sáng"
         case crop = "Cắt khung"
         var id: String { rawValue }
@@ -156,16 +156,10 @@ public struct EditView: View {
             HStack(spacing: 16) {
                 ForEach(BackgroundOption.allCases) { option in swatch(option) }
             }
-
-            Text("Trang phục").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
-            HStack(spacing: 10) {
-                ForEach(OutfitOption.allCases) { option in outfitCell(option) }
-            }
-            if model.settings.outfit != .keep && model.outfitMissing {
-                Text("Mẫu áo thật đang cập nhật — sẽ ghép khi có ảnh áo mẫu.")
-                    .font(.bvp(.caption))
-                    .foregroundStyle(Fotowork.Palette.warning)
-            }
+            Text("Nền trắng/xanh/xám chuẩn ảnh thẻ. Ghép trang phục sẽ thêm sau.")
+                .font(.bvp(.caption))
+                .foregroundStyle(Fotowork.Palette.textSecondary)
+                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -197,34 +191,6 @@ public struct EditView: View {
         case .gray: (0.788, 0.804, 0.831)
         case .original: nil
         }
-    }
-
-    private func outfitCell(_ option: OutfitOption) -> some View {
-        let selected = model.settings.outfit == option
-        return Button { model.settings.outfit = option } label: {
-            VStack(spacing: 6) {
-                Image(systemName: "person.fill")
-                    .font(.bvp(.title2))
-                    .foregroundStyle(Fotowork.Palette.textSecondary)
-                Text(option == .aodai ? "Áo dài" : option.label)
-                    .font(.bvp(.caption)).fontWeight(.semibold)
-                    .foregroundStyle(Fotowork.Palette.textPrimary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 84)
-            .fotoCard(16)
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Fotowork.Palette.primary, lineWidth: selected ? 2 : 0))
-            .overlay(alignment: .topTrailing) {
-                if option == .aodai {
-                    Text("PRO").font(.bvp(size: 10, .bold)).foregroundStyle(.white)
-                        .padding(.horizontal, 6).padding(.vertical, 1)
-                        .background(Fotowork.Palette.pro, in: .rect(cornerRadius: 8))
-                        .padding(6)
-                }
-            }
-        }
-        .buttonStyle(.plain)
     }
 
     private var lightControls: some View {

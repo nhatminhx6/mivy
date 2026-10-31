@@ -64,7 +64,7 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
 Trang chủ ✅ → Chụp ✅ → Chỉnh ✅ → Xuất ✅ → Giấy tờ ✅ (Scan→PDF, CCCD→A4, Nén, Ký tên PencilKit, Bộ hồ sơ SwiftData) → Avatar ✅ (tab + template nền code + consent + tách nền ghép). **v1 đủ các màn chính.**
 
 ### Việc còn treo
-- **Template trang phục** (Vest/Sơ mi/Áo dài) ở màn Chỉnh: engine ghép đã có, cần bộ PNG tạo sẵn offline + anh duyệt gu rồi đặt vào asset `outfit-vest/shirt/aodai`.
+- **Ghép trang phục (Vest/Sơ mi/Áo dài): ĐÃ TẮT ở v1.** Mục "Trang phục" gỡ khỏi màn Chỉnh (anh chốt). Lý do: overlay PNG free không có asset đủ tốt (Pixabay chỉ có ảnh người mặc suit nguyên con, stock đẹp thì trả phí), vẽ bằng code thì xấu. Hướng đúng để làm lại: **virtual try-on model** (giống FASHN VTON của web Mivy) — cần model/server. Engine `OutfitCompositor` + `OutfitOption` còn trong code (dormant) để nối lại sau. Pixabay key đọc từ `web/.env.local` (PIXABAY_API_KEY).
 - **Gói HD (StoreKit)**: product id `com.mivy.fotowork.hd` là placeholder — cần cấu hình App Store Connect / file `.storekit` để test mua.
 - **Chỉ chạy trên máy thật** (không chạy trên simulator): camera trực tiếp, tách nền Vision (ảnh thẻ & avatar), scan tài liệu VisionKit. Trên sim đều có fallback bằng chọn ảnh.
 - Avatar: nền hiện render bằng code (gradient + khung). Nếu muốn nền minh hoạ đẹp hơn → kho template tạo sẵn offline, anh duyệt gu.
