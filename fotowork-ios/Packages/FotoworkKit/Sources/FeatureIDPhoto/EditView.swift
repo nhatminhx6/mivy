@@ -158,12 +158,11 @@ public struct EditView: View {
             }
 
             Text("Trang phục").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary).padding(.top, 4)
-            HStack(spacing: 12) {
-                outfitCell(.keep)
-                outfitCell(.vest)
+            HStack(spacing: 10) {
+                ForEach(OutfitOption.allCases) { outfitCell($0) }
             }
             if model.settings.outfit != .keep && model.outfitMissing {
-                Text("Mẫu áo đang cập nhật.")
+                Text("Chưa ghép được áo — cần ảnh chính diện, thấy rõ cằm.")
                     .font(.bvp(.caption))
                     .foregroundStyle(Fotowork.Palette.warning)
             }
@@ -180,8 +179,8 @@ public struct EditView: View {
                         Image(systemName: "person.fill")
                             .font(.bvp(.title2))
                             .foregroundStyle(Fotowork.Palette.textSecondary)
-                    } else if let name = option.templateAsset, let img = UIImage(named: name) {
-                        Image(uiImage: img).resizable().scaledToFit()
+                    } else if let thumb = OutfitThumbnails.image(for: option) {
+                        Image(uiImage: thumb).resizable().scaledToFit()
                     } else {
                         Image(systemName: "tshirt").font(.bvp(.title2)).foregroundStyle(Fotowork.Palette.textSecondary)
                     }
@@ -266,5 +265,22 @@ struct ProgressBar: View {
             }
         }
         .frame(height: 6)
+    }
+}
+
+/// Small previews of the bundled garment templates for the outfit picker.
+@MainActor
+enum OutfitThumbnails {
+    private static var cache: [OutfitOption: UIImage] = [:]
+
+    static func image(for option: OutfitOption) -> UIImage? {
+        if let hit = cache[option] { return hit }
+        guard let name = option.templateAsset,
+              let url = GarmentTemplate.bundleURL(name),
+              let full = UIImage(contentsOfFile: url.path) else { return nil }
+        let size = CGSize(width: 120, height: 120 * full.size.height / max(full.size.width, 1))
+        let thumb = UIGraphicsImageRenderer(size: size).image { _ in full.draw(in: CGRect(origin: .zero, size: size)) }
+        cache[option] = thumb
+        return thumb
     }
 }

@@ -60,18 +60,9 @@ public final class EditViewModel {
         isProcessing = true
         let current = settings
         let aspect = target.aspect
-        if let cgImage = await editor.render(settings: current, targetAspect: aspect) {
-            let base = UIImage(cgImage: cgImage)
-            if current.outfit == .keep {
-                preview = base
-                outfitMissing = false
-            } else if let composed = OutfitCompositor.apply(base, outfit: current.outfit) {
-                preview = composed
-                outfitMissing = false
-            } else {
-                preview = base
-                outfitMissing = true
-            }
+        if let result = await editor.renderWithOutfit(settings: current, targetAspect: aspect) {
+            preview = UIImage(cgImage: result.image)
+            outfitMissing = !result.outfitFitted
         }
         checklist = StandardChecklist.build(
             face: face,

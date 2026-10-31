@@ -31,25 +31,25 @@ public enum BackgroundOption: String, Sendable, CaseIterable, Identifiable {
 }
 
 public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
-    case keep, vest, shirt, aodai
+    case keep, vestNavy, vestCharcoal, vestBlack
     public var id: String { rawValue }
 
     public var label: String {
         switch self {
         case .keep: "Giữ nguyên"
-        case .vest: "Vest"
-        case .shirt: "Sơ mi"
-        case .aodai: "Áo dài"
+        case .vestNavy: "Vest xanh"
+        case .vestCharcoal: "Vest xám"
+        case .vestBlack: "Vest đen"
         }
     }
 
-    /// Asset name for the pre-made outfit template PNG (generated offline).
+    /// Bundled garment template (`Resources/Garments/<name>.png`, cut from real photos offline).
     public var templateAsset: String? {
         switch self {
         case .keep: nil
-        case .vest: "outfit-vest"
-        case .shirt: "outfit-shirt"
-        case .aodai: "outfit-aodai"
+        case .vestNavy: "vest-navy"
+        case .vestCharcoal: "vest-charcoal"
+        case .vestBlack: "vest-black"
         }
     }
 }
@@ -67,13 +67,21 @@ public struct EditSettings: Sendable, Equatable {
 
 // MARK: - Editor
 
+/// Result of a render. `outfitFitted` is false when an outfit was requested but could not
+/// be fitted (no face found / template missing) — the photo is returned without it.
+public struct PortraitRender: @unchecked Sendable {
+    public let image: CGImage
+    public let outfitFitted: Bool
+}
+
 /// On-device portrait editor: segments the subject, replaces the background with a
-/// solid colour, applies lighting, and crops to the preset aspect. Outfit overlay is
-/// a template-based slot (templates are pre-made PNGs approved offline).
+/// solid colour, applies lighting, crops to the preset aspect, and optionally fits a
+/// real garment template (`GarmentFitter`, templates pre-made offline).
 public actor PortraitEditor {
     private let context = CIContext(options: [.useSoftwareRenderer: false])
     private var source: CIImage?
     private var mask: CIImage?
+    private var garments: [String: GarmentTemplate] = [:]
 
     public init() {}
 
@@ -118,10 +126,23 @@ public actor PortraitEditor {
         return context.createCGImage(image, from: image.extent)
     }
 
+    /// `render(settings:targetAspect:)` plus the selected outfit.
+    public func renderWithOutfit(settings: EditSettings, targetAspect: CGFloat) -> PortraitRender? {
+        guard let base = render(settings: settings, targetAspect: targetAspect) else { return nil }
+        guard let name = settings.outfit.templateAsset else { return PortraitRender(image: base, outfitFitted: true) }
+        if garments[name] == nil { garments[name] = GarmentTemplate.bundled(name) }
+        let backdrop = settings.background.rgb.map { CGColor(srgbRed: $0.r, green: $0.g, blue: $0.b, alpha: 1) }
+        if let garment = garments[name], let fitted = GarmentFitter.compose(base, garment: garment, background: backdrop) {
+            return PortraitRender(image: fitted, outfitFitted: true)
+        }
+        return PortraitRender(image: base, outfitFitted: false)
+    }
+
     // MARK: Helpers
 
     private static func foregroundMask(for image: CIImage) -> CIImage? {
         let request = VNGenerateForegroundInstanceMaskRequest()
+        VisionCompute.prepare(request)
         let handler = VNImageRequestHandler(ciImage: image, options: [:])
         guard (try? handler.perform([request])) != nil,
               let result = request.results?.first,

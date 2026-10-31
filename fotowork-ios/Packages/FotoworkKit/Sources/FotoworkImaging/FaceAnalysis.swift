@@ -78,6 +78,7 @@ public enum FaceChecker {
         let brightnessOK = brightness >= minBrightness && brightness <= maxBrightness
 
         let request = VNDetectFaceLandmarksRequest()
+        VisionCompute.prepare(request)
         guard (try? handler.perform([request])) != nil,
               let face = request.results?.first else {
             return FaceCheckResult(faceFound: false, brightnessOK: brightnessOK, brightness: brightness)

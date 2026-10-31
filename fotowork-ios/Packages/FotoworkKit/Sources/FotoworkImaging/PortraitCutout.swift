@@ -16,6 +16,7 @@ public enum PortraitCutout {
         )
 
         let request = VNGenerateForegroundInstanceMaskRequest()
+        VisionCompute.prepare(request)
         let handler = VNImageRequestHandler(ciImage: image, options: [:])
         guard (try? handler.perform([request])) != nil,
               let result = request.results?.first,

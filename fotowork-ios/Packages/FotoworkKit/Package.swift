@@ -21,7 +21,8 @@ let package = Package(
         ),
         .target(
             name: "FotoworkImaging",
-            dependencies: ["FotoworkCore"]
+            dependencies: ["FotoworkCore"],
+            resources: [.copy("Resources/Garments")]
         ),
         .target(
             name: "FotoworkDesign",
