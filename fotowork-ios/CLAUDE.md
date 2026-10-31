@@ -53,12 +53,13 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
 - Card bo 26–30pt, nút viên tròn, chữ trắng, phụ `#C2C5D8`. Font hệ thống (SF Pro).
 
 ## Lộ trình màn hình (làm lần lượt, mỗi màn xong là build + chạy sim + báo anh)
-Trang chủ ✅ → Chụp ✅ (AVFoundation + Vision) → Chỉnh ✅ (tiêu chí + nền/áo/sáng/cắt) → Xuất ✅ (dàn in 10×15 + JPG theo px/KB + watermark + StoreKit 2 placeholder) → **Giấy tờ** (VisionKit/CCCD/nén/PencilKit) → Avatar.
+Trang chủ ✅ → Chụp ✅ → Chỉnh ✅ → Xuất ✅ → Giấy tờ ✅ (Scan→PDF, CCCD→A4, Nén, Ký tên PencilKit, Bộ hồ sơ SwiftData) → Avatar ✅ (tab + template nền code + consent + tách nền ghép). **v1 đủ các màn chính.**
 
 ### Việc còn treo
-- **Template trang phục** (Vest/Sơ mi/Áo dài): engine ghép đã có, cần bộ PNG tạo sẵn offline + anh duyệt gu rồi đặt vào asset `outfit-vest/shirt/aodai`.
+- **Template trang phục** (Vest/Sơ mi/Áo dài) ở màn Chỉnh: engine ghép đã có, cần bộ PNG tạo sẵn offline + anh duyệt gu rồi đặt vào asset `outfit-vest/shirt/aodai`.
 - **Gói HD (StoreKit)**: product id `com.mivy.fotowork.hd` là placeholder — cần cấu hình App Store Connect / file `.storekit` để test mua.
-- Camera trực tiếp + tách nền (Vision) chỉ chạy trên **máy thật**, không chạy trên simulator.
+- **Chỉ chạy trên máy thật** (không chạy trên simulator): camera trực tiếp, tách nền Vision (ảnh thẻ & avatar), scan tài liệu VisionKit. Trên sim đều có fallback bằng chọn ảnh.
+- Avatar: nền hiện render bằng code (gradient + khung). Nếu muốn nền minh hoạ đẹp hơn → kho template tạo sẵn offline, anh duyệt gu.
 
 ## Localization & privacy
 - String Catalog, `vi` mặc định, có `en`; chừa `id, th, ms, km, my, lo`.
