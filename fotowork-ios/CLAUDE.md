@@ -67,6 +67,8 @@ Trang chủ ✅ (menu = bảng tất cả cỡ ảnh, Công cụ nhanh mở th�
 ### Việc còn treo
 - **Ghép vest = GHÉP ĐẦU lên thân mẫu (2026-11-01, anh chốt hướng này)**. Cách cũ (đặt áo vest PNG + tự vẽ cổ) bị anh chê "cổ giả" → đã bỏ. Giờ: thân người mẫu mặc vest **gen sẵn offline** bằng Z-Image (ComfyUI local `back-end/.comfyui`, prompt: ảnh thẻ chính diện, lộ cổ, nền trắng) → cắt nền + đo `chin/cx/jawW` (script prep) → lưu `FotoworkImaging/Resources/Garments/body-<giới>-<màu>.png/.json`. Trên máy: `HeadSwap.compose` đặt đầu người dùng (KHÔNG chỉnh mặt) lên thân mẫu theo bề rộng hàm, chỉ giữ cổ + quần áo của mẫu, chỉnh màu da cổ (YCbCr) theo da ngay trên hàm người dùng. Chỉ đạt với ảnh **chính diện, đầu thẳng**. Thêm mẫu: gen ảnh → chạy prep → thêm case `OutfitOption`.
 - **Simulator không chạy model Vision** ("Could not create inference context"): landmark ra contour rác, không có mask người. Code tự fallback: hàm = elip từ face box + CIDetector; tách người = key màu nền quanh đầu. Chất lượng thật xem trên máy thật.
+- **Icon app**: vẽ bằng code `Tools/app-icon/make_icon.py` (navy + thẻ ảnh người mặc vest). Muốn icon xịn hơn → gen offline rồi anh duyệt.
+- **Thân mẫu vest hiện có**: nam xanh, nam đen, nữ xanh, nữ đen (`Resources/Garments/body-*`). Tóc vàng/màu sáng chưa giữ được phần tóc dài dưới cằm.
 - **Gói HD (StoreKit)**: product id `com.mivy.fotowork.hd` là placeholder — cần cấu hình App Store Connect / file `.storekit` để test mua.
 - **Chỉ chạy trên máy thật** (không chạy trên simulator): camera trực tiếp, tách nền Vision (ảnh thẻ & avatar), scan tài liệu VisionKit. Trên sim đều có fallback bằng chọn ảnh.
 - Avatar: nền hiện render bằng code (gradient + khung). Nếu muốn nền minh hoạ đẹp hơn → kho template tạo sẵn offline, anh duyệt gu.

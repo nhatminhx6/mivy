@@ -34,7 +34,7 @@ public struct AvatarHomeView: View {
                     }
                     consentRow
                     createButton
-                    Text("Ảnh xử lý ngay trên máy, không gửi lên máy chủ. Nền ghép bằng code.")
+                    Text("Ảnh xử lý ngay trên máy, không gửi lên máy chủ.")
                         .font(.bvp(.caption))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                 }
