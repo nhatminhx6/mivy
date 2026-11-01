@@ -190,7 +190,9 @@ public struct EditView: View {
                     .font(.bvp(.caption, .semibold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
+            .padding(.horizontal, 4)
             .frame(maxWidth: .infinity)
             .frame(height: 92)
             .fotoCard(16)

@@ -254,10 +254,12 @@ public enum HeadSwap {
         ctx.setFillColor(background); ctx.fill(full)
         ctx.saveGState(); ctx.clip(to: full, mask: neckMask); ctx.draw(neckImg, in: full); ctx.restoreGState()
         ctx.saveGState(); ctx.clip(to: full, mask: clothesMask); ctx.draw(bodyImg, in: full); ctx.restoreGState()
-        ctx.saveGState()
+        // the jaw shadows the neck only (never the backdrop around the hair)
+        ctx.saveGState(); ctx.clip(to: full, mask: neckMask)
         ctx.setShadow(offset: CGSize(width: 0, height: -bJaw * 0.03), blur: bJaw * 0.06, color: CGColor(gray: 0, alpha: 0.25))
         ctx.draw(head, in: headRect)
         ctx.restoreGState()
+        ctx.draw(head, in: headRect)
         return ctx.makeImage()
     }
 
@@ -289,7 +291,7 @@ public enum HeadSwap {
             let cb = 128 - 0.1687 * r - 0.3313 * g + 0.5 * b, cr = 128 + 0.5 * r - 0.4187 * g - 0.0813 * b
             let hcb = 128 - 0.1687 * hc[0] - 0.3313 * hc[1] + 0.5 * hc[2], hcr = 128 + 0.5 * hc[0] - 0.4187 * hc[1] - 0.0813 * hc[2]
             let skinLike = cr > 138 && cb < 122 && abs(cr - hcr) + abs(cb - hcb) > 10
-            return !skinLike && d < 110 && abs(l - hairLum) < 70
+            return !skinLike && d < 110 && abs(l - hairLum) < (hairLum < 90 ? 45 : 70)
         }
         let y0 = Int(chin - 0.8 * jaw), y1 = min(px.h, Int(chin + 0.55 * jaw))
         let x0 = max(0, Int(cx - 1.0 * jaw)), x1 = min(px.w, Int(cx + 1.0 * jaw))

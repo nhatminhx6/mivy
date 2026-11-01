@@ -31,7 +31,7 @@ public enum BackgroundOption: String, Sendable, CaseIterable, Identifiable {
 }
 
 public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
-    case keep, vestNavy, vestBlack, womanNavy
+    case keep, vestNavy, vestBlack, womanNavy, womanBlack
     public var id: String { rawValue }
 
     public var label: String {
@@ -40,6 +40,7 @@ public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
         case .vestNavy: "Nam xanh"
         case .vestBlack: "Nam đen"
         case .womanNavy: "Nữ xanh"
+        case .womanBlack: "Nữ đen"
         }
     }
 
@@ -50,6 +51,7 @@ public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
         case .vestNavy: "body-man-navy"
         case .vestBlack: "body-man-black"
         case .womanNavy: "body-woman-navy"
+        case .womanBlack: "body-woman-black"
         }
     }
 }
