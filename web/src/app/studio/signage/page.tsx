@@ -5,8 +5,8 @@ import { useRef, useState } from 'react';
 import { AlertTriangle, Download, FileCode2, Loader2 } from 'lucide-react';
 import { ICON_CATS, LOGO_ICONS } from '@/lib/logo-icons';
 import {
-  CHALK_COLORS, FACE_COLORS, FONT_GROUPS, HALO_COLORS, INK_COLORS, MATERIALS, NEON_COLORS, PRINT_PALETTES, SIGN_FONTS, SIGN_KINDS, SIGN_TEMPLATES, SignSvg, WALLS,
-  signFont, signFontCss, tplById, useSignFonts, type SignData, type SignField, type SignKind, type SignSpec,
+  CHALK_COLORS, FACE_COLORS, FONT_GROUPS, HALO_COLORS, INK_COLORS, MATERIALS, NEON_COLORS, PRINT_PALETTES, SIGN_FONTS, SIGN_KINDS, SIGN_SCENES, SIGN_TEMPLATES, SignSvg, WALLS,
+  KIND_VARIANTS, lookFor, signFont, variantOf, signFontCss, tplById, useSignFonts, type SignData, type SignField, type SignKind, type SignSpec,
 } from '@/lib/signage-engine';
 import { drawWatermark } from '@/lib/design-engine';
 import { downloadBlob, embedFontCss } from '@/lib/html-export';
@@ -25,7 +25,7 @@ const ICON_PICK_CATS = ['nature', 'home', 'shop', 'food', 'pet', 'symbol'];
 export default function SignagePage() {
   const ready = useSignFonts();
   const [data, setData] = useState<SignData>({ name: 'Hoa Ngọc Lan', sub: 'Villa · C65', number: '11', street: 'Nguyễn Biểu', icon: 'flower' });
-  const [spec, setSpec] = useState<SignSpec>({ tpl: 'villa', w: 900, h: 400, fontId: 'greatvibes', material: 'corten', style: 'cut', letter: 'gold', wall: 'concrete', kind: 'cnc', halo: true });
+  const [spec, setSpec] = useState<SignSpec>({ tpl: 'villa', w: 900, h: 400, fontId: 'greatvibes', material: 'corten', style: 'cut', letter: 'gold', wall: 'concrete', scene: 'congnghiep', kind: 'cnc', halo: true });
   const [busy, setBusy] = useState('');
   const previewRef = useRef<HTMLDivElement | null>(null);
   const cutRef = useRef<HTMLDivElement | null>(null);
@@ -33,18 +33,11 @@ export default function SignagePage() {
   const t = tplById(spec.tpl);
   const font = signFont(spec.fontId);
   const set = (p: Partial<SignSpec>) => setSpec((s) => ({ ...s, ...p }));
-  const pickTpl = (id: string) => { const n = tplById(id); set({ tpl: id, w: n.w, h: n.h, fontId: n.font }); };
   const kind = spec.kind || 'cnc';
-  const KIND_DEFAULTS: Record<SignKind, Partial<SignSpec>> = {
-    cnc: { wall: 'concrete' },
-    neon: { color: NEON_COLORS[0], wall: 'dark' },
-    lightbox: { color: FACE_COLORS[0], ink: INK_COLORS[0], wall: 'concrete' },
-    channel: { color: HALO_COLORS[0], material: 'black', letter: 'gold', halo: true, wall: 'concrete' },
-    engrave: { material: 'wood', wall: 'white' },
-    chalk: { color: CHALK_COLORS[0], wall: 'brick' },
-    print: { color: PRINT_PALETTES[0].face, ink: PRINT_PALETTES[0].ink, accent: PRINT_PALETTES[0].accent, wall: 'concrete' },
-  };
-  const pickKind = (k: SignKind) => set({ kind: k, ...KIND_DEFAULTS[k] });
+  // mỗi mẫu có phối + cảnh riêng theo loại (lookFor) → bấm mẫu/đổi loại là áp phối đó; đã chọn tường trơn thì giữ tường trơn
+  const look = (k: SignKind, id: string) => ({ ...lookFor(k, id), ...(spec.scene ? {} : { scene: '' }) });
+  const pickTpl = (id: string) => { const n = tplById(id); set({ tpl: id, w: n.w, h: n.h, fontId: n.font, ...look(kind, id) }); };
+  const pickKind = (k: SignKind) => set({ kind: k, ...look(k, spec.tpl) });
   const dots = (list: string[], cur: string | undefined, key: 'color' | 'ink') => (
     <div className="flex flex-wrap gap-2">
       {list.map((c) => <button key={c} type="button" onClick={() => set({ [key]: c })} aria-label={c}
@@ -61,6 +54,12 @@ export default function SignagePage() {
     const st = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     st.textContent = await embedFontCss(signFontCss([spec.fontId]));
     svg.insertBefore(st, svg.firstChild);
+    // ảnh cảnh phải nhúng data URL, SVG vẽ qua <img> không tải được ảnh ngoài
+    for (const im of Array.from(svg.querySelectorAll('image'))) {
+      const href = im.getAttribute('href'); if (!href || href.startsWith('data:')) continue;
+      const b = await (await fetch(href)).blob();
+      im.setAttribute('href', await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(b); }));
+    }
     return svg;
   };
   const run = async (key: string, fn: () => Promise<void>) => {
@@ -119,7 +118,7 @@ export default function SignagePage() {
                   <button key={x.id} type="button" onClick={() => pickTpl(x.id)} data-testid="sign-tpl"
                     className={`rounded-xl border p-1.5 text-left transition-all ${spec.tpl === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-white/10 hover:border-white/30'}`}>
                     <div className="aspect-[4/3] rounded-lg overflow-hidden bg-black/20 flex items-center justify-center">
-                      <SignSvg spec={{ ...spec, tpl: x.id, w: x.w, h: x.h, fontId: x.font }} data={data} aspect={4 / 3} style={{ width: '100%', height: '100%', display: 'block' }} />
+                      <SignSvg spec={x.id === spec.tpl ? spec : { ...spec, ...look(kind, x.id), tpl: x.id, w: x.w, h: x.h, fontId: x.font }} data={data} aspect={4 / 3} style={{ width: '100%', height: '100%', display: 'block' }} />
                     </div>
                     <div className="text-[11px] font-medium text-slate-300 mt-1.5 px-0.5">{x.name}</div>
                   </button>
@@ -191,20 +190,21 @@ export default function SignagePage() {
                     {spec.halo !== false && dots(HALO_COLORS, spec.color, 'color')}
                   </div>
                 )}
-                {kind === 'cnc' && <div>
+                <div>
                   <div className="mv-label mb-1.5">Kiểu</div>
-                  <div className="mv-seg !flex w-full">
-                    <button type="button" onClick={() => set({ style: 'cut' })} data-active={spec.style === 'cut'} className="mv-seg-btn flex-1 text-center">Cắt thủng chữ</button>
-                    <button type="button" onClick={() => set({ style: 'raised' })} data-active={spec.style === 'raised'} className="mv-seg-btn flex-1 text-center">Chữ nổi gắn lên tấm</button>
+                  <div className="grid grid-cols-2 gap-1.5" data-testid="sign-variants">
+                    {KIND_VARIANTS[kind].map((o) => (
+                      <button key={o.id} type="button" onClick={() => set(kind === 'cnc' ? { style: o.id as SignSpec['style'] } : { variant: o.id })} className={swatch(variantOf(spec) === o.id)}>{o.name}</button>
+                    ))}
                   </div>
-                </div>}
-                {(kind === 'cnc' || kind === 'channel' || kind === 'engrave') && <div>
+                </div>
+                {((kind === 'cnc' && spec.style !== 'loose' && spec.style !== 'paint') || kind === 'engrave') && <div>
                   <div className="mv-label mb-1.5">Tấm nền</div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {MATERIALS.map((m) => <button key={m.id} type="button" onClick={() => set({ material: m.id })} className={swatch(spec.material === m.id)}>{matChip(m)}{m.name}</button>)}
                   </div>
                 </div>}
-                {((kind === 'cnc' && spec.style === 'raised') || kind === 'channel') && (
+                {((kind === 'cnc' && spec.style !== 'cut') || (kind === 'channel' && spec.variant !== 'front')) && (
                   <div>
                     <div className="mv-label mb-1.5">Chất liệu chữ</div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -234,20 +234,27 @@ export default function SignagePage() {
 
           {/* Mockup ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold text-white">Xem trước</span>
-              <div className="flex gap-1">
-                {WALLS.map((w) => (
-                  <button key={w.id} type="button" onClick={() => set({ wall: w.id })} title={w.name}
-                    className={`text-[10px] px-2 py-1 rounded-full border ${spec.wall === w.id ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>{w.name}</button>
-                ))}
-              </div>
+            <span className="text-sm font-bold text-white">Xem trước</span>
+            <div className="grid grid-cols-8 gap-1" data-testid="sign-scenes">
+              {SIGN_SCENES.map((x) => (
+                <button key={x.id} type="button" onClick={() => set({ scene: x.id, ...(kind === 'cnc' ? x.cnc : {}) })} title={x.name} aria-label={x.name}
+                  className={`aspect-[4/3] rounded-md overflow-hidden border-2 transition-all ${spec.scene === x.id ? 'border-indigo-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
+                  <img src={x.src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="text-[10px] text-slate-500 mr-1">Tường trơn:</span>
+              {WALLS.map((w) => (
+                <button key={w.id} type="button" onClick={() => set({ wall: w.id, scene: '' })} title={w.name}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border ${!spec.scene && spec.wall === w.id ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>{w.name}</button>
+              ))}
             </div>
             <div ref={previewRef} className="rounded-xl overflow-hidden border border-white/10" data-testid="sign-preview">
               <SignSvg spec={t.shape === 'circle' ? { ...spec, h: spec.w } : spec} data={data} aspect={4 / 3} style={{ width: '100%', display: 'block' }} />
             </div>
             <div className="text-[11px] text-slate-400">
-              {spec.w / 10} × {(t.shape === 'circle' ? spec.w : spec.h) / 10} cm · {MATERIALS.find((m) => m.id === spec.material)?.name} · {kind === 'cnc' ? (spec.style === 'cut' ? 'cắt thủng' : 'chữ nổi') : SIGN_KINDS.find((k) => k.id === kind)?.name} · {font.family}
+              {spec.w / 10} × {(t.shape === 'circle' ? spec.w : spec.h) / 10} cm · {MATERIALS.find((m) => m.id === spec.material)?.name} · {kind === 'cnc' ? KIND_VARIANTS.cnc.find((o) => o.id === spec.style)?.name : SIGN_KINDS.find((k) => k.id === kind)?.name} · {font.family}
             </div>
             {counterWarn && (
               <div className="flex gap-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.07] px-3 py-2 text-[11px] text-amber-100">

@@ -46,6 +46,8 @@ export interface BrandAssetOpts {
   colorAccent: string;
   logoImg?: HTMLImageElement | null;
   bgImg?: HTMLImageElement | null; // nền ảnh tuỳ chọn
+  scene?: string; // id trong COVER_SCENES — nền style gen sẵn (ưu tiên hơn mẫu)
+  sceneImg?: HTMLImageElement | null;
   brandName?: string;
   slogan?: string;
   contact?: string;
@@ -687,6 +689,152 @@ export function drawWordmark(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
   if (o.slogan) { ctx.fillStyle = A; ctx.font = `600 ${nf * 0.4}px ${BODY}`; ctx.fillText(o.slogan, tx, cy + nf * 0.5); }
 }
 
+// ===================== Nền theo style (kho cảnh gen sẵn offline, /public/scenes) =====================
+// Ảnh nền đã chừa nửa trái trống → code chỉ đặt chữ/logo, kiểu chữ ăn theo style của nền.
+type SceneFx = 'clay' | 'flat' | 'photo' | 'riso' | 'water' | 'memphis' | 'paper' | 'night';
+export const COVER_SCENES: { id: string; label: string; src: string; fx: SceneFx }[] = [
+  { id: 'bia-1-3d', label: '3D đất sét', src: '/scenes/bia-1-3d.jpg', fx: 'clay' },
+  { id: 'bia-2-phang', label: 'Vẽ phẳng', src: '/scenes/bia-2-phang.jpg', fx: 'flat' },
+  { id: 'bia-3-anh-that', label: 'Ảnh thật', src: '/scenes/bia-3-anh-that.jpg', fx: 'photo' },
+  { id: 'bia-4-riso', label: 'In riso', src: '/scenes/bia-4-riso.jpg', fx: 'riso' },
+  { id: 'bia-5-mau-nuoc', label: 'Màu nước', src: '/scenes/bia-5-mau-nuoc.jpg', fx: 'water' },
+  { id: 'bia-6-memphis', label: 'Memphis', src: '/scenes/bia-6-memphis.jpg', fx: 'memphis' },
+  { id: 'bia-7-cat-giay', label: 'Cắt giấy', src: '/scenes/bia-7-cat-giay.jpg', fx: 'paper' },
+  { id: 'bia-8-dem-mua', label: 'Đêm mưa', src: '/scenes/bia-8-dem-mua.jpg', fx: 'night' },
+];
+
+// đo nền 1 lần/ảnh: độ sáng vùng chữ (trái) + màu rực nhất bên phải (làm màu nhấn dự phòng)
+const sceneInfo = new WeakMap<HTMLImageElement, { light: boolean; pop: string }>();
+function readScene(img: HTMLImageElement) {
+  const hit = sceneInfo.get(img); if (hit) return hit;
+  const c = document.createElement('canvas'); c.width = 48; c.height = 20;
+  const x = c.getContext('2d', { willReadFrequently: true })!; x.drawImage(img, 0, 0, 48, 20);
+  const d = x.getImageData(0, 0, 48, 20).data;
+  let sum = 0, n = 0, best = -1, pop = '#e11d48';
+  for (let j = 0; j < 20; j++) for (let i = 0; i < 48; i++) {
+    const k = (j * 48 + i) * 4, r = d[k], g = d[k + 1], b = d[k + 2];
+    if (i < 20 && j > 2 && j < 17) { sum += 0.299 * r + 0.587 * g + 0.114 * b; n++; }
+    if (i >= 24) {
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), sc = (mx - mn) * (mx / 255);
+      if (sc > best) { best = sc; pop = '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join(''); }
+    }
+  }
+  const info = { light: sum / n / 255 > 0.55, pop };
+  sceneInfo.set(img, info); return info;
+}
+// ảnh cover-fit, neo phải (chủ thể nằm bên phải)
+function drawSceneImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W: number, H: number) {
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return;
+  const s = Math.max(W / iw, H / ih); ctx.drawImage(img, W - iw * s, (H - ih * s) / 2, iw * s, ih * s);
+}
+// tiêu đề theo style nền
+function fxHeadline(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fs: number, fx: SceneFx, ink: string, acc: string, font: string) {
+  const w = fx === 'photo' || fx === 'water' ? '700' : fx === 'night' ? '800' : '900';
+  ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.font = `${fx === 'water' ? 'italic ' : ''}${w} ${fs}px ${font}`;
+  if (fx === 'riso') { ctx.globalAlpha = 0.85; ctx.fillStyle = acc; ctx.fillText(text, x + fs * 0.045, y + fs * 0.035); ctx.globalAlpha = 1; }
+  if (fx === 'memphis') { ctx.fillStyle = lum(ink) > 0.5 ? '#111111' : acc; ctx.fillText(text, x + fs * 0.06, y + fs * 0.06); }
+  if (fx === 'clay') { ctx.shadowColor = 'rgba(0,0,0,0.28)'; ctx.shadowBlur = fs * 0.14; ctx.shadowOffsetY = fs * 0.06; }
+  if (fx === 'paper') { ctx.shadowColor = 'rgba(0,0,0,0.32)'; ctx.shadowBlur = fs * 0.05; ctx.shadowOffsetX = fs * 0.02; ctx.shadowOffsetY = fs * 0.04; }
+  if (fx === 'photo') { ctx.shadowColor = lum(ink) > 0.5 ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.25)'; ctx.shadowBlur = fs * 0.12; }
+  if (fx === 'night') { ctx.shadowColor = acc; ctx.shadowBlur = fs * 0.3; }
+  ctx.fillStyle = ink; ctx.fillText(text, x, y);
+  ctx.restore();
+}
+function fxButton(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fs: number, fx: SceneFx, acc: string, onAcc: string, font: string): number {
+  if (fx === 'memphis') {
+    ctx.save(); ctx.font = `800 ${fs}px ${font}`; const w = ctx.measureText(text).width + fs * 2, h = fs * 2.1;
+    ctx.fillStyle = '#111111'; ctx.fillRect(x + fs * 0.25, y + fs * 0.25, w, h);
+    ctx.fillStyle = acc; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111111'; ctx.lineWidth = Math.max(2, fs * 0.1); ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = onAcc; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + w / 2, y + h / 2 + 1); ctx.restore(); return w;
+  }
+  if (fx === 'photo' || fx === 'water' || fx === 'night') return pill(ctx, text, x, y, fs, acc, acc, font, true);
+  return pill(ctx, text, x, y, fs, acc, onAcc, font);
+}
+
+function coverScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string, BODY: string) {
+  const img = o.sceneImg!; const sc = COVER_SCENES.find((s) => s.id === o.scene) || COVER_SCENES[0];
+  const info = readScene(img); const cap = capOf(W);
+  drawSceneImg(ctx, img, W, H);
+  const ink = info.light ? '#16181d' : '#ffffff';
+  const sub = info.light ? 'rgba(22,24,29,0.78)' : 'rgba(255,255,255,0.86)';
+  const bgL = info.light ? 0.8 : 0.15;
+  const A = o.colorAccent || '#e11d48';
+  const acc = Math.abs(lum(A) - bgL) > 0.3 ? A : Math.abs(lum(info.pop) - bgL) > 0.25 ? info.pop : ink;
+  const onAcc = lum(acc) > 0.6 ? '#141414' : '#ffffff';
+  const HF = sc.fx === 'photo' || sc.fx === 'water' ? SERIF : HEAD;
+  const up = sc.fx === 'riso' || sc.fx === 'memphis';
+  const name = up ? (o.brandName || 'BRAND').toUpperCase() : (o.brandName || 'Brand');
+  const cta = (o.cta || '').toUpperCase(); const badge = (o.badge || '').toUpperCase();
+  const short = H < W * 0.32;
+  const pad = short ? H * 0.14 : H * 0.11;
+  const zoneW = W * (short ? 0.4 : 0.44);
+  const wt = sc.fx === 'photo' || sc.fx === 'water' ? '700' : '900';
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+
+  if (short) {
+    let x = pad; const lg = H * 0.46;
+    if (o.logoImg) { drawLogoOrInitial(ctx, o, x, (H - lg) / 2, lg, ink, HEAD); x += lg + pad * 0.7; }
+    const w = zoneW - (x - pad);
+    const nf = Math.min(fitText(ctx, name, w, H * 0.3, wt, HF), cap(96));
+    const sf = o.slogan ? Math.min(fitText(ctx, o.slogan, w, H * 0.1, '600', BODY), cap(30)) : 0;
+    const bf = Math.min(H * 0.07, cap(22)); const hasBtn = !!(cta || badge);
+    const tot = nf * 1.08 + (sf ? sf * 1.5 : 0) + (hasBtn ? bf * 2.1 + H * 0.05 : 0);
+    let y = (H - tot) / 2;
+    fxHeadline(ctx, name, x, y, nf, sc.fx, ink, acc, HF); y += nf * 1.08;
+    if (sf) { ctx.fillStyle = sub; ctx.font = `600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.5; }
+    if (hasBtn) { y += H * 0.05; let bx = x; if (badge) bx += fxButton(ctx, badge, bx, y, bf, sc.fx, acc, onAcc, HEAD) + bf * 0.6; if (cta) fxButton(ctx, cta, bx, y, bf, sc.fx === 'memphis' ? 'memphis' : 'photo', acc, onAcc, HEAD); }
+    return;
+  }
+
+  const lg = o.logoImg ? H * 0.15 : 0;
+  const nf = Math.min(fitText(ctx, name, zoneW, H * 0.2, wt, HF), cap(150));
+  const sf = o.slogan ? Math.min(fitText(ctx, o.slogan, zoneW, H * 0.055, '600', BODY), cap(40)) : 0;
+  const usps = (o.usps || []).map((s) => s.trim()).filter(Boolean).slice(0, 3);
+  const ch = Math.min(H * 0.07, cap(46));
+  const bf = Math.min(H * 0.04, cap(28)); const hasBtn = !!(cta || badge);
+  const cf = o.contact ? Math.min(H * 0.032, cap(24)) : 0;
+  const gap = H * 0.035;
+  const tot = (lg ? lg + gap : 0) + nf * 1.1 + (sf ? sf * 1.6 : 0) + (usps.length ? ch + gap : 0) + (hasBtn ? gap + bf * 2.1 : 0) + (cf ? gap * 0.8 + cf : 0);
+  let y = Math.max(pad * 0.6, (H - tot) / 2); const x = pad;
+  if (lg) { drawLogoOrInitial(ctx, o, x, y, lg, ink, HEAD); y += lg + gap; }
+  fxHeadline(ctx, name, x, y, nf, sc.fx, ink, acc, HF); y += nf * 1.1;
+  if (sf) { ctx.fillStyle = sub; ctx.font = `${sc.fx === 'water' ? 'italic ' : ''}600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.6; }
+  if (usps.length) {
+    let cx = x;
+    for (const u of usps) {
+      ctx.save(); ctx.font = `700 ${ch * 0.42}px ${BODY}`; const need = ch * 1.45 + ctx.measureText(u).width; ctx.restore();
+      if (cx + need > x + zoneW * 1.05) break;
+      cx += uspChip(ctx, u, cx, y, ch, acc, !info.light, BODY, info.light ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.38)') + ch * 0.25;
+    }
+    y += ch + gap;
+  }
+  if (hasBtn) {
+    y += gap * 0.4; let bx = x;
+    if (badge) bx += fxButton(ctx, badge, bx, y, bf, sc.fx, acc, onAcc, HEAD) + bf * 0.7;
+    if (cta) fxButton(ctx, cta, bx, y, bf, badge ? (sc.fx === 'memphis' ? 'memphis' : 'photo') : sc.fx, acc, onAcc, HEAD);
+    y += bf * 2.1;
+  }
+  if (cf) { y += gap * 0.8; ctx.fillStyle = sub; ctx.font = `600 ${cf}px ${BODY}`; ctx.fillText(o.contact!, x, y); }
+}
+
+// avatar trên nền style: cảnh phủ kín + đĩa logo giữa
+function avatarScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number, H: number, HEAD: string) {
+  const img = o.sceneImg!; const sc = COVER_SCENES.find((s) => s.id === o.scene) || COVER_SCENES[0];
+  const info = readScene(img);
+  drawSceneImg(ctx, img, W, H);
+  const A = o.colorAccent || '#e11d48';
+  const disc = info.light ? '#ffffff' : '#15161a'; const ink = info.light ? '#16181d' : '#ffffff';
+  const acc = Math.abs(lum(A) - lum(disc)) > 0.3 ? A : info.pop;
+  const cx = W / 2, cy = H / 2, r = W * 0.3;
+  ctx.save();
+  if (sc.fx === 'memphis') { ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(cx + r * 0.08, cy + r * 0.08, r, 0, Math.PI * 2); ctx.fill(); }
+  else { ctx.shadowColor = sc.fx === 'night' ? acc : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = r * 0.25; ctx.shadowOffsetY = sc.fx === 'night' ? 0 : r * 0.06; }
+  ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.strokeStyle = acc; ctx.lineWidth = r * 0.06; ctx.beginPath(); ctx.arc(cx, cy, r * 0.9, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  drawLogoOrInitial(ctx, o, cx - r * 0.55, cy - r * 0.55, r * 1.1, ink, sc.fx === 'photo' || sc.fx === 'water' ? SERIF : HEAD);
+}
+
 export function drawBrandAsset(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
   drawBrandAssetCore(canvas, o);
   drawWatermark(canvas); // gói Free — luôn chạy dù Core return sớm
@@ -706,6 +854,7 @@ function drawBrandAssetCore(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
   const style = o.style || 'gradient';
   const hasPhoto = style === 'photo' && !!o.bgImg;
   const tpl = o.coverTemplate || 'burst';
+  if (o.scene && o.sceneImg) { if (o.kind === 'avatar') avatarScene(ctx, o, W, H, HEAD); else coverScene(ctx, o, W, H, HEAD, BODY); return; }
 
   // Nền tông thương hiệu (concept sạch): gradient đặc + glow góc. Các mẫu elegant/split/ribbon/minimal tự vẽ nền riêng.
   const T = toneTheme(P, A);

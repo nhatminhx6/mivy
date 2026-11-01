@@ -28,6 +28,15 @@ struct ChecklistTests {
         #expect(items.first { $0.id == "bg-solid" }?.ok == false)
     }
 
+    @Test("A colour picked but not applied (no cut-out) fails the background criteria")
+    func backgroundNotApplied() {
+        var settings = EditSettings()
+        settings.background = .white
+        let items = StandardChecklist.build(face: passingFace, settings: settings, sourcePixels: bigSource, target: .idCard4x6, backgroundReplaced: false)
+        #expect(items.first { $0.id == "bg-solid" }?.ok == false)
+        #expect(items.first { $0.id == "bg-white" }?.ok == false)
+    }
+
     @Test("No face fails the face criterion")
     func noFace() {
         let face = FaceCheckResult(faceFound: false, brightnessOK: true)

@@ -195,11 +195,13 @@ public enum StandardChecklist {
         face: FaceCheckResult,
         settings: EditSettings,
         sourcePixels: CGSize,
-        target: CaptureTarget
+        target: CaptureTarget,
+        backgroundReplaced: Bool = true
     ) -> [ChecklistItem] {
         let neededPx = target.widthMm / 25.4 * 300 * 0.8
         let enoughRes = min(sourcePixels.width, sourcePixels.height) >= neededPx
-        let solidBackground = settings.background != .original
+        // a colour picked but not applied (person could not be cut out) is not a solid background
+        let solidBackground = settings.background != .original && backgroundReplaced
 
         return [
             ChecklistItem(id: "face", label: "Thấy rõ khuôn mặt", ok: face.faceFound, advisory: false),

@@ -2,7 +2,7 @@
 // Ảnh bìa (FB/Zalo/Shopee/YouTube) + Avatar — render code từ Brand Kit.
 import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, X, Sparkles } from 'lucide-react';
-import { ASSET_KINDS, AVATAR_TEMPLATES, COVER_TEMPLATES, drawBrandAsset } from '@/lib/brandasset-engine';
+import { ASSET_KINDS, AVATAR_TEMPLATES, COVER_SCENES, COVER_TEMPLATES, drawBrandAsset } from '@/lib/brandasset-engine';
 import { loadBrand, FONT_PRESETS, contactLine } from '@/lib/brand-presets';
 import { marketingZip } from '@/lib/marketing-zip';
 import { PageHeader } from '@/components/PageHeader';
@@ -19,6 +19,8 @@ export default function BrandAssetsPage() {
   const [cta, setCta] = useState('MUA NGAY');
   const [coverTemplate, setCoverTemplate] = useState('elegant');
   const [avatarTemplate, setAvatarTemplate] = useState('ring');
+  const [scene, setScene] = useState(COVER_SCENES[0].id); // '' = dùng mẫu vẽ code
+  const sceneRef = useRef<HTMLImageElement | null>(null);
   const [uspText, setUspText] = useState('Freeship toàn quốc\nHàng chính hãng\nĐổi trả 7 ngày');
   const [primary, setPrimary] = useState('#0f172a');
   const [accent, setAccent] = useState('#1f2937');
@@ -51,10 +53,16 @@ export default function BrandAssetsPage() {
     const im = new Image(); im.onload = () => { bgRef.current = im; setReady((n) => n + 1); }; im.onerror = () => { bgRef.current = null; setReady((n) => n + 1); }; im.src = bgUrl;
   }, [bgUrl]);
 
-  const opts = () => ({ kind, style, coverTemplate, avatarTemplate,colorPrimary: primary, colorSecondary: primary, colorAccent: accent, logoImg: logoRef.current, bgImg: bgRef.current, brandName, slogan, contact, badge, cta, usps: uspText.split('\n').map((s) => s.trim()).filter(Boolean), fontHeadingId: fontId, fontBodyId: fontId });
+  useEffect(() => {
+    const sc = COVER_SCENES.find((x) => x.id === scene);
+    if (!sc) { sceneRef.current = null; setReady((n) => n + 1); return; }
+    const im = new Image(); im.onload = () => { sceneRef.current = im; setReady((n) => n + 1); }; im.src = sc.src;
+  }, [scene]);
+
+  const opts = () => ({ kind, style, coverTemplate, avatarTemplate,colorPrimary: primary, colorSecondary: primary, colorAccent: accent, logoImg: logoRef.current, bgImg: bgRef.current, scene, sceneImg: sceneRef.current?.src.endsWith(COVER_SCENES.find((x) => x.id === scene)?.src || '#') ? sceneRef.current : null, brandName, slogan, contact, badge, cta, usps: uspText.split('\n').map((s) => s.trim()).filter(Boolean), fontHeadingId: fontId, fontBodyId: fontId });
 
   useEffect(() => { (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts?.ready?.then(() => setReady((n) => n + 1)); }, []);
-  useEffect(() => { if (canvasRef.current) drawBrandAsset(canvasRef.current, opts()); }, [kind, style, coverTemplate, avatarTemplate, brandName, slogan, contact, badge, cta, uspText, primary, accent, fontId, ready]);
+  useEffect(() => { if (canvasRef.current) drawBrandAsset(canvasRef.current, opts()); }, [kind, style, scene, coverTemplate, avatarTemplate, brandName, slogan, contact, badge, cta, uspText, primary, accent, fontId, ready]);
 
   const onFile = (set: (s: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => set(String(r.result)); r.readAsDataURL(f);
@@ -115,14 +123,27 @@ export default function BrandAssetsPage() {
             </div>
           </div>
 
+          <div>
+            <div className="mv-label mb-2.5">Nền theo style</div>
+            <div className="grid grid-cols-4 gap-1.5" data-testid="cover-scenes">
+              {COVER_SCENES.map((x) => (
+                <button key={x.id} type="button" onClick={() => setScene(x.id)} title={x.label}
+                  className={`rounded-lg overflow-hidden border text-left transition-all ${scene === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-white/10 hover:border-white/30'}`}>
+                  <img src={x.src} alt={x.label} className="w-full aspect-[21/9] object-cover object-right" loading="lazy" />
+                  <div className="text-[10px] text-slate-300 px-1.5 py-1 truncate">{x.label}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {kind !== 'avatar' && (
             <div>
-              <div className="mv-label mb-2.5">Mẫu bìa</div>
+              <div className="mv-label mb-2.5">Mẫu bìa {scene && <span className="normal-case font-normal text-slate-500">— hoặc chọn mẫu vẽ màu trơn</span>}</div>
               <div className="mv-seg !flex flex-wrap w-full">
                 {COVER_TEMPLATES.map((t) => {
                   const active = coverTemplate === t.id;
                   return (
-                    <button key={t.id} onClick={() => setCoverTemplate(t.id)} data-active={active} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
+                    <button key={t.id} onClick={() => { setCoverTemplate(t.id); setScene(''); }} data-active={!scene && active} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
                   );
                 })}
               </div>
@@ -133,13 +154,13 @@ export default function BrandAssetsPage() {
               <div className="mv-label mb-2.5">Mẫu avatar</div>
               <div className="mv-seg !flex flex-wrap w-full">
                 {AVATAR_TEMPLATES.map((t) => (
-                  <button key={t.id} onClick={() => setAvatarTemplate(t.id)} data-active={avatarTemplate === t.id} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
+                  <button key={t.id} onClick={() => { setAvatarTemplate(t.id); setScene(''); }} data-active={!scene && avatarTemplate === t.id} className="mv-seg-btn flex-1 basis-[45%] text-center">{t.label}</button>
                 ))}
               </div>
             </div>
           )}
 
-          <div>
+          {!scene && <div>
             <div className="mv-label mb-2.5">Kiểu nền</div>
             <div className="mv-seg w-full">
               {([['gradient', 'Chuyển sắc'], ['solid', 'Màu trơn'], ['photo', 'Ảnh nền']] as const).map(([v, l]) => (
@@ -152,7 +173,7 @@ export default function BrandAssetsPage() {
                 <label className="mv-btn mv-btn-ghost cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải ảnh nền<input type="file" accept="image/*" className="sr-only" onChange={onFile(setBgUrl)} /></label>
               </div>
             )}
-          </div>
+          </div>}
 
           <div>
             <div className="mv-label mb-2.5">Logo</div>

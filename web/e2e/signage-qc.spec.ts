@@ -41,6 +41,24 @@ test('bảng hiệu: chữ nằm trong tấm, tường phủ kín, chụp lướ
     expect(gaps, `${k}: ô mẫu hở tường`).toBe(0);
     await grid.screenshot({ path: path.join(OUT, `${TAG}-${k.replace(/\s+/g, '-')}.png`) });
   }
+  // cảnh ảnh thật: preview có <image> cảnh, mọi file cảnh tải được, tải PNG mockup (ảnh cảnh nhúng) không lỗi
+  const preview = page.getByTestId('sign-preview');
+  await expect(preview.locator('image[data-scene]')).toHaveCount(1);
+  const broken = await page.$$eval('[data-testid="sign-scenes"] img', async (ims) => (await Promise.all(ims.map((i) => fetch((i as HTMLImageElement).src).then((r) => (r.ok ? '' : (i as HTMLImageElement).src))))).filter(Boolean));
+  expect(broken).toEqual([]);
+  for (const [i, b] of (await page.getByTestId('sign-scenes').locator('button').all()).entries()) {
+    await b.click(); await page.waitForTimeout(250);
+    await preview.screenshot({ path: path.join(OUT, `${TAG}-canh-${i + 1}.png`) });
+  }
+  // tường kiểu Hội An / trắng tối giản: CNC phải sơn thẳng / chữ rời, không có tấm nền
+  await page.getByTestId('sign-kind').filter({ hasText: 'Cắt CNC' }).click();
+  for (const i of [2, 4]) {
+    await page.getByTestId('sign-scenes').locator('button').nth(i).click(); await page.waitForTimeout(1200);
+    await preview.screenshot({ path: path.join(OUT, `${TAG}-cnc-truc-tiep-${i + 1}.png`) });
+  }
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Ảnh mockup/ }).click()]);
+  const size = fs.statSync((await dl.path())!).size;
+  expect(size, 'PNG mockup quá nhỏ — ảnh cảnh không được nhúng').toBeGreaterThan(300_000);
   console.log('chữ lọt ngoài tấm:', problems);
   expect(problems).toEqual([]);
 });

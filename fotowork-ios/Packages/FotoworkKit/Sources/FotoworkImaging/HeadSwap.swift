@@ -211,9 +211,10 @@ public enum HeadSwap {
         let hair = longHairMask(ub, person: personMask, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw)
         let hr = FaceGeometry.grayContext(UW, UH)
         hr.setFillColor(gray: 0, alpha: 1); hr.fill(CGRect(x: 0, y: 0, width: UW, height: UH)); hr.setFillColor(gray: 1, alpha: 1)
-        let wideTop = uChin - 0.75 * uJaw, fadeTop = uChin - 0.42 * uJaw, fadeBot = uChin - 0.12 * uJaw
-        // full width (hair, ears) above the cheekbones, fading out over 0.25 jaw instead of a hard line
-        let wideFade = 0.25 * uJaw
+        let wideTop = uChin - 0.5 * uJaw, fadeTop = uChin - 0.42 * uJaw, fadeBot = uChin - 0.12 * uJaw
+        // full width (hair, whole ears — a half-faded ear looks like a ghost) down to the ear lobes,
+        // then a short fade instead of a hard line
+        let wideFade = 0.12 * uJaw
         hr.fill(CGRect(x: 0, y: UH - (wideTop - wideFade), width: UW, height: wideTop - wideFade))
         if let g = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
             hr.saveGState()
@@ -223,9 +224,8 @@ public enum HeadSwap {
         }
         // the face itself (eyes / temples) is never faded
         hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - wideTop, width: 1.2 * uJaw, height: wideFade))
-        if hair == nil {
-            hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeTop, width: 1.2 * uJaw, height: fadeTop - wideTop))
-        }
+        // eyes → cheekbones: always solid (no seam between the full-width region and the jaw)
+        hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeTop, width: 1.2 * uJaw, height: fadeTop - wideTop))
         if hair == nil, let grad = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
             hr.saveGState()
             hr.clip(to: CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeBot, width: 1.2 * uJaw, height: fadeBot - fadeTop))
@@ -329,57 +329,163 @@ public enum HeadSwap {
         return FaceGeometry.feathered(g.makeImage(), sigma: max(1, jaw * 0.01), full)
     }
 
-    /// Fallback when Vision segmentation is unavailable (iOS Simulator): key out colours seen on
-    /// the photo border beside/above the head, keep only a generous ellipse around the head.
+    /// Fallback when Vision segmentation is unavailable (iOS Simulator). The background is grown
+    /// from the edges of a box around the head, pixel to pixel while colours change smoothly
+    /// (plain walls, vignettes); hair / skin edges stop it. A busy background (the fill cannot
+    /// spread) falls back to a soft head oval rather than keeping clutter.
     static func colourKeyMask(_ px: RGBABitmap, cx: Double, chin: Double, jaw: Double, full: CGRect) -> CGImage? {
-        var samples = [[Double]]()
-        let step = max(2, px.w / 60)
-        let sideBottom = min(px.h - 1, Int(chin))
-        for x in stride(from: 0, to: px.w, by: step) { samples.append(rgb(px.at(x, 1))); samples.append(rgb(px.at(x, min(px.h - 1, 6)))) }
-        for y in stride(from: 0, through: sideBottom, by: step) { samples.append(rgb(px.at(1, y))); samples.append(rgb(px.at(px.w - 2, y))) }
-        let m = RGBABitmap(width: px.w, height: px.h)
         let x0 = max(0, Int(cx - 1.0 * jaw)), x1 = min(px.w, Int(cx + 1.0 * jaw))
         let y0 = max(0, Int(chin - 2.2 * jaw)), y1 = min(px.h, Int(chin + 0.1 * jaw))
         let bw = x1 - x0, bh = y1 - y0
         guard bw > 2, bh > 2 else { return nil }
-        var alpha = [Double](repeating: 0, count: bw * bh)
-        for y in y0..<y1 {
-            for x in x0..<x1 {
-                let dx = (Double(x) - cx) / (0.9 * jaw), dy = (Double(y) - (chin - 0.85 * jaw)) / (1.25 * jaw)
-                guard dx * dx + dy * dy <= 1 else { continue }
-                // the face itself is never keyed out
-                let fx = (Double(x) - cx) / (0.46 * jaw), fy = (Double(y) - (chin - 0.75 * jaw)) / (0.8 * jaw)
-                if fx * fx + fy * fy <= 1 { alpha[(y - y0) * bw + x - x0] = 1; continue }
-                let c = rgb(px.at(x, y))
-                var best = Double.infinity
-                for s in samples { let d = abs(c[0] - s[0]) + abs(c[1] - s[1]) + abs(c[2] - s[2]); if d < best { best = d } }
-                alpha[(y - y0) * bw + x - x0] = max(0, min(1, (best - 30) / 40))
+        func inHead(_ x: Int, _ y: Int, _ rx: Double, _ ry: Double, _ cyOff: Double) -> Bool {
+            let dx = (Double(x) - cx) / (rx * jaw), dy = (Double(y) - (chin - cyOff * jaw)) / (ry * jaw)
+            return dx * dx + dy * dy <= 1
+        }
+        // the face, and skin up to the crown (a bald scalp can be as pale as the wall), is never background
+        func face(_ x: Int, _ y: Int) -> Bool {
+            if inHead(x, y, 0.48, 0.85, 0.78) { return true }
+            guard inHead(x, y, 0.5, 0.9, 0.95) else { return false }
+            let p = px.at(x, y), r = Double(p[0]), g = Double(p[1]), b = Double(p[2])
+            let cb = 128 - 0.1687 * r - 0.3313 * g + 0.5 * b, cr = 128 + 0.5 * r - 0.4187 * g - 0.0813 * b
+            return cr > 136 && cr < 176 && cb > 80 && cb < 128
+        }
+        func diff(_ a: UnsafeMutablePointer<UInt8>, _ b: UnsafeMutablePointer<UInt8>) -> Int {
+            abs(Int(a[0]) - Int(b[0])) + abs(Int(a[1]) - Int(b[1])) + abs(Int(a[2]) - Int(b[2]))
+        }
+        var bg = [Bool](repeating: false, count: bw * bh)
+        var stack = [(Int, Int)]()
+        // seeds: the box's top and side edges (down to the chin)
+        for x in 0..<bw { stack.append((x, 0)) }
+        for y in 0..<bh where Double(y + y0) < chin { stack.append((0, y)); stack.append((bw - 1, y)) }
+        // wall showing between long hair and the neck is closed off from the top: seed the bottom row
+        // where it matches the wall (median of the other seeds)
+        let wall = (0..<3).map { c in stack.map { Double(px.at($0.0 + x0, $0.1 + y0)[c]) }.sorted()[stack.count / 2] }
+        for x in 0..<bw {
+            let p = px.at(x + x0, bh - 1 + y0)
+            if abs(Double(p[0]) - wall[0]) + abs(Double(p[1]) - wall[1]) + abs(Double(p[2]) - wall[2]) < 60 { stack.append((x, bh - 1)) }
+        }
+        // each wall pixel carries a slowly drifting reference colour: gradients and vignettes are
+        // followed, a soft-focus edge (bald scalp, blurred hair) drifts too fast and stops the fill
+        var ref = [Double](repeating: 0, count: bw * bh * 3)
+        for (x, y) in stack where !face(x + x0, y + y0) {
+            let i = y * bw + x, p = px.at(x + x0, y + y0)
+            bg[i] = true; for c in 0..<3 { ref[i * 3 + c] = Double(p[c]) }
+        }
+        stack = stack.filter { bg[$0.1 * bw + $0.0] }
+        while let (x, y) = stack.popLast() {
+            let j = y * bw + x
+            let p = px.at(x + x0, y + y0)
+            for (nx, ny) in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)] {
+                guard nx >= 0, ny >= 0, nx < bw, ny < bh else { continue }
+                let i = ny * bw + nx
+                guard !bg[i], !face(nx + x0, ny + y0) else { continue }
+                let q = px.at(nx + x0, ny + y0)
+                var drift = 0.0
+                for c in 0..<3 { drift += abs(Double(q[c]) - ref[j * 3 + c]) }
+                guard diff(p, q) < 15, drift < 35 else { continue }
+                bg[i] = true
+                for c in 0..<3 { ref[i * 3 + c] = 0.97 * ref[j * 3 + c] + 0.03 * Double(q[c]) }
+                stack.append((nx, ny))
             }
         }
-        // keep only what is connected to the face (drops background objects that survived the key)
-        var seen = [Bool](repeating: false, count: bw * bh)
-        var stack = [(Int(cx) - x0, Int(chin - 0.75 * jaw) - y0)]
-        while let (x, y) = stack.popLast() {
-            guard x >= 0, y >= 0, x < bw, y < bh else { continue }
-            let i = y * bw + x
-            guard !seen[i], alpha[i] > 0.5 else { continue }
-            seen[i] = true
-            stack.append((x + 1, y)); stack.append((x - 1, y)); stack.append((x, y + 1)); stack.append((x, y - 1))
+        // busy background: textured (mean step between neighbours, plain walls ≈ 0–3, wood ≈ 6)
+        // or the fill could not reach most of the area clear of the head
+        var tex = 0, outside = 0, outsideBg = 0
+        for y in 0..<(bh - 1) where Double(y + y0) < chin - 0.3 * jaw {
+            for x in 0..<(bw - 1) where !inHead(x + x0, y + y0, 0.9, 1.25, 0.85) {
+                tex += diff(px.at(x + x0, y + y0), px.at(x + x0 + 1, y + y0)); outside += 1
+                if bg[y * bw + x] { outsideBg += 1 }
+            }
         }
+        let busy = outside == 0 || Double(tex) > 4.5 * Double(outside) || Double(outsideBg) < 0.75 * Double(outside)
+        // person = not wall, inside the generous head ellipse, opened (thin stems / wires vanish) and
+        // connected to the face (drops stray objects)
+        var person = [Bool](repeating: false, count: bw * bh)
+        if !busy {
+            let lowY = chin - 0.4 * jaw
+            func skin(_ r: Int, _ g: Int, _ b: Int) -> Bool {
+                let cb = 128 - 0.1687 * Double(r) - 0.3313 * Double(g) + 0.5 * Double(b)
+                let cr = 128 + 0.5 * Double(r) - 0.4187 * Double(g) - 0.0813 * Double(b)
+                return cr > 134 && cr < 178 && cb > 78 && cb < 130
+            }
+            // hair colour: just under the crown, beside the centre line (a parting shows skin), skin left out
+            var crown = 0
+            while crown < bh - 1 && bg[crown * bw + Int(cx) - x0] { crown += 1 }
+            var hs = [[Int]]()
+            for y in (crown + 2)..<min(bh, crown + 2 + max(3, Int(0.12 * jaw))) {
+                for x in stride(from: Int(cx - 0.3 * jaw) - x0, to: Int(cx + 0.3 * jaw) - x0, by: 2) where x >= 0 && x < bw && !bg[y * bw + x] {
+                    let p = px.at(x + x0, y + y0)
+                    if !skin(Int(p[0]), Int(p[1]), Int(p[2])) { hs.append([Int(p[0]), Int(p[1]), Int(p[2])]) }
+                }
+            }
+            let hairRGB = hs.isEmpty ? nil : (0..<3).map { c in hs.map { $0[c] }.sorted()[hs.count / 2] }
+            // beside the face (temples → jaw) only hair or skin (ears) belongs to the person
+            func hairOrSkin(_ r: Int, _ g: Int, _ b: Int) -> Bool {
+                // skin (ears), anything dark (hair in shadow), or the crown's hair colour
+                if skin(r, g, b) || r + g + b < 270 { return true }
+                guard let h = hairRGB, hs.count > 10 else { return true }
+                return abs(r - h[0]) + abs(g - h[1]) + abs(b - h[2]) < 80
+            }
+            // a scene behind (some texture: street, room) rather than a plain wall: hold the sides
+            // closer to the head so things beside it are not taken for hair
+            let sideReach = Double(tex) > 2 * Double(outside) ? 0.68 : 0.8
+            var cand = (0..<(bw * bh)).map { i in
+                let x = i % bw + x0, y = i / bw + y0
+                guard !bg[i], inHead(x, y, sideReach, 1.25, 0.85) else { return false }
+                let p = px.at(x, y), r = Int(p[0]), g = Int(p[1]), b = Int(p[2])
+                // plants behind the head: hair and skin are never green
+                if g > r + 12 && g > b + 4 { return false }
+                // wall boxed in between long hair and the neck (the fill cannot reach it)
+                if Double(y) > lowY, abs(Double(r) - wall[0]) + abs(Double(g) - wall[1]) + abs(Double(b) - wall[2]) < 45 { return false }
+                if abs(Double(x) - cx) > 0.5 * jaw, Double(y) > chin - 1.3 * jaw { return hairOrSkin(r, g, b) }
+                return true
+            }
+            let r = max(2, Int(0.035 * jaw))
+            cand = morph(morph(cand, bw, bh, r, grow: false), bw, bh, r, grow: true)
+            var fill = [(Int(cx) - x0, Int(chin - 0.78 * jaw) - y0)]
+            while let (x, y) = fill.popLast() {
+                guard x >= 0, y >= 0, x < bw, y < bh else { continue }
+                let i = y * bw + x
+                guard !person[i], cand[i] || face(x + x0, y + y0) else { continue }
+                person[i] = true
+                fill.append((x + 1, y)); fill.append((x - 1, y)); fill.append((x, y + 1)); fill.append((x, y - 1))
+            }
+        }
+        let m = RGBABitmap(width: px.w, height: px.h)
         for y in 0..<bh {
             for x in 0..<bw {
-                let i = y * bw + x
-                // soft edge pixels next to the kept region stay as they are
-                let near = seen[i] || (x > 0 && seen[i - 1]) || (x < bw - 1 && seen[i + 1]) || (y > 0 && seen[i - bw]) || (y < bh - 1 && seen[i + bw])
-                let a = UInt8(near ? alpha[i] * 255 : 0)
+                let keep = busy ? inHead(x + x0, y + y0, 0.58, 0.98, 0.8) : person[y * bw + x]
+                let a: UInt8 = keep ? 255 : 0
                 let d = m.at(x + x0, y + y0); d[0] = a; d[1] = a; d[2] = a; d[3] = 255
             }
         }
         guard let rgbaMask = m.image() else { return nil }
         let g = FaceGeometry.grayContext(full.width, full.height)
+        g.setFillColor(gray: 0, alpha: 1); g.fill(full)
         g.draw(rgbaMask, in: full)
-        return FaceGeometry.feathered(g.makeImage(), sigma: 1.2, full)
+        return FaceGeometry.feathered(g.makeImage(), sigma: busy ? max(2, jaw * 0.04) : 1.2, full)
     }
 
-    private static func rgb(_ p: UnsafeMutablePointer<UInt8>) -> [Double] { [Double(p[0]), Double(p[1]), Double(p[2])] }
+    /// Square erosion (`grow` false) or dilation of a boolean grid, radius `r`, separable.
+    private static func morph(_ g: [Bool], _ w: Int, _ h: Int, _ r: Int, grow: Bool) -> [Bool] {
+        func pass(_ src: [Bool], horizontal: Bool) -> [Bool] {
+            var out = src
+            let (lines, len) = horizontal ? (h, w) : (w, h)
+            for l in 0..<lines {
+                @inline(__always) func idx(_ k: Int) -> Int { horizontal ? l * w + k : k * w + l }
+                // running count of `true` in the window [k - r, k + r]
+                var count = 0
+                for k in 0..<min(len, r) where src[idx(k)] { count += 1 }
+                for k in 0..<len {
+                    if k + r < len, src[idx(k + r)] { count += 1 }
+                    if k - r - 1 >= 0, src[idx(k - r - 1)] { count -= 1 }
+                    let window = min(len - 1, k + r) - max(0, k - r) + 1
+                    out[idx(k)] = grow ? count > 0 : count == window
+                }
+            }
+            return out
+        }
+        return pass(pass(g, horizontal: true), horizontal: false)
+    }
 }

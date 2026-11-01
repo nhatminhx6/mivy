@@ -96,10 +96,11 @@ public struct EditView: View {
                     Text("/\(model.total) tiêu chí").font(.bvp(.subheadline)).foregroundStyle(Fotowork.Palette.textSecondary)
                 }
                 ProgressBar(value: Double(model.passedCount) / Double(max(model.total, 1)))
-                if !model.hasPerson {
-                    Text("Chưa thấy người trong ảnh")
+                if let note = statusNote {
+                    Text(note)
                         .font(.bvp(.caption))
                         .foregroundStyle(Fotowork.Palette.warning)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 VStack(alignment: .leading, spacing: 7) {
                     ForEach(model.checklist.prefix(4)) { item in
@@ -117,6 +118,14 @@ public struct EditView: View {
         }
         .padding(16)
         .fotoCard()
+    }
+
+    /// Shown only when the picture does not match what the checklist would suggest.
+    private var statusNote: String? {
+        guard !model.isProcessing || model.preview != nil else { return nil }
+        if !model.faceFound { return "Chưa thấy khuôn mặt trong ảnh" }
+        if !model.backgroundApplied { return "Chưa thay được nền cho ảnh này" }
+        return nil
     }
 
     // MARK: Segmented

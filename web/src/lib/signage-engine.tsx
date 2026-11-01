@@ -67,7 +67,7 @@ export interface Material { id: string; name: string; base: string; edge: string
 export const MATERIALS: Material[] = [
   { id: 'corten', name: 'Sắt rỉ corten', base: '#8e4322', edge: '#55260f', tex: 'rust' },
   { id: 'black', name: 'Thép sơn đen', base: '#202225', edge: '#0b0c0d', tex: 'grain' },
-  { id: 'gold', name: 'Inox vàng gương', base: '#c9a14a', edge: '#6b4e17', grad: ['#7d5b1d', '#f4d57e', '#a97e2c', '#fde9aa', '#8c6621'], tex: 'none' },
+  { id: 'gold', name: 'Inox vàng gương', base: '#c9a14a', edge: '#6b4e17', grad: ['#94712c', '#dcbb6a', '#ad8739', '#e6c97f', '#9a7631'], tex: 'none' },
   { id: 'inox', name: 'Inox xước', base: '#b9bcc0', edge: '#62666b', grad: ['#8e9297', '#e7e9eb', '#a6aaaf', '#f3f4f5', '#8c9095'], tex: 'brush' },
   { id: 'wood', name: 'Gỗ', base: '#a87444', edge: '#5b391a', tex: 'wood' },
   { id: 'white', name: 'Mica trắng', base: '#f4f2ed', edge: '#c8c4bb', tex: 'none' },
@@ -75,11 +75,37 @@ export const MATERIALS: Material[] = [
 ];
 export const matById = (id: string) => MATERIALS.find((m) => m.id === id) || MATERIALS[0];
 
+// cảnh tường ảnh thật gen sẵn offline (/public/scenes) — giữa tường chừa trống để gắn bảng
+// cnc: kiểu CNC hợp với bức tường này (vd tường Hội An → sơn thẳng, gỗ Nhật → chữ rời đen) — không ép tấm nền lên mọi tường
+// light: [hệ số chuẩn hoá độ sáng tường (≈1/độ sáng vùng giữa), độ đậm] → bóng lá/ánh đèn của cảnh hắt lên bảng
+export const SIGN_SCENES: { id: string; name: string; src: string; cnc: Partial<SignSpec>; light: [number, number] }[] = [
+  { id: 'congnghiep', name: 'Xi măng công nghiệp', src: '/scenes/bh-1-congnghiep.jpg', cnc: { style: 'loose', letter: 'black' }, light: [1.28, 0.9] },
+  { id: 'bar-dem', name: 'Bar gạch đêm', src: '/scenes/bh-2-bar-dem.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [3.5, 0.55] },
+  { id: 'hoian', name: 'Tường vàng Hội An', src: '/scenes/bh-3-hoian.jpg', cnc: { style: 'paint', letter: 'black' }, light: [1.27, 0.9] },
+  { id: 'nhat', name: 'Gỗ kiểu Nhật', src: '/scenes/bh-4-nhat.jpg', cnc: { style: 'loose', letter: 'black' }, light: [1.3, 0.85] },
+  { id: 'nha-trang', name: 'Tường trắng tối giản', src: '/scenes/bh-5-nha-trang.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [1.08, 0.9] },
+  { id: 'nhiet-doi', name: 'Đất nung nhiệt đới', src: '/scenes/bh-6-nhiet-doi.jpg', cnc: { style: 'paint', letter: 'white' }, light: [1.5, 0.95] },
+  { id: 'sang-trong', name: 'Đá đen sang trọng', src: '/scenes/bh-7-sang-trong.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [4, 0.45] },
+  { id: 'pho-vn', name: 'Mặt phố Việt', src: '/scenes/bh-8-pho-vn.jpg', cnc: { style: 'loose', letter: 'white' }, light: [1.2, 0.6] },
+];
+// mỗi loại bảng hợp vài cảnh → các mẫu xoay vòng cảnh
+const KIND_SCENES: Record<SignKind, string[]> = {
+  cnc: ['congnghiep', 'nhat', 'hoian', 'nhiet-doi', 'nha-trang', 'sang-trong'],
+  neon: ['bar-dem', 'sang-trong', 'congnghiep'],
+  lightbox: ['pho-vn', 'congnghiep', 'nha-trang'],
+  channel: ['sang-trong', 'pho-vn', 'nha-trang', 'bar-dem'],
+  engrave: ['nhat', 'nhiet-doi', 'sang-trong'],
+  chalk: ['nhiet-doi', 'congnghiep', 'pho-vn'],
+  print: ['pho-vn', 'congnghiep'],
+};
+
 export const WALLS: { id: string; name: string; base: string }[] = [
   { id: 'concrete', name: 'Xi măng', base: '#a3a19b' },
   { id: 'white', name: 'Tường trắng', base: '#e9e7e2' },
   { id: 'brick', name: 'Gạch', base: '#9c5a43' },
   { id: 'dark', name: 'Tường tối', base: '#2b2c2f' },
+  { id: 'slat', name: 'Lam gỗ', base: '#6b4428' },
+  { id: 'terracotta', name: 'Sơn đất nung', base: '#b4583a' },
 ];
 
 // ---------- mẫu ----------
@@ -110,8 +136,8 @@ export const tplById = (id: string) => SIGN_TEMPLATES.find((t) => t.id === id) |
 export interface SignData { name: string; sub: string; number: string; street: string; icon: string }
 export type SignKind = 'cnc' | 'neon' | 'lightbox' | 'channel' | 'engrave' | 'chalk' | 'print';
 export interface SignSpec {
-  tpl: string; w: number; h: number; fontId: string; material: string; style: 'cut' | 'raised'; letter: string; wall: string;
-  kind?: SignKind; color?: string; ink?: string; accent?: string; halo?: boolean;
+  tpl: string; w: number; h: number; fontId: string; material: string; style: 'cut' | 'raised' | 'loose' | 'standoff' | 'paint'; letter: string; wall: string; scene?: string;
+  kind?: SignKind; color?: string; ink?: string; accent?: string; halo?: boolean; bg?: string; variant?: string;
 }
 // Loại bảng hiệu (mỗi loại render khác nhau trên cùng bố cục mẫu)
 export const SIGN_KINDS: { id: SignKind; name: string; desc: string }[] = [
@@ -123,6 +149,17 @@ export const SIGN_KINDS: { id: SignKind; name: string; desc: string }[] = [
   { id: 'chalk', name: 'Bảng phấn', desc: 'Bảng đen khung gỗ, viết phấn' },
   { id: 'print', name: 'In màu', desc: 'Alu / bạt in màu phẳng' },
 ];
+// Kiểu dựng của từng loại (CNC dùng spec.style, loại khác dùng spec.variant)
+export const KIND_VARIANTS: Record<SignKind, { id: string; name: string }[]> = {
+  cnc: [{ id: 'cut', name: 'Cắt thủng chữ' }, { id: 'raised', name: 'Chữ nổi trên tấm' }, { id: 'standoff', name: 'Tấm nổi cách tường' }, { id: 'loose', name: 'Chữ rời gắn tường' }, { id: 'paint', name: 'Sơn thẳng lên tường' }],
+  neon: [{ id: 'clear', name: 'Mica trong chữ nhật' }, { id: 'contour', name: 'Mica cắt ôm chữ' }, { id: 'wall', name: 'Gắn thẳng tường' }, { id: 'black', name: 'Bảng đen viền neon' }],
+  lightbox: [{ id: 'box', name: 'Hộp đèn khung dày' }, { id: 'slim', name: 'Hộp đèn siêu mỏng' }, { id: 'letterlit', name: 'Hộp tối, chữ sáng' }, { id: 'spot', name: 'Biển + đèn rọi' }],
+  channel: [{ id: 'wall', name: 'Hắt sáng sau chữ' }, { id: 'front', name: 'Mặt chữ sáng' }], // bỏ kiểu chữ trên tấm nền — ngoài đời không ai làm
+  engrave: [{ id: 'dark', name: 'Khắc chìm' }, { id: 'gold', name: 'Khắc dát vàng' }, { id: 'relief', name: 'Chạm nổi' }, { id: 'burn', name: 'Khắc cháy (gỗ)' }],
+  chalk: [{ id: 'frame', name: 'Khung gỗ treo tường' }, { id: 'hang', name: 'Treo dây' }, { id: 'clip', name: 'Bảng kẹp' }],
+  print: [{ id: 'alu', name: 'Alu bắt ốc' }, { id: 'stripe', name: 'Sọc viền' }, { id: 'frame', name: 'Khung màu' }, { id: 'banner', name: 'Bạt căng dây' }],
+};
+export const variantOf = (s: SignSpec): string => (s.kind || 'cnc') === 'cnc' ? s.style : s.variant || KIND_VARIANTS[s.kind!][0].id;
 export const NEON_COLORS = ['#ff4fa3', '#4fc3ff', '#ffb347', '#f4f1ea', '#b46bff', '#ff5a4f', '#3ff0d0'];
 export const FACE_COLORS = ['#c62828', '#1d3557', '#141414', '#f4b400', '#ffffff', '#7b2cbf', '#ff7a00', '#8d5524'];
 export const INK_COLORS = ['#ffffff', '#141414', '#f4c95d', '#c62828'];
@@ -145,6 +182,78 @@ const hexMix = (a: string, b: string, t: number) => {
   const A = p(a), B = p(b);
   return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
 };
+// Mỗi mẫu trong lưới mang 1 phối riêng theo loại (màu/chất liệu/tường) → 17 mẫu không giống hệt nhau.
+// Danh sách xoay vòng theo thứ tự mẫu; bấm mẫu là áp luôn phối đó, sau đó vẫn chỉnh tay được.
+const LOOKS: Record<SignKind, Partial<SignSpec>[]> = {
+  cnc: [
+    { material: 'corten', letter: 'gold', style: 'cut', wall: 'concrete' },
+    { material: 'black', letter: 'gold', style: 'standoff', wall: 'white' },
+    { material: 'inox', letter: 'gold', style: 'loose', wall: 'slat' },
+    { material: 'wood', letter: 'black', style: 'raised', wall: 'white' },
+    { material: 'gold', letter: 'gold', style: 'cut', wall: 'dark' },
+    { material: 'white', letter: 'black', style: 'standoff', wall: 'brick' },
+    { material: 'black', letter: 'black', style: 'loose', wall: 'white' },
+    { material: 'wood', letter: 'gold', style: 'cut', wall: 'dark' },
+    { material: 'corten', letter: 'corten', style: 'loose', wall: 'white' },
+  ],
+  neon: [
+    { color: '#ff4fa3', accent: '#4fc3ff', wall: 'dark', variant: 'clear' },
+    { color: '#4fc3ff', accent: '#ff4fa3', wall: 'brick', variant: 'contour' },
+    { color: '#ffb347', accent: '#f4f1ea', wall: 'brick', variant: 'wall' },
+    { color: '#f4f1ea', accent: '#ffb347', wall: 'slat', variant: 'black' },
+    { color: '#b46bff', accent: '#ff4fa3', wall: 'dark', variant: 'contour' },
+    { color: '#ff5a4f', accent: '#ffb347', wall: 'terracotta', variant: 'black' },
+    { color: '#3ff0d0', accent: '#f4f1ea', wall: 'brick', variant: 'contour' },
+    { color: '#ff4fa3', accent: '#ffb347', wall: 'slat', variant: 'wall' },
+  ],
+  lightbox: [
+    { color: '#ffffff', ink: '#141414', accent: '#c62828', wall: 'brick', variant: 'slim' },
+    { color: '#c62828', ink: '#ffffff', accent: '#f4c95d', wall: 'concrete', variant: 'box' },
+    { color: '#141414', ink: '#f4c95d', accent: '#ffffff', wall: 'white', variant: 'letterlit' },
+    { color: '#f4b400', ink: '#141414', accent: '#c62828', wall: 'dark', variant: 'spot' },
+    { color: '#1d3557', ink: '#ffffff', accent: '#f4b400', wall: 'terracotta', variant: 'box' },
+    { color: '#ff7a00', ink: '#ffffff', accent: '#141414', wall: 'concrete', variant: 'slim' },
+    { color: '#7b2cbf', ink: '#ffffff', accent: '#f4c95d', wall: 'dark', variant: 'letterlit' },
+    { color: '#8d5524', ink: '#fff4e0', accent: '#f4c95d', wall: 'slat', variant: 'spot' },
+  ],
+  channel: [
+    { material: 'black', letter: 'gold', color: '#ffd9a0', wall: 'concrete', variant: 'wall' },
+    { material: 'wood', letter: 'black', color: '#ffd9a0', wall: 'white', variant: 'wall' },
+    { material: 'white', letter: 'black', color: '#ffffff', wall: 'dark', variant: 'front' },
+    { material: 'navy', letter: 'gold', color: '#ffd9a0', wall: 'brick', variant: 'wall' },
+    { material: 'inox', letter: 'black', color: '#4fc3ff', wall: 'dark', variant: 'front' },
+    { material: 'corten', letter: 'white', color: '#ffd9a0', wall: 'dark', variant: 'wall' },
+    { material: 'black', letter: 'white', color: '#ff4fa3', wall: 'brick', variant: 'wall' },
+    { material: 'wood', letter: 'gold', color: '#ffd9a0', wall: 'slat', variant: 'front' },
+  ],
+  engrave: [
+    { material: 'wood', wall: 'white', variant: 'burn' },
+    { material: 'black', wall: 'brick', variant: 'gold' },
+    { material: 'gold', wall: 'dark', variant: 'relief' },
+    { material: 'inox', wall: 'concrete', variant: 'dark' },
+    { material: 'white', wall: 'slat', variant: 'gold' },
+    { material: 'navy', wall: 'white', variant: 'gold' },
+    { material: 'corten', wall: 'white', variant: 'relief' },
+    { material: 'wood', wall: 'terracotta', variant: 'dark' },
+  ],
+  chalk: [
+    { color: '#f3f1ea', accent: '#ffd166', bg: '#1f2a27', wall: 'brick', variant: 'frame' },
+    { color: '#f3f1ea', accent: '#ff9ec7', bg: '#1c1c1e', wall: 'white', variant: 'hang' },
+    { color: '#ffd166', accent: '#f3f1ea', bg: '#22302c', wall: 'slat', variant: 'clip' },
+    { color: '#f3f1ea', accent: '#9ad7ff', bg: '#1c1c1e', wall: 'brick', variant: 'hang' },
+    { color: '#9ad7ff', accent: '#f3f1ea', bg: '#1f2a27', wall: 'concrete', variant: 'frame' },
+    { color: '#ff9ec7', accent: '#f3f1ea', bg: '#1c1c1e', wall: 'terracotta', variant: 'clip' },
+  ],
+  print: (['brick', 'white', 'slat', 'dark', 'white', 'concrete', 'white', 'slat', 'terracotta'] as const)
+    .map((wall, i) => ({ color: PRINT_PALETTES[i].face, ink: PRINT_PALETTES[i].ink, accent: PRINT_PALETTES[i].accent, wall,
+      variant: ['alu', 'stripe', 'banner', 'frame', 'alu', 'stripe', 'frame', 'banner', 'stripe'][i] })),
+};
+export function lookFor(kind: SignKind, tplId: string): Partial<SignSpec> {
+  const l = LOOKS[kind]; const i = Math.max(0, SIGN_TEMPLATES.findIndex((t) => t.id === tplId));
+  const sc = KIND_SCENES[kind]; const scene = sc[i % sc.length];
+  const rec = kind === 'cnc' ? SIGN_SCENES.find((x) => x.id === scene)?.cnc : undefined;
+  return { halo: true, ...l[i % l.length], scene, ...rec };
+}
 const ENGRAVE_INK: Record<string, string> = { corten: '#3a1a0a', black: '#c8c8c8', gold: '#5d4313', inox: '#4f5357', wood: '#4a2810', white: '#8e9399', navy: '#c9d6e8' };
 
 // đo chữ bằng canvas (font đã nạp) → cỡ chữ vừa khung
@@ -336,6 +445,34 @@ const gradDef = (m: Material, uid: string, part: string) => m.grad ? (
   </linearGradient>
 ) : null;
 
+// ánh sáng cảnh hắt lên bảng: độ sáng ảnh cảnh (xám, mờ, chuẩn hoá theo tường) nhân lên vùng bảng → bóng lá, quầng đèn rơi đúng lên bảng
+function SceneLight({ spec, uid, VW, VH, ox, oy, children }: { spec: SignSpec; uid: string; VW: number; VH: number; ox: number; oy: number; children: React.ReactNode }) {
+  const sc = spec.scene && SIGN_SCENES.find((x) => x.id === spec.scene);
+  if (!sc) return null;
+  const [g, op] = sc.light; const row = `${0.2126 * g} ${0.7152 * g} ${0.0722 * g} 0 0`;
+  return (
+    <>
+      <defs>
+        <filter id={`${uid}-lmap`} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          <feGaussianBlur stdDeviation={VW * 0.003} />
+          <feColorMatrix type="matrix" values={`${row}  ${row}  ${row}  0 0 0 1 0`} />
+        </filter>
+        <mask id={`${uid}-lmask`} maskUnits="userSpaceOnUse" x={0} y={0} width={VW} height={VH}><g transform={`translate(${ox} ${oy})`}>{children}</g></mask>
+      </defs>
+      <g mask={`url(#${uid}-lmask)`} style={{ mixBlendMode: 'multiply' }} opacity={op}>
+        <image href={sc.src} x={0} y={0} width={VW} height={VH} preserveAspectRatio="xMidYMid slice" filter={`url(#${uid}-lmap)`} />
+      </g>
+    </>
+  );
+}
+
+// nền: cảnh ảnh thật nếu có, không thì tường vẽ code
+function backdrop(spec: SignSpec, uid: string, VW: number, VH: number) {
+  const sc = spec.scene && SIGN_SCENES.find((x) => x.id === spec.scene);
+  if (!sc) return wallFill(spec.wall, uid, VW);
+  return <image href={sc.src} x={0} y={0} width={VW} height={VH} preserveAspectRatio="xMidYMid slice" data-scene={sc.id} />;
+}
+
 function wallFill(id: string, uid: string, VW: number) {
   const w = WALLS.find((x) => x.id === id) || WALLS[0];
   const k = 900 / VW;
@@ -351,6 +488,17 @@ function wallFill(id: string, uid: string, VW: number) {
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill={`url(#${uid}-brick)`} />
+        </>
+      ) : w.id === 'slat' ? (
+        <>
+          <defs>
+            <pattern id={`${uid}-slat`} width={VW / 22} height={VW} patternUnits="userSpaceOnUse">
+              <rect width={VW / 22} height={VW} fill="#7a4e2e" />
+              <rect x={VW / 22 * 0.86} width={VW / 22 * 0.14} height={VW} fill="#2a180c" />
+              <rect width={VW / 22 * 0.12} height={VW} fill="#9a6a42" opacity={0.6} />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#${uid}-slat)`} />
         </>
       ) : null}
       <defs>
@@ -387,7 +535,7 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
     );
   }
 
-  const M = Math.max(W, H) * 0.14; const th = Math.max(W, H) * 0.007; // lề tường + độ dày tấm
+  const M = Math.max(W, H) * (!spec.scene ? 0.14 : ((spec.style === 'paint' || spec.style === 'loose') && (spec.kind || 'cnc') === 'cnc') || spec.kind === 'channel' ? 0.24 : 0.42); /* chữ thẳng tường: không tấm → chữ to hơn */ const th = Math.max(W, H) * 0.007; // lề tường + độ dày tấm
   let VW = W + M * 2, VH = H + M * 2;
   if (aspect) { if (VW / VH < aspect) VW = VH * aspect; else VH = VW / aspect; }
   const ox = (VW - W) / 2, oy = (VH - H) / 2;
@@ -411,16 +559,42 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
           <Content t={t} d={data} W={W} H={H} font={font} fill="#000000" arcId={`${arcId}m`} />
         </mask>
         <filter id={`${uid}-blur`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={th * 2.2} /></filter>
+        <filter id={`${uid}-paint`} x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency={(0.6 * 900) / W} numOctaves={2} seed={3} result="n" />
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.1 1.62" result="m" />
+          <feComposite in="SourceGraphic" in2="m" operator="in" />
+        </filter>
+        <filter id={`${uid}-tsh`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={Math.min(W, H) * 0.006} /></filter>
         <filter id={`${uid}-lift`} x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx={0} dy={th * 0.6} stdDeviation={th * 0.5} floodOpacity={0.45} /></filter>
       </defs>
-      {wallFill(spec.wall, uid, VW)}
+      {backdrop(spec, uid, VW, VH)}
       <g transform={`translate(${ox} ${oy})`}>
         <path d={shape} fill="none" data-plate="" />
-        <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />
+        {spec.style !== 'loose' && spec.style !== 'paint' && <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />}
         {spec.style === 'cut' ? (
           <>
             <g transform={`translate(${th * 0.5} ${th})`}><g mask={`url(#${uid}-mask)`}><path d={shape} fill={m.edge} /></g></g>
             <g mask={`url(#${uid}-mask)`}>{plate}</g>
+          </>
+        ) : spec.style === 'paint' ? (
+          // chữ sơn thẳng lên tường: hoà vào vân tường (multiply) + mép sơn sờn
+          <g opacity={0.96} filter={`url(#${uid}-paint)`} style={{ mixBlendMode: L.id === 'white' ? 'normal' : 'multiply' }}>
+            <Content t={t} d={data} W={W} H={H} font={font} fill={L.id === 'white' ? '#f3eee4' : L.id === 'black' || lum(L.base) > 0.55 ? '#211812' : L.base} arcId={arcId} />
+          </g>
+        ) : spec.style === 'loose' ? (
+          <>
+            {/* chữ rời bắt thẳng tường, không tấm */}
+            <g opacity={0.5} filter={`url(#${uid}-tsh)`} transform={`translate(${th * 1.2} ${th * 2.4})`}><Content t={t} d={data} W={W} H={H} font={font} fill="#000000" arcId={`${arcId}s`} /></g>
+            <g transform={`translate(${th * 0.4} ${th * 0.7})`}><Content t={t} d={data} W={W} H={H} font={font} fill={L.edge} arcId={`${arcId}e`} /></g>
+            <Content t={t} d={data} W={W} H={H} font={font} fill={fillOf(L, uid, 'letter')} arcId={arcId} />
+          </>
+        ) : spec.style === 'standoff' ? (
+          <>
+            <path d={shape} fill="#000" opacity={0.3} filter={`url(#${uid}-blur)`} transform={`translate(${th * 4} ${th * 7})`} />
+            <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />
+            {plate}
+            <g filter={`url(#${uid}-lift)`}><Content t={t} d={data} W={W} H={H} font={font} fill={fillOf(L, uid, 'letter')} arcId={arcId} /></g>
+            <Bolts W={W} H={H} shape={t.shape} />
           </>
         ) : (
           <>
@@ -430,19 +604,43 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
           </>
         )}
       </g>
+      {spec.style !== 'paint' && (
+        <SceneLight spec={spec} uid={uid} VW={VW} VH={VH} ox={ox} oy={oy}>
+          {spec.style === 'loose' ? <Content t={t} d={data} W={W} H={H} font={font} fill="#ffffff" arcId={`${arcId}l`} /> : <path d={shape} fill="#ffffff" />}
+        </SceneLight>
+      )}
     </svg>
   );
 }
 
-// Các loại bảng hiệu ngoài CNC: neon, hộp đèn, chữ nổi LED, khắc laser, bảng phấn, in màu
+// Ốc inox 4 góc (chỉ tấm chữ nhật / vát góc)
+function Bolts({ W, H, shape }: { W: number; H: number; shape?: SignTemplate['shape'] }) {
+  if (shape && shape !== 'rect' && shape !== 'chamfer') return null;
+  const m = Math.min(W, H), br = m * 0.02, bi = shape === 'chamfer' ? m * 0.1 : m * 0.038;
+  return <>{[[bi, bi], [W - bi, bi], [bi, H - bi], [W - bi, H - bi]].map(([x, y], i) => (
+    <g key={i}>
+      <circle cx={x + br * 0.25} cy={y + br * 0.4} r={br} fill="#000" opacity={0.35} />
+      <circle cx={x} cy={y} r={br} fill="#b9bdc3" stroke="#6f747a" strokeWidth={br * 0.18} />
+      <circle cx={x - br * 0.3} cy={y - br * 0.3} r={br * 0.35} fill="#fff" opacity={0.75} />
+    </g>
+  ))}</>;
+}
+const lum = (h: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+
+// Các loại bảng hiệu ngoài CNC: neon, hộp đèn, chữ nổi LED, khắc laser, bảng phấn, in màu — mỗi loại vài kiểu (spec.variant)
 function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font, m, L, style, className }: {
   spec: SignSpec; data: SignData; uid: string; t: SignTemplate; W: number; H: number; ox: number; oy: number; th: number; VW: number; VH: number;
   shape: string; font: SignFont; m: Material; L: Material; style?: React.CSSProperties; className?: string;
 }) {
   const kind = spec.kind || 'cnc';
+  const v = variantOf(spec);
   const C = (fill: string, arc: string, accent?: string) => <Content t={t} d={data} W={W} H={H} font={font} fill={fill} accent={accent} arcId={`${uid}-${arc}`} />;
   const minWH = Math.min(W, H);
+  const rectish = !t.shape || t.shape === 'rect' || t.shape === 'chamfer';
+  const inset = (k: number) => { const ins = minWH * k, sx = (W - ins * 2) / W, sy = (H - ins * 2) / H; return { tf: `translate(${ins} ${ins}) scale(${sx} ${sy})`, sw: (w: number) => w / Math.min(sx, sy) }; };
+  const blurF = (id: string, sd: number) => <filter key={id} id={`${uid}-${id}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={sd} /></filter>;
   const shadow = <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />;
+  const letterShadow = (k: string, o = 0.45) => <g opacity={o} filter={`url(#${uid}-tsh)`} transform={`translate(${th * 0.9} ${th * 1.8})`}>{C('#000000', k)}</g>;
   const plate = (
     <>
       <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />
@@ -451,63 +649,152 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
     </>
   );
   let body: ReactNode = null;
-  const defs: ReactNode[] = [];
+  const defs: ReactNode[] = [blurF('tsh', minWH * 0.006)];
 
   if (kind === 'neon') {
-    const nc = spec.color || NEON_COLORS[0];
-    defs.push(
-      <filter key="g1" id={`${uid}-glowL`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={minWH * 0.035} /></filter>,
-      <filter key="g2" id={`${uid}-glowS`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={minWH * 0.008} /></filter>,
-    );
-    body = (
+    const nc = spec.color || NEON_COLORS[0]; const na = spec.accent || nc;
+    defs.push(blurF('glowL', minWH * 0.035), blurF('glowS', minWH * 0.008));
+    const glow = (make: (f: string, a: string, k: string) => ReactNode) => (
       <>
-        {/* tấm mica trong gắn tường */}
-        <path d={shape} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.18)" strokeWidth={th * 0.5} />
-        {[[0.06, 0.08], [0.94, 0.08], [0.06, 0.92], [0.94, 0.92]].map(([x, y], i) => <circle key={i} cx={W * x} cy={H * y} r={minWH * 0.012} fill="#cfd3d8" opacity={0.7} />)}
-        <g opacity={0.75} filter={`url(#${uid}-glowL)`}>{C(nc, 'n1')}</g>
-        <g filter={`url(#${uid}-glowS)`}>{C(nc, 'n2')}</g>
-        {C(hexMix(nc, '#ffffff', 0.72), 'n3')}
+        <g opacity={0.75} filter={`url(#${uid}-glowL)`}>{make(nc, na, 'n1')}</g>
+        <g filter={`url(#${uid}-glowS)`}>{make(nc, na, 'n2')}</g>
+        {make(hexMix(nc, '#ffffff', 0.72), hexMix(na, '#ffffff', 0.72), 'n3')}
       </>
     );
+    const ib = inset(0.05);
+    let board: ReactNode;
+    if (v === 'contour') {
+      // mica cắt ôm theo chữ
+      const r = minWH * 0.05;
+      defs.push(
+        <filter key="ct" id={`${uid}-contour`} x="-25%" y="-25%" width="150%" height="150%">
+          <feMorphology in="SourceAlpha" operator="dilate" radius={r} result="a" />
+          <feMorphology in="SourceAlpha" operator="dilate" radius={r * 1.12} result="b" />
+          <feComposite in="b" in2="a" operator="out" result="edge" />
+          <feFlood floodColor="#ffffff" floodOpacity={0.08} /><feComposite in2="a" operator="in" result="fill" />
+          <feFlood floodColor="#ffffff" floodOpacity={0.4} /><feComposite in2="edge" operator="in" result="ed" />
+          <feMerge><feMergeNode in="fill" /><feMergeNode in="ed" /></feMerge>
+        </filter>,
+      );
+      board = <g filter={`url(#${uid}-contour)`}>{C('#ffffff', 'nb')}</g>;
+    } else if (v === 'wall') {
+      board = letterShadow('ns', 0.55); // ống neon bắt thẳng tường
+    } else if (v === 'black') {
+      board = <>{shadow}<path d={shape} fill="#121314" />{glow((_, a, k) => <path key={k} d={shape} fill="none" stroke={a} strokeWidth={ib.sw(minWH * 0.012)} transform={ib.tf} />)}</>;
+    } else {
+      board = (
+        <>
+          <path d={shape} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.18)" strokeWidth={th * 0.5} />
+          {[[0.06, 0.08], [0.94, 0.08], [0.06, 0.92], [0.94, 0.92]].map(([x, y], i) => <circle key={i} cx={W * x} cy={H * y} r={minWH * 0.012} fill="#cfd3d8" opacity={0.7} />)}
+        </>
+      );
+    }
+    body = <>{board}{glow((f, a, k) => C(f, k, a))}</>;
   } else if (kind === 'lightbox') {
-    const face = spec.color || FACE_COLORS[0]; const ink = spec.ink || INK_COLORS[0];
+    const face = spec.color || FACE_COLORS[0]; const ink = spec.ink || INK_COLORS[0]; const acc = spec.accent || ink;
     defs.push(
       <radialGradient key="lit" id={`${uid}-lit`} cx="50%" cy="45%" r="65%"><stop offset="0" stopColor="#fff" stopOpacity={0.38} /><stop offset="1" stopColor="#fff" stopOpacity={0} /></radialGradient>,
-      <filter key="halo" id={`${uid}-boxglow`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={minWH * 0.06} /></filter>,
+      blurF('boxglow', minWH * 0.06), blurF('lglow', minWH * 0.02),
     );
-    body = (
-      <>
-        <path d={shape} fill={face} opacity={0.55} filter={`url(#${uid}-boxglow)`} />
-        {shadow}
-        <path d={shape} fill={face} />
-        <path d={shape} fill={`url(#${uid}-lit)`} />
-        {C(ink, 'l1')}
-        <path d={shape} fill="none" stroke="#2a2c30" strokeWidth={minWH * 0.05} />
-        <path d={shape} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={th * 0.4} transform={`translate(${th * 0.3} ${th * 0.3})`} />
-      </>
-    );
+    if (v === 'letterlit') {
+      // hộp tối, chỉ chữ sáng
+      const lit = lum(face) < 0.15 || lum(face) > 0.9 ? ink : face;
+      body = (
+        <>
+          {shadow}
+          <path d={shape} fill="#151618" />
+          <g opacity={0.85} filter={`url(#${uid}-lglow)`}>{C(lit, 'lg', acc)}</g>
+          {C(hexMix(lit, '#ffffff', 0.35), 'lc', hexMix(acc, '#ffffff', 0.35))}
+          <path d={shape} fill="none" stroke="#2a2c30" strokeWidth={minWH * 0.035} />
+        </>
+      );
+    } else if (v === 'spot') {
+      // biển không đèn trong, 2 đèn rọi cần cong phía trên
+      defs.push(<linearGradient key="cone" id={`${uid}-cone`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff6e0" stopOpacity={0.5} /><stop offset="1" stopColor="#fff6e0" stopOpacity={0} /></linearGradient>);
+      const hy = -minWH * 0.1, by = -minWH * 0.3, cw = Math.min(W * 0.24, minWH * 0.7);
+      body = (
+        <>
+          {shadow}
+          <path d={shape} fill={hexMix(face, '#000000', 0.45)} transform={`translate(${th * 0.4} ${th * 0.6})`} />
+          <path d={shape} fill={face} />
+          {C(ink, 'l1', acc)}
+          <path d={shape} fill="none" stroke="#2a2c30" strokeWidth={minWH * 0.012} />
+          {[W * 0.25, W * 0.75].map((x, i) => (
+            <g key={i}>
+              <path d={`M ${x - cw * 0.05} ${hy} L ${x - cw} ${H * 0.75} L ${x + cw} ${H * 0.75} L ${x + cw * 0.05} ${hy} Z`} fill={`url(#${uid}-cone)`} />
+              <path d={`M ${x} ${by} Q ${x} ${hy - minWH * 0.08} ${x} ${hy}`} stroke="#1c1d20" strokeWidth={minWH * 0.012} fill="none" />
+              <rect x={x - minWH * 0.025} y={by - minWH * 0.02} width={minWH * 0.05} height={minWH * 0.03} rx={minWH * 0.006} fill="#1c1d20" />
+              <path d={`M ${x - minWH * 0.04} ${hy + minWH * 0.02} L ${x - minWH * 0.025} ${hy - minWH * 0.025} H ${x + minWH * 0.025} L ${x + minWH * 0.04} ${hy + minWH * 0.02} Z`} fill="#1c1d20" />
+              <ellipse cx={x} cy={hy + minWH * 0.02} rx={minWH * 0.034} ry={minWH * 0.008} fill="#fff6e0" />
+            </g>
+          ))}
+        </>
+      );
+    } else {
+      const slim = v === 'slim';
+      body = (
+        <>
+          <path d={shape} fill={face} opacity={slim ? 0.4 : 0.55} filter={`url(#${uid}-boxglow)`} />
+          {shadow}
+          <path d={shape} fill={face} />
+          <path d={shape} fill={`url(#${uid}-lit)`} />
+          {C(ink, 'l1', acc)}
+          <path d={shape} fill="none" stroke={slim ? '#d5d8dc' : '#2a2c30'} strokeWidth={minWH * (slim ? 0.022 : 0.05)} />
+          <path d={shape} fill="none" stroke={slim ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.25)'} strokeWidth={th * 0.4} transform={`translate(${th * 0.3} ${th * 0.3})`} />
+        </>
+      );
+    }
   } else if (kind === 'channel') {
     const side = hexMix(L.edge, '#000000', 0.1); const depth = Math.max(3, minWH * 0.012);
-    defs.push(<filter key="h" id={`${uid}-halo`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={minWH * 0.025} /></filter>);
-    body = (
-      <>
-        {shadow}{plate}
-        {spec.halo !== false && <g opacity={0.95} filter={`url(#${uid}-halo)`}>{C(spec.color || HALO_COLORS[0], 'c0')}</g>}
-        {[4, 3, 2, 1].map((i) => <g key={i} transform={`translate(${depth * i * 0.35} ${depth * i * 0.5})`}>{C(side, `c${i}`)}</g>)}
-        {C(fillOf(L, uid, 'letter'), 'c5')}
-      </>
-    );
+    const hc = spec.color || HALO_COLORS[0];
+    defs.push(blurF('halo', minWH * 0.025), blurF('fglow', minWH * 0.018));
+    const extrude = (c: string) => [4, 3, 2, 1].map((i) => <g key={i} transform={`translate(${depth * i * 0.35} ${depth * i * 0.5})`}>{C(c, `c${i}`)}</g>);
+    if (v === 'front') {
+      // chữ mặt sáng (mica phát sáng), thành chữ tối, gắn thẳng tường
+      body = (
+        <>
+          {letterShadow('cs', 0.4)}
+          <g opacity={0.7} filter={`url(#${uid}-fglow)`}>{C(hc, 'cg')}</g>
+          {extrude('#1d1e20')}
+          {C(hexMix(hc, '#ffffff', 0.45), 'c5')}
+        </>
+      );
+    } else {
+      body = (
+        <>
+          {spec.halo !== false && <g opacity={0.95} filter={`url(#${uid}-halo)`}>{C(hc, 'c0')}</g>}
+          {extrude(side)}
+          {C(fillOf(L, uid, 'letter'), 'c5')}
+        </>
+      );
+    }
   } else if (kind === 'engrave') {
+    defs.push(blurF('burn', minWH * 0.004), blurF('burn2', minWH * 0.012));
     const ink = ENGRAVE_INK[m.id] || '#333333';
-    body = (
+    const gold = m.id === 'gold' ? '#3b2a0c' : '#ddb156';
+    const marks = v === 'relief' ? (
       <>
-        {shadow}{plate}
-        <g clipPath={`url(#${uid}-clip)`}>
-          <g opacity={0.35} transform={`translate(0 ${th * 0.3})`}>{C('#ffffff', 'e1')}</g>
-          <g opacity={0.88}>{C(ink, 'e2')}</g>
-        </g>
+        <g opacity={0.5} filter={`url(#${uid}-tsh)`} transform={`translate(${th * 0.5} ${th * 0.9})`}>{C('#000000', 'e0')}</g>
+        <g opacity={0.45} transform={`translate(${-th * 0.25} ${-th * 0.35})`}>{C('#ffffff', 'e1')}</g>
+        {C(fillOf(m, uid, 'plate'), 'e2')}
+      </>
+    ) : v === 'burn' ? (
+      <>
+        <g opacity={0.5} filter={`url(#${uid}-burn2)`}>{C('#5a2c0c', 'e1')}</g>
+        <g opacity={0.92} filter={`url(#${uid}-burn)`}>{C('#22110a', 'e2')}</g>
+      </>
+    ) : v === 'gold' ? (
+      <>
+        <g opacity={0.55} transform={`translate(0 ${-th * 0.3})`}>{C('#000000', 'e1')}</g>
+        {C(gold, 'e2')}
+      </>
+    ) : (
+      <>
+        <g opacity={0.35} transform={`translate(0 ${th * 0.3})`}>{C('#ffffff', 'e1')}</g>
+        <g opacity={0.88}>{C(ink, 'e2')}</g>
       </>
     );
+    body = <>{shadow}{plate}<g clipPath={`url(#${uid}-clip)`}>{marks}</g></>;
   } else if (kind === 'chalk') {
     const ink = spec.color || CHALK_COLORS[0];
     defs.push(
@@ -522,38 +809,99 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
         <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.16 -0.04" />
       </filter>,
     );
-    body = (
+    const board = (
       <>
-        {shadow}
-        <path d={shape} fill="#1f2a27" />
+        <path d={shape} fill={spec.bg || '#1f2a27'} />
         <g clipPath={`url(#${uid}-clip)`}><rect x={-50} y={-50} width="200%" height="200%" filter={`url(#${uid}-board)`} /></g>
-        <g filter={`url(#${uid}-chalk)`}>{C(ink, 'k1')}</g>
-        <path d={shape} fill="none" stroke="#7a4a24" strokeWidth={minWH * 0.06} />
-        <path d={shape} fill="none" stroke="#a36a3b" strokeWidth={minWH * 0.02} />
+        <g filter={`url(#${uid}-chalk)`}>{C(ink, 'k1', spec.accent)}</g>
       </>
     );
+    if (v === 'clip') {
+      // bảng trơn viền nhựa, 2 kẹp sắt phía trên
+      body = (
+        <>
+          {shadow}{board}
+          <path d={shape} fill="none" stroke="#0d0e0f" strokeWidth={minWH * 0.018} />
+          {[W * 0.3, W * 0.7].map((x, i) => (
+            <g key={i}>
+              <rect x={x - minWH * 0.06} y={-minWH * 0.02} width={minWH * 0.12} height={minWH * 0.07} rx={minWH * 0.01} fill="#2b2d31" stroke="#55595f" strokeWidth={minWH * 0.004} />
+              <path d={`M ${x - minWH * 0.04} ${-minWH * 0.02} Q ${x} ${-minWH * 0.1} ${x + minWH * 0.04} ${-minWH * 0.02}`} fill="none" stroke="#a9adb3" strokeWidth={minWH * 0.008} />
+            </g>
+          ))}
+        </>
+      );
+    } else {
+      const hang = v === 'hang';
+      const ny = -minWH * 0.24;
+      body = (
+        <>
+          {hang && <>
+            <path d={`M ${W * 0.18} ${minWH * 0.03} L ${W / 2} ${ny} L ${W * 0.82} ${minWH * 0.03}`} fill="none" stroke="#000" strokeOpacity={0.3} strokeWidth={minWH * 0.012} transform={`translate(${th} ${th * 2})`} />
+            <path d={`M ${W * 0.18} ${minWH * 0.03} L ${W / 2} ${ny} L ${W * 0.82} ${minWH * 0.03}`} fill="none" stroke="#c9a97a" strokeWidth={minWH * 0.012} strokeLinejoin="round" />
+            <circle cx={W / 2} cy={ny} r={minWH * 0.018} fill="#6b6f75" />
+          </>}
+          {shadow}{board}
+          <path d={shape} fill="none" stroke="#7a4a24" strokeWidth={minWH * (hang ? 0.04 : 0.06)} />
+          <path d={shape} fill="none" stroke="#a36a3b" strokeWidth={minWH * (hang ? 0.014 : 0.02)} />
+        </>
+      );
+    }
   } else if (kind === 'print') {
     const pal = PRINT_PALETTES[0];
     const face = spec.color || pal.face; const ink = spec.ink || pal.ink; const acc = spec.accent || ink;
-    const ins = minWH * 0.075, sx = (W - ins * 2) / W, sy = (H - ins * 2) / H;
-    const rect = !t.shape || t.shape === 'rect' || t.shape === 'chamfer';
-    const br = minWH * 0.02, bi = minWH * 0.038;
-    body = (
+    const base = (
       <>
         {shadow}
         <path d={shape} fill={hexMix(face, '#000000', 0.45)} transform={`translate(${th * 0.4} ${th * 0.6})`} />
         <path d={shape} fill={face} />
-        {t.id !== 'frame' && <path d={shape} fill="none" stroke={acc} strokeWidth={(minWH * 0.009) / Math.min(sx, sy)} transform={`translate(${ins} ${ins}) scale(${sx} ${sy})`} />}
-        {C(ink, 'p1', acc)}
-        {rect && [[bi, bi], [W - bi, bi], [bi, H - bi], [W - bi, H - bi]].map(([x, y], i) => (
-          <g key={i}>
-            <circle cx={x + br * 0.25} cy={y + br * 0.4} r={br} fill="#000" opacity={0.35} />
-            <circle cx={x} cy={y} r={br} fill="#b9bdc3" stroke="#6f747a" strokeWidth={br * 0.18} />
-            <circle cx={x - br * 0.3} cy={y - br * 0.3} r={br * 0.35} fill="#fff" opacity={0.75} />
-          </g>
-        ))}
       </>
     );
+    if (v === 'banner') {
+      // bạt hiflex: khoen + dây buộc, nếp gấp nhẹ
+      const e = minWH * 0.04, r = minWH * 0.016;
+      const pts = rectish ? [[e, e], [W - e, e], [e, H - e], [W - e, H - e], ...(W > H * 1.6 ? [[W / 2, e], [W / 2, H - e]] : [])] : [];
+      body = (
+        <>
+          {pts.map(([x, y], i) => <line key={`r${i}`} x1={x} y1={y} x2={x + (x < W / 2 ? -1 : x > W / 2 ? 1 : 0) * minWH * 0.09} y2={y + (y < H / 2 ? -1 : 1) * minWH * 0.09} stroke="#e8e2d0" strokeWidth={minWH * 0.006} />)}
+          {shadow}<path d={shape} fill={face} />
+          <g clipPath={`url(#${uid}-clip)`}>{[0.33, 0.66].map((k) => <rect key={k} x={W * k} y={0} width={minWH * 0.01} height={H} fill="#000" opacity={0.05} />)}</g>
+          {C(ink, 'p1', acc)}
+          {pts.map(([x, y], i) => <g key={`e${i}`}><circle cx={x} cy={y} r={r} fill="#d9dbde" stroke="#8a8f95" strokeWidth={r * 0.2} /><circle cx={x} cy={y} r={r * 0.5} fill="#1b1c1e" /></g>)}
+        </>
+      );
+    } else if (v === 'stripe') {
+      const b = minWH * 0.055;
+      body = (
+        <>
+          {base}
+          <g clipPath={`url(#${uid}-clip)`}>
+            <rect x={0} y={0} width={W} height={b} fill={acc} /><rect x={0} y={H - b} width={W} height={b} fill={acc} />
+            <rect x={0} y={b + minWH * 0.012} width={W} height={minWH * 0.006} fill={acc} /><rect x={0} y={H - b - minWH * 0.018} width={W} height={minWH * 0.006} fill={acc} />
+          </g>
+          {C(ink, 'p1', acc)}
+        </>
+      );
+    } else if (v === 'frame') {
+      const ii = inset(0.065);
+      body = (
+        <>
+          {base}
+          <g clipPath={`url(#${uid}-clip)`}><path d={shape} fill="none" stroke={acc} strokeWidth={minWH * 0.09} /></g>
+          <path d={shape} fill="none" stroke={ink} strokeOpacity={0.55} strokeWidth={ii.sw(minWH * 0.005)} transform={ii.tf} />
+          {C(ink, 'p1', acc)}
+        </>
+      );
+    } else {
+      const ii = inset(0.075);
+      body = (
+        <>
+          {base}
+          {t.id !== 'frame' && <path d={shape} fill="none" stroke={acc} strokeWidth={ii.sw(minWH * 0.009)} transform={ii.tf} />}
+          {C(ink, 'p1', acc)}
+          <Bolts W={W} H={H} shape={t.shape} />
+        </>
+      );
+    }
   }
 
   return (
@@ -566,8 +914,9 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
         <filter id={`${uid}-blur`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={th * 2.2} /></filter>
         {defs}
       </defs>
-      {wallFill(spec.wall, uid, VW)}
+      {backdrop(spec, uid, VW, VH)}
       <g transform={`translate(${ox} ${oy})`}><path d={shape} fill="none" data-plate="" />{body}</g>
+      {(kind === 'engrave' || kind === 'print' || kind === 'chalk') && <SceneLight spec={spec} uid={uid} VW={VW} VH={VH} ox={ox} oy={oy}><path d={shape} fill="#ffffff" /></SceneLight>}
     </svg>
   );
 }

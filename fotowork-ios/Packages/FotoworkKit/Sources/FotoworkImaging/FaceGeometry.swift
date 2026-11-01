@@ -5,43 +5,85 @@ import Vision
 /// Face / subject geometry shared by the outfit fitter: jaw line, subject mask and small
 /// Core Graphics helpers. Coordinates are top-left (row 0 = top).
 enum FaceGeometry {
+    /// Vision's face / subject models need an inference context the iOS Simulator lacks (junk
+    /// contours, no masks), so the simulator always takes the image-based fallbacks. Tests flip
+    /// this to exercise the fallbacks on a Mac.
+    nonisolated(unsafe) static var useVision: Bool = {
+        #if targetEnvironment(simulator)
+        false
+        #else
+        true
+        #endif
+    }()
+
     // MARK: Face & subject
 
-    /// Jaw line (temple → chin → temple), top-left coordinates. Vision landmarks first; when
-    /// Vision is unavailable (the iOS Simulator has no inference context and returns junk
-    /// contours) an elliptical jaw is estimated from the Vision face box and Core Image's CPU
-    /// face detector (eyes / mouth), taking the lower chin of the two.
+    /// Jaw line (temple → chin → temple), top-left coordinates. Vision landmarks when available,
+    /// else `estimatedJaw`.
     static func jawContour(_ photo: CGImage) -> [CGPoint]? {
+        guard useVision else { return estimatedJaw(photo) }
         let W = Double(photo.width), H = Double(photo.height)
-        var estimate: (cx: Double, top: Double, rx: Double, chin: Double)?
         let request = VNDetectFaceLandmarksRequest()
         VisionCompute.prepare(request)
         if (try? VNImageRequestHandler(cgImage: photo, options: [:]).perform([request])) != nil,
-           let face = request.results?.first {
-            let box = face.boundingBox
-            if let contour = face.landmarks?.faceContour, contour.pointCount > 4 {
-                let pts = contour.pointsInImage(imageSize: CGSize(width: W, height: H)).map { CGPoint(x: $0.x, y: H - $0.y) }
-                if let lo = pts.map(\.x).min(), let hi = pts.map(\.x).max(), hi - lo > box.width * W * 0.6 { return pts }
-            }
-            // Face box runs brow → chin (roughly): jaw ≈ its lower half-ellipse.
-            estimate = (box.midX * W, (1 - box.midY) * H, box.width * W * 0.47, (1 - box.minY) * H)
+           let face = request.results?.first,
+           let contour = face.landmarks?.faceContour, contour.pointCount > 4 {
+            let pts = contour.pointsInImage(imageSize: CGSize(width: W, height: H)).map { CGPoint(x: $0.x, y: H - $0.y) }
+            if let lo = pts.map(\.x).min(), let hi = pts.map(\.x).max(), hi - lo > face.boundingBox.width * W * 0.6 { return pts }
         }
-        if let ci = coreImageFace(photo) {
-            // CIFaceFeature: mouth→chin ≈ 0.8 × eyes→mouth, cheek half-width ≈ 1.05 × eye distance.
-            let span = max(1, ci.mouthY - ci.eyeY)
-            let chin = ci.mouthY + 0.8 * span
-            if let e = estimate {
-                estimate = (e.cx, e.top, e.rx, max(e.chin, chin))
-            } else {
-                estimate = (ci.cx, ci.eyeY + 0.1 * span, ci.eyeDist * 1.05, chin)
+        return estimatedJaw(photo)
+    }
+
+    /// Average Vision jaw of frontal portraits, left temple → chin → right temple:
+    /// x in jaw widths from the centre, y from the eye line (0) to the chin (1).
+    private static let jawTemplate: [(Double, Double)] = {
+        let side: [(Double, Double)] = [(0.5, 0), (0.497, 0.172), (0.482, 0.333), (0.46, 0.493), (0.417, 0.647),
+                                         (0.342, 0.78), (0.244, 0.888), (0.13, 0.97)]
+        return side.map { (-$0.0, $0.1) } + [(0, 1)] + side.reversed()
+    }()
+
+    /// Jaw without Vision: Core Image's CPU detector (eyes, mouth) scales the average jaw
+    /// (width 2.16 × eye distance, chin 0.66 × eyes→mouth below the mouth — measured with Vision
+    /// on frontal portraits); the chin then follows the shadow edge under it (which sits ~0.05
+    /// above the outline), never above 0.62: a chin cut too high is far worse than too low.
+    static func estimatedJaw(_ photo: CGImage) -> [CGPoint]? {
+        guard let ci = coreImageFace(photo) else { return nil }
+        let span = max(1, ci.mouthY - ci.eyeY)
+        let width = 2.16 * ci.eyeDist
+        let guess = ci.mouthY + 0.66 * span
+        let edge = chinEdge(RGBABitmap(photo), cx: ci.cx, around: guess, span: span, halfW: 0.18 * ci.eyeDist).map { $0 + 0.05 * span } ?? guess
+        let chin = max(edge, ci.mouthY + 0.62 * span)
+        guard chin > ci.eyeY else { return nil }
+        return jawTemplate.map { CGPoint(x: ci.cx + $0.0 * width, y: ci.eyeY + $0.1 * (chin - ci.eyeY)) }
+    }
+
+    /// Bottom of the chin: strongest bright → dark step (skin → shadow under the chin) on the
+    /// centre line within ±0.15 eyes→mouth of the guess. nil when no clear step.
+    static func chinEdge(_ px: RGBABitmap, cx: Double, around guess: Double, span: Double, halfW: Double) -> Double? {
+        let k = max(2, Int(0.05 * span))
+        let y0 = Int(guess - 0.15 * span), y1 = Int(guess + 0.15 * span)
+        guard y0 - k >= 0, y1 + k < px.h else { return nil }
+        var lum = [Int: Double]()
+        for y in (y0 - k)...(y1 + k) {
+            var s = 0.0, n = 0.0
+            for x in Int(cx - halfW)...Int(cx + halfW) {
+                let p = px.clamped(x, y); s += 0.299 * Double(p[0]) + 0.587 * Double(p[1]) + 0.114 * Double(p[2]); n += 1
             }
+            lum[y] = s / n
         }
-        guard let e = estimate, e.chin > e.top else { return nil }
-        return halfEllipse(cx: e.cx, top: e.top, rx: e.rx, ry: e.chin - e.top)
+        var best: (y: Int, g: Double)?
+        for y in y0...y1 {
+            var above = 0.0, below = 0.0
+            for d in 1...k { above += lum[y - d]!; below += lum[y + d]! }
+            let g = (above - below) / Double(k)
+            if g > (best?.g ?? 0) { best = (y, g) }
+        }
+        guard let best, best.g > 8 else { return nil }
+        return Double(best.y)
     }
 
     /// Eyes / mouth from Core Image's (CPU) face detector, top-left coordinates.
-    private static func coreImageFace(_ photo: CGImage) -> (cx: Double, eyeY: Double, mouthY: Double, eyeDist: Double)? {
+    static func coreImageFace(_ photo: CGImage) -> (cx: Double, eyeY: Double, mouthY: Double, eyeDist: Double)? {
         let H = Double(photo.height)
         let detector = CIDetector(ofType: CIDetectorTypeFace, context: ciContext, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh])
         guard let face = detector?.features(in: CIImage(cgImage: photo))
@@ -59,11 +101,8 @@ enum FaceGeometry {
         return (cx, eyeY, mouthY, eyeDist)
     }
 
-    private static func halfEllipse(cx: Double, top: Double, rx: Double, ry: Double) -> [CGPoint] {
-        stride(from: 0.0, through: .pi, by: .pi / 16).map { a in CGPoint(x: cx - rx * cos(a), y: top + ry * sin(a)) }
-    }
-
     static func subjectMask(_ photo: CGImage) -> CGImage? {
+        guard useVision else { return nil }
         let request = VNGenerateForegroundInstanceMaskRequest()
         VisionCompute.prepare(request)
         let handler = VNImageRequestHandler(cgImage: photo, options: [:])

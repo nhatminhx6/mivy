@@ -12,8 +12,12 @@ public final class EditViewModel {
     }
     public var preview: UIImage?
     public var isProcessing = false
-    public var hasPerson = false
     public var outfitMissing = false
+    /// The chosen background colour is really in the picture (person cut out, or outfit backdrop).
+    public var backgroundApplied = true
+    private var hasMask = false
+
+    public var faceFound: Bool { face.faceFound }
     public var checklist: [ChecklistItem] = []
 
     private let source: UIImage
@@ -40,7 +44,7 @@ public final class EditViewModel {
         let orientation = CGImagePropertyOrientation(source.imageOrientation)
         face = FaceChecker.analyze(ciImage: CIImage(cgImage: cgImage), orientation: orientation)
         await editor.prepare(cgImage: cgImage, orientation: orientation)
-        hasPerson = await editor.hasMask()
+        hasMask = await editor.hasMask()
         prepared = true
         await renderNow()
     }
@@ -64,11 +68,14 @@ public final class EditViewModel {
             preview = UIImage(cgImage: result.image)
             outfitMissing = !result.outfitFitted
         }
+        let dressed = current.outfit != .keep && !outfitMissing
+        backgroundApplied = current.background == .original || hasMask || dressed
         checklist = StandardChecklist.build(
             face: face,
             settings: current,
             sourcePixels: CGSize(width: source.size.width * source.scale, height: source.size.height * source.scale),
-            target: target
+            target: target,
+            backgroundReplaced: hasMask || dressed
         )
         isProcessing = false
     }
