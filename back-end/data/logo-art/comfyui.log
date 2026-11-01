@@ -1,0 +1,1429 @@
+[32m[INFO][0m setup plugin alembic.autogenerate.schemas
+[32m[INFO][0m setup plugin alembic.autogenerate.tables
+[32m[INFO][0m setup plugin alembic.autogenerate.types
+[32m[INFO][0m setup plugin alembic.autogenerate.constraints
+[32m[INFO][0m setup plugin alembic.autogenerate.defaults
+[32m[INFO][0m setup plugin alembic.autogenerate.comments
+[32m[INFO][0m setup plugin alembic.ext.checkconstraint_byname
+[1m[33m[WARNING][0m Could not autodetect AIMDO implementation, assuming Nvidia
+[32m[INFO][0m comfy-aimdo unsupported operating system: Darwin
+[32m[INFO][0m NOTE: comfy-aimdo currently only supports Windows and Linux
+[32m[INFO][0m Found comfy_kitchen backend eager: {'available': True, 'disabled': False, 'unavailable_reason': None, 'capabilities': ['adaln', 'apply_rope', 'apply_rope1', 'apply_rope1_', 'apply_rope_', 'apply_rope_split_half', 'apply_rope_split_half1', 'apply_rope_split_half1_', 'apply_rope_split_half_', 'convrot_w4a4_linear', 'dequantize_convrot_w4a4_weight', 'dequantize_int8_convrot_weight', 'dequantize_int8_convrot_weight_dtype', 'dequantize_int8_embedding', 'dequantize_int8_simple', 'dequantize_int8_simple_dtype', 'dequantize_mxfp8', 'dequantize_nvfp4', 'dequantize_per_tensor_fp8', 'dequantize_w4a8_int8_weight', 'fp16_conv3d', 'fp16_linear', 'gemv_awq_w4a16', 'group_norm_silu_pad3d', 'int8_linear', 'na3d', 'prepare_int4_weight_for_int8_linear', 'quantize_and_rotate_rowwise', 'quantize_convrot_w4a4_weight', 'quantize_int8_convrot_weight', 'quantize_int8_rowwise', 'quantize_int8_tensorwise', 'quantize_mxfp8', 'quantize_nvfp4', 'quantize_per_tensor_fp8', 'quantize_svdquant_w4a4', 'quantize_w4a8_int8_weight', 'rms_adaln', 'rms_rope', 'rms_rope1', 'rms_rope1_', 'rms_rope_', 'rms_rope_split_half', 'rms_rope_split_half1', 'rms_rope_split_half1_', 'rms_rope_split_half_', 'rotate_int8_convrot_weight', 'scaled_mm_mxfp8', 'scaled_mm_nvfp4', 'scaled_mm_svdquant_w4a4', 'sol_attn', 'stochastic_rounding_fp8', 'w4a8_int8_linear']}
+[32m[INFO][0m Found comfy_kitchen backend triton: {'available': False, 'disabled': True, 'unavailable_reason': "ImportError: No module named 'triton'", 'capabilities': []}
+[32m[INFO][0m Found comfy_kitchen backend hip: {'available': False, 'disabled': False, 'unavailable_reason': 'PyTorch ROCm/HIP runtime not available', 'capabilities': []}
+[32m[INFO][0m Found comfy_kitchen backend cuda: {'available': False, 'disabled': True, 'unavailable_reason': 'Extension file not found: /Users/nhatminh/Data/Product/mivy/back-end/.comfyui/.venv/lib/python3.12/site-packages/comfy_kitchen/backends/cuda/_C.abi3.so', 'capabilities': []}
+[32m[INFO][0m Checkpoint files will always be loaded safely.
+[32m[INFO][0m Total VRAM 16384 MB, total RAM 16384 MB
+[32m[INFO][0m pytorch version: 2.15.0
+[32m[INFO][0m Mac Version (15, 5)
+[32m[INFO][0m Set vram state to: SHARED
+[32m[INFO][0m Device: mps
+[32m[INFO][0m Using sub quadratic optimization for attention, if you have memory or speed issues try using: --use-split-cross-attention
+[32m[INFO][0m Python version: 3.12.3 (main, Apr  9 2024, 08:09:14) [Clang 15.0.0 (clang-1500.3.9.4)]
+[32m[INFO][0m ComfyUI version: 0.36.0
+[32m[INFO][0m comfy-aimdo version: 0.5.5
+[32m[INFO][0m comfy-kitchen version: 0.2.35
+[1m[33m[WARNING][0m ****** User settings have been changed to be stored on the server instead of browser storage. ******
+[1m[33m[WARNING][0m ****** For multi-user setups add the --multi-user CLI argument to enable multiple user profiles. ******
+[32m[INFO][0m comfyui-frontend-package version: 1.52.7
+[32m[INFO][0m comfyui-workflow-templates version: 0.11.62
+[32m[INFO][0m comfyui-embedded-docs version: 0.5.11
+[32m[INFO][0m comfy-kitchen version: 0.2.35
+[32m[INFO][0m comfy-aimdo version: 0.5.5
+[32m[INFO][0m [Prompt Server] web root: /Users/nhatminh/Data/Product/mivy/back-end/.comfyui/.venv/lib/python3.12/site-packages/comfyui_frontend_package/static
+[32m[INFO][0m Asset seeder disabled
+[32m[INFO][0m No OpenGL_accelerate module loaded: No module named 'OpenGL_accelerate'
+[32m[INFO][0m ComfyUI-GGUF: Allowing full torch compile
+[32m[INFO][0m 
+Import times for custom nodes:
+[32m[INFO][0m    0.0 seconds: /Users/nhatminh/Data/Product/mivy/back-end/.comfyui/custom_nodes/websocket_image_save.py
+[32m[INFO][0m    0.2 seconds: /Users/nhatminh/Data/Product/mivy/back-end/.comfyui/custom_nodes/ComfyUI-GGUF
+[32m[INFO][0m 
+[32m[INFO][0m Context impl SQLiteImpl.
+[32m[INFO][0m Will assume non-transactional DDL.
+[32m[INFO][0m Context impl SQLiteImpl.
+[32m[INFO][0m Will assume non-transactional DDL.
+[32m[INFO][0m Running upgrade  -> 0001_assets, Initial assets schema
+Revision ID: 0001_assets
+Revises: None
+Create Date: 2025-12-10 00:00:00
+[32m[INFO][0m Running upgrade 0001_assets -> 0002_merge_to_asset_references, Merge AssetInfo and AssetCacheState into unified asset_references table.
+[32m[INFO][0m Running upgrade 0002_merge_to_asset_references -> 0003_add_metadata_job_id, Add system_metadata and job_id columns to asset_references.
+Change preview_id FK from assets.id to asset_references.id.
+[32m[INFO][0m Running upgrade 0003_add_metadata_job_id -> 0004_drop_tag_type, Drop the vestigial tags.tag_type column.
+[32m[INFO][0m Running upgrade 0004_drop_tag_type -> 0005_allow_case_sensitive_tags, Allow case-sensitive tag names.
+[32m[INFO][0m Running upgrade 0005_allow_case_sensitive_tags -> 0006_add_loader_path, Add loader_path column to asset_references.
+[32m[INFO][0m Running upgrade 0006_add_loader_path -> 0007_record_content_split, Record/content split.
+[32m[INFO][0m Database upgraded from None to 0007_record_content_split
+[32m[INFO][0m Using RAM pressure cache.
+[32m[INFO][0m Starting server
+
+[32m[INFO][0m To see the GUI go to: http://127.0.0.1:8188
+[32m[INFO][0m got prompt
+[32m[INFO][0m Model storage policy: fast_disk=False paths=['/Users/nhatminh/Data/Product/mivy/back-end/.comfyui/models/vae/z_image_ae.safetensors']
+[32m[INFO][0m Using split attention in VAE
+[32m[INFO][0m Using split attention in VAE
+[32m[INFO][0m VAE load device: mps, offload device: cpu, dtype: torch.bfloat16
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:34, 64.34s/it] 22%|██▏       | 2/9 [02:06<07:20, 62.97s/it] 33%|███▎      | 3/9 [03:08<06:16, 62.73s/it] 44%|████▍     | 4/9 [04:09<05:10, 62.11s/it] 56%|█████▌    | 5/9 [05:10<04:06, 61.55s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.40s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.37s/it] 89%|████████▉ | 8/9 [08:14<01:01, 61.53s/it]100%|██████████| 9/9 [09:15<00:00, 61.39s/it]100%|██████████| 9/9 [09:15<00:00, 61.77s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.61 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:49, 66.19s/it] 22%|██▏       | 2/9 [02:07<07:24, 63.51s/it] 33%|███▎      | 3/9 [03:09<06:16, 62.82s/it] 44%|████▍     | 4/9 [04:12<05:14, 62.90s/it] 56%|█████▌    | 5/9 [05:15<04:11, 62.98s/it] 67%|██████▋   | 6/9 [06:17<03:07, 62.64s/it] 78%|███████▊  | 7/9 [07:20<02:04, 62.49s/it] 89%|████████▉ | 8/9 [08:24<01:03, 63.01s/it]100%|██████████| 9/9 [09:25<00:00, 62.44s/it]100%|██████████| 9/9 [09:25<00:00, 62.83s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3394.28 MB freed, 1827.41 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 595.81 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.41s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.40s/it] 33%|███▎      | 3/9 [03:08<06:18, 63.01s/it] 44%|████▍     | 4/9 [04:10<05:12, 62.46s/it] 56%|█████▌    | 5/9 [05:10<04:06, 61.74s/it] 67%|██████▋   | 6/9 [06:11<03:03, 61.28s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.11s/it] 89%|████████▉ | 8/9 [08:14<01:01, 61.49s/it]100%|██████████| 9/9 [09:15<00:00, 61.35s/it]100%|██████████| 9/9 [09:15<00:00, 61.68s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1813.90 MB freed, 3407.79 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.15 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:07<09:00, 67.52s/it] 22%|██▏       | 2/9 [02:09<07:29, 64.22s/it] 33%|███▎      | 3/9 [03:13<06:25, 64.28s/it] 44%|████▍     | 4/9 [04:15<05:15, 63.08s/it] 56%|█████▌    | 5/9 [05:15<04:08, 62.18s/it] 67%|██████▋   | 6/9 [06:16<03:04, 61.64s/it] 78%|███████▊  | 7/9 [07:17<02:02, 61.44s/it] 89%|████████▉ | 8/9 [08:19<01:01, 61.84s/it]100%|██████████| 9/9 [09:21<00:00, 61.74s/it]100%|██████████| 9/9 [09:21<00:00, 62.38s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2736.75 MB freed, 2484.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.98 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.48s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.16s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.80s/it] 44%|████▍     | 4/9 [04:07<05:09, 61.95s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.70s/it] 67%|██████▋   | 6/9 [06:12<03:06, 62.10s/it] 78%|███████▊  | 7/9 [07:12<02:03, 61.64s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.86s/it]100%|██████████| 9/9 [09:16<00:00, 61.84s/it]100%|██████████| 9/9 [09:16<00:00, 61.88s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3259.70 MB freed, 1961.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 589.63 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:29, 63.73s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.79s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.94s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.48s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.13s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.90s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.03s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.96s/it]100%|██████████| 9/9 [09:11<00:00, 61.03s/it]100%|██████████| 9/9 [09:11<00:00, 61.31s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2575.16 MB freed, 617.30 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 589.00 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.74s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.93s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.99s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.95s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.40s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.07s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.30s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.11s/it]100%|██████████| 9/9 [09:13<00:00, 61.16s/it]100%|██████████| 9/9 [09:13<00:00, 61.46s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2952.08 MB freed, 2269.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.92 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.86s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.95s/it] 33%|███▎      | 3/9 [03:08<06:15, 62.60s/it] 44%|████▍     | 4/9 [04:10<05:13, 62.65s/it] 56%|█████▌    | 5/9 [05:12<04:09, 62.27s/it] 67%|██████▋   | 6/9 [06:12<03:04, 61.66s/it] 78%|███████▊  | 7/9 [07:15<02:03, 61.83s/it] 89%|████████▉ | 8/9 [08:16<01:01, 61.59s/it]100%|██████████| 9/9 [09:16<00:00, 61.22s/it]100%|██████████| 9/9 [09:16<00:00, 61.83s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 588.67 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:08<09:04, 68.12s/it] 22%|██▏       | 2/9 [02:11<07:36, 65.21s/it] 33%|███▎      | 3/9 [03:12<06:19, 63.23s/it] 44%|████▍     | 4/9 [04:12<05:10, 62.19s/it] 56%|█████▌    | 5/9 [05:13<04:06, 61.61s/it] 67%|██████▋   | 6/9 [06:14<03:04, 61.54s/it] 78%|███████▊  | 7/9 [07:15<02:02, 61.42s/it] 89%|████████▉ | 8/9 [08:16<01:01, 61.19s/it]100%|██████████| 9/9 [09:17<00:00, 61.00s/it]100%|██████████| 9/9 [09:17<00:00, 61.91s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2675.22 MB freed, 2546.47 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.04 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.69s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.27s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.57s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.18s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.91s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.94s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.89s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.74s/it]100%|██████████| 9/9 [09:09<00:00, 60.65s/it]100%|██████████| 9/9 [09:09<00:00, 61.01s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2121.51 MB freed, 3100.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 578.06 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.67s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.18s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.09s/it] 44%|████▍     | 4/9 [04:08<05:10, 62.03s/it] 56%|█████▌    | 5/9 [05:10<04:08, 62.21s/it] 67%|██████▋   | 6/9 [06:14<03:08, 62.81s/it] 78%|███████▊  | 7/9 [07:17<02:05, 62.76s/it] 89%|████████▉ | 8/9 [08:18<01:02, 62.27s/it]100%|██████████| 9/9 [09:20<00:00, 62.10s/it]100%|██████████| 9/9 [09:20<00:00, 62.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2767.51 MB freed, 2454.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 590.73 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.85s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.80s/it] 33%|███▎      | 3/9 [03:04<06:06, 61.16s/it] 44%|████▍     | 4/9 [04:04<05:04, 60.93s/it] 56%|█████▌    | 5/9 [05:05<04:03, 60.75s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.92s/it] 78%|███████▊  | 7/9 [07:06<02:01, 60.76s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.63s/it]100%|██████████| 9/9 [09:07<00:00, 60.55s/it]100%|██████████| 9/9 [09:07<00:00, 60.86s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 578.47 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:05<08:45, 65.71s/it] 22%|██▏       | 2/9 [02:06<07:21, 63.07s/it] 33%|███▎      | 3/9 [03:07<06:12, 62.07s/it] 44%|████▍     | 4/9 [04:08<05:07, 61.57s/it] 56%|█████▌    | 5/9 [05:09<04:05, 61.40s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.37s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.10s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.88s/it]100%|██████████| 9/9 [09:12<00:00, 60.76s/it]100%|██████████| 9/9 [09:12<00:00, 61.39s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1936.94 MB freed, 3284.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.46 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.61s/it] 22%|██▏       | 2/9 [02:05<07:18, 62.67s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.99s/it] 44%|████▍     | 4/9 [04:09<05:11, 62.39s/it] 56%|█████▌    | 5/9 [05:12<04:10, 62.66s/it] 67%|██████▋   | 6/9 [06:15<03:07, 62.52s/it] 78%|███████▊  | 7/9 [07:15<02:03, 61.84s/it] 89%|████████▉ | 8/9 [08:16<01:01, 61.38s/it]100%|██████████| 9/9 [09:16<00:00, 61.09s/it]100%|██████████| 9/9 [09:16<00:00, 61.83s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1967.70 MB freed, 3253.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 590.73 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:25, 63.16s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.61s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.35s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.13s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.31s/it] 67%|██████▋   | 6/9 [06:09<03:05, 61.68s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.26s/it] 89%|████████▉ | 8/9 [08:10<01:00, 61.00s/it]100%|██████████| 9/9 [09:10<00:00, 60.85s/it]100%|██████████| 9/9 [09:10<00:00, 61.21s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2336.84 MB freed, 2884.85 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2441.86 MB freed, 442.99 MB remains loaded, 44.82 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.84 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:26, 63.35s/it] 22%|██▏       | 2/9 [02:05<07:16, 62.38s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.88s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.60s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.57s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.18s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.91s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.72s/it]100%|██████████| 9/9 [09:11<00:00, 60.83s/it]100%|██████████| 9/9 [09:11<00:00, 61.24s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3428.89 MB freed, 1792.80 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.88 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.61s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.27s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.94s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.97s/it] 56%|█████▌    | 5/9 [05:11<04:09, 62.28s/it] 67%|██████▋   | 6/9 [06:12<03:05, 61.96s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.45s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.10s/it]100%|██████████| 9/9 [09:13<00:00, 60.88s/it]100%|██████████| 9/9 [09:13<00:00, 61.50s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1752.37 MB freed, 3469.32 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.70 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:49, 66.13s/it] 22%|██▏       | 2/9 [02:07<07:24, 63.52s/it] 33%|███▎      | 3/9 [03:09<06:16, 62.76s/it] 44%|████▍     | 4/9 [04:11<05:10, 62.20s/it] 56%|█████▌    | 5/9 [05:13<04:08, 62.13s/it] 67%|██████▋   | 6/9 [06:14<03:05, 61.77s/it] 78%|███████▊  | 7/9 [07:14<02:02, 61.43s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.34s/it]100%|██████████| 9/9 [09:17<00:00, 61.24s/it]100%|██████████| 9/9 [09:17<00:00, 61.89s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2736.75 MB freed, 2484.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.82 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.90s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.13s/it] 33%|███▎      | 3/9 [03:07<06:15, 62.66s/it] 44%|████▍     | 4/9 [04:09<05:11, 62.21s/it] 56%|█████▌    | 5/9 [05:11<04:09, 62.26s/it] 67%|██████▋   | 6/9 [06:13<03:06, 62.14s/it] 78%|███████▊  | 7/9 [07:15<02:03, 61.97s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.59s/it]100%|██████████| 9/9 [09:17<00:00, 61.42s/it]100%|██████████| 9/9 [09:17<00:00, 61.89s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2490.65 MB freed, 2731.04 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 592.19 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.57s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.45s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.87s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.89s/it] 56%|█████▌    | 5/9 [05:10<04:07, 61.95s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.56s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.28s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.11s/it]100%|██████████| 9/9 [09:13<00:00, 61.14s/it]100%|██████████| 9/9 [09:13<00:00, 61.54s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3228.93 MB freed, 1992.76 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.91 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.05s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.04s/it] 33%|███▎      | 3/9 [03:06<06:13, 62.22s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.61s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.66s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.23s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.96s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.77s/it]100%|██████████| 9/9 [09:11<00:00, 60.92s/it]100%|██████████| 9/9 [09:11<00:00, 61.26s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2767.51 MB freed, 2454.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.09 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.53s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.93s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.97s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.55s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.27s/it] 67%|██████▋   | 6/9 [06:08<03:02, 61.00s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.81s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.67s/it]100%|██████████| 9/9 [09:09<00:00, 60.58s/it]100%|██████████| 9/9 [09:09<00:00, 61.10s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2111.68 MB freed, 896.21 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.35 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:13, 61.66s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.10s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.05s/it] 44%|████▍     | 4/9 [04:07<05:09, 61.99s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.58s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.21s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.22s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.46s/it]100%|██████████| 9/9 [09:13<00:00, 61.41s/it]100%|██████████| 9/9 [09:13<00:00, 61.54s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.92 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.66s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.37s/it] 33%|███▎      | 3/9 [03:05<06:08, 61.40s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.59s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.26s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.92s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.70s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.74s/it]100%|██████████| 9/9 [09:11<00:00, 61.20s/it]100%|██████████| 9/9 [09:11<00:00, 61.24s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2059.99 MB freed, 3161.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.09 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:05<08:42, 65.28s/it] 22%|██▏       | 2/9 [02:07<07:26, 63.76s/it] 33%|███▎      | 3/9 [03:09<06:15, 62.66s/it] 44%|████▍     | 4/9 [04:11<05:12, 62.41s/it] 56%|█████▌    | 5/9 [05:11<04:06, 61.71s/it] 67%|██████▋   | 6/9 [06:12<03:03, 61.28s/it] 78%|███████▊  | 7/9 [07:12<02:01, 60.98s/it] 89%|████████▉ | 8/9 [08:13<01:00, 60.80s/it]100%|██████████| 9/9 [09:14<00:00, 60.86s/it]100%|██████████| 9/9 [09:14<00:00, 61.56s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3428.89 MB freed, 1792.80 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.57 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:24, 63.06s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.87s/it] 33%|███▎      | 3/9 [03:07<06:13, 62.23s/it] 44%|████▍     | 4/9 [04:10<05:12, 62.59s/it] 56%|█████▌    | 5/9 [05:10<04:07, 61.79s/it] 67%|██████▋   | 6/9 [06:11<03:03, 61.32s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.03s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.01s/it]100%|██████████| 9/9 [09:13<00:00, 60.97s/it]100%|██████████| 9/9 [09:13<00:00, 61.50s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2306.08 MB freed, 2915.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.05 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:25, 63.20s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.77s/it] 33%|███▎      | 3/9 [03:07<06:15, 62.53s/it] 44%|████▍     | 4/9 [04:10<05:13, 62.68s/it] 56%|█████▌    | 5/9 [05:12<04:09, 62.43s/it] 67%|██████▋   | 6/9 [06:13<03:05, 61.91s/it] 78%|███████▊  | 7/9 [07:15<02:03, 61.82s/it] 89%|████████▉ | 8/9 [08:18<01:02, 62.18s/it]100%|██████████| 9/9 [09:21<00:00, 62.55s/it]100%|██████████| 9/9 [09:21<00:00, 62.41s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3498.10 MB freed, 1723.59 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 592.77 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.15s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.22s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.89s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.33s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.28s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.16s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.18s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.06s/it]100%|██████████| 9/9 [09:12<00:00, 61.20s/it]100%|██████████| 9/9 [09:12<00:00, 61.34s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2490.65 MB freed, 2731.04 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.08 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.52s/it] 22%|██▏       | 2/9 [02:05<07:18, 62.61s/it] 33%|███▎      | 3/9 [03:08<06:17, 62.89s/it] 44%|████▍     | 4/9 [04:09<05:10, 62.08s/it] 56%|█████▌    | 5/9 [05:10<04:06, 61.70s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.48s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.22s/it] 89%|████████▉ | 8/9 [08:14<01:01, 61.38s/it]100%|██████████| 9/9 [09:14<00:00, 61.14s/it]100%|██████████| 9/9 [09:14<00:00, 61.63s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2121.51 MB freed, 3100.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.55 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:50, 66.26s/it] 22%|██▏       | 2/9 [02:08<07:26, 63.83s/it] 33%|███▎      | 3/9 [03:10<06:18, 63.10s/it] 44%|████▍     | 4/9 [04:12<05:12, 62.59s/it] 56%|█████▌    | 5/9 [05:13<04:08, 62.05s/it] 67%|██████▋   | 6/9 [06:14<03:05, 61.80s/it] 78%|███████▊  | 7/9 [07:15<02:03, 61.50s/it] 89%|████████▉ | 8/9 [08:18<01:01, 61.92s/it]100%|██████████| 9/9 [09:20<00:00, 61.85s/it]100%|██████████| 9/9 [09:20<00:00, 62.25s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1967.70 MB freed, 3253.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.97 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:50, 66.33s/it] 22%|██▏       | 2/9 [02:07<07:24, 63.56s/it] 33%|███▎      | 3/9 [03:09<06:17, 62.85s/it] 44%|████▍     | 4/9 [04:10<05:09, 61.87s/it] 56%|█████▌    | 5/9 [05:10<04:05, 61.36s/it] 67%|██████▋   | 6/9 [06:12<03:04, 61.37s/it] 78%|███████▊  | 7/9 [07:13<02:02, 61.30s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.69s/it]100%|██████████| 9/9 [09:16<00:00, 61.49s/it]100%|██████████| 9/9 [09:16<00:00, 61.88s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2829.03 MB freed, 2392.66 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.14 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.56s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.58s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.59s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.09s/it] 56%|█████▌    | 5/9 [05:05<04:03, 60.79s/it] 67%|██████▋   | 6/9 [06:05<03:01, 60.61s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.78s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.68s/it]100%|██████████| 9/9 [09:07<00:00, 60.57s/it]100%|██████████| 9/9 [09:07<00:00, 60.87s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2354.26 MB freed, 776.68 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 576.71 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:18, 62.28s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.25s/it] 33%|███▎      | 3/9 [03:06<06:13, 62.19s/it] 44%|████▍     | 4/9 [04:07<05:09, 61.82s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.31s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.95s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.06s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.15s/it]100%|██████████| 9/9 [09:11<00:00, 60.88s/it]100%|██████████| 9/9 [09:11<00:00, 61.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1936.94 MB freed, 3284.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2348.69 MB freed, 936.05 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.21 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.08s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.92s/it] 33%|███▎      | 3/9 [03:07<06:14, 62.37s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.59s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.37s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.20s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.34s/it] 89%|████████▉ | 8/9 [08:15<01:02, 62.31s/it]100%|██████████| 9/9 [09:17<00:00, 62.04s/it]100%|██████████| 9/9 [09:17<00:00, 61.89s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2275.32 MB freed, 2946.37 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 590.53 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.90s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.30s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.03s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.33s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.17s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.87s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.35s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.37s/it]100%|██████████| 9/9 [09:11<00:00, 61.03s/it]100%|██████████| 9/9 [09:11<00:00, 61.33s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2059.99 MB freed, 3161.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.63 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:05<08:40, 65.09s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.15s/it] 33%|███▎      | 3/9 [03:08<06:14, 62.42s/it] 44%|████▍     | 4/9 [04:09<05:09, 61.80s/it] 56%|█████▌    | 5/9 [05:10<04:05, 61.46s/it] 67%|██████▋   | 6/9 [06:10<03:03, 61.12s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.36s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.32s/it]100%|██████████| 9/9 [09:14<00:00, 61.25s/it]100%|██████████| 9/9 [09:14<00:00, 61.64s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2798.27 MB freed, 2423.42 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.96 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.88s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.89s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.06s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.51s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.25s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.97s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.82s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.80s/it]100%|██████████| 9/9 [09:10<00:00, 60.69s/it]100%|██████████| 9/9 [09:10<00:00, 61.13s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2306.08 MB freed, 2915.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.69 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:11, 61.48s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.82s/it] 33%|███▎      | 3/9 [03:03<06:07, 61.19s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.21s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.45s/it] 67%|██████▋   | 6/9 [06:07<03:03, 61.12s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.31s/it] 89%|████████▉ | 8/9 [08:09<01:01, 61.03s/it]100%|██████████| 9/9 [09:10<00:00, 60.85s/it]100%|██████████| 9/9 [09:10<00:00, 61.13s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2890.56 MB freed, 2331.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.48 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:14, 61.82s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.19s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.63s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.24s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.27s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.96s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.99s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.78s/it]100%|██████████| 9/9 [09:09<00:00, 60.75s/it]100%|██████████| 9/9 [09:09<00:00, 61.07s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2829.03 MB freed, 2392.66 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.58 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:12, 61.57s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.18s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.66s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.16s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.01s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.77s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.93s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.95s/it]100%|██████████| 9/9 [09:09<00:00, 60.84s/it]100%|██████████| 9/9 [09:09<00:00, 61.06s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3259.70 MB freed, 1961.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.26 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:27, 63.39s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.56s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.94s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.28s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.12s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.15s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.21s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.93s/it]100%|██████████| 9/9 [09:10<00:00, 60.73s/it]100%|██████████| 9/9 [09:10<00:00, 61.21s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2152.27 MB freed, 3069.42 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.29 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.58s/it] 22%|██▏       | 2/9 [02:03<07:09, 61.34s/it] 33%|███▎      | 3/9 [03:03<06:04, 60.80s/it] 44%|████▍     | 4/9 [04:03<05:02, 60.52s/it] 56%|█████▌    | 5/9 [05:04<04:02, 60.71s/it] 67%|██████▋   | 6/9 [06:05<03:02, 60.81s/it] 78%|███████▊  | 7/9 [07:05<02:01, 60.68s/it] 89%|████████▉ | 8/9 [08:05<01:00, 60.51s/it]100%|██████████| 9/9 [09:06<00:00, 60.42s/it]100%|██████████| 9/9 [09:06<00:00, 60.68s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 576.62 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:33, 64.21s/it] 22%|██▏       | 2/9 [02:06<07:23, 63.33s/it] 33%|███▎      | 3/9 [03:07<06:11, 61.93s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.44s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.03s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.02s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.10s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.94s/it]100%|██████████| 9/9 [09:12<00:00, 60.95s/it]100%|██████████| 9/9 [09:12<00:00, 61.33s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2275.32 MB freed, 2946.37 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.21 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:25, 63.23s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.73s/it] 33%|███▎      | 3/9 [03:06<06:10, 61.83s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.67s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.15s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.26s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.03s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.79s/it]100%|██████████| 9/9 [09:10<00:00, 60.66s/it]100%|██████████| 9/9 [09:10<00:00, 61.19s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.36 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.19s/it] 22%|██▏       | 2/9 [02:03<07:10, 61.49s/it] 33%|███▎      | 3/9 [03:03<06:06, 61.07s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.17s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.18s/it] 67%|██████▋   | 6/9 [06:08<03:04, 61.60s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.17s/it] 89%|████████▉ | 8/9 [08:09<01:01, 61.11s/it]100%|██████████| 9/9 [09:11<00:00, 61.29s/it]100%|██████████| 9/9 [09:11<00:00, 61.30s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2829.03 MB freed, 2392.66 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.51 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.60s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.01s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.02s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.63s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.38s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.14s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.03s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.82s/it]100%|██████████| 9/9 [09:11<00:00, 60.90s/it]100%|██████████| 9/9 [09:11<00:00, 61.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2398.37 MB freed, 2823.32 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2425.16 MB freed, 398.16 MB remains loaded, 44.82 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.29 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.53s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.09s/it] 33%|███▎      | 3/9 [03:05<06:08, 61.48s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.61s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.14s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.13s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.83s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.63s/it]100%|██████████| 9/9 [09:09<00:00, 60.50s/it]100%|██████████| 9/9 [09:09<00:00, 61.02s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2183.04 MB freed, 3038.65 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.63 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:05<08:47, 65.95s/it] 22%|██▏       | 2/9 [02:06<07:19, 62.80s/it] 33%|███▎      | 3/9 [03:08<06:13, 62.19s/it] 44%|████▍     | 4/9 [04:09<05:09, 61.99s/it] 56%|█████▌    | 5/9 [05:10<04:06, 61.73s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.39s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.02s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.08s/it]100%|██████████| 9/9 [09:14<00:00, 61.14s/it]100%|██████████| 9/9 [09:14<00:00, 61.60s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3463.49 MB freed, 1758.20 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.96 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:10, 61.32s/it] 22%|██▏       | 2/9 [02:02<07:08, 61.25s/it] 33%|███▎      | 3/9 [03:02<06:05, 60.83s/it] 44%|████▍     | 4/9 [04:04<05:04, 60.98s/it] 56%|█████▌    | 5/9 [05:06<04:05, 61.44s/it] 67%|██████▋   | 6/9 [06:08<03:04, 61.62s/it] 78%|███████▊  | 7/9 [07:09<02:03, 61.60s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.43s/it]100%|██████████| 9/9 [09:12<00:00, 61.33s/it]100%|██████████| 9/9 [09:12<00:00, 61.34s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.10 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:13, 61.69s/it] 22%|██▏       | 2/9 [02:02<07:08, 61.19s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.33s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.35s/it] 56%|█████▌    | 5/9 [05:07<04:06, 61.58s/it] 67%|██████▋   | 6/9 [06:07<03:03, 61.07s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.77s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.55s/it]100%|██████████| 9/9 [09:07<00:00, 60.42s/it]100%|██████████| 9/9 [09:07<00:00, 60.87s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2275.32 MB freed, 2946.37 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.60 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:18, 62.27s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.69s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.60s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.09s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.39s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.23s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.17s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.10s/it]100%|██████████| 9/9 [09:10<00:00, 60.83s/it]100%|██████████| 9/9 [09:10<00:00, 61.16s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.38 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:55, 66.97s/it] 22%|██▏       | 2/9 [02:08<07:25, 63.66s/it] 33%|███▎      | 3/9 [03:08<06:12, 62.16s/it] 44%|████▍     | 4/9 [04:09<05:07, 61.48s/it] 56%|█████▌    | 5/9 [05:09<04:04, 61.02s/it] 67%|██████▋   | 6/9 [06:09<03:02, 60.90s/it] 78%|███████▊  | 7/9 [07:10<02:01, 60.73s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.69s/it]100%|██████████| 9/9 [09:11<00:00, 60.62s/it]100%|██████████| 9/9 [09:11<00:00, 61.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2798.27 MB freed, 2423.42 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 578.86 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.99s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.25s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.33s/it] 44%|████▍     | 4/9 [04:05<05:04, 60.93s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.21s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.96s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.74s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.69s/it]100%|██████████| 9/9 [09:08<00:00, 60.66s/it]100%|██████████| 9/9 [09:08<00:00, 60.99s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2336.84 MB freed, 2884.85 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.24 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:28, 63.54s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.57s/it] 33%|███▎      | 3/9 [03:06<06:10, 61.71s/it] 44%|████▍     | 4/9 [04:06<05:05, 61.16s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.32s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.97s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.74s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.58s/it]100%|██████████| 9/9 [09:10<00:00, 60.82s/it]100%|██████████| 9/9 [09:10<00:00, 61.13s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.63 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:14, 61.84s/it] 22%|██▏       | 2/9 [02:02<07:09, 61.40s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.43s/it] 44%|████▍     | 4/9 [04:06<05:08, 61.64s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.66s/it] 67%|██████▋   | 6/9 [06:09<03:05, 61.74s/it] 78%|███████▊  | 7/9 [07:11<02:03, 61.78s/it] 89%|████████▉ | 8/9 [08:15<01:02, 62.38s/it]100%|██████████| 9/9 [09:17<00:00, 62.16s/it]100%|██████████| 9/9 [09:17<00:00, 61.91s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3671.13 MB freed, 1550.56 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 589.58 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:11, 61.47s/it] 22%|██▏       | 2/9 [02:02<07:10, 61.49s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.81s/it] 44%|████▍     | 4/9 [04:07<05:10, 62.20s/it] 56%|█████▌    | 5/9 [05:10<04:08, 62.24s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.60s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.34s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.54s/it]100%|██████████| 9/9 [09:15<00:00, 61.59s/it]100%|██████████| 9/9 [09:15<00:00, 61.68s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2736.75 MB freed, 2484.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 588.08 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:24, 63.10s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.32s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.63s/it] 44%|████▍     | 4/9 [04:09<05:12, 62.54s/it] 56%|█████▌    | 5/9 [05:11<04:08, 62.21s/it] 67%|██████▋   | 6/9 [06:12<03:06, 62.01s/it] 78%|███████▊  | 7/9 [07:13<02:03, 61.70s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.52s/it]100%|██████████| 9/9 [09:17<00:00, 61.68s/it]100%|██████████| 9/9 [09:17<00:00, 61.90s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2644.46 MB freed, 2577.23 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 591.76 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.46s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.18s/it] 33%|███▎      | 3/9 [03:07<06:13, 62.29s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.87s/it] 56%|█████▌    | 5/9 [05:10<04:07, 61.86s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.70s/it] 78%|███████▊  | 7/9 [07:13<02:03, 61.69s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.90s/it]100%|██████████| 9/9 [09:18<00:00, 62.02s/it]100%|██████████| 9/9 [09:18<00:00, 62.01s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2798.27 MB freed, 2423.42 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 589.10 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:26, 63.27s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.07s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.31s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.76s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.46s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.25s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.05s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.86s/it]100%|██████████| 9/9 [09:11<00:00, 60.91s/it]100%|██████████| 9/9 [09:11<00:00, 61.25s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2183.04 MB freed, 3038.65 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2595.67 MB freed, 442.99 MB remains loaded, 44.82 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.33 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.21s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.33s/it] 33%|███▎      | 3/9 [03:06<06:11, 62.00s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.35s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.09s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.34s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.27s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.30s/it]100%|██████████| 9/9 [09:11<00:00, 60.95s/it]100%|██████████| 9/9 [09:11<00:00, 61.30s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2275.32 MB freed, 2946.37 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.44 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.46s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.84s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.56s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.24s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.19s/it] 67%|██████▋   | 6/9 [06:07<03:03, 61.12s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.08s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.33s/it]100%|██████████| 9/9 [09:12<00:00, 61.29s/it]100%|██████████| 9/9 [09:12<00:00, 61.34s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2256.41 MB freed, 936.05 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.16 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:27, 63.49s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.30s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.98s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.33s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.18s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.14s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.13s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.20s/it]100%|██████████| 9/9 [09:11<00:00, 60.94s/it]100%|██████████| 9/9 [09:11<00:00, 61.30s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2675.22 MB freed, 2546.47 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.44 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:33, 64.17s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.15s/it] 33%|███▎      | 3/9 [03:08<06:15, 62.66s/it] 44%|████▍     | 4/9 [04:08<05:08, 61.72s/it] 56%|█████▌    | 5/9 [05:09<04:04, 61.20s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.04s/it] 78%|███████▊  | 7/9 [07:10<02:01, 60.84s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.09s/it]100%|██████████| 9/9 [09:12<00:00, 60.87s/it]100%|██████████| 9/9 [09:12<00:00, 61.38s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2705.99 MB freed, 2515.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.16 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.63s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.61s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.37s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.36s/it] 56%|█████▌    | 5/9 [05:09<04:08, 62.13s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.52s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.15s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.20s/it]100%|██████████| 9/9 [09:11<00:00, 60.94s/it]100%|██████████| 9/9 [09:11<00:00, 61.32s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2613.70 MB freed, 2607.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.59 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.09s/it] 22%|██▏       | 2/9 [02:02<07:09, 61.35s/it] 33%|███▎      | 3/9 [03:06<06:14, 62.47s/it] 44%|████▍     | 4/9 [04:07<05:09, 61.86s/it] 56%|█████▌    | 5/9 [05:10<04:08, 62.14s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.84s/it] 78%|███████▊  | 7/9 [07:13<02:03, 61.81s/it] 89%|████████▉ | 8/9 [08:15<01:01, 61.92s/it]100%|██████████| 9/9 [09:16<00:00, 61.57s/it]100%|██████████| 9/9 [09:16<00:00, 61.81s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2952.08 MB freed, 2269.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.35 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.73s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.74s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.40s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.19s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.39s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.27s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.49s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.50s/it]100%|██████████| 9/9 [09:12<00:00, 61.27s/it]100%|██████████| 9/9 [09:12<00:00, 61.41s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 588.20 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.17s/it] 22%|██▏       | 2/9 [02:03<07:10, 61.46s/it] 33%|███▎      | 3/9 [03:06<06:14, 62.41s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.75s/it] 56%|█████▌    | 5/9 [05:09<04:07, 61.78s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.66s/it] 78%|███████▊  | 7/9 [07:11<02:03, 61.51s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.25s/it]100%|██████████| 9/9 [09:12<00:00, 60.92s/it]100%|██████████| 9/9 [09:12<00:00, 61.42s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2183.04 MB freed, 3038.65 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.54 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.44s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.53s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.76s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.21s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.90s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.70s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.95s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.75s/it]100%|██████████| 9/9 [09:09<00:00, 60.62s/it]100%|██████████| 9/9 [09:09<00:00, 61.00s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 577.66 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:37, 64.71s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.23s/it] 33%|███▎      | 3/9 [03:07<06:11, 61.92s/it] 44%|████▍     | 4/9 [04:07<05:06, 61.32s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.24s/it] 67%|██████▋   | 6/9 [06:09<03:02, 60.91s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.09s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.95s/it]100%|██████████| 9/9 [09:11<00:00, 60.72s/it]100%|██████████| 9/9 [09:11<00:00, 61.26s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2582.94 MB freed, 2638.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.42 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:13, 61.65s/it] 22%|██▏       | 2/9 [02:03<07:10, 61.51s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.35s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.30s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.46s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.27s/it] 78%|███████▊  | 7/9 [07:11<02:03, 61.89s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.55s/it]100%|██████████| 9/9 [09:12<00:00, 61.29s/it]100%|██████████| 9/9 [09:12<00:00, 61.42s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.41 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.21s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.74s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.79s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.37s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.29s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.08s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.39s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.04s/it]100%|██████████| 9/9 [09:11<00:00, 60.80s/it]100%|██████████| 9/9 [09:11<00:00, 61.24s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2613.70 MB freed, 2607.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.47 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:12, 61.60s/it] 22%|██▏       | 2/9 [02:03<07:13, 61.87s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.45s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.19s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.38s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.23s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.35s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.04s/it]100%|██████████| 9/9 [09:10<00:00, 60.99s/it]100%|██████████| 9/9 [09:10<00:00, 61.21s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2306.08 MB freed, 2915.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.52 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.10s/it] 22%|██▏       | 2/9 [02:02<07:08, 61.19s/it] 33%|███▎      | 3/9 [03:03<06:06, 61.09s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.28s/it] 56%|█████▌    | 5/9 [05:05<04:04, 61.05s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.88s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.82s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.66s/it]100%|██████████| 9/9 [09:08<00:00, 60.78s/it]100%|██████████| 9/9 [09:08<00:00, 60.94s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2275.32 MB freed, 2946.37 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 577.19 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.06s/it] 22%|██▏       | 2/9 [02:06<07:24, 63.50s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.07s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.51s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.12s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.14s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.98s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.77s/it]100%|██████████| 9/9 [09:10<00:00, 60.61s/it]100%|██████████| 9/9 [09:10<00:00, 61.16s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2644.46 MB freed, 2577.23 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.87 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:25, 63.21s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.16s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.31s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.02s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.40s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.44s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.31s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.09s/it]100%|██████████| 9/9 [09:11<00:00, 60.98s/it]100%|██████████| 9/9 [09:11<00:00, 61.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1998.47 MB freed, 3223.22 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.19 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.97s/it] 22%|██▏       | 2/9 [02:04<07:17, 62.45s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.65s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.37s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.99s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.22s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.01s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.79s/it]100%|██████████| 9/9 [09:09<00:00, 60.72s/it]100%|██████████| 9/9 [09:09<00:00, 61.09s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2675.22 MB freed, 2546.47 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.57 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:26, 63.34s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.19s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.53s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.39s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.34s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.49s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.24s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.93s/it]100%|██████████| 9/9 [09:10<00:00, 60.73s/it]100%|██████████| 9/9 [09:10<00:00, 61.22s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1998.47 MB freed, 3223.22 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.73 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:36, 64.50s/it] 22%|██▏       | 2/9 [02:06<07:19, 62.82s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.92s/it] 44%|████▍     | 4/9 [04:08<05:08, 61.66s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.29s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.38s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.02s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.83s/it]100%|██████████| 9/9 [09:11<00:00, 60.69s/it]100%|██████████| 9/9 [09:11<00:00, 61.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2705.99 MB freed, 2515.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.84 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.87s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.90s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.89s/it] 44%|████▍     | 4/9 [04:08<05:11, 62.26s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.58s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.71s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.35s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.10s/it]100%|██████████| 9/9 [09:12<00:00, 60.86s/it]100%|██████████| 9/9 [09:12<00:00, 61.40s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2705.99 MB freed, 2515.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.05 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.92s/it] 22%|██▏       | 2/9 [02:03<07:09, 61.43s/it] 33%|███▎      | 3/9 [03:03<06:06, 61.02s/it] 44%|████▍     | 4/9 [04:04<05:03, 60.73s/it] 56%|█████▌    | 5/9 [05:04<04:02, 60.70s/it] 67%|██████▋   | 6/9 [06:05<03:02, 60.87s/it] 78%|███████▊  | 7/9 [07:06<02:01, 60.73s/it] 89%|████████▉ | 8/9 [08:06<01:00, 60.60s/it]100%|██████████| 9/9 [09:07<00:00, 60.51s/it]100%|██████████| 9/9 [09:07<00:00, 60.78s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 577.96 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.47s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.98s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.97s/it] 44%|████▍     | 4/9 [04:07<05:09, 61.82s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.66s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.46s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.08s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.79s/it]100%|██████████| 9/9 [09:12<00:00, 61.05s/it]100%|██████████| 9/9 [09:12<00:00, 61.35s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2256.41 MB freed, 936.05 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.94 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.91s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.21s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.73s/it] 44%|████▍     | 4/9 [04:06<05:08, 61.61s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.72s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.45s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.06s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.99s/it]100%|██████████| 9/9 [09:11<00:00, 60.90s/it]100%|██████████| 9/9 [09:11<00:00, 61.29s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2675.22 MB freed, 2546.47 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.95 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.89s/it] 22%|██▏       | 2/9 [02:03<07:10, 61.44s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.42s/it] 44%|████▍     | 4/9 [04:04<05:05, 61.09s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.07s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.93s/it] 78%|███████▊  | 7/9 [07:06<02:01, 60.73s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.61s/it]100%|██████████| 9/9 [09:07<00:00, 60.53s/it]100%|██████████| 9/9 [09:07<00:00, 60.86s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 578.48 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.98s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.63s/it] 33%|███▎      | 3/9 [03:04<06:09, 61.59s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.18s/it] 56%|█████▌    | 5/9 [05:10<04:09, 62.50s/it] 67%|██████▋   | 6/9 [06:10<03:05, 61.85s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.32s/it] 89%|████████▉ | 8/9 [08:11<01:00, 61.00s/it]100%|██████████| 9/9 [09:12<00:00, 61.17s/it]100%|██████████| 9/9 [09:12<00:00, 61.44s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1967.70 MB freed, 3253.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 738.28 MB freed, 2515.70 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.73 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.61s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.96s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.30s/it] 44%|████▍     | 4/9 [04:04<05:04, 60.89s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.07s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.87s/it] 78%|███████▊  | 7/9 [07:06<02:01, 60.65s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.55s/it]100%|██████████| 9/9 [09:07<00:00, 60.49s/it]100%|██████████| 9/9 [09:07<00:00, 60.85s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2398.37 MB freed, 2823.32 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.47 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:11, 61.47s/it] 22%|██▏       | 2/9 [02:02<07:09, 61.29s/it] 33%|███▎      | 3/9 [03:04<06:08, 61.37s/it] 44%|████▍     | 4/9 [04:04<05:04, 60.98s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.19s/it] 67%|██████▋   | 6/9 [06:06<03:03, 61.05s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.97s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.93s/it]100%|██████████| 9/9 [09:09<00:00, 60.89s/it]100%|██████████| 9/9 [09:09<00:00, 61.03s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2459.89 MB freed, 2761.80 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.61 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:14, 61.78s/it] 22%|██▏       | 2/9 [02:03<07:10, 61.57s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.84s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.27s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.21s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.89s/it] 78%|███████▊  | 7/9 [07:07<02:01, 60.68s/it] 89%|████████▉ | 8/9 [08:07<01:00, 60.57s/it]100%|██████████| 9/9 [09:08<00:00, 60.50s/it]100%|██████████| 9/9 [09:08<00:00, 60.90s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2183.04 MB freed, 3038.65 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 578.41 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:11, 61.40s/it] 22%|██▏       | 2/9 [02:03<07:14, 62.02s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.30s/it] 44%|████▍     | 4/9 [04:04<05:05, 61.06s/it] 56%|█████▌    | 5/9 [05:07<04:06, 61.54s/it] 67%|██████▋   | 6/9 [06:07<03:03, 61.15s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.87s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.82s/it]100%|██████████| 9/9 [09:09<00:00, 60.78s/it]100%|██████████| 9/9 [09:09<00:00, 61.05s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2859.79 MB freed, 2361.90 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.87 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:30, 63.77s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.56s/it] 33%|███▎      | 3/9 [03:06<06:10, 61.78s/it] 44%|████▍     | 4/9 [04:08<05:08, 61.74s/it] 56%|█████▌    | 5/9 [05:10<04:08, 62.09s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.75s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.35s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.16s/it]100%|██████████| 9/9 [09:14<00:00, 61.17s/it]100%|██████████| 9/9 [09:14<00:00, 61.59s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3532.71 MB freed, 1688.98 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.38 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.68s/it] 22%|██▏       | 2/9 [02:04<07:17, 62.44s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.16s/it] 44%|████▍     | 4/9 [04:08<05:10, 62.05s/it] 56%|█████▌    | 5/9 [05:10<04:07, 61.80s/it] 67%|██████▋   | 6/9 [06:10<03:03, 61.31s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.06s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.81s/it]100%|██████████| 9/9 [09:11<00:00, 60.69s/it]100%|██████████| 9/9 [09:11<00:00, 61.29s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.58 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.39s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.15s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.94s/it] 44%|████▍     | 4/9 [04:08<05:11, 62.23s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.64s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.18s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.13s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.88s/it]100%|██████████| 9/9 [09:12<00:00, 61.04s/it]100%|██████████| 9/9 [09:12<00:00, 61.38s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1936.94 MB freed, 3284.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.61 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:53, 66.63s/it] 22%|██▏       | 2/9 [02:08<07:27, 63.98s/it] 33%|███▎      | 3/9 [03:09<06:16, 62.69s/it] 44%|████▍     | 4/9 [04:11<05:11, 62.21s/it] 56%|█████▌    | 5/9 [05:11<04:06, 61.51s/it] 67%|██████▋   | 6/9 [06:11<03:03, 61.09s/it] 78%|███████▊  | 7/9 [07:12<02:01, 60.93s/it] 89%|████████▉ | 8/9 [08:13<01:00, 60.91s/it]100%|██████████| 9/9 [09:14<00:00, 61.00s/it]100%|██████████| 9/9 [09:14<00:00, 61.62s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2736.75 MB freed, 2484.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.12 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:17, 62.15s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.59s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.14s/it] 44%|████▍     | 4/9 [04:08<05:10, 62.04s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.41s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.00s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.97s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.04s/it]100%|██████████| 9/9 [09:11<00:00, 61.00s/it]100%|██████████| 9/9 [09:11<00:00, 61.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2306.08 MB freed, 2915.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.44 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.10s/it] 22%|██▏       | 2/9 [02:04<07:17, 62.48s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.07s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.99s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.43s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.03s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.87s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.81s/it]100%|██████████| 9/9 [09:12<00:00, 61.34s/it]100%|██████████| 9/9 [09:12<00:00, 61.41s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1967.70 MB freed, 3253.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.65 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:48, 66.07s/it] 22%|██▏       | 2/9 [02:06<07:20, 62.89s/it] 33%|███▎      | 3/9 [03:07<06:12, 62.02s/it] 44%|████▍     | 4/9 [04:09<05:09, 61.98s/it] 56%|█████▌    | 5/9 [05:10<04:06, 61.60s/it] 67%|██████▋   | 6/9 [06:11<03:04, 61.41s/it] 78%|███████▊  | 7/9 [07:12<02:02, 61.17s/it] 89%|████████▉ | 8/9 [08:12<01:00, 60.93s/it]100%|██████████| 9/9 [09:14<00:00, 61.16s/it]100%|██████████| 9/9 [09:14<00:00, 61.60s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2552.18 MB freed, 2669.51 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.01 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:16, 62.00s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.63s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.29s/it] 44%|████▍     | 4/9 [04:08<05:12, 62.52s/it] 56%|█████▌    | 5/9 [05:09<04:07, 61.82s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.30s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.97s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.76s/it]100%|██████████| 9/9 [09:10<00:00, 60.67s/it]100%|██████████| 9/9 [09:10<00:00, 61.18s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1813.90 MB freed, 3407.79 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.68 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.76s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.94s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.29s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.23s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.91s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.85s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.02s/it] 89%|████████▉ | 8/9 [08:09<01:01, 61.17s/it]100%|██████████| 9/9 [09:10<00:00, 61.04s/it]100%|██████████| 9/9 [09:10<00:00, 61.16s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3013.60 MB freed, 2208.09 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.91 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:18, 62.35s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.16s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.10s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.53s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.31s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.96s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.04s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.11s/it]100%|██████████| 9/9 [09:11<00:00, 60.85s/it]100%|██████████| 9/9 [09:11<00:00, 61.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2090.75 MB freed, 3130.94 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2234.73 MB freed, 896.21 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.95 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:13, 61.70s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.35s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.89s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.26s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.89s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.18s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.26s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.24s/it]100%|██████████| 9/9 [09:11<00:00, 61.14s/it]100%|██████████| 9/9 [09:11<00:00, 61.30s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2336.84 MB freed, 2884.85 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.74 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.44s/it] 22%|██▏       | 2/9 [02:05<07:20, 62.87s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.88s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.62s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.14s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.05s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.99s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.97s/it]100%|██████████| 9/9 [09:12<00:00, 61.23s/it]100%|██████████| 9/9 [09:12<00:00, 61.37s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2982.84 MB freed, 2238.85 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.05 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.98s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.20s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.04s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.89s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.75s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.83s/it] 78%|███████▊  | 7/9 [07:13<02:03, 61.92s/it] 89%|████████▉ | 8/9 [08:16<01:02, 62.08s/it]100%|██████████| 9/9 [09:17<00:00, 61.81s/it]100%|██████████| 9/9 [09:17<00:00, 61.93s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.89 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.77s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.93s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.83s/it] 44%|████▍     | 4/9 [04:08<05:11, 62.31s/it] 56%|█████▌    | 5/9 [05:09<04:07, 61.81s/it] 67%|██████▋   | 6/9 [06:11<03:05, 61.75s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.28s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.44s/it]100%|██████████| 9/9 [09:17<00:00, 62.22s/it]100%|██████████| 9/9 [09:17<00:00, 61.94s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2582.94 MB freed, 2638.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.50 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:31, 63.93s/it] 22%|██▏       | 2/9 [02:05<07:18, 62.59s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.96s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.46s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.05s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.89s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.15s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.03s/it]100%|██████████| 9/9 [09:11<00:00, 60.95s/it]100%|██████████| 9/9 [09:11<00:00, 61.29s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.10 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.48s/it] 22%|██▏       | 2/9 [02:06<07:22, 63.15s/it] 33%|███▎      | 3/9 [03:07<06:14, 62.43s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.58s/it] 56%|█████▌    | 5/9 [05:08<04:04, 61.08s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.81s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.75s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.85s/it]100%|██████████| 9/9 [09:10<00:00, 60.66s/it]100%|██████████| 9/9 [09:10<00:00, 61.15s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2890.56 MB freed, 2331.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.79 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:26, 63.32s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.73s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.98s/it] 44%|████▍     | 4/9 [04:07<05:06, 61.35s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.02s/it] 67%|██████▋   | 6/9 [06:08<03:02, 60.92s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.94s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.86s/it]100%|██████████| 9/9 [09:10<00:00, 60.87s/it]100%|██████████| 9/9 [09:10<00:00, 61.20s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2459.89 MB freed, 2761.80 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.70 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:27, 63.39s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.34s/it] 33%|███▎      | 3/9 [03:07<06:14, 62.39s/it] 44%|████▍     | 4/9 [04:08<05:09, 61.93s/it] 56%|█████▌    | 5/9 [05:09<04:05, 61.49s/it] 67%|██████▋   | 6/9 [06:10<03:03, 61.22s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.06s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.99s/it]100%|██████████| 9/9 [09:11<00:00, 60.76s/it]100%|██████████| 9/9 [09:11<00:00, 61.32s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.15 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:14, 61.77s/it] 22%|██▏       | 2/9 [02:03<07:11, 61.58s/it] 33%|███▎      | 3/9 [03:04<06:09, 61.55s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.26s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.24s/it] 67%|██████▋   | 6/9 [06:07<03:03, 61.09s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.01s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.91s/it]100%|██████████| 9/9 [09:10<00:00, 61.03s/it]100%|██████████| 9/9 [09:10<00:00, 61.15s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3498.10 MB freed, 1723.59 MB remains loaded, 34.61 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.98 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.74s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.23s/it] 33%|███▎      | 3/9 [03:06<06:13, 62.23s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.61s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.70s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.54s/it] 78%|███████▊  | 7/9 [07:12<02:03, 61.73s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.37s/it]100%|██████████| 9/9 [09:14<00:00, 61.16s/it]100%|██████████| 9/9 [09:14<00:00, 61.56s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 587.91 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:18, 62.31s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.98s/it] 33%|███▎      | 3/9 [03:04<06:06, 61.16s/it] 44%|████▍     | 4/9 [04:04<05:03, 60.76s/it] 56%|█████▌    | 5/9 [05:05<04:03, 60.76s/it] 67%|██████▋   | 6/9 [06:06<03:02, 60.94s/it] 78%|███████▊  | 7/9 [07:08<02:02, 61.23s/it] 89%|████████▉ | 8/9 [08:09<01:01, 61.15s/it]100%|██████████| 9/9 [09:11<00:00, 61.34s/it]100%|██████████| 9/9 [09:11<00:00, 61.22s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2521.41 MB freed, 2700.27 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.54 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:26, 63.30s/it] 22%|██▏       | 2/9 [02:04<07:13, 61.97s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.54s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.08s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.32s/it] 67%|██████▋   | 6/9 [06:10<03:06, 62.04s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.47s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.31s/it]100%|██████████| 9/9 [09:12<00:00, 61.09s/it]100%|██████████| 9/9 [09:12<00:00, 61.42s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3013.60 MB freed, 2208.09 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.19 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.84s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.53s/it] 33%|███▎      | 3/9 [03:08<06:16, 62.71s/it] 44%|████▍     | 4/9 [04:11<05:14, 62.91s/it] 56%|█████▌    | 5/9 [05:14<04:11, 62.85s/it] 67%|██████▋   | 6/9 [06:16<03:08, 62.85s/it] 78%|███████▊  | 7/9 [07:21<02:06, 63.33s/it] 89%|████████▉ | 8/9 [08:21<01:02, 62.39s/it]100%|██████████| 9/9 [09:22<00:00, 61.79s/it]100%|██████████| 9/9 [09:22<00:00, 62.45s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 593.05 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.88s/it] 22%|██▏       | 2/9 [02:04<07:15, 62.24s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.77s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.54s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.71s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.22s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.49s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.20s/it]100%|██████████| 9/9 [09:12<00:00, 61.08s/it]100%|██████████| 9/9 [09:12<00:00, 61.39s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2459.89 MB freed, 2761.80 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.12 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:25, 63.16s/it] 22%|██▏       | 2/9 [02:05<07:19, 62.81s/it] 33%|███▎      | 3/9 [03:06<06:10, 61.79s/it] 44%|████▍     | 4/9 [04:06<05:06, 61.23s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.04s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.80s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.95s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.79s/it]100%|██████████| 9/9 [09:10<00:00, 60.87s/it]100%|██████████| 9/9 [09:10<00:00, 61.16s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2552.18 MB freed, 2669.51 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 580.35 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.53s/it] 22%|██▏       | 2/9 [02:04<07:17, 62.46s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.79s/it] 44%|████▍     | 4/9 [04:07<05:07, 61.60s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.69s/it] 67%|██████▋   | 6/9 [06:09<03:04, 61.36s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.41s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.26s/it]100%|██████████| 9/9 [09:13<00:00, 61.23s/it]100%|██████████| 9/9 [09:13<00:00, 61.49s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2306.08 MB freed, 2915.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.10 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:05<08:45, 65.71s/it] 22%|██▏       | 2/9 [02:07<07:22, 63.19s/it] 33%|███▎      | 3/9 [03:07<06:12, 62.09s/it] 44%|████▍     | 4/9 [04:08<05:07, 61.49s/it] 56%|█████▌    | 5/9 [05:09<04:05, 61.38s/it] 67%|██████▋   | 6/9 [06:10<03:03, 61.13s/it] 78%|███████▊  | 7/9 [07:10<02:01, 60.89s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.73s/it]100%|██████████| 9/9 [09:11<00:00, 60.64s/it]100%|██████████| 9/9 [09:11<00:00, 61.28s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 582.03 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 62.00s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.11s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.72s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.52s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.32s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.21s/it] 78%|███████▊  | 7/9 [07:09<02:02, 61.11s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.16s/it]100%|██████████| 9/9 [09:12<00:00, 61.39s/it]100%|██████████| 9/9 [09:12<00:00, 61.41s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2982.84 MB freed, 2238.85 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.17 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.81s/it] 22%|██▏       | 2/9 [02:05<07:18, 62.60s/it] 33%|███▎      | 3/9 [03:05<06:09, 61.52s/it] 44%|████▍     | 4/9 [04:05<05:05, 61.03s/it] 56%|█████▌    | 5/9 [05:06<04:03, 60.93s/it] 67%|██████▋   | 6/9 [06:08<03:04, 61.41s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.46s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.27s/it]100%|██████████| 9/9 [09:13<00:00, 61.43s/it]100%|██████████| 9/9 [09:13<00:00, 61.45s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2552.18 MB freed, 2669.51 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 589.26 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.49s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.81s/it] 33%|███▎      | 3/9 [03:04<06:07, 61.20s/it] 44%|████▍     | 4/9 [04:05<05:06, 61.35s/it] 56%|█████▌    | 5/9 [05:06<04:04, 61.22s/it] 67%|██████▋   | 6/9 [06:09<03:05, 61.80s/it] 78%|███████▊  | 7/9 [07:10<02:03, 61.54s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.19s/it]100%|██████████| 9/9 [09:12<00:00, 61.14s/it]100%|██████████| 9/9 [09:12<00:00, 61.36s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1936.94 MB freed, 3284.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.76 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:07<09:01, 67.74s/it] 22%|██▏       | 2/9 [02:11<07:36, 65.17s/it] 33%|███▎      | 3/9 [03:13<06:22, 63.68s/it] 44%|████▍     | 4/9 [04:15<05:16, 63.23s/it] 56%|█████▌    | 5/9 [05:18<04:11, 62.98s/it] 67%|██████▋   | 6/9 [06:21<03:09, 63.16s/it] 78%|███████▊  | 7/9 [07:23<02:05, 62.79s/it] 89%|████████▉ | 8/9 [08:25<01:02, 62.55s/it]100%|██████████| 9/9 [09:27<00:00, 62.39s/it]100%|██████████| 9/9 [09:27<00:00, 63.08s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3259.70 MB freed, 1961.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 599.50 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:37, 64.74s/it] 22%|██▏       | 2/9 [02:06<07:21, 63.06s/it] 33%|███▎      | 3/9 [03:08<06:14, 62.40s/it] 44%|████▍     | 4/9 [04:10<05:11, 62.24s/it] 56%|█████▌    | 5/9 [05:12<04:08, 62.12s/it] 67%|██████▋   | 6/9 [06:15<03:07, 62.55s/it] 78%|███████▊  | 7/9 [07:16<02:04, 62.10s/it] 89%|████████▉ | 8/9 [08:17<01:01, 61.68s/it]100%|██████████| 9/9 [09:18<00:00, 61.34s/it]100%|██████████| 9/9 [09:18<00:00, 62.01s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 588.05 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:04<08:38, 64.80s/it] 22%|██▏       | 2/9 [02:06<07:20, 62.97s/it] 33%|███▎      | 3/9 [03:09<06:18, 63.12s/it] 44%|████▍     | 4/9 [04:11<05:12, 62.52s/it] 56%|█████▌    | 5/9 [05:14<04:10, 62.57s/it] 67%|██████▋   | 6/9 [06:15<03:06, 62.17s/it] 78%|███████▊  | 7/9 [07:17<02:04, 62.08s/it] 89%|████████▉ | 8/9 [08:18<01:01, 61.86s/it]100%|██████████| 9/9 [09:20<00:00, 61.82s/it]100%|██████████| 9/9 [09:20<00:00, 62.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2952.08 MB freed, 2269.61 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 590.27 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.60s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.11s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.84s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.80s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.73s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.56s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.43s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.72s/it]100%|██████████| 9/9 [09:14<00:00, 61.26s/it]100%|██████████| 9/9 [09:14<00:00, 61.58s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1936.94 MB freed, 3284.75 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.60 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:55, 66.99s/it] 22%|██▏       | 2/9 [02:09<07:30, 64.33s/it] 33%|███▎      | 3/9 [03:10<06:17, 62.87s/it] 44%|████▍     | 4/9 [04:11<05:09, 61.91s/it] 56%|█████▌    | 5/9 [05:11<04:05, 61.50s/it] 67%|██████▋   | 6/9 [06:12<03:04, 61.38s/it] 78%|███████▊  | 7/9 [07:14<02:02, 61.41s/it] 89%|████████▉ | 8/9 [08:14<01:01, 61.08s/it]100%|██████████| 9/9 [09:15<00:00, 60.87s/it]100%|██████████| 9/9 [09:15<00:00, 61.69s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2613.70 MB freed, 2607.99 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.04 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.58s/it] 22%|██▏       | 2/9 [02:03<07:09, 61.42s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.86s/it] 44%|████▍     | 4/9 [04:08<05:10, 62.10s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.47s/it] 67%|██████▋   | 6/9 [06:08<03:03, 61.05s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.99s/it] 89%|████████▉ | 8/9 [08:10<01:01, 61.02s/it]100%|██████████| 9/9 [09:11<00:00, 60.97s/it]100%|██████████| 9/9 [09:11<00:00, 61.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3198.17 MB freed, 2023.52 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 585.82 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:19, 62.45s/it] 22%|██▏       | 2/9 [02:04<07:16, 62.40s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.02s/it] 44%|████▍     | 4/9 [04:09<05:12, 62.46s/it] 56%|█████▌    | 5/9 [05:09<04:06, 61.67s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.17s/it] 78%|███████▊  | 7/9 [07:10<02:01, 60.86s/it] 89%|████████▉ | 8/9 [08:10<01:00, 60.68s/it]100%|██████████| 9/9 [09:11<00:00, 60.74s/it]100%|██████████| 9/9 [09:11<00:00, 61.27s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2121.51 MB freed, 3100.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.23 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:49, 66.19s/it] 22%|██▏       | 2/9 [02:09<07:29, 64.27s/it] 33%|███▎      | 3/9 [03:09<06:14, 62.41s/it] 44%|████▍     | 4/9 [04:10<05:09, 61.90s/it] 56%|█████▌    | 5/9 [05:11<04:06, 61.56s/it] 67%|██████▋   | 6/9 [06:11<03:03, 61.08s/it] 78%|███████▊  | 7/9 [07:11<02:01, 60.77s/it] 89%|████████▉ | 8/9 [08:11<01:00, 60.55s/it]100%|██████████| 9/9 [09:12<00:00, 60.61s/it]100%|██████████| 9/9 [09:12<00:00, 61.39s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2244.56 MB freed, 2977.13 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.13 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:20, 62.59s/it] 22%|██▏       | 2/9 [02:06<07:23, 63.30s/it] 33%|███▎      | 3/9 [03:07<06:12, 62.12s/it] 44%|████▍     | 4/9 [04:08<05:09, 62.00s/it] 56%|█████▌    | 5/9 [05:11<04:09, 62.35s/it] 67%|██████▋   | 6/9 [06:14<03:07, 62.42s/it] 78%|███████▊  | 7/9 [07:15<02:04, 62.08s/it] 89%|████████▉ | 8/9 [08:16<01:01, 61.62s/it]100%|██████████| 9/9 [09:17<00:00, 61.44s/it]100%|██████████| 9/9 [09:17<00:00, 61.94s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 3044.36 MB freed, 2177.33 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 586.60 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m gguf qtypes: F32 (145), Q6_K (253)
+[1m[33m[WARNING][0m Dequantizing token_embd.weight to prevent runtime OOM.
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m loaded completely;  3585.01 MB loaded, full load: True
+[32m[INFO][0m CLIP/text encoder model load device: cpu, offload device: cpu, current: cpu, dtype: torch.float16
+[32m[INFO][0m Requested to load ZImageTEModel_
+[32m[INFO][0m gguf qtypes: F32 (245), Q8_0 (63), Q6_K (140), BF16 (5)
+[32m[INFO][0m model weight dtype torch.bfloat16, manual cast: None
+[32m[INFO][0m model_type FLOW
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:22, 62.82s/it] 22%|██▏       | 2/9 [02:05<07:17, 62.51s/it] 33%|███▎      | 3/9 [03:06<06:11, 61.92s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.78s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.49s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.38s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.44s/it] 89%|████████▉ | 8/9 [08:12<01:01, 61.41s/it]100%|██████████| 9/9 [09:15<00:00, 61.62s/it]100%|██████████| 9/9 [09:15<00:00, 61.67s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1998.47 MB freed, 3223.22 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 588.49 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:08<09:09, 68.68s/it] 22%|██▏       | 2/9 [02:09<07:28, 64.10s/it] 33%|███▎      | 3/9 [03:10<06:16, 62.79s/it] 44%|████▍     | 4/9 [04:11<05:09, 61.99s/it] 56%|█████▌    | 5/9 [05:12<04:06, 61.56s/it] 67%|██████▋   | 6/9 [06:13<03:03, 61.29s/it] 78%|███████▊  | 7/9 [07:14<02:02, 61.20s/it] 89%|████████▉ | 8/9 [08:16<01:01, 61.44s/it]100%|██████████| 9/9 [09:17<00:00, 61.36s/it]100%|██████████| 9/9 [09:17<00:00, 61.92s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2829.03 MB freed, 2392.66 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 1 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.50 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m Requested to load Lumina2
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:21, 62.64s/it] 22%|██▏       | 2/9 [02:04<07:14, 62.13s/it] 33%|███▎      | 3/9 [03:05<06:10, 61.78s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.56s/it] 56%|█████▌    | 5/9 [05:07<04:04, 61.10s/it] 67%|██████▋   | 6/9 [06:07<03:02, 60.82s/it] 78%|███████▊  | 7/9 [07:08<02:01, 60.92s/it] 89%|████████▉ | 8/9 [08:08<01:00, 60.71s/it]100%|██████████| 9/9 [09:09<00:00, 60.76s/it]100%|██████████| 9/9 [09:09<00:00, 61.09s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2183.04 MB freed, 3038.65 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 581.10 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:02<08:23, 62.88s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.84s/it] 33%|███▎      | 3/9 [03:05<06:11, 61.88s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.43s/it] 56%|█████▌    | 5/9 [05:08<04:06, 61.61s/it] 67%|██████▋   | 6/9 [06:09<03:03, 61.21s/it] 78%|███████▊  | 7/9 [07:09<02:01, 60.84s/it] 89%|████████▉ | 8/9 [08:09<01:00, 60.62s/it]100%|██████████| 9/9 [09:09<00:00, 60.45s/it]100%|██████████| 9/9 [09:09<00:00, 61.04s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2213.80 MB freed, 3007.89 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.50 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:03<08:29, 63.74s/it] 22%|██▏       | 2/9 [02:05<07:16, 62.34s/it] 33%|███▎      | 3/9 [03:06<06:10, 61.78s/it] 44%|████▍     | 4/9 [04:07<05:08, 61.68s/it] 56%|█████▌    | 5/9 [05:08<04:05, 61.41s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.45s/it] 78%|███████▊  | 7/9 [07:11<02:02, 61.27s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.57s/it]100%|██████████| 9/9 [09:14<00:00, 61.30s/it]100%|██████████| 9/9 [09:14<00:00, 61.56s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 1998.47 MB freed, 3223.22 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m Unloaded partially: 2446.55 MB freed, 776.68 MB remains loaded, 39.84 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.18 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:01<08:15, 61.93s/it] 22%|██▏       | 2/9 [02:03<07:12, 61.82s/it] 33%|███▎      | 3/9 [03:06<06:12, 62.16s/it] 44%|████▍     | 4/9 [04:06<05:07, 61.55s/it] 56%|█████▌    | 5/9 [05:07<04:05, 61.26s/it] 67%|██████▋   | 6/9 [06:10<03:04, 61.66s/it] 78%|███████▊  | 7/9 [07:10<02:02, 61.23s/it] 89%|████████▉ | 8/9 [08:11<01:01, 61.04s/it]100%|██████████| 9/9 [09:11<00:00, 60.81s/it]100%|██████████| 9/9 [09:11<00:00, 61.26s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2029.23 MB freed, 3192.46 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 583.32 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:07<08:57, 67.13s/it] 22%|██▏       | 2/9 [02:08<07:24, 63.47s/it] 33%|███▎      | 3/9 [03:09<06:15, 62.65s/it] 44%|████▍     | 4/9 [04:10<05:09, 61.85s/it] 56%|█████▌    | 5/9 [05:10<04:05, 61.27s/it] 67%|██████▋   | 6/9 [06:11<03:03, 61.03s/it] 78%|███████▊  | 7/9 [07:11<02:01, 60.91s/it] 89%|████████▉ | 8/9 [08:13<01:01, 61.26s/it]100%|██████████| 9/9 [09:14<00:00, 60.96s/it]100%|██████████| 9/9 [09:14<00:00, 61.57s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2121.51 MB freed, 3100.18 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 579.69 seconds[0m
+[32m[INFO][0m got prompt
+[32m[INFO][0m 0 models unloaded.
+[32m[INFO][0m loaded completely;  5221.67 MB loaded, full load: True
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [01:06<08:50, 66.35s/it] 22%|██▏       | 2/9 [02:07<07:23, 63.29s/it] 33%|███▎      | 3/9 [03:09<06:15, 62.55s/it] 44%|████▍     | 4/9 [04:10<05:11, 62.22s/it] 56%|█████▌    | 5/9 [05:11<04:06, 61.70s/it] 67%|██████▋   | 6/9 [06:12<03:04, 61.50s/it] 78%|███████▊  | 7/9 [07:14<02:02, 61.41s/it] 89%|████████▉ | 8/9 [08:14<01:01, 61.24s/it]100%|██████████| 9/9 [09:15<00:00, 61.19s/it]100%|██████████| 9/9 [09:15<00:00, 61.78s/it]
+[32m[INFO][0m Requested to load AutoencodingEngine
+[32m[INFO][0m Unloaded partially: 2521.41 MB freed, 2700.27 MB remains loaded, 30.76 MB buffer reserved, lowvram patches: 0
+[32m[INFO][0m loaded completely;  159.87 MB loaded, full load: True
+[32m[INFO][0m [32mPrompt executed in 584.28 seconds[0m
