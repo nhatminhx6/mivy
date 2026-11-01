@@ -20,8 +20,7 @@ public struct SettingsHomeView: View {
 
     /// "2026-10-29" → "29/10/2026".
     private var researchedVN: String {
-        let parts = researched.split(separator: "-")
-        return parts.count == 3 ? "\(parts[2])/\(parts[1])/\(parts[0])" : researched
+        PresetText.dateVN(researched)
     }
 
     private var version: String {
@@ -146,13 +145,13 @@ private struct SizesSheet: View {
     let data: PresetData?
 
     var body: some View {
-        SettingsSheet(title: "Bảng cỡ ảnh", subtitle: "Theo hướng dẫn của cơ quan lãnh sự · cập nhật \(data?.researched ?? "—")") {
+        SettingsSheet(title: "Bảng cỡ ảnh", subtitle: "Theo hướng dẫn của cơ quan lãnh sự · cập nhật \(data.map { PresetText.dateVN($0.researched) } ?? "—")") {
             section("Ảnh thẻ Việt Nam")
             line("Ảnh 3×4 (hồ sơ)", "30×40 mm · nền trắng")
             line("Ảnh 4×6 (hộ chiếu)", "40×60 mm · nền trắng")
             section("Visa")
             ForEach(data?.visaDestinations ?? []) { d in
-                line(d.nameVi, [d.sizeLabel, d.background.map { "nền \($0)" }].compactMap { $0 }.joined(separator: " · "))
+                line(d.nameVi, [d.sizeLabel, PresetText.backgroundVN(d.background)].compactMap { $0 }.joined(separator: " · "))
             }
             section("Hộ chiếu theo nước")
             ForEach(data?.originPassports ?? []) { o in

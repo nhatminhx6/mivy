@@ -220,3 +220,25 @@ public struct PresetData: Codable, Sendable, Equatable {
         case originPassports = "origin_passports"
     }
 }
+
+// MARK: - Display helpers
+
+public enum PresetText {
+    /// Short Vietnamese label for an English background spec from presets.json
+    /// ("plain white (not stated…)" → "nền trắng", "plain light grey or neutral" → "nền xám nhạt").
+    public static func backgroundVN(_ raw: String?) -> String? {
+        guard let s = raw?.lowercased(), !s.isEmpty else { return nil }
+        if s.contains("blue") { return "nền xanh" }
+        if s.contains("grey") || s.contains("gray") { return s.contains("white") ? "nền trắng/xám nhạt" : "nền xám nhạt" }
+        if s.contains("off-white") || s.contains("near-white") { return "nền trắng hoặc trắng ngà" }
+        if s.contains("white") { return "nền trắng" }
+        if s.contains("light") { return "nền sáng màu, trơn" }
+        return "nền trơn"
+    }
+
+    /// "2026-10-29" → "29/10/2026".
+    public static func dateVN(_ iso: String) -> String {
+        let p = iso.split(separator: "-")
+        return p.count == 3 ? "\(p[2])/\(p[1])/\(p[0])" : iso
+    }
+}
