@@ -78,9 +78,9 @@ public final class GarmentTemplate: @unchecked Sendable {
 /// top so the collar tucks under the jaw. The face itself is never altered.
 public enum GarmentFitter {
     /// Collar opening width as a fraction of the jaw width.
-    static let collarOpening = 0.8
+    static let collarOpening = 0.62
     /// How far below the chin the collar starts, in jaw widths.
-    static let collarDrop = 0.12
+    static let collarDrop = 0.1
 
     /// - Parameter background: fill for cleared areas; `nil` keeps the photo behind.
     /// - Returns: `nil` when no face / subject is found.
@@ -133,7 +133,7 @@ public enum GarmentFitter {
             let r = Double(p[0]), gg = Double(p[1]), b = Double(p[2]), l = (r + gg + b) / 3
             return r > gg && gg >= b - 6 && (r - b) / max(r, 1) > 0.12 && l > 0.3 * lumRef && l < 1.2 * lumRef
         }
-        var neckWidth = 0.62 * jawW
+        var neckWidth = 0.56 * jawW
         let realTop = Int(chinY + 0.02 * jawW)
         var realEnd = realTop - 1
         let probeHalf = Int(neckWidth * 0.22)
@@ -152,7 +152,7 @@ public enum GarmentFitter {
                     let p = px.at(x, y); for c in 0..<3 { acc[c] += Double(p[c]) }; n += 1
                 }
             }
-            if n > 20 { neckTone = (0..<3).map { acc[$0] / n * 0.3 + cheeks[$0] * 0.7 } }
+            if n > 20 { neckTone = (0..<3).map { acc[$0] / n * 0.4 + cheeks[$0] * 0.6 } }
             if realH >= Int(0.05 * jawW) {
                 let my = (realTop + realEnd) / 2
                 var l = Int(faceCX), r = Int(faceCX)
@@ -161,7 +161,7 @@ public enum GarmentFitter {
                 neckWidth = Double(r - l)
             }
         }
-        neckWidth = min(0.7 * jawW, max(0.56 * jawW, neckWidth))
+        neckWidth = min(0.6 * jawW, max(0.5 * jawW, neckWidth))
 
         // 4. Neck outline: from under the jaw angles, narrowest below the chin, flaring into the
         //    collar opening and following it down to where the shirt closes.
@@ -172,25 +172,26 @@ public enum GarmentFitter {
             jawXs.append(a.x + (sideCutY - a.y) / (b.y - a.y) * (b.x - a.x))
         }
         if let lo = jawXs.min(), let hi = jawXs.max(), hi > lo {
-            jawTopHalf = min(0.45 * jawW, max(faceCX - lo, hi - faceCX) * 0.92)
+            jawTopHalf = min(0.4 * jawW, max(faceCX - lo, hi - faceCX) * 0.85)
         }
-        let bottomHalf = max(neckWidth / 2, g.holeTopW * s / 2 + 1)
-        let topHalf = max(neckWidth / 2, bottomHalf * 0.9)
+        let topHalf = neckWidth / 2
         let waist = chinY + 0.1 * jawW
+        func holeHalfWidth(_ y: Double) -> Double? {
+            guard y >= collarY else { return nil }
+            let ty = Int((y - vy) / s)
+            return (g.holeHalf[ty] ?? g.holeHalf[ty - 1]).map { $0 * s + 1 }
+        }
+        // the neck keeps its own width; it only widens a little into the shirt, never to fill the opening
         func halfWidth(_ y: Double) -> Double {
-            if y >= collarY {
-                let ty = Int((y - vy) / s)
-                return max(neckWidth * 0.25, (g.holeHalf[ty] ?? g.holeHalf[ty - 1] ?? g.holeTopW / 2) * s + 1)
-            }
             let start = max(topHalf, jawTopHalf)
             if y <= sideCutY { return start }
             if y <= waist {
                 let t = (y - sideCutY) / (waist - sideCutY)
                 return start + (topHalf - start) * t * t * (3 - 2 * t)
             }
-            if collarY <= waist { return bottomHalf }
-            let t = min(1, (y - waist) / (collarY - waist))
-            return topHalf + (bottomHalf - topHalf) * t * t
+            let t = min(1, (y - waist) / max(1, holeBottomY - waist))
+            let w = topHalf * (1 + 0.18 * t)
+            return holeHalfWidth(y).map { min($0, w) } ?? w
         }
         let nTop = chinY - 0.25 * jawW, nBot = holeBottomY + 2
         let outline = grayContext(W, H)
@@ -204,19 +205,102 @@ public enum GarmentFitter {
         outline.closePath(); outline.fillPath()
         guard let neckMask = feathered(outline.makeImage(), sigma: max(0.8, jawW * 0.012), full) else { return nil }
 
-        // 5. Shaded neck (cylinder falloff, lighter away from the jaw, faint grain).
+        // 5. Neck: skin tone + real skin texture (high-pass detail tiled from a cheek patch),
+        //    shadowed under the jaw line, darker towards the sides (cylinder).
+        let pSize = max(8, Int(jawW * 0.16))
+        let pX = Int(faceCX - 0.24 * jawW) - pSize / 2, pY = Int(chinY - 0.45 * jawW) - pSize / 2
+        var poreAmp = 3.0
+        if pX >= 0, pY >= 0, pX + pSize < px.w, pY + pSize < px.h {
+            // pore-scale amplitude: std of (pixel − 5×5 box blur) on the cheek
+            var lum = [Double](repeating: 0, count: pSize * pSize)
+            for j in 0..<pSize { for i in 0..<pSize {
+                let p = px.at(pX + i, pY + j)
+                lum[j * pSize + i] = (Double(p[0]) + Double(p[1]) + Double(p[2])) / 3
+            } }
+            var sq = 0.0, n = 0.0
+            for j in 2..<(pSize - 2) { for i in 2..<(pSize - 2) {
+                var acc = 0.0
+                for dj in -2...2 { for di in -2...2 { acc += lum[(j + dj) * pSize + i + di] } }
+                let d = lum[j * pSize + i] - acc / 25
+                sq += d * d; n += 1
+            } }
+            if n > 0 { poreAmp = min(6, max(1.5, (sq / n).squareRoot())) }
+        }
+        // non-repeating grain: white noise, softened with a 3×3 blur
+        let nx0 = max(0, Int(faceCX - jawW)), nW = max(1, min(px.w, Int(faceCX + jawW)) - nx0)
+        let ny0 = max(0, Int(nTop)), nH = max(1, min(px.h, Int(nBot) + 2) - ny0)
+        var rng = SystemRandomNumberGenerator()
+        let raw = (0..<(nW * nH)).map { _ in Double.random(in: -1...1, using: &rng) }
+        var grain = [Double](repeating: 0, count: nW * nH)
+        if nW > 2 && nH > 2 {
+            for j in 1..<(nH - 1) { for i in 1..<(nW - 1) {
+                var acc = 0.0
+                for dj in -1...1 { for di in -1...1 { acc += raw[(j + dj) * nW + i + di] } }
+                grain[j * nW + i] = acc / 9 * 2 * poreAmp
+            } }
+        }
+        // lowest jaw point per column, for the shadow the jaw casts on the neck
+        func jawY(_ x: Double) -> Double {
+            var best = sideCutY
+            for (a, b) in zip(pts, pts.dropFirst()) where (a.x - x) * (b.x - x) <= 0 && a.x != b.x {
+                best = max(best, a.y + (x - a.x) / (b.x - a.x) * (b.y - a.y))
+            }
+            return best
+        }
         let neck = RGBABitmap(width: Int(W), height: Int(H))
-        var seed: UInt64 = 0x9E3779B97F4A7C15
+        let x0 = max(0, Int(faceCX - jawW)), x1 = min(neck.w, Int(faceCX + jawW))
+        let jawLine = (x0..<max(x0 + 1, x1)).map { jawY(Double($0)) }
         for y in max(0, Int(nTop))..<min(neck.h, Int(nBot) + 2) {
             let hw = halfWidth(Double(y))
-            let t = min(1, max(0, (Double(y) - chinY) / (0.3 * jawW)))
-            for x in max(0, Int(faceCX - hw - 2))..<min(neck.w, Int(faceCX + hw + 2)) {
+            let deep = min(1, max(0, (Double(y) - (holeBottomY - 0.3 * jawW)) / (0.3 * jawW)))
+            for x in max(x0, Int(faceCX - hw - 2))..<min(x1, Int(faceCX + hw + 2)) {
                 let u = (Double(x) - faceCX) / max(1, hw)
-                seed = seed &* 6364136223846793005 &+ 1442695040888963407
-                let grain = 1 + (Double(seed >> 40 & 0xFF) / 255 - 0.5) * 0.04
-                let shade = (0.82 + 0.18 * t) * (1 - 0.32 * pow(abs(u), 2.5)) * grain
+                let below = max(0, Double(y) - jawLine[x - x0])
+                let jawShadow = 1 - 0.4 * exp(-below / (0.09 * jawW))
+                let shade = jawShadow * (1 - 0.3 * pow(abs(u), 2.2)) * (1 - 0.1 * deep)
+                let gi = (y - ny0) * nW + (x - nx0)
+                let tex = x >= nx0 && gi >= 0 && gi < grain.count ? grain[gi] : 0
+                var col = (0..<3).map { neckTone[$0] * shade + tex }
+                // right under the jaw keep the real neck where it is skin, fading into the synthetic one
+                let k = below < 0.16 * jawW ? 1 - below / (0.16 * jawW) : 0
+                if k > 0, isSkin(x, y) {
+                    let p = px.at(x, y), e = k * k * (3 - 2 * k)
+                    col = (0..<3).map { Double(p[$0]) * e + col[$0] * (1 - e) }
+                }
                 let d = neck.at(x, y)
-                for c in 0..<3 { d[c] = UInt8(min(255, neckTone[c] * shade)) }
+                for c in 0..<3 { d[c] = UInt8(max(0, min(255, col[c]))) }
+                d[3] = 255
+            }
+        }
+
+        // 5b. Back of the collar: the opening around the neck shows the inside of the collar band.
+        let hole = grayContext(W, H)
+        for (row, half) in g.holeHalf {
+            hole.fill(flip(CGRect(x: vx + (g.neckCX - half - 1) * s, y: vy + Double(row) * s, width: (2 * half + 2) * s, height: s + 1)))
+        }
+        guard let holeMask = hole.makeImage() else { return nil }
+        let collarBand: [Double] = {
+            var acc = [0.0, 0.0, 0.0], n = 0.0
+            let gb = RGBABitmap(g.image)
+            for (row, half) in g.holeHalf where Double(row) < g.collarTop + Double(g.holeBottom - Int(g.collarTop)) / 2 {
+                for x in [Int(g.neckCX - half) - 5, Int(g.neckCX + half) + 5] where x >= 0 && x < gb.w {
+                    let p = gb.at(x, row); if p[3] < 250 { continue }
+                    for c in 0..<3 { acc[c] += Double(p[c]) }; n += 1
+                }
+            }
+            return n > 0 ? acc.map { $0 / n } : [235, 235, 235]
+        }()
+        let band = RGBABitmap(width: Int(W), height: Int(H))
+        for y in max(0, Int(collarY))..<min(band.h, Int(nBot) + 2) {
+            guard let hh = holeHalfWidth(Double(y)) else { continue }
+            let nh = halfWidth(Double(y))
+            for x in max(0, Int(faceCX - hh - 1))..<min(band.w, Int(faceCX + hh + 2)) {
+                let t = min(1, max(0, (abs(Double(x) - faceCX) - nh) / max(1, hh - nh)))
+                let shade = 0.6 + 0.3 * t
+                let gi = (y - ny0) * nW + (x - nx0)
+                let tex = x >= nx0 && gi >= 0 && gi < grain.count ? grain[gi] * 0.5 : 0
+                let d = band.at(x, y)
+                for c in 0..<3 { d[c] = UInt8(max(0, min(255, collarBand[c] * shade + tex))) }
                 d[3] = 255
             }
         }
@@ -241,7 +325,7 @@ public enum GarmentFitter {
               let backMask = intersect(keepSoft, personMask, full) else { return nil }
 
         let headRegion = grayContext(W, H)
-        headRegion.fill(flip(CGRect(x: 0, y: 0, width: W, height: chinY + 0.02 * jawW)))
+        headRegion.fill(flip(CGRect(x: 0, y: 0, width: W, height: sideCutY)))
         headRegion.addPath(jawPath); headRegion.fillPath()
         guard let headSoft = feathered(headRegion.makeImage(), sigma: max(1, jawW * 0.006), full),
               let headMask = intersect(headSoft, backMask, full) else { return nil }
@@ -250,7 +334,18 @@ public enum GarmentFitter {
         guard let ctx = rgbaContext(W, H), let neckImage = neck.image() else { return nil }
         if let background { ctx.setFillColor(background); ctx.fill(full) } else { ctx.draw(photo, in: full) }
         ctx.saveGState(); ctx.clip(to: full, mask: backMask); ctx.draw(photo, in: full); ctx.restoreGState()
-        ctx.saveGState(); ctx.clip(to: full, mask: neckMask); ctx.draw(neckImage, in: full); ctx.restoreGState()
+        if let bandImage = band.image() {
+            ctx.saveGState(); ctx.clip(to: full, mask: holeMask); ctx.draw(bandImage, in: full); ctx.restoreGState()
+        }
+        // the neck casts a soft shadow on the collar band behind it
+        guard let neckCut = rgbaContext(W, H) else { return nil }
+        neckCut.clip(to: full, mask: neckMask); neckCut.draw(neckImage, in: full)
+        guard let neckLayer = neckCut.makeImage() else { return nil }
+        ctx.saveGState(); ctx.clip(to: full, mask: holeMask)
+        ctx.setShadow(offset: .zero, blur: jawW * 0.05, color: CGColor(gray: 0, alpha: 0.45))
+        ctx.draw(neckLayer, in: full)
+        ctx.restoreGState()
+        ctx.draw(neckLayer, in: full)
 
         let garmentRect = flip(CGRect(x: vx, y: vy, width: vw, height: vh))
         ctx.saveGState(); ctx.clip(to: full, mask: neckMask)
@@ -267,7 +362,7 @@ public enum GarmentFitter {
         head.clip(to: full, mask: headMask); head.draw(photo, in: full)
         guard let headImage = head.makeImage() else { return nil }
         ctx.saveGState(); ctx.clip(to: full, mask: neckMask)
-        ctx.setShadow(offset: CGSize(width: 0, height: -jawW * 0.04), blur: jawW * 0.08, color: CGColor(gray: 0, alpha: 0.5))
+        ctx.setShadow(offset: CGSize(width: 0, height: -jawW * 0.04), blur: jawW * 0.08, color: CGColor(gray: 0, alpha: 0.3))
         ctx.draw(headImage, in: full)
         ctx.restoreGState()
         ctx.draw(headImage, in: full)
