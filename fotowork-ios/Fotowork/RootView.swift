@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import FotoworkDesign
 import FeatureIDPhoto
 import FeatureDocuments
@@ -30,6 +31,8 @@ enum AppTab: CaseIterable {
 struct RootView: View {
     @State private var tab: AppTab = .idPhoto
     @State private var barHidden = false
+    @State private var pendingTool: QuickTool?
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -51,10 +54,24 @@ struct RootView: View {
     @ViewBuilder
     private var content: some View {
         switch tab {
-        case .idPhoto: IDPhotoHomeView()
-        case .docs: DocumentsHomeView()
+        case .idPhoto:
+            IDPhotoHomeView { tool in
+                if tool == .avatar {
+                    tab = .avatar
+                } else {
+                    pendingTool = tool
+                    tab = .docs
+                }
+            }
+        case .docs: DocumentsHomeView(openTool: $pendingTool)
         case .avatar: AvatarHomeView()
-        case .settings: SettingsHomeView()
+        case .settings:
+            SettingsHomeView {
+                let items = (try? modelContext.fetch(FetchDescriptor<DossierItem>())) ?? []
+                items.forEach(modelContext.delete)
+                try? modelContext.save()
+                return items.count
+            }
         }
     }
 }

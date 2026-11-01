@@ -180,7 +180,7 @@ public struct CaptureView: View {
                 .foregroundStyle(.white)
             Text(model.permissionDenied
                  ? "Bật quyền camera trong Cài đặt, hoặc chọn một ảnh có sẵn."
-                 : "Trên máy thật sẽ mở camera. Giờ anh chọn một ảnh có sẵn để thử các bước.")
+                 : "Không mở được camera. Bạn có thể chọn một ảnh có sẵn.")
                 .font(.bvp(.subheadline))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.8))

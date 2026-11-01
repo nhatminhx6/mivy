@@ -38,16 +38,12 @@ public final class ExportViewModel {
         switch mode {
         case .print: "Tờ in 10×15 cm"
         case .digital: "JPG · \(target.sizeText) · 300 dpi"
-        case .ship: "In trên giấy ảnh · giao tận nơi"
+        case .ship: "Tờ 10×15 cm · in qua AirPrint"
         }
     }
 
     /// Everything is free while testing — export the full-quality file (no watermark, no payment).
     func exportFile() {
-        if mode == .ship {
-            statusNote = "Đặt in & giao cần đối tác in — sắp có."
-            return
-        }
         isBusy = true
         defer { isBusy = false }
         let kind: ExportKind = (mode == .digital) ? .digital : .print10x15
@@ -56,6 +52,30 @@ public final class ExportViewModel {
             return
         }
         statusNote = result.note
-        shareItem = ShareItem(url: result.url)
+        if mode == .ship {
+            printSheet(result.url)
+        } else {
+            shareItem = ShareItem(url: result.url)
+        }
+    }
+
+    /// Prints the 10×15 sheet with AirPrint (photo paper 4×6 in, or any paper the printer has).
+    private func printSheet(_ url: URL) {
+        guard UIPrintInteractionController.isPrintingAvailable else {
+            statusNote = "Chưa thấy máy in AirPrint. Hãy chọn “File in khổ 10×15” rồi mang ra tiệm in."
+            return
+        }
+        let info = UIPrintInfo(dictionary: nil)
+        info.outputType = .photo
+        info.jobName = "Fotowork \(target.title)"
+        let controller = UIPrintInteractionController.shared
+        controller.printInfo = info
+        controller.printingItem = url
+        controller.present(animated: true) { [weak self] _, completed, error in
+            Task { @MainActor in
+                if let error { self?.statusNote = "In lỗi: \(error.localizedDescription)" }
+                else if completed { self?.statusNote = "Đã gửi lệnh in." }
+            }
+        }
     }
 }

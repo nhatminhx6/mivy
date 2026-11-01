@@ -10,7 +10,7 @@ struct AvatarResultView: View {
         ZStack {
             FotoworkBackground()
             VStack(spacing: 22) {
-                Text("Avatar của anh")
+                Text("Avatar của bạn")
                     .font(.bvp(.title3, .bold))
                     .foregroundStyle(Fotowork.Palette.textPrimary)
 

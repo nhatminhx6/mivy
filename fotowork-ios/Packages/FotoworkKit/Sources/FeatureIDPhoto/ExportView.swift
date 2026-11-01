@@ -24,8 +24,8 @@ public struct ExportView: View {
                   desc: "8 ảnh 4×6 trên một tờ, in ở tiệm khoảng 3.000đ"),
             .init(mode: .digital, icon: "arrow.down.doc.fill", title: "File số nộp online",
                   desc: model.digitalInfoText),
-            .init(mode: .ship, icon: "shippingbox.fill", title: "In và giao tận nhà",
-                  desc: "Giao tận nơi · phí giao tính sau"),
+            .init(mode: .ship, icon: "printer.dotmatrix.fill", title: "In ngay bằng máy in",
+                  desc: "AirPrint · giấy ảnh 10×15 hoặc A4"),
         ]
     }
 
@@ -126,7 +126,7 @@ public struct ExportView: View {
         switch model.mode {
         case .print: "Tải file in"
         case .digital: "Tải file số"
-        case .ship: "Đặt in"
+        case .ship: "In ngay"
         }
     }
 }

@@ -8,8 +8,12 @@ public struct IDPhotoHomeView: View {
     @State private var router = IDPhotoRouter()
     @State private var showCountrySheet = false
     @State private var showVisaSheet = false
+    @State private var showAllSizes = false
+    private let onTool: (QuickTool) -> Void
 
-    public init() {}
+    public init(onTool: @escaping (QuickTool) -> Void = { _ in }) {
+        self.onTool = onTool
+    }
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -44,6 +48,12 @@ public struct IDPhotoHomeView: View {
                 showCountrySheet = false
             }
         }
+        .sheet(isPresented: $showAllSizes) {
+            AllSizesSheet(origins: model.origins, destinations: model.visaDestinations) { target in
+                showAllSizes = false
+                router.push(target)
+            }
+        }
         .sheet(isPresented: $showVisaSheet) {
             VisaPickerSheet(destinations: model.visaDestinations) { destination in
                 showVisaSheet = false
@@ -57,7 +67,7 @@ public struct IDPhotoHomeView: View {
     private var header: some View {
         HStack {
             Button {
-                // menu — later
+                showAllSizes = true
             } label: {
                 Image(systemName: "square.grid.2x2.fill")
                     .font(.bvp(size: 16))
@@ -189,11 +199,11 @@ public struct IDPhotoHomeView: View {
                 .font(.bvp(.headline, .semibold))
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             HStack(alignment: .top, spacing: 4) {
-                CircleToolButton(title: "Scan", systemImage: "doc.viewfinder")
-                CircleToolButton(title: "CCCD", systemImage: "person.crop.rectangle")
-                CircleToolButton(title: "Nén file", systemImage: "arrow.down.right.and.arrow.up.left")
-                CircleToolButton(title: "Ký tên", systemImage: "signature")
-                CircleToolButton(title: "Avatar", systemImage: "person.crop.circle")
+                CircleToolButton(title: "Scan", systemImage: "doc.viewfinder") { onTool(.scan) }
+                CircleToolButton(title: "CCCD", systemImage: "person.crop.rectangle") { onTool(.cccd) }
+                CircleToolButton(title: "Nén file", systemImage: "arrow.down.right.and.arrow.up.left") { onTool(.compress) }
+                CircleToolButton(title: "Ký tên", systemImage: "signature") { onTool(.sign) }
+                CircleToolButton(title: "Avatar", systemImage: "person.crop.circle") { onTool(.avatar) }
             }
         }
     }

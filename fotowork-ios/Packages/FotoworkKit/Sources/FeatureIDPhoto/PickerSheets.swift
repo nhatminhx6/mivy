@@ -137,3 +137,42 @@ private struct PickerRow: View {
         )
     }
 }
+
+/// Every size the app can shoot, from the home menu button: Vietnamese ID sizes, passports by
+/// country (those with a print spec) and visas.
+struct AllSizesSheet: View {
+    let origins: [OriginPassport]
+    let destinations: [VisaDestination]
+    let onPick: (CaptureTarget) -> Void
+
+    var body: some View {
+        SheetScaffold(title: "Tất cả cỡ ảnh", subtitle: "Chọn loại ảnh cần chụp.") {
+            section("Ảnh thẻ Việt Nam")
+            ForEach([CaptureTarget.idCard3x4, .idCard4x6, .jobApplication]) { target in
+                row(target, leading: "VN")
+            }
+            section("Hộ chiếu")
+            ForEach(origins.filter { $0.print != nil }) { origin in
+                row(.passport(origin), leading: origin.id.uppercased())
+            }
+            section("Visa")
+            ForEach(destinations) { destination in
+                row(.visa(destination), leading: destination.id.uppercased())
+            }
+        }
+    }
+
+    private func section(_ title: String) -> some View {
+        Text(title)
+            .font(.bvp(.footnote, .bold))
+            .foregroundStyle(Fotowork.Palette.textSecondary)
+            .padding(.top, 10)
+    }
+
+    private func row(_ target: CaptureTarget, leading: String) -> some View {
+        Button { onPick(target) } label: {
+            PickerRow(title: target.title, detail: "\(target.sizeText) · \(target.subtitle)", leading: leading, isSelected: false)
+        }
+        .buttonStyle(.plain)
+    }
+}

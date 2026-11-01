@@ -7,13 +7,18 @@ enum DocRoute: Hashable {
 
 public struct DocumentsHomeView: View {
     @State private var path = NavigationPath()
+    @State private var showSearch = false
+    @Binding private var openTool: QuickTool?
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12),
     ]
 
-    public init() {}
+    /// `openTool`: a shortcut from the home screen; opened once, then reset to nil.
+    public init(openTool: Binding<QuickTool?> = .constant(nil)) {
+        _openTool = openTool
+    }
 
     public var body: some View {
         NavigationStack(path: $path) {
@@ -54,6 +59,23 @@ public struct DocumentsHomeView: View {
                 }
             }
         }
+        .task(id: openTool) {
+            guard let tool = openTool else { return }
+            switch tool {
+            case .scan: path.append(DocRoute.scan)
+            case .cccd: path.append(DocRoute.cccd)
+            case .compress: path.append(DocRoute.compress)
+            case .sign: path.append(DocRoute.sign)
+            case .avatar: break
+            }
+            openTool = nil
+        }
+        .sheet(isPresented: $showSearch) {
+            DocumentSearchSheet { route in
+                showSearch = false
+                path.append(route)
+            }
+        }
     }
 
     private var header: some View {
@@ -63,7 +85,7 @@ public struct DocumentsHomeView: View {
                 .foregroundStyle(Fotowork.Palette.textPrimary)
             Spacer()
             Button {
-                // search — later
+                showSearch = true
             } label: {
                 Image(systemName: "magnifyingglass")
                     .font(.bvp(size: 18, .semibold))

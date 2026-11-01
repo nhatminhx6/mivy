@@ -14,7 +14,7 @@ struct ScanView: View {
             FotoworkBackground()
             ScrollView {
                 VStack(spacing: 18) {
-                    Text("Quét tài liệu thành PDF nhiều trang. Trên máy thật dùng camera; ở đây anh chọn ảnh có sẵn.")
+                    Text("Quét tài liệu thành PDF nhiều trang. Nếu không mở được camera, bạn có thể chọn ảnh có sẵn.")
                         .font(.bvp(.subheadline))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

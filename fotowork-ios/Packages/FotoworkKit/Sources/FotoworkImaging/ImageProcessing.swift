@@ -1,4 +1,5 @@
 import CoreImage
+import Vision
 import FotoworkCore
 
 public enum ImagingError: Error, Sendable {
@@ -19,11 +20,17 @@ public protocol IDPhotoRendering: Sendable {
     func render(_ image: CIImage, printSize: PrintSize, dpi: Int) async throws -> CIImage
 }
 
-/// Placeholder Vision-backed segmenter. Logic lands in the Capture/Edit step.
+/// Vision-backed segmenter (foreground instance mask, scaled to the input image).
 public struct VisionPersonSegmenter: PersonSegmenting {
     public init() {}
 
     public func foregroundMask(for image: CIImage) async throws -> CIImage {
-        throw ImagingError.notImplemented
+        let request = VNGenerateForegroundInstanceMaskRequest()
+        VisionCompute.prepare(request)
+        let handler = VNImageRequestHandler(ciImage: image, options: [:])
+        try handler.perform([request])
+        guard let result = request.results?.first, !result.allInstances.isEmpty else { throw ImagingError.maskFailed }
+        let buffer = try result.generateScaledMaskForImage(forInstances: result.allInstances, from: handler)
+        return CIImage(cvPixelBuffer: buffer)
     }
 }
