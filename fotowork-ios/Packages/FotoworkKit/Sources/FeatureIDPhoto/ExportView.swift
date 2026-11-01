@@ -21,7 +21,7 @@ public struct ExportView: View {
     private var options: [Option] {
         [
             .init(mode: .print, icon: "printer.fill", title: "File in khổ 10×15",
-                  desc: "8 ảnh 4×6 trên một tờ, in ở tiệm khoảng 3.000đ"),
+                  desc: model.printInfoText),
             .init(mode: .digital, icon: "arrow.down.doc.fill", title: "File số nộp online",
                   desc: model.digitalInfoText),
             .init(mode: .ship, icon: "printer.dotmatrix.fill", title: "In ngay bằng máy in",

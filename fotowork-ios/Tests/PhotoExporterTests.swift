@@ -54,3 +54,31 @@ struct PhotoExporterTests {
         #expect(budgeted.count <= free.count)
     }
 }
+
+@Suite("PhotoExporter orientation")
+struct PhotoExporterOrientationTests {
+    /// Top half red, bottom half blue (as seen on screen).
+    static func twoTone(_ w: Int, _ h: Int) -> CGImage {
+        let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        ctx.setFillColor(red: 0, green: 0, blue: 1, alpha: 1); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h / 2))
+        ctx.setFillColor(red: 1, green: 0, blue: 0, alpha: 1); ctx.fill(CGRect(x: 0, y: h / 2, width: w, height: h - h / 2))
+        return ctx.makeImage()!
+    }
+
+    @Test("Print sheet keeps photos upright")
+    func upright() throws {
+        let sheet = try #require(PhotoExporter.printSheet(photo: Self.twoTone(300, 400), photoWidthMm: 30, photoHeightMm: 40))
+        let w = sheet.image.width, h = sheet.image.height
+        var buf = [UInt8](repeating: 0, count: w * h * 4)
+        let ctx = CGContext(data: &buf, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        ctx.draw(sheet.image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        // buffer row 0 = top. Centre column, first non-white pixel from the top must be red.
+        let x = w / 2
+        var y = 0
+        while y < h, buf[(y * w + x) * 4] > 240, buf[(y * w + x) * 4 + 2] > 240 { y += 1 }
+        let p = ((y + 5) * w + x) * 4   // a few px inside (edge is anti-aliased)
+        #expect(buf[p] > 200 && buf[p + 2] < 60, "top of the first photo should be red, got y=\(y) rgb=\(buf[p]),\(buf[p+1]),\(buf[p+2])")
+    }
+}

@@ -36,15 +36,14 @@ public enum PhotoExporter {
         guard let ctx = context(sheetW, sheetH) else { return nil }
         ctx.setFillColor(CGColor(gray: 1, alpha: 1))
         ctx.fill(CGRect(x: 0, y: 0, width: sheetW, height: sheetH))
-        // Flip to a top-left origin for intuitive layout.
-        ctx.translateBy(x: 0, y: CGFloat(sheetH))
-        ctx.scaleBy(x: 1, y: -1)
 
         let totalW = CGFloat(cols) * pw + CGFloat(cols - 1) * gap
         let totalH = CGFloat(rows) * ph + CGFloat(rows - 1) * gap
         let startX = (CGFloat(sheetW) - totalW) / 2
         let startY = (CGFloat(sheetH) - totalH) / 2
 
+        // Core Graphics origin is bottom-left; images are drawn upright in it, so no flip here
+        // (a flipped CTM would draw every photo upside down).
         for row in 0..<rows {
             for col in 0..<cols {
                 let x = startX + CGFloat(col) * (pw + gap)

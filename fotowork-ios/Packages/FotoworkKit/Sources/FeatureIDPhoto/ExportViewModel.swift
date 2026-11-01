@@ -34,6 +34,15 @@ public final class ExportViewModel {
         return "\(Int(size.width))×\(Int(size.height)) px · \(budget)"
     }
 
+    /// "9 ảnh 3×4 trên một tờ…" — counts how many copies really fit on the 10×15 sheet.
+    var printInfoText: String {
+        let gap = 2.0
+        let cols = max(1, Int((100 + gap) / (target.widthMm + gap)))
+        let rows = max(1, Int((150 + gap) / (target.heightMm + gap)))
+        func f(_ v: Double) -> String { v == v.rounded() ? String(Int(v / 10)) : String(v / 10) }
+        return "\(cols * rows) ảnh \(f(target.widthMm))×\(f(target.heightMm)) trên một tờ, in ở tiệm khoảng 3.000đ"
+    }
+
     var previewCaption: String {
         switch mode {
         case .print: "Tờ in 10×15 cm"
