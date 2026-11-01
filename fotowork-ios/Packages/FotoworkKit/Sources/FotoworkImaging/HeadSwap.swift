@@ -205,12 +205,28 @@ public enum HeadSwap {
 
         // 6. Head mask (user space): face below the cheekbones only inside the jaw; hair/ears above,
         //    fading out beside the jaw so old collars never show.
+        let uFull = CGRect(x: 0, y: 0, width: UW, height: UH)
+        let personMask: CGImage? = userMask ?? colourKeyMask(ub, cx: uCX, chin: uChin, jaw: uJaw, full: uFull)
+        guard let personMask else { return nil }
+        let hair = longHairMask(ub, person: personMask, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw)
         let hr = FaceGeometry.grayContext(UW, UH)
         hr.setFillColor(gray: 0, alpha: 1); hr.fill(CGRect(x: 0, y: 0, width: UW, height: UH)); hr.setFillColor(gray: 1, alpha: 1)
         let wideTop = uChin - 0.75 * uJaw, fadeTop = uChin - 0.42 * uJaw, fadeBot = uChin - 0.12 * uJaw
-        hr.fill(CGRect(x: 0, y: UH - wideTop, width: UW, height: wideTop))
-        hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeTop, width: 1.2 * uJaw, height: fadeTop - wideTop))
-        if let grad = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
+        // full width (hair, ears) above the cheekbones, fading out over 0.25 jaw instead of a hard line
+        let wideFade = 0.25 * uJaw
+        hr.fill(CGRect(x: 0, y: UH - (wideTop - wideFade), width: UW, height: wideTop - wideFade))
+        if let g = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
+            hr.saveGState()
+            hr.clip(to: CGRect(x: 0, y: UH - wideTop, width: UW, height: wideFade))
+            hr.drawLinearGradient(g, start: CGPoint(x: 0, y: UH - (wideTop - wideFade)), end: CGPoint(x: 0, y: UH - wideTop), options: [])
+            hr.restoreGState()
+        }
+        // the face itself (eyes / temples) is never faded
+        hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - wideTop, width: 1.2 * uJaw, height: wideFade))
+        if hair == nil {
+            hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeTop, width: 1.2 * uJaw, height: fadeTop - wideTop))
+        }
+        if hair == nil, let grad = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
             hr.saveGState()
             hr.clip(to: CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeBot, width: 1.2 * uJaw, height: fadeBot - fadeTop))
             hr.drawLinearGradient(grad, start: CGPoint(x: 0, y: UH - fadeTop), end: CGPoint(x: 0, y: UH - fadeBot), options: [])
@@ -221,11 +237,12 @@ public enum HeadSwap {
         jaw.addLines(between: uPts.map { CGPoint(x: uCX + ($0.x - uCX) * 0.97, y: UH - (midY + ($0.y - midY) * 0.97)) })
         jaw.closeSubpath()
         hr.addPath(jaw); hr.fillPath()
-        guard let headRegion = FaceGeometry.feathered(hr.makeImage(), sigma: max(1, uJaw * 0.008), CGRect(x: 0, y: 0, width: UW, height: UH))
-        else { return nil }
-        let uFull = CGRect(x: 0, y: 0, width: UW, height: UH)
-        let personMask: CGImage? = userMask ?? colourKeyMask(ub, cx: uCX, chin: uChin, jaw: uJaw, full: uFull)
-        guard let personMask, let headMask = FaceGeometry.intersect(headRegion, personMask, uFull),
+        // long hair falling beside the neck stays (drawn over the suit)
+        if let hair {
+            hr.saveGState(); hr.clip(to: uFull, mask: hair); hr.setFillColor(gray: 1, alpha: 1); hr.fill(uFull); hr.restoreGState()
+        }
+        guard let headRegion = FaceGeometry.feathered(hr.makeImage(), sigma: max(1, uJaw * 0.008), uFull),
+              let headMask = FaceGeometry.intersect(headRegion, personMask, uFull),
               let hc = FaceGeometry.rgbaContext(UW, UH) else { return nil }
         hc.clip(to: uFull, mask: headMask); hc.draw(user, in: uFull)
         guard let head = hc.makeImage() else { return nil }
@@ -242,6 +259,72 @@ public enum HeadSwap {
         ctx.draw(head, in: headRect)
         ctx.restoreGState()
         return ctx.makeImage()
+    }
+
+    /// Hair below the cheekbones beside the face: pixels close to the hair colour (sampled at the
+    /// crown), flood-filled from seeds beside the temples so only hair connected to the head counts.
+    /// Ends with a soft fade around the shoulders. nil when there is no long hair.
+    static func longHairMask(_ px: RGBABitmap, person: CGImage, pts: [CGPoint], cx: Double, chin: Double, jaw: Double) -> CGImage? {
+        let pm = RGBABitmap(person, width: px.w, height: px.h)
+        func inPerson(_ x: Int, _ y: Int) -> Bool { pm.clamped(x, y)[0] > 128 }
+        // crown: first person row at the centre line, then a band below it
+        var top = 0
+        while top < px.h - 1 && !inPerson(Int(cx), top) { top += 1 }
+        var hair = [[Double]]()
+        for y in top..<min(px.h, top + Int(0.12 * jaw)) {
+            for x in stride(from: Int(cx - 0.2 * jaw), to: Int(cx + 0.2 * jaw), by: 2) where inPerson(x, y) {
+                let p = px.clamped(x, y); hair.append([Double(p[0]), Double(p[1]), Double(p[2])])
+            }
+        }
+        guard hair.count > 10 else { return nil }
+        let hc = (0..<3).map { c in hair.map { $0[c] }.sorted()[hair.count / 2] }
+        let hairLum = hc.reduce(0, +) / 3
+        func isHair(_ x: Int, _ y: Int) -> Bool {
+            guard inPerson(x, y) else { return false }
+            let p = px.clamped(x, y)
+            let r = Double(p[0]), g = Double(p[1]), b = Double(p[2])
+            let d = abs(r - hc[0]) + abs(g - hc[1]) + abs(b - hc[2])
+            let l = (r + g + b) / 3
+            // skin is never hair (unless the hair itself is skin-toned, e.g. blonde: then trust colour distance only)
+            let cb = 128 - 0.1687 * r - 0.3313 * g + 0.5 * b, cr = 128 + 0.5 * r - 0.4187 * g - 0.0813 * b
+            let hcb = 128 - 0.1687 * hc[0] - 0.3313 * hc[1] + 0.5 * hc[2], hcr = 128 + 0.5 * hc[0] - 0.4187 * hc[1] - 0.0813 * hc[2]
+            let skinLike = cr > 138 && cb < 122 && abs(cr - hcr) + abs(cb - hcb) > 10
+            return !skinLike && d < 110 && abs(l - hairLum) < 70
+        }
+        let y0 = Int(chin - 0.8 * jaw), y1 = min(px.h, Int(chin + 0.55 * jaw))
+        let x0 = max(0, Int(cx - 1.0 * jaw)), x1 = min(px.w, Int(cx + 1.0 * jaw))
+        guard y1 > y0 + 4, x1 > x0 + 4 else { return nil }
+        let bw = x1 - x0, bh = y1 - y0
+        var seen = [Bool](repeating: false, count: bw * bh)
+        var stack = [(Int, Int)]()
+        for x in x0..<x1 where abs(Double(x) - cx) > 0.42 * jaw && isHair(x, y0) { stack.append((x, y0)) }
+        var count = 0
+        while let (x, y) = stack.popLast() {
+            guard x >= x0, x < x1, y >= y0, y < y1 else { continue }
+            let i = (y - y0) * bw + (x - x0)
+            guard !seen[i] else { continue }
+            // never inside the face, and keep clear of the neck centre
+            if abs(Double(x) - cx) < 0.3 * jaw { continue }
+            if let jy = FaceGeometry.jawY(pts, Double(x)), Double(y) < jy { continue }
+            guard isHair(x, y) else { continue }
+            seen[i] = true; count += 1
+            stack.append((x + 1, y)); stack.append((x - 1, y)); stack.append((x, y + 1)); stack.append((x, y - 1))
+        }
+        // too little = just stray dark pixels (short hair)
+        guard Double(count) > 0.02 * jaw * jaw else { return nil }
+        let m = RGBABitmap(width: px.w, height: px.h)
+        let fadeFrom = Double(y1) - 0.18 * jaw
+        for y in y0..<y1 {
+            let fade = Double(y) < fadeFrom ? 1 : max(0, 1 - (Double(y) - fadeFrom) / (0.18 * jaw))
+            let a = UInt8(255 * fade)
+            for x in x0..<x1 where seen[(y - y0) * bw + (x - x0)] { let d = m.at(x, y); d[0] = a; d[1] = a; d[2] = a; d[3] = 255 }
+        }
+        guard let rgbaMask = m.image() else { return nil }
+        let full = CGRect(x: 0, y: 0, width: px.w, height: px.h)
+        let g = FaceGeometry.grayContext(full.width, full.height)
+        g.setFillColor(gray: 0, alpha: 1); g.fill(full)
+        g.draw(rgbaMask, in: full)
+        return FaceGeometry.feathered(g.makeImage(), sigma: max(1, jaw * 0.01), full)
     }
 
     /// Fallback when Vision segmentation is unavailable (iOS Simulator): key out colours seen on

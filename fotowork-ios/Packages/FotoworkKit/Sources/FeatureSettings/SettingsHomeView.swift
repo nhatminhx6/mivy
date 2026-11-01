@@ -18,6 +18,12 @@ public struct SettingsHomeView: View {
 
     private var researched: String { data?.researched ?? "—" }
 
+    /// "2026-10-29" → "29/10/2026".
+    private var researchedVN: String {
+        let parts = researched.split(separator: "-")
+        return parts.count == 3 ? "\(parts[2])/\(parts[1])/\(parts[0])" : researched
+    }
+
     private var version: String {
         let info = Bundle.main.infoDictionary
         let v = info?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -35,11 +41,11 @@ public struct SettingsHomeView: View {
                         button(icon: "ruler.fill", tint: Fotowork.Palette.primary, title: "Bảng cỡ ảnh",
                                value: "\((data?.visaDestinations.count ?? 0) + (data?.originPassports.count ?? 0)) quy chuẩn") { showSizes = true }
                         divider
-                        row(icon: "checkmark.seal.fill", tint: Fotowork.Palette.success, title: "Bản quy chuẩn ảnh", value: researched)
+                        row(icon: "checkmark.seal.fill", tint: Fotowork.Palette.success, title: "Ngày cập nhật", value: researchedVN)
                     }
                     card {
                         button(icon: "lock.shield.fill", tint: Fotowork.Palette.primary, title: "Quyền riêng tư",
-                               value: "Ảnh không rời máy") { showPrivacy = true }
+                               value: "Xử lý trên máy") { showPrivacy = true }
                         divider
                         button(icon: "trash.fill", tint: Fotowork.Palette.warning, title: "Xoá dữ liệu Bộ hồ sơ",
                                value: clearedNote ?? "") { confirmClear = true }
@@ -52,7 +58,7 @@ public struct SettingsHomeView: View {
                         divider
                         row(icon: "info.circle.fill", tint: Fotowork.Palette.textSecondary, title: "Phiên bản", value: version)
                     }
-                    Text("Kích thước ảnh theo hướng dẫn của cơ quan lãnh sự, cập nhật \(researched). Fotowork không đảm bảo 100% đạt chuẩn.")
+                    Text("Kích thước ảnh theo hướng dẫn của cơ quan lãnh sự, cập nhật \(researchedVN). Fotowork không đảm bảo 100% đạt chuẩn.")
                         .font(.bvp(.footnote))
                         .foregroundStyle(Fotowork.Palette.textSecondary)
                         .multilineTextAlignment(.center)
@@ -109,11 +115,14 @@ public struct SettingsHomeView: View {
                 .background(tint.opacity(0.12), in: .circle)
             Text(title)
                 .foregroundStyle(Fotowork.Palette.textPrimary)
-            Spacer()
+                .lineLimit(1)
+                .fixedSize()
+            Spacer(minLength: 8)
             Text(value)
                 .font(.bvp(.subheadline))
                 .foregroundStyle(Fotowork.Palette.textSecondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             if chevron {
                 Image(systemName: "chevron.right").font(.bvp(.footnote, .semibold)).foregroundStyle(Fotowork.Palette.textMuted)
             }

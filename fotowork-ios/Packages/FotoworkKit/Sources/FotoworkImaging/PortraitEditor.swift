@@ -31,14 +31,15 @@ public enum BackgroundOption: String, Sendable, CaseIterable, Identifiable {
 }
 
 public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
-    case keep, vestNavy, vestBlack
+    case keep, vestNavy, vestBlack, womanNavy
     public var id: String { rawValue }
 
     public var label: String {
         switch self {
         case .keep: "Giữ nguyên"
-        case .vestNavy: "Vest xanh"
-        case .vestBlack: "Vest đen"
+        case .vestNavy: "Nam xanh"
+        case .vestBlack: "Nam đen"
+        case .womanNavy: "Nữ xanh"
         }
     }
 
@@ -48,6 +49,7 @@ public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
         case .keep: nil
         case .vestNavy: "body-man-navy"
         case .vestBlack: "body-man-black"
+        case .womanNavy: "body-woman-navy"
         }
     }
 }
