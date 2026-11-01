@@ -155,7 +155,7 @@ public struct IDPhotoHomeView: View {
             homeTile(title: "4×6", icon: "book.closed", label: "Hộ chiếu", caption: "Nền trắng") {
                 router.push(.idCard4x6)
             }
-            homeTile(title: "Xin việc", icon: "briefcase.fill", label: "Ghép vest", caption: "40×60 mm") {
+            homeTile(title: "Xin việc", icon: "briefcase.fill", label: "Ghép vest", caption: CaptureTarget.jobApplication.sizeText) {
                 router.push(.jobApplication)
             }
             homeTile(title: "Visa", icon: "airplane", label: "\(model.visaDestinations.count) nước", caption: "Hàn, Nhật, Đài…") {

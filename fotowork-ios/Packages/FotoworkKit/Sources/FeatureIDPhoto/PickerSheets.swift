@@ -166,12 +166,13 @@ struct AllSizesSheet: View {
         Text(title)
             .font(.bvp(.footnote, .bold))
             .foregroundStyle(Fotowork.Palette.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 10)
     }
 
     private func row(_ target: CaptureTarget, leading: String) -> some View {
         Button { onPick(target) } label: {
-            PickerRow(title: target.title, detail: "\(target.sizeText) · \(target.subtitle)", leading: leading, isSelected: false)
+            PickerRow(title: target.title, detail: target.subtitle.contains("mm") ? target.subtitle : "\(target.sizeText) · \(target.subtitle)", leading: leading, isSelected: false)
         }
         .buttonStyle(.plain)
     }
