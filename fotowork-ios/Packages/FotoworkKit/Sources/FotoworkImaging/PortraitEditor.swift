@@ -31,25 +31,23 @@ public enum BackgroundOption: String, Sendable, CaseIterable, Identifiable {
 }
 
 public enum OutfitOption: String, Sendable, CaseIterable, Identifiable {
-    case keep, vestNavy, vestCharcoal, vestBlack
+    case keep, vestNavy, vestBlack
     public var id: String { rawValue }
 
     public var label: String {
         switch self {
         case .keep: "Giữ nguyên"
         case .vestNavy: "Vest xanh"
-        case .vestCharcoal: "Vest xám"
         case .vestBlack: "Vest đen"
         }
     }
 
-    /// Bundled garment template (`Resources/Garments/<name>.png`, cut from real photos offline).
+    /// Bundled body template (`Resources/Garments/<name>.png` + `.json`, generated offline).
     public var templateAsset: String? {
         switch self {
         case .keep: nil
-        case .vestNavy: "vest-navy"
-        case .vestCharcoal: "vest-charcoal"
-        case .vestBlack: "vest-black"
+        case .vestNavy: "body-man-navy"
+        case .vestBlack: "body-man-black"
         }
     }
 }
@@ -75,13 +73,13 @@ public struct PortraitRender: @unchecked Sendable {
 }
 
 /// On-device portrait editor: segments the subject, replaces the background with a
-/// solid colour, applies lighting, crops to the preset aspect, and optionally fits a
-/// real garment template (`GarmentFitter`, templates pre-made offline).
+/// solid colour, applies lighting, crops to the preset aspect, and optionally dresses the
+/// user in a suit by placing their head on a pre-made body (`HeadSwap`).
 public actor PortraitEditor {
     private let context = CIContext(options: [.useSoftwareRenderer: false])
     private var source: CIImage?
     private var mask: CIImage?
-    private var garments: [String: GarmentTemplate] = [:]
+    private var bodies: [String: BodyTemplate] = [:]
 
     public init() {}
 
@@ -97,45 +95,48 @@ public actor PortraitEditor {
     public func hasMask() -> Bool { mask != nil }
 
     public func render(settings: EditSettings, targetAspect: CGFloat) -> CGImage? {
+        guard let image = adjusted(settings) else { return nil }
+        let crop = Self.aspectCropRect(in: image.extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
+        return context.createCGImage(image.cropped(to: crop), from: crop)
+    }
+
+    /// `render(settings:targetAspect:)` plus the selected outfit. With an outfit the frame comes
+    /// from the body template (head placed on it), then zoom / offset are applied to that frame.
+    public func renderWithOutfit(settings: EditSettings, targetAspect: CGFloat) -> PortraitRender? {
+        guard let name = settings.outfit.templateAsset else {
+            return render(settings: settings, targetAspect: targetAspect).map { PortraitRender(image: $0, outfitFitted: true) }
+        }
+        if bodies[name] == nil { bodies[name] = BodyTemplate.bundled(name) }
+        let rgb = settings.background.rgb ?? (1, 1, 1)
+        let backdrop = CGColor(srgbRed: rgb.r, green: rgb.g, blue: rgb.b, alpha: 1)
+        if let body = bodies[name], let full = adjusted(settings),
+           let user = context.createCGImage(full, from: full.extent),
+           let dressed = HeadSwap.compose(user: user, body: body, aspect: Double(targetAspect), background: backdrop) {
+            let ci = CIImage(cgImage: dressed)
+            let crop = Self.aspectCropRect(in: ci.extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
+            if let out = context.createCGImage(ci.cropped(to: crop), from: crop) { return PortraitRender(image: out, outfitFitted: true) }
+        }
+        return render(settings: settings, targetAspect: targetAspect).map { PortraitRender(image: $0, outfitFitted: false) }
+    }
+
+    /// Background replacement + lighting on the full (uncropped) source.
+    private func adjusted(_ settings: EditSettings) -> CIImage? {
         guard var image = source else { return nil }
         let extent = image.extent
-
-        // 1. Background replacement (needs a subject mask).
         if let rgb = settings.background.rgb, let mask {
-            let background = CIImage(color: CIColor(red: rgb.r, green: rgb.g, blue: rgb.b))
-                .cropped(to: extent)
+            let background = CIImage(color: CIColor(red: rgb.r, green: rgb.g, blue: rgb.b)).cropped(to: extent)
             let blend = CIFilter.blendWithMask()
             blend.inputImage = image
             blend.backgroundImage = background
             blend.maskImage = mask
             image = blend.outputImage ?? image
         }
-
-        // 2. Lighting.
         let colorControls = CIFilter.colorControls()
         colorControls.inputImage = image
         colorControls.brightness = Float(settings.brightness)
         colorControls.contrast = Float(settings.contrast)
         colorControls.saturation = 1
-        image = colorControls.outputImage ?? image
-
-        // 3. Crop to the preset aspect (zoom + vertical offset).
-        let crop = Self.aspectCropRect(in: extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
-        image = image.cropped(to: crop)
-
-        return context.createCGImage(image, from: image.extent)
-    }
-
-    /// `render(settings:targetAspect:)` plus the selected outfit.
-    public func renderWithOutfit(settings: EditSettings, targetAspect: CGFloat) -> PortraitRender? {
-        guard let base = render(settings: settings, targetAspect: targetAspect) else { return nil }
-        guard let name = settings.outfit.templateAsset else { return PortraitRender(image: base, outfitFitted: true) }
-        if garments[name] == nil { garments[name] = GarmentTemplate.bundled(name) }
-        let backdrop = settings.background.rgb.map { CGColor(srgbRed: $0.r, green: $0.g, blue: $0.b, alpha: 1) }
-        if let garment = garments[name], let fitted = GarmentFitter.compose(base, garment: garment, background: backdrop) {
-            return PortraitRender(image: fitted, outfitFitted: true)
-        }
-        return PortraitRender(image: base, outfitFitted: false)
+        return colorControls.outputImage?.cropped(to: extent)
     }
 
     // MARK: Helpers

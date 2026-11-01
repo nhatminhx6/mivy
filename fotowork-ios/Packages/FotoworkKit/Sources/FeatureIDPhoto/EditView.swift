@@ -276,10 +276,13 @@ enum OutfitThumbnails {
     static func image(for option: OutfitOption) -> UIImage? {
         if let hit = cache[option] { return hit }
         guard let name = option.templateAsset,
-              let url = GarmentTemplate.bundleURL(name),
-              let full = UIImage(contentsOfFile: url.path) else { return nil }
-        let size = CGSize(width: 120, height: 120 * full.size.height / max(full.size.width, 1))
-        let thumb = UIGraphicsImageRenderer(size: size).image { _ in full.draw(in: CGRect(origin: .zero, size: size)) }
+              let url = BodyTemplate.bundleURL(name),
+              let full = UIImage(contentsOfFile: url.path)?.cgImage else { return nil }
+        // the suit only (the model's head is never shown): bottom 40% of the body image
+        let h = full.height * 2 / 5
+        guard let suit = full.cropping(to: CGRect(x: full.width / 8, y: full.height - h, width: full.width * 3 / 4, height: h)) else { return nil }
+        let size = CGSize(width: 120, height: 120 * Double(suit.height) / Double(max(suit.width, 1)))
+        let thumb = UIGraphicsImageRenderer(size: size).image { _ in UIImage(cgImage: suit).draw(in: CGRect(origin: .zero, size: size)) }
         cache[option] = thumb
         return thumb
     }
