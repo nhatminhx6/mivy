@@ -83,6 +83,9 @@ export const LOGO_INDUSTRIES: { id: string; name: string; icons: string[] }[] = 
   { id: 'travel', name: 'Du lịch', icons: ['plane', 'map', 'mountain', 'sun', 'waves', 'globe'] },
   { id: 'fitness', name: 'Thể thao / Sức khoẻ', icons: ['dumbbell', 'bike', 'health', 'flame', 'zap', 'heart'] },
   { id: 'home', name: 'Nhà cửa / Nội thất', icons: ['home', 'building', 'tree', 'sprout', 'bulb', 'wrench'] },
+  { id: 'flowers', name: 'Hoa & cây cảnh', icons: ['flower', 'leaf', 'tree', 'potted', 'heart', 'sun'] },
+  { id: 'edu', name: 'Giáo dục', icons: ['grad', 'book', 'pencil', 'backpack', 'bulb', 'star'] },
+  { id: 'auto', name: 'Xe & sửa xe', icons: ['car', 'moto', 'wrench', 'gear', 'star', 'map'] },
 ];
 
 export type LogoKind = 'word-dot' | 'word-caps' | 'mono-h' | 'mono-stack' | 'badge' | 'icon-h' | 'icon-stack' | 'illus';
@@ -148,7 +151,7 @@ export function generateIllusLogos(opts: { gus: Gu[]; industry: string; seed: nu
   const fonts = shuffle(LOGO_FONTS.filter((f) => !f.script && f.gu.some((g) => gus.includes(g))), r);
   const names = Array.from(new Set(gus.flatMap((g) => PALETTE_BY_GU[g])));
   const palettes = shuffle(LOGO_PALETTES.filter((p) => names.includes(p.name)), r);
-  return artsForIndustry(opts.industry).map((art, i) => ({
+  return shuffle(artsForIndustry(opts.industry), r).slice(0, 12).map((art, i) => ({ // ngành nhiều nhóm (ăn uống ~30 hình) → mỗi lần gợi ý 12, bấm đổi là ra bộ khác
     id: `illus-${opts.seed}-${i}`, kind: 'illus' as const, fontId: fonts[i % fonts.length].id, palette: palettes[i % palettes.length],
     icon: 'store', shape: 'circle' as const, accent: 'dot' as const, art,
   }));

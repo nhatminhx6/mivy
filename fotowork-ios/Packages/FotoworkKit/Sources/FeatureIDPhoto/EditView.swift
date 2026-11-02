@@ -23,18 +23,25 @@ public struct EditView: View {
     public var body: some View {
         ZStack {
             FotoworkBackground()
-            ScrollView {
-                VStack(spacing: 16) {
+            // the preview stays pinned so every slider change is visible
+            VStack(spacing: 12) {
+                VStack(spacing: 12) {
                     topBar
                     previewCard
-                    segmented
-                    controls
-                    PillButton("Tiếp tục", systemImage: "arrow.right") { showExport = true }
-                        .padding(.top, 4)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
-                .padding(.bottom, 28)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        segmented
+                        controls
+                        PillButton("Tiếp tục", systemImage: "arrow.right") { showExport = true }
+                            .padding(.top, 4)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 28)
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
@@ -175,8 +182,46 @@ public struct EditView: View {
                     .font(.bvp(.caption))
                     .foregroundStyle(Fotowork.Palette.warning)
             }
+            if model.settings.outfit != .keep && !model.outfitMissing {
+                outfitTuningCard.padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Manual touch-up of the automatic outfit fit: head size / height, neck colour.
+    private var outfitTuningCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Tinh chỉnh ghép áo").font(.bvp(.subheadline, .bold)).foregroundStyle(Fotowork.Palette.textPrimary)
+                Spacer()
+                if !model.settings.outfitTuning.isDefault {
+                    Button("Mặc định") { model.settings.outfitTuning = OutfitTuning() }
+                        .font(.bvp(.footnote, .semibold))
+                        .foregroundStyle(Fotowork.Palette.primary)
+                }
+            }
+            tuningRow("Cỡ đầu", "Nhỏ", "To", \.headScale, 0.85...1.15)
+            tuningRow("Vị trí đầu", "Thấp", "Cao", \.headLift, -0.1...0.1)
+            tuningRow("Độ sáng cổ", "Tối", "Sáng", \.neckBrightness, -0.2...0.2)
+            tuningRow("Màu da cổ", "Lạnh", "Ấm", \.neckWarmth, -1...1)
+        }
+        .padding(16)
+        .fotoCard()
+    }
+
+    private func tuningRow(_ title: String, _ low: String, _ high: String,
+                           _ key: WritableKeyPath<OutfitTuning, Double>, _ range: ClosedRange<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.bvp(.subheadline)).foregroundStyle(Fotowork.Palette.textSecondary)
+            HStack(spacing: 10) {
+                Text(low).font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textMuted).frame(width: 34, alignment: .leading)
+                Slider(value: Binding(get: { model.settings.outfitTuning[keyPath: key] },
+                                      set: { model.settings.outfitTuning[keyPath: key] = $0 }), in: range)
+                    .tint(Fotowork.Palette.primary)
+                Text(high).font(.bvp(.caption)).foregroundStyle(Fotowork.Palette.textMuted).frame(width: 34, alignment: .trailing)
+            }
+        }
     }
 
     private func outfitCell(_ option: OutfitOption) -> some View {

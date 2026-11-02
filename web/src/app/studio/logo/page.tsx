@@ -6,7 +6,7 @@ import { BrandKit } from '@/types';
 import { DEFAULT_BRAND, contactLine, loadBrand, saveBrand } from '@/lib/brand-presets';
 import { LogoMockups } from '@/components/LogoMockups';
 import { ICON_CATS, LOGO_ICONS } from '@/lib/logo-icons';
-import { LOGO_ART, LOGO_ART_CATS, artUrl, useLogoArt } from '@/lib/logo-art';
+import { LOGO_ART, LOGO_ART_CATS, artCatsForIndustry, artUrl, useLogoArt } from '@/lib/logo-art';
 import {
   ACCENTS, Gu, LOGO_FONTS, LOGO_GUS, LOGO_INDUSTRIES, LOGO_KINDS, LOGO_PALETTES, LogoSpec, LogoSvg, SHAPES,
   ICON_BGS, LOGO_GROUPS, LogoIconSvg, fontById, type IconBg, generateIllusLogos, generateLogos, logoFontCss, useLogoFonts, usesIcon, usesShape,
@@ -21,7 +21,6 @@ const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold bo
 
 export default function LogoMakerPage() {
   const ready = useLogoFonts();
-  useLogoArt(); // nạp sẵn hình minh hoạ (data URL) để xuất PNG/SVG tự chứa ảnh
   const [brand, setBrand] = useState<BrandKit>(DEFAULT_BRAND);
   const [name, setName] = useState('');
   const [slogan, setSlogan] = useState('');
@@ -44,6 +43,9 @@ export default function LogoMakerPage() {
 
   const logos = useMemo(() => [...generateIllusLogos({ gus, industry, seed }), ...generateLogos({ gus, industry, seed })], [gus, industry, seed]);
   const cur = sel || logos[0];
+  useLogoArt([...logos.filter((l) => l.kind === 'illus').map((l) => l.art || ''), cur.art || ''].filter(Boolean)); // nạp hình đang hiện thành data URL để xuất PNG/SVG tự chứa ảnh
+  const [artCat, setArtCat] = useState('');
+  const shownCat = artCat || cur.art?.split('/')[0] || artCatsForIndustry(industry)[0]?.id || LOGO_ART_CATS[0].id;
   const groups = LOGO_GROUPS.map((g) => ({ ...g, items: logos.filter((l) => g.kinds.includes(l.kind)) })).filter((g) => g.items.length);
   const upd = (patch: Partial<LogoSpec>) => setSel({ ...cur, ...patch });
   const shopName = name.trim() || 'Tên shop';
@@ -131,7 +133,7 @@ export default function LogoMakerPage() {
               <label className="block"><span className="mv-label block mb-1.5">Slogan (tuỳ chọn)</span>
                 <input className="mv-input" value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="VD: Ngon từ tâm" data-testid="logo-slogan" /></label>
               <label className="block"><span className="mv-label block mb-1.5">Ngành (có ngành có logo hình minh hoạ)</span>
-                <select className="mv-input" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+                <select className="mv-input" value={industry} onChange={(e) => { setIndustry(e.target.value); setArtCat(''); }}>
                   {LOGO_INDUSTRIES.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
                 </select></label>
               <div><span className="mv-label block mb-1.5">Gu (chọn nhiều, bỏ trống = tất cả)</span>
@@ -237,22 +239,21 @@ export default function LogoMakerPage() {
             {cur.kind === 'illus' && (
               <div>
                 <div className="mv-label mb-1.5">Hình minh hoạ</div>
-                <div className="space-y-2.5">
-                  {LOGO_ART_CATS.map((cat) => (
-                    <div key={cat.id}>
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">{cat.name}</div>
-                      <div className="grid grid-cols-5 gap-1.5" data-testid="logo-art-grid">
-                        {LOGO_ART.filter((a) => a.cat === cat.id).map((a) => (
-                          <button key={a.id} type="button" title={a.name} onClick={() => upd({ art: a.id })}
-                            className={`aspect-square rounded-lg bg-white p-1 border-2 ${cur.art === a.id ? 'border-indigo-400' : 'border-transparent hover:border-white/40'}`}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={artUrl(a.id)} alt={a.name} className="w-full h-full object-contain" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-[10px] text-slate-500">Đang thử 7 hình ngành thú cưng — các ngành khác sẽ thêm sau.</p>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-1" data-testid="logo-art-cats">
+                    {[...artCatsForIndustry(industry), ...LOGO_ART_CATS.filter((c) => !artCatsForIndustry(industry).includes(c))].map((c) => (
+                      <button key={c.id} type="button" onClick={() => setArtCat(c.id)} className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${shownCat === c.id ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-400 hover:text-white'}`}>{c.name}</button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5" data-testid="logo-art-grid">
+                    {LOGO_ART.filter((a) => a.cat === shownCat).map((a) => (
+                      <button key={a.id} type="button" title={a.name} onClick={() => upd({ art: a.id })}
+                        className={`aspect-square rounded-lg bg-white p-1 border-2 ${cur.art === a.id ? 'border-indigo-400' : 'border-transparent hover:border-white/40'}`}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={artUrl(a.id)} alt={a.name} loading="lazy" className="w-full h-full object-contain" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

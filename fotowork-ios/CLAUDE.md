@@ -38,16 +38,17 @@ Nằm trong repo `mivy` nhưng **độc lập hoàn toàn với web/ và back-en
 - `.xcodeproj` và thư mục build nằm trong `.gitignore`. Commit `project.yml`, source, `presets.json`.
 
 ## Build & chạy
+- **CHỈ dùng sim iPhone Air** (`5FE5370F-C8BF-4731-9687-F141CDE5163E`). **TUYỆT ĐỐI KHÔNG build/test/cài/chạy app này trên sim iPhone 17** (anh dùng cho việc khác). Ảnh test nằm trong thư viện Ảnh của iPhone Air.
 ```bash
 cd fotowork-ios && xcodegen generate
 xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone Air' \
   -derivedDataPath .build-xcode build
 ```
 - Test (Swift Testing, target `FotoworkTests` ở `Tests/`, chạy trên simulator):
   ```bash
   cd fotowork-ios && xcodebuild test -project Fotowork.xcodeproj -scheme Fotowork \
-    -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath .build-xcode
+    -destination 'platform=iOS Simulator,name=iPhone Air' -derivedDataPath .build-xcode
   ```
   Test headless phần logic (FotoworkCore + FotoworkImaging): preset, model, CaptureTarget, crop math, PhotoExporter, FaceChecker (ảnh synthetic), StandardChecklist. KHÔNG `swift test` được vì các Feature target import UIKit/VisionKit (iOS-only).
 
@@ -65,8 +66,9 @@ xcodebuild -project Fotowork.xcodeproj -scheme Fotowork \
 Trang chủ ✅ (menu = bảng tất cả cỡ ảnh, Công cụ nhanh mở thẳng màn ở tab Giấy tờ/Avatar) → Chụp ✅ → Chỉnh ✅ (Nền & áo: ghép vest bằng HeadSwap) → Xuất ✅ (File in 10×15 / File số / In ngay AirPrint) → Giấy tờ ✅ (Scan→PDF, CCCD→A4, Nén, Ký tên PencilKit, Bộ hồ sơ SwiftData, tìm kiếm) → Avatar ✅ → Cài đặt ✅ (bảng cỡ ảnh, quyền riêng tư, xoá dữ liệu bộ hồ sơ, chia sẻ app). **v1 đủ các màn chính.**
 
 ### Việc còn treo
-- **Ghép vest = GHÉP ĐẦU lên thân mẫu (2026-11-01, anh chốt hướng này)**. Cách cũ (đặt áo vest PNG + tự vẽ cổ) bị anh chê "cổ giả" → đã bỏ. Giờ: thân người mẫu mặc vest **gen sẵn offline** bằng Z-Image (ComfyUI local `back-end/.comfyui`, prompt: ảnh thẻ chính diện, lộ cổ, nền trắng) → cắt nền + đo `chin/cx/jawW` (script prep) → lưu `FotoworkImaging/Resources/Garments/body-<giới>-<màu>.png/.json`. Trên máy: `HeadSwap.compose` đặt đầu người dùng (KHÔNG chỉnh mặt) lên thân mẫu theo bề rộng hàm, chỉ giữ cổ + quần áo của mẫu, chỉnh màu da cổ (YCbCr) theo da ngay trên hàm người dùng. Chỉ đạt với ảnh **chính diện, đầu thẳng**. Thêm mẫu: gen ảnh → chạy prep → thêm case `OutfitOption`.
-- **Simulator không chạy model Vision** ("Could not create inference context"): landmark ra contour rác, không có mask người. Code tự fallback: hàm = elip từ face box + CIDetector; tách người = key màu nền quanh đầu. Chất lượng thật xem trên máy thật.
+- **Ghép vest = GHÉP ĐẦU lên thân mẫu (2026-11-01, anh chốt hướng này)**. Cách cũ (đặt áo vest PNG + tự vẽ cổ) bị anh chê "cổ giả" → đã bỏ. Giờ: thân người mẫu mặc vest **gen sẵn offline** bằng Z-Image (ComfyUI local `back-end/.comfyui`, prompt: ảnh thẻ chính diện, lộ cổ, nền trắng) → cắt nền + đo `chin/cx/jawW` (script prep) → lưu `FotoworkImaging/Resources/Garments/body-<giới>-<màu>.png/.json`. Trên máy: `HeadSwap.compose` đặt đầu người dùng (KHÔNG chỉnh mặt) lên thân mẫu theo bề rộng hàm, chỉ giữ cổ + quần áo của mẫu, chỉnh màu da cổ (YCbCr): sắc da lấy ở má, độ sáng lấy từ cổ thật của người dùng (nếu lộ dưới cằm, không tối hơn mặt quá 14%). Cỡ đầu: theo bề rộng hàm, kéo về tỉ lệ cổ/hàm thật của người dùng (±12%). Người dùng tự tinh chỉnh được (card "Tinh chỉnh ghép áo", `OutfitTuning`): cỡ đầu, vị trí đầu, độ sáng cổ, màu da cổ — mặt KHÔNG bị chỉnh. Mép cằm mờ dần vào cổ theo đúng đường hàm (chỉ trong bề rộng cổ); cổ được thêm hạt nhiễu bằng độ nhiễu da mặt (đo ở má, quy theo tỉ lệ đầu). Chỉ đạt với ảnh **chính diện, đầu thẳng**. Thêm mẫu: gen ảnh → chạy prep → thêm case `OutfitOption`.
+- **Simulator không chạy model Vision** ("Could not create inference context"): landmark ra contour rác, không có mask người. Trên sim code KHÔNG gọi Vision (`FaceGeometry.useVision = false`): hàm = khuôn hàm trung bình (đo từ Vision) co giãn theo mắt/miệng CIDetector + dò mép bóng dưới cằm; tách người = loang nền từ mép (màu trôi chậm) + lọc cây xanh / tường lọt giữa tóc–cổ. Thử trên Mac: bật/tắt `useVision` để so 2 chế độ. Chất lượng thật xem trên máy thật.
+- Chỉnh ảnh: chọn màu nền mà chưa tách được người → checklist KHÔNG tính "nền đồng màu" + báo "Chưa thay được nền cho ảnh này" (trước đây báo 10/10 sai).
 - **Icon app**: vẽ bằng code `Tools/app-icon/make_icon.py` (navy + thẻ ảnh người mặc vest). Muốn icon xịn hơn → gen offline rồi anh duyệt.
 - **Thân mẫu vest hiện có**: nam xanh, nam đen, nữ xanh, nữ đen (`Resources/Garments/body-*`). Tóc vàng/màu sáng chưa giữ được phần tóc dài dưới cằm.
 - **Gói HD (StoreKit)**: product id `com.mivy.fotowork.hd` là placeholder — cần cấu hình App Store Connect / file `.storekit` để test mua.

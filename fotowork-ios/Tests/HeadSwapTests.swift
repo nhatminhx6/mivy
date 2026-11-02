@@ -45,6 +45,31 @@ import Testing
         #expect(tl[0] > 240 && tl[1] > 240 && tl[2] > 240)
     }
 
+    @Test func tuningChangesNeckAndHead() throws {
+        let photo = try #require(Self.fixture("portrait-frontal"))
+        let body = try #require(BodyTemplate.bundled("body-man-navy"))
+        let white = CGColor(gray: 1, alpha: 1)
+        let base = try #require(HeadSwap.compose(user: photo, body: body, aspect: 2.0 / 3.0, background: white))
+        var t = OutfitTuning()
+        t.neckBrightness = 0.2
+        let brighter = try #require(HeadSwap.compose(user: photo, body: body, aspect: 2.0 / 3.0, background: white, tuning: t))
+        // neck centre, between the chin and the collar
+        let a = RGBABitmap(base), b = RGBABitmap(brighter)
+        let x = a.w / 2, y = Int(Double(a.h) * (HeadSwap.chinFraction + 0.05))
+        func lum(_ p: UnsafeMutablePointer<UInt8>) -> Int { Int(p[0]) + Int(p[1]) + Int(p[2]) }
+        #expect(lum(b.at(x, y)) > lum(a.at(x, y)) + 15)
+
+        t = OutfitTuning(); t.headScale = 0.85
+        let smaller = try #require(HeadSwap.compose(user: photo, body: body, aspect: 2.0 / 3.0, background: white, tuning: t))
+        // a smaller head leaves more backdrop at the top centre
+        func backdropRows(_ img: CGImage) -> Int {
+            let px = RGBABitmap(img); var y = 0
+            while y < px.h, lum(px.at(px.w / 2, y)) > 735 { y += 1 }
+            return y
+        }
+        #expect(backdropRows(smaller) > backdropRows(base) + 5)
+    }
+
     @Test func noFaceReturnsNil() throws {
         let body = try #require(BodyTemplate.bundled("body-man-black"))
         #expect(HeadSwap.compose(user: Sample.solidImage(300, 450), body: body, aspect: 2.0 / 3.0, background: CGColor(gray: 1, alpha: 1)) == nil)

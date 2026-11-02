@@ -63,6 +63,7 @@ public struct EditSettings: Sendable, Equatable {
     public var zoom: Double = 1.0            // 1.0…1.6
     public var offsetY: Double = 0           // -0.2…0.2 (fraction of height; + moves up)
     public var outfit: OutfitOption = .keep
+    public var outfitTuning = OutfitTuning()
 
     public init() {}
 }
@@ -115,7 +116,7 @@ public actor PortraitEditor {
         let backdrop = CGColor(srgbRed: rgb.r, green: rgb.g, blue: rgb.b, alpha: 1)
         if let body = bodies[name], let full = adjusted(settings),
            let user = context.createCGImage(full, from: full.extent),
-           let dressed = HeadSwap.compose(user: user, body: body, aspect: Double(targetAspect), background: backdrop) {
+           let dressed = HeadSwap.compose(user: user, body: body, aspect: Double(targetAspect), background: backdrop, tuning: settings.outfitTuning) {
             let ci = CIImage(cgImage: dressed)
             let crop = Self.aspectCropRect(in: ci.extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
             if let out = context.createCGImage(ci.cropped(to: crop), from: crop) { return PortraitRender(image: out, outfitFitted: true) }

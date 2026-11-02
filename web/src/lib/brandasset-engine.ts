@@ -691,7 +691,14 @@ export function drawWordmark(canvas: HTMLCanvasElement, o: BrandAssetOpts) {
 
 // ===================== Nền theo style (kho cảnh gen sẵn offline, /public/scenes) =====================
 // Ảnh nền đã chừa nửa trái trống → code chỉ đặt chữ/logo, kiểu chữ ăn theo style của nền.
-type SceneFx = 'clay' | 'flat' | 'photo' | 'riso' | 'water' | 'memphis' | 'paper' | 'night';
+type SceneFx = 'clay' | 'flat' | 'photo' | 'riso' | 'water' | 'memphis' | 'paper' | 'night'
+  | 'folk' | 'ink' | 'pixel' | 'neon' | 'pop' | 'felt' | 'chalk' | 'retro';
+const HAND = 'Caveat, cursive';
+const fxFont = (fx: SceneFx, head: string) => (fx === 'chalk' ? HAND : ['photo', 'water', 'folk', 'ink'].includes(fx) ? SERIF : head);
+const fxWeight = (fx: SceneFx) => (['photo', 'water', 'ink', 'chalk'].includes(fx) ? '700' : fx === 'night' || fx === 'folk' ? '800' : '900');
+const fxUpper = (fx: SceneFx) => ['riso', 'memphis', 'pixel', 'pop'].includes(fx);
+const fxBlock = (fx: SceneFx) => fx === 'memphis' || fx === 'pop' || fx === 'pixel'; // nút khối + bóng đặc
+const fxGlow = (fx: SceneFx) => fx === 'night' || fx === 'neon';
 export const COVER_SCENES: { id: string; label: string; src: string; fx: SceneFx }[] = [
   { id: 'bia-1-3d', label: '3D đất sét', src: '/scenes/bia-1-3d.jpg', fx: 'clay' },
   { id: 'bia-2-phang', label: 'Vẽ phẳng', src: '/scenes/bia-2-phang.jpg', fx: 'flat' },
@@ -701,6 +708,14 @@ export const COVER_SCENES: { id: string; label: string; src: string; fx: SceneFx
   { id: 'bia-6-memphis', label: 'Memphis', src: '/scenes/bia-6-memphis.jpg', fx: 'memphis' },
   { id: 'bia-7-cat-giay', label: 'Cắt giấy', src: '/scenes/bia-7-cat-giay.jpg', fx: 'paper' },
   { id: 'bia-8-dem-mua', label: 'Đêm mưa', src: '/scenes/bia-8-dem-mua.jpg', fx: 'night' },
+  { id: 'bia-9-dong-ho', label: 'Tranh Đông Hồ', src: '/scenes/bia-9-dong-ho.jpg', fx: 'folk' },
+  { id: 'bia-10-thuy-mac', label: 'Thuỷ mặc', src: '/scenes/bia-10-thuy-mac.jpg', fx: 'ink' },
+  { id: 'bia-11-pixel', label: 'Pixel', src: '/scenes/bia-11-pixel.jpg', fx: 'pixel' },
+  { id: 'bia-12-neon', label: 'Neon', src: '/scenes/bia-12-neon.jpg', fx: 'neon' },
+  { id: 'bia-13-pop-art', label: 'Pop-art', src: '/scenes/bia-13-pop-art.jpg', fx: 'pop' },
+  { id: 'bia-14-len-ni', label: 'Len nỉ', src: '/scenes/bia-14-len-ni.jpg', fx: 'felt' },
+  { id: 'bia-15-bang-phan', label: 'Bảng phấn', src: '/scenes/bia-15-bang-phan.jpg', fx: 'chalk' },
+  { id: 'bia-16-retro-70s', label: 'Retro 70s', src: '/scenes/bia-16-retro-70s.jpg', fx: 'retro' },
 ];
 
 // đo nền 1 lần/ảnh: độ sáng vùng chữ (trái) + màu rực nhất bên phải (làm màu nhấn dự phòng)
@@ -729,26 +744,45 @@ function drawSceneImg(ctx: CanvasRenderingContext2D, img: HTMLImageElement, W: n
 }
 // tiêu đề theo style nền
 function fxHeadline(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fs: number, fx: SceneFx, ink: string, acc: string, font: string) {
-  const w = fx === 'photo' || fx === 'water' ? '700' : fx === 'night' ? '800' : '900';
   ctx.save(); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-  ctx.font = `${fx === 'water' ? 'italic ' : ''}${w} ${fs}px ${font}`;
+  ctx.font = `${fx === 'water' ? 'italic ' : ''}${fxWeight(fx)} ${fs}px ${font}`;
   if (fx === 'riso') { ctx.globalAlpha = 0.85; ctx.fillStyle = acc; ctx.fillText(text, x + fs * 0.045, y + fs * 0.035); ctx.globalAlpha = 1; }
+  if (fx === 'folk') { ctx.globalAlpha = 0.8; ctx.fillStyle = '#b3261e'; ctx.fillText(text, x + fs * 0.035, y + fs * 0.03); ctx.globalAlpha = 1; } // lệch bản in khắc gỗ
   if (fx === 'memphis') { ctx.fillStyle = lum(ink) > 0.5 ? '#111111' : acc; ctx.fillText(text, x + fs * 0.06, y + fs * 0.06); }
-  if (fx === 'clay') { ctx.shadowColor = 'rgba(0,0,0,0.28)'; ctx.shadowBlur = fs * 0.14; ctx.shadowOffsetY = fs * 0.06; }
+  if (fx === 'pixel') { ctx.fillStyle = lum(ink) > 0.5 ? '#111111' : acc; for (let k = 3; k >= 1; k--) ctx.fillText(text, x + fs * 0.03 * k, y + fs * 0.03 * k); }
+  if (fx === 'retro') ['#7a3f1d', '#e07a2f', '#e3a72f'].forEach((c, k) => { ctx.fillStyle = c; ctx.fillText(text, x + fs * 0.05 * (3 - k), y + fs * 0.05 * (3 - k)); });
+  if (fx === 'pop') {
+    ctx.lineJoin = 'round'; ctx.fillStyle = '#111111'; ctx.fillText(text, x + fs * 0.07, y + fs * 0.07);
+    ctx.strokeStyle = '#111111'; ctx.lineWidth = fs * 0.12; ctx.strokeText(text, x, y);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(text, x, y); ctx.restore(); return;
+  }
+  if (fx === 'clay' || fx === 'felt') { ctx.shadowColor = 'rgba(0,0,0,0.28)'; ctx.shadowBlur = fs * 0.14; ctx.shadowOffsetY = fs * 0.06; }
   if (fx === 'paper') { ctx.shadowColor = 'rgba(0,0,0,0.32)'; ctx.shadowBlur = fs * 0.05; ctx.shadowOffsetX = fs * 0.02; ctx.shadowOffsetY = fs * 0.04; }
   if (fx === 'photo') { ctx.shadowColor = lum(ink) > 0.5 ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.25)'; ctx.shadowBlur = fs * 0.12; }
   if (fx === 'night') { ctx.shadowColor = acc; ctx.shadowBlur = fs * 0.3; }
+  if (fx === 'neon') { ctx.shadowColor = acc; ctx.shadowBlur = fs * 0.45; ctx.fillStyle = acc; ctx.fillText(text, x, y); ctx.shadowBlur = fs * 0.15; }
+  if (fx === 'chalk') { ctx.globalAlpha = 0.35; ctx.fillStyle = ink; ctx.fillText(text, x + fs * 0.012, y + fs * 0.01); ctx.globalAlpha = 0.92; }
   ctx.fillStyle = ink; ctx.fillText(text, x, y);
+  if (fx === 'ink') { // triện đỏ cạnh tên như tranh thuỷ mặc
+    ctx.globalAlpha = 0.9; const tw = ctx.measureText(text).width, sz = fs * 0.5, sx = x + tw + fs * 0.25, sy = y + fs * 0.2;
+    ctx.fillStyle = '#b3261e'; ctx.beginPath(); ctx.roundRect(sx, sy, sz, sz, sz * 0.12); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = sz * 0.07; ctx.strokeRect(sx + sz * 0.2, sy + sz * 0.2, sz * 0.6, sz * 0.6);
+  }
   ctx.restore();
 }
 function fxButton(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, fs: number, fx: SceneFx, acc: string, onAcc: string, font: string): number {
-  if (fx === 'memphis') {
+  if (fxBlock(fx)) {
     ctx.save(); ctx.font = `800 ${fs}px ${font}`; const w = ctx.measureText(text).width + fs * 2, h = fs * 2.1;
     ctx.fillStyle = '#111111'; ctx.fillRect(x + fs * 0.25, y + fs * 0.25, w, h);
-    ctx.fillStyle = acc; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111111'; ctx.lineWidth = Math.max(2, fs * 0.1); ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = acc; ctx.fillRect(x, y, w, h); if (fx !== 'pixel') { ctx.strokeStyle = '#111111'; ctx.lineWidth = Math.max(2, fs * 0.1); ctx.strokeRect(x, y, w, h); }
     ctx.fillStyle = onAcc; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + w / 2, y + h / 2 + 1); ctx.restore(); return w;
   }
-  if (fx === 'photo' || fx === 'water' || fx === 'night') return pill(ctx, text, x, y, fs, acc, acc, font, true);
+  if (fx === 'folk') { // con dấu vuông đỏ son
+    ctx.save(); ctx.font = `800 ${fs}px ${font}`; const w = ctx.measureText(text).width + fs * 2, h = fs * 2.1;
+    ctx.fillStyle = acc; ctx.fillRect(x, y, w, h); ctx.fillStyle = onAcc; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x + w / 2, y + h / 2 + 1); ctx.restore(); return w;
+  }
+  if (fxGlow(fx)) { ctx.save(); ctx.shadowColor = acc; ctx.shadowBlur = fs * 0.8; const w = pill(ctx, text, x, y, fs, acc, acc, font, true); ctx.restore(); return w; }
+  if (['photo', 'water', 'ink', 'chalk'].includes(fx)) return pill(ctx, text, x, y, fs, acc, acc, font, true);
   return pill(ctx, text, x, y, fs, acc, onAcc, font);
 }
 
@@ -762,14 +796,14 @@ function coverScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number,
   const A = o.colorAccent || '#e11d48';
   const acc = Math.abs(lum(A) - bgL) > 0.3 ? A : Math.abs(lum(info.pop) - bgL) > 0.25 ? info.pop : ink;
   const onAcc = lum(acc) > 0.6 ? '#141414' : '#ffffff';
-  const HF = sc.fx === 'photo' || sc.fx === 'water' ? SERIF : HEAD;
-  const up = sc.fx === 'riso' || sc.fx === 'memphis';
+  const HF = fxFont(sc.fx, HEAD);
+  const up = fxUpper(sc.fx);
   const name = up ? (o.brandName || 'BRAND').toUpperCase() : (o.brandName || 'Brand');
   const cta = (o.cta || '').toUpperCase(); const badge = (o.badge || '').toUpperCase();
   const short = H < W * 0.32;
   const pad = short ? H * 0.14 : H * 0.11;
   const zoneW = W * (short ? 0.4 : 0.44);
-  const wt = sc.fx === 'photo' || sc.fx === 'water' ? '700' : '900';
+  const wt = fxWeight(sc.fx);
   ctx.textBaseline = 'top'; ctx.textAlign = 'left';
 
   if (short) {
@@ -782,8 +816,8 @@ function coverScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number,
     const tot = nf * 1.08 + (sf ? sf * 1.5 : 0) + (hasBtn ? bf * 2.1 + H * 0.05 : 0);
     let y = (H - tot) / 2;
     fxHeadline(ctx, name, x, y, nf, sc.fx, ink, acc, HF); y += nf * 1.08;
-    if (sf) { ctx.fillStyle = sub; ctx.font = `600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.5; }
-    if (hasBtn) { y += H * 0.05; let bx = x; if (badge) bx += fxButton(ctx, badge, bx, y, bf, sc.fx, acc, onAcc, HEAD) + bf * 0.6; if (cta) fxButton(ctx, cta, bx, y, bf, sc.fx === 'memphis' ? 'memphis' : 'photo', acc, onAcc, HEAD); }
+    if (sf) { ctx.fillStyle = sub; ctx.font = sc.fx === 'chalk' ? `700 ${sf * 1.25}px ${HAND}` : `600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.5; }
+    if (hasBtn) { y += H * 0.05; let bx = x; if (badge) bx += fxButton(ctx, badge, bx, y, bf, sc.fx, acc, onAcc, HEAD) + bf * 0.6; if (cta) fxButton(ctx, cta, bx, y, bf, fxBlock(sc.fx) || fxGlow(sc.fx) ? sc.fx : 'photo', acc, onAcc, HEAD); }
     return;
   }
 
@@ -799,7 +833,7 @@ function coverScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number,
   let y = Math.max(pad * 0.6, (H - tot) / 2); const x = pad;
   if (lg) { drawLogoOrInitial(ctx, o, x, y, lg, ink, HEAD); y += lg + gap; }
   fxHeadline(ctx, name, x, y, nf, sc.fx, ink, acc, HF); y += nf * 1.1;
-  if (sf) { ctx.fillStyle = sub; ctx.font = `${sc.fx === 'water' ? 'italic ' : ''}600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.6; }
+  if (sf) { ctx.fillStyle = sub; ctx.font = sc.fx === 'chalk' ? `700 ${sf * 1.25}px ${HAND}` : `${sc.fx === 'water' ? 'italic ' : ''}600 ${sf}px ${BODY}`; ctx.fillText(o.slogan!, x, y); y += sf * 1.6; }
   if (usps.length) {
     let cx = x;
     for (const u of usps) {
@@ -812,7 +846,7 @@ function coverScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number,
   if (hasBtn) {
     y += gap * 0.4; let bx = x;
     if (badge) bx += fxButton(ctx, badge, bx, y, bf, sc.fx, acc, onAcc, HEAD) + bf * 0.7;
-    if (cta) fxButton(ctx, cta, bx, y, bf, badge ? (sc.fx === 'memphis' ? 'memphis' : 'photo') : sc.fx, acc, onAcc, HEAD);
+    if (cta) fxButton(ctx, cta, bx, y, bf, badge && !fxBlock(sc.fx) && !fxGlow(sc.fx) ? 'photo' : sc.fx, acc, onAcc, HEAD);
     y += bf * 2.1;
   }
   if (cf) { y += gap * 0.8; ctx.fillStyle = sub; ctx.font = `600 ${cf}px ${BODY}`; ctx.fillText(o.contact!, x, y); }
@@ -828,11 +862,11 @@ function avatarScene(ctx: CanvasRenderingContext2D, o: BrandAssetOpts, W: number
   const acc = Math.abs(lum(A) - lum(disc)) > 0.3 ? A : info.pop;
   const cx = W / 2, cy = H / 2, r = W * 0.3;
   ctx.save();
-  if (sc.fx === 'memphis') { ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(cx + r * 0.08, cy + r * 0.08, r, 0, Math.PI * 2); ctx.fill(); }
-  else { ctx.shadowColor = sc.fx === 'night' ? acc : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = r * 0.25; ctx.shadowOffsetY = sc.fx === 'night' ? 0 : r * 0.06; }
+  if (fxBlock(sc.fx)) { ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(cx + r * 0.08, cy + r * 0.08, r, 0, Math.PI * 2); ctx.fill(); }
+  else { ctx.shadowColor = fxGlow(sc.fx) ? acc : 'rgba(0,0,0,0.35)'; ctx.shadowBlur = r * 0.25; ctx.shadowOffsetY = fxGlow(sc.fx) ? 0 : r * 0.06; }
   ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   ctx.save(); ctx.strokeStyle = acc; ctx.lineWidth = r * 0.06; ctx.beginPath(); ctx.arc(cx, cy, r * 0.9, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
-  drawLogoOrInitial(ctx, o, cx - r * 0.55, cy - r * 0.55, r * 1.1, ink, sc.fx === 'photo' || sc.fx === 'water' ? SERIF : HEAD);
+  drawLogoOrInitial(ctx, o, cx - r * 0.55, cy - r * 0.55, r * 1.1, ink, fxFont(sc.fx, HEAD) === HAND ? HEAD : fxFont(sc.fx, HEAD));
 }
 
 export function drawBrandAsset(canvas: HTMLCanvasElement, o: BrandAssetOpts) {

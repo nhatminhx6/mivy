@@ -11,7 +11,7 @@ const KINDS = ['Chữ + điểm nhấn', 'Chữ in hoa', 'Monogram ngang', 'Mono
 async function checkLogos(page: Page, selector: string, tag: string) {
   const n = await page.locator(selector).count();
   expect(n, `${tag}: không thấy logo nào để kiểm`).toBeGreaterThan(0);
-  if (selector.includes("logo-grid")) expect(n, `${tag}: lưới phải đủ 24`).toBe(24);
+  if (selector.includes("logo-grid")) expect(n, `${tag}: lưới phải đủ 24 logo chữ/icon + hình minh hoạ`).toBeGreaterThanOrEqual(24);
   const bad = await page.evaluate((sel) => {
     const issues: string[] = [];
     // Hộp NÉT MỰC thật của chữ (canvas actualBoundingBox) — getBBox() của SVG tính cả ô chữ (ascent/descent font)
@@ -32,7 +32,7 @@ async function checkLogos(page: Page, selector: string, tag: string) {
     const box = (el: SVGGraphicsElement) => (el.tagName === 'text' && !el.querySelector('textPath') ? ink(el as SVGTextElement) : el.getBBox());
     document.querySelectorAll(sel).forEach((svg, i) => {
       const s = svg as SVGSVGElement;
-      if (s.outerHTML.includes('NaN')) issues.push(`#${i} có NaN`);
+      if (s.outerHTML.replace(/data:[^"]+/g, '').includes('NaN')) issues.push(`#${i} có NaN`);
       const vb = s.viewBox.baseVal;
       const texts = (Array.from(s.querySelectorAll('text')) as SVGTextElement[]).filter((t) => !t.querySelector('textPath'));
       for (const t of texts) {
@@ -63,7 +63,7 @@ test('Tạo logo: lưới sạch, tinh chỉnh, xuất & lưu', async ({ page })
   fs.mkdirSync(OUT, { recursive: true });
   await page.goto('/studio/logo');
   const tiles = page.getByTestId('logo-tile');
-  await expect(tiles).toHaveCount(24, { timeout: 60_000 });
+  await expect(tiles.nth(23)).toBeVisible({ timeout: 60_000 });
 
   // font tiếng Việt load đủ
   const missing = await page.evaluate(() => {
@@ -123,6 +123,50 @@ test('Tạo logo: lưới sạch, tinh chỉnh, xuất & lưu', async ({ page })
   expect(String(kit.logo)).toMatch(/^data:image\/png/);
 });
 
+// Kho hình minh hoạ: mọi file tải được; ngành nào cũng ra logo minh hoạ, xuất PNG có hình (data URL, không link ngoài).
+test('Logo minh hoạ: đủ kho, mọi ngành ra hình, xuất PNG có hình', async ({ page }) => {
+  test.setTimeout(300_000);
+  fs.mkdirSync(OUT, { recursive: true });
+  await page.goto('/studio/logo');
+  await expect(page.getByTestId('logo-tile').nth(23)).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId('logo-name').fill('Nhà Mây');
+  const industries = await page.locator('select.mv-input').first().locator('option').evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+  for (const ind of industries) {
+    await page.locator('select.mv-input').first().selectOption(ind);
+    const illus = page.locator('[data-testid="logo-grid"] svg[data-logo-kind="illus"]');
+    await expect(illus.first(), `ngành ${ind}: không có logo minh hoạ`).toBeVisible({ timeout: 30_000 });
+    await expect.poll(async () => illus.evaluateAll((ss) => ss.every((s) => (s.querySelector('image')?.getAttribute('href') || '').startsWith('data:image/'))),
+      { message: `ngành ${ind}: hình chưa thành data URL`, timeout: 30_000 }).toBe(true);
+    const broken = await illus.evaluateAll((ss) => Promise.all(ss.map((s) => new Promise<boolean>((res) => {
+      const im = new Image(); im.onload = () => res(im.naturalWidth < 64); im.onerror = () => res(true); im.src = s.querySelector('image')!.getAttribute('href')!;
+    }))).then((r) => r.filter(Boolean).length));
+    expect(broken, `ngành ${ind}: hình hỏng`).toBe(0);
+    await page.getByTestId('logo-grid').screenshot({ path: path.join(OUT, `illus-${ind}.png`) });
+  }
+  // mọi nhóm trong ô chọn hình: file tải được
+  await page.locator('[data-testid="logo-grid"] svg[data-logo-kind="illus"]').first().click();
+  const cats = page.getByTestId('logo-art-cats').locator('button');
+  const nc = await cats.count();
+  expect(nc).toBe(15);
+  let total = 0;
+  for (let i = 0; i < nc; i++) {
+    await cats.nth(i).click();
+    const imgs = page.getByTestId('logo-art-grid').locator('img');
+    await expect.poll(() => imgs.evaluateAll((xs) => xs.every((x) => (x as HTMLImageElement).complete && (x as HTMLImageElement).naturalWidth > 64)), { timeout: 30_000 }).toBe(true);
+    total += await imgs.count();
+  }
+  expect(total).toBeGreaterThanOrEqual(150);
+  // chọn 1 hình ở nhóm khác rồi xuất PNG
+  await cats.nth(nc - 1).click();
+  await page.getByTestId('logo-art-grid').locator('button').nth(3).click();
+  await expect.poll(() => page.locator('[data-testid="logo-preview"] svg image').first().getAttribute('href').then((h) => (h || '').startsWith('data:')), { timeout: 30_000 }).toBe(true);
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.getByRole('button', { name: /PNG nền trong/ }).click()]);
+  const p = path.join(OUT, 'illus-export.png');
+  await dl.saveAs(p);
+  expect(fs.statSync(p).size, 'PNG xuất phải có hình (đủ nặng)').toBeGreaterThan(80_000);
+  await page.getByTestId('logo-preview').screenshot({ path: path.join(OUT, 'illus-preview.png') });
+});
+
 // Vùng in trên ảnh mockup thật (khớp PHOTO_PRINT trong merch-engine — đổi bên đó thì đổi ở đây)
 const PRINT: Record<string, [number, number, number, number]> = {
   tshirt: [417, 185, 250, 220], mug: [500, 430, 310, 260], tumbler: [450, 445, 190, 230],
@@ -133,7 +177,7 @@ test('Logo trên đồ thật: 9 mockup có logo, không lòi khung, tải lẻ 
   test.setTimeout(300_000);
   fs.mkdirSync(OUT, { recursive: true });
   await page.goto('/studio/logo');
-  await expect(page.getByTestId('logo-tile')).toHaveCount(24, { timeout: 60_000 });
+  await expect(page.getByTestId('logo-tile').nth(23)).toBeVisible({ timeout: 60_000 });
   await page.getByTestId('logo-name').fill('Bánh Mì Cô Ba');
   await page.getByTestId('logo-slogan').fill('Ngon từ tâm');
   await page.getByTestId('logo-tile').nth(3).click();
