@@ -189,6 +189,8 @@ public enum HeadSwap {
             }
         }
         let userNeck = uY.isEmpty ? nil : neckSample(ub, cx: uCX, chin: uChin, jaw: uJaw, faceCb: median(uCb), faceCr: median(uCr), ycc: ycc)
+        // enough of the user's own neck shows to keep it (its real shading under the chin)
+        let realNeck = userNeck.flatMap { n in n.rows.count >= 3 && Double(n.rows[n.rows.count - 1].y) - uChin > 0.2 * uJaw ? n : nil }
         var nY = [Double]()
         for (y, (l, r)) in runs { for x in stride(from: l, through: r, by: 2) { nY.append(ycc(bb.clamped(x, y)).0) } }
         if !uY.isEmpty, !nY.isEmpty {
@@ -196,7 +198,9 @@ public enum HeadSwap {
             var refCb = median(uCb), refCr = median(uCr), target = faceY * 0.9, refSpread = spread(uY)
             if let n = userNeck {
                 target = max(median(n.Y), faceY * 0.86)
-                refCb = 0.7 * refCb + 0.3 * median(n.Cb); refCr = 0.7 * refCr + 0.3 * median(n.Cr)
+                // the kept real neck fades into the model's: match it rather than the cheeks
+                let w = realNeck == nil ? 0.3 : 0.75
+                refCb = (1 - w) * refCb + w * median(n.Cb); refCr = (1 - w) * refCr + w * median(n.Cr)
                 refSpread = spread(n.Y)
             }
             target *= 1 + tuning.neckBrightness
@@ -277,6 +281,10 @@ public enum HeadSwap {
         let personMask: CGImage? = userMask ?? colourKeyMask(ub, cx: uCX, chin: uChin, jaw: uJaw, full: uFull)
         guard let personMask else { return nil }
         let hair = longHairMask(ub, person: personMask, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw)
+        // the old backdrop taken out of the hair edges (no light halo on a coloured backdrop)
+        let clean = decontaminate(RGBABitmap(user), person: personMask, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw)
+        let cutout = clean?.mask ?? personMask
+        var source = clean?.image ?? user
         let hr = FaceGeometry.grayContext(UW, UH)
         hr.setFillColor(gray: 0, alpha: 1); hr.fill(CGRect(x: 0, y: 0, width: UW, height: UH)); hr.setFillColor(gray: 1, alpha: 1)
         let wideTop = uChin - 0.5 * uJaw, fadeTop = uChin - 0.42 * uJaw, fadeBot = uChin - 0.12 * uJaw
@@ -308,18 +316,73 @@ public enum HeadSwap {
         // long hair falling beside the neck stays (drawn over the suit)
         if let hair {
             hr.saveGState(); hr.clip(to: uFull, mask: hair); hr.setFillColor(gray: 1, alpha: 1); hr.fill(uFull); hr.restoreGState()
+            // the shadowed strip between the jaw and the hair is neither: keep it (person pixels only,
+            // above the chin so no collar), else the new backdrop shows through a thin gap
+            let wide = CGMutablePath()
+            wide.addLines(between: uPts.map { CGPoint(x: uCX + ($0.x - uCX) * 1.12, y: UH - (midY + ($0.y - midY) * 0.97)) })
+            wide.closeSubpath()
+            hr.saveGState()
+            hr.clip(to: CGRect(x: 0, y: UH - (uChin - 0.15 * uJaw), width: UW, height: uChin - 0.15 * uJaw))
+            hr.addPath(wide); hr.fillPath()
+            hr.restoreGState()
         }
         guard let headRegion = FaceGeometry.feathered(hr.makeImage(), sigma: max(1, uJaw * 0.008), uFull),
-              let sharpMask = FaceGeometry.intersect(headRegion, personMask, uFull),
+              let sharpCut = FaceGeometry.intersect(headRegion, cutout, uFull),
               let hc = FaceGeometry.rgbaContext(UW, UH) else { return nil }
+        // long hair ends lie over the user's own clothes (inside the person): take that colour out
+        // of the cut along the hair too, else the old shirt shows as a light fringe on the suit
+        // (beside the neck only: the chin / neck edge is not hair)
+        var sharpMask = sharpCut
+        if hair != nil, let ends = decontaminate(RGBABitmap(source), person: sharpCut, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw, top: uChin - 0.3 * uJaw, depth: 0.12, keepCentre: 0.42) {
+            sharpMask = ends.mask; source = ends.image
+        }
         // Chin over the neck: the jaw edge fades softly into the model's neck (along the jaw line,
         // inset so nothing outside the jaw shows); beside the neck it stays crisp over the backdrop.
         let neckHalf = Double(tr - tl) / 2 / k
         let headMask = softChin(sharpMask, pts: uPts, cx: uCX, chin: uChin, jaw: uJaw, neckHalf: neckHalf, full: uFull) ?? sharpMask
-        hc.clip(to: uFull, mask: headMask); hc.draw(user, in: uFull)
+        hc.clip(to: uFull, mask: headMask); hc.draw(source, in: uFull)
         guard let head = hc.makeImage() else { return nil }
         let lift = tuning.headLift * bJaw
         let headRect = CGRect(x: bCX - uCX * k, y: H - (bChin - lift - uChin * k + UH * k), width: UW * k, height: UH * k)
+        // The user's own neck, when it shows, is kept under the chin (real shadow and skin), inside
+        // the model's neck, fading into it above both collars.
+        var withNeck = head
+        if let n = realNeck {
+            let sig = max(2, 0.03 * uJaw)
+            // user row → model row, model run → user columns
+            func modelRun(_ y: Double) -> (Double, Double)? {
+                let by = Int((bChin - lift + (y - uChin) * k).rounded())
+                guard by >= upTo, by < collarY else { return nil }
+                let (l, r) = by < rowTop ? (tl, tr) : (runs[by] ?? (tl, tr))
+                return (uCX + (Double(l) - bCX) / k, uCX + (Double(r) - bCX) / k)
+            }
+            let collarU = uChin + (Double(collarY) - bChin + lift) / k
+            let endY = min(Double(n.rows[n.rows.count - 1].y), collarU - 3 * sig)
+            let fade = min(0.2 * uJaw, 0.6 * (endY - uChin))
+            let byRow = Dictionary(n.rows.map { ($0.y, ($0.l, $0.r)) }, uniquingKeysWith: { a, _ in a })
+            let first = n.rows[0]
+            let g = FaceGeometry.grayContext(UW, UH)
+            g.setFillColor(gray: 0, alpha: 1); g.fill(uFull)
+            if fade > 2 {
+                for y in Int(uChin - 0.35 * uJaw)...Int(endY) {
+                    let (l, r) = y < first.y ? (first.l, first.r) : (byRow[y] ?? (first.l, first.r))
+                    guard let (ml, mr) = modelRun(Double(y)) else { continue }
+                    let lo = max(Double(l), ml) + 2 * sig, hi = min(Double(r), mr) - 2 * sig
+                    guard hi > lo else { continue }
+                    let t = min(1, (endY - Double(y)) / fade)
+                    g.setFillColor(gray: t * t * (3 - 2 * t), alpha: 1)
+                    g.fill(CGRect(x: lo, y: UH - 1 - Double(y), width: hi - lo, height: 1))
+                }
+            }
+            if let nm = FaceGeometry.feathered(g.makeImage(), sigma: sig, uFull) {
+                let u = FaceGeometry.grayContext(UW, UH)
+                u.draw(headMask, in: uFull); u.setBlendMode(.lighten); u.draw(nm, in: uFull)
+                if let um = u.makeImage(), let nc = FaceGeometry.rgbaContext(UW, UH) {
+                    nc.clip(to: uFull, mask: um); nc.draw(source, in: uFull)
+                    withNeck = nc.makeImage() ?? head
+                }
+            }
+        }
 
         // 7. Compose: backdrop → neck → clothes → head (soft shadow on the neck).
         guard let ctx = FaceGeometry.rgbaContext(W, H) else { return nil }
@@ -331,7 +394,7 @@ public enum HeadSwap {
         ctx.setShadow(offset: CGSize(width: 0, height: -bJaw * 0.03), blur: bJaw * 0.06, color: CGColor(gray: 0, alpha: 0.25))
         ctx.draw(head, in: headRect)
         ctx.restoreGState()
-        ctx.draw(head, in: headRect)
+        ctx.draw(withNeck, in: headRect)
         return ctx.makeImage()
     }
 
@@ -370,6 +433,94 @@ public enum HeadSwap {
         return out.makeImage()
     }
 
+    /// Edge clean-up of the person cut-out around the head: hair edges keep a tint of the old
+    /// backdrop (a light halo on a new coloured one). Near the mask edge each pixel is split into
+    /// the local backdrop colour B and the local subject colour F (means of clear background /
+    /// solid subject pixels around it): its alpha is how far it lies from B towards F, and its
+    /// colour has B taken out. Low contrast (light skin on a light wall) is left as it was.
+    static func decontaminate(_ px: RGBABitmap, person: CGImage, pts: [CGPoint], cx: Double, chin: Double, jaw: Double, top: Double? = nil, depth: Double = 0.03, keepCentre: Double = 0) -> (image: CGImage, mask: CGImage)? {
+        let w = px.w, h = px.h
+        // the face (jaw outline) and skin below the hairline (ears, neck) are never thinned: light
+        // skin on a light wall sits between hair and backdrop colours and would turn see-through.
+        // (Up at the crown, skin-toned pixels are lit stray hairs: cleaned like the rest.)
+        let hairline = chin - 1.1 * jaw
+        let face = CGMutablePath(); face.addLines(between: pts); face.closeSubpath()
+        func skin(_ p: UnsafeMutablePointer<UInt8>) -> Bool {
+            let r = Double(p[0]), g = Double(p[1]), b = Double(p[2])
+            let y = 0.299 * r + 0.587 * g + 0.114 * b, cb = 128 - 0.1687 * r - 0.3313 * g + 0.5 * b, cr = 128 + 0.5 * r - 0.4187 * g - 0.0813 * b
+            return y > 50 && cr > 136 && cr < 176 && cb > 80 && cb < 128
+        }
+        let m = RGBABitmap(person, width: w, height: h)
+        let x0 = max(0, Int(cx - 1.4 * jaw)), x1 = min(w, Int(cx + 1.4 * jaw))
+        let y0 = max(0, Int(max(chin - 2 * jaw, top ?? 0))), y1 = min(h, Int(chin + 1.0 * jaw))
+        guard x1 - x0 > 8, y1 - y0 > 8 else { return nil }
+        // cells: sums of clear-background and solid-subject colours
+        let c = max(2, Int(0.015 * jaw))
+        let nx = (x1 - x0 + c - 1) / c, ny = (y1 - y0 + c - 1) / c
+        var bs = [Double](repeating: 0, count: nx * ny * 3), bn = [Double](repeating: 0, count: nx * ny)
+        var fs = bs, fn = bn, soft = [Bool](repeating: false, count: nx * ny)
+        for y in y0..<y1 {
+            for x in x0..<x1 {
+                let a = m.at(x, y)[0], k = ((y - y0) / c) * nx + (x - x0) / c, p = px.at(x, y)
+                if a < 13 { for i in 0..<3 { bs[k * 3 + i] += Double(p[i]) }; bn[k] += 1 }
+                else if a > 247 { for i in 0..<3 { fs[k * 3 + i] += Double(p[i]) }; fn[k] += 1 }
+                else { soft[k] = true }
+            }
+        }
+        // cells on the cut-out edge, widened inwards and outwards by `depth` jaws (the halo sits on
+        // both sides of it; at hair ends light gaps between strands lie deeper)
+        let grow = max(1, Int((depth * jaw / Double(c)).rounded())), reach = grow + 2
+        var edge = [Bool](repeating: false, count: nx * ny)
+        for j in 0..<ny { for i in 0..<nx where soft[j * nx + i] || (bn[j * nx + i] > 0 && fn[j * nx + i] > 0) {
+            for jj in max(0, j - grow)...min(ny - 1, j + grow) { for ii in max(0, i - grow)...min(nx - 1, i + grow) { edge[jj * nx + ii] = true } }
+        } }
+        var changed = false
+        for j in 0..<ny {
+            for i in 0..<nx where edge[j * nx + i] {
+                var B = [0.0, 0.0, 0.0], F = [0.0, 0.0, 0.0], nb = 0.0, nf = 0.0
+                for jj in max(0, j - reach)...min(ny - 1, j + reach) {
+                    for ii in max(0, i - reach)...min(nx - 1, i + reach) {
+                        let k = jj * nx + ii
+                        nb += bn[k]; nf += fn[k]
+                        for q in 0..<3 { B[q] += bs[k * 3 + q]; F[q] += fs[k * 3 + q] }
+                    }
+                }
+                guard nb > 0, nf > 0 else { continue }
+                for q in 0..<3 { B[q] /= nb; F[q] /= nf }
+                let d = (0..<3).map { F[$0] - B[$0] }, L = d.reduce(0) { $0 + $1 * $1 }
+                guard L > 40 * 40 else { continue }
+                for y in (y0 + j * c)..<min(y1, y0 + (j + 1) * c) {
+                    for x in (x0 + i * c)..<min(x1, x0 + (i + 1) * c) {
+                        let mp = m.at(x, y); guard mp[0] > 0 else { continue }
+                        let p = px.at(x, y)
+                        guard Double(y) < hairline || !skin(p), !face.contains(CGPoint(x: x, y: y)),
+                              abs(Double(x) - cx) >= keepCentre * jaw else { continue }
+                        let raw = (0..<3).reduce(0.0) { $0 + (Double(p[$1]) - B[$1]) * d[$1] } / L
+                        // clearly subject (incl. lighter strands): untouched
+                        guard raw < 0.7 else { continue }
+                        let t = min(1, max(0, (raw - 0.2) / 0.5)), alpha = t * t * (3 - 2 * t)
+                        // colour with the backdrop taken out; faint pixels take the local subject
+                        // colour (dividing a small difference only amplifies noise)
+                        let u = min(1, max(0, (raw - 0.5) / 0.2)), s = u * u * (3 - 2 * u)
+                        for q in 0..<3 {
+                            let fest = B[q] + (Double(p[q]) - B[q]) / max(raw, 0.5)
+                            p[q] = UInt8(max(0, min(255, F[q] * (1 - s) + fest * s)))
+                        }
+                        let v = UInt8(Double(mp[0]) * alpha)
+                        mp[0] = v; mp[1] = v; mp[2] = v
+                        changed = true
+                    }
+                }
+            }
+        }
+        guard changed, let img = px.image(), let rgba = m.image() else { return nil }
+        let g = FaceGeometry.grayContext(Double(w), Double(h))
+        g.draw(rgba, in: CGRect(x: 0, y: 0, width: w, height: h))
+        // per-pixel alphas are noisy (strands vs gaps): a light blur so the edge is not speckled
+        guard let mask = FaceGeometry.feathered(g.makeImage(), sigma: max(0.8, 0.004 * jaw), CGRect(x: 0, y: 0, width: w, height: h)) else { return nil }
+        return (img, mask)
+    }
+
     /// High-frequency luminance noise (σ of pixel − 3×3 mean) over skin in a box.
     static func grain(_ px: RGBABitmap, x0: Int, x1: Int, y0: Int, y1: Int, skip: (Int) -> Bool,
                       ycc: (UnsafeMutablePointer<UInt8>) -> (Double, Double, Double)) -> Double {
@@ -389,25 +540,32 @@ public enum HeadSwap {
         return n > 20 ? (sum / n).squareRoot() * 1.06 : 0
     }
 
+    typealias NeckSample = (width: Double, Y: [Double], Cb: [Double], Cr: [Double], rows: [(y: Int, l: Int, r: Int)])
+
     /// The user's neck under the chin: per row the skin run (face-coloured) through the centre line,
     /// down to the collar. nil when too little shows (collar up, beard, bad jaw estimate).
+    /// `rows`: the unbroken runs from the top of the scan down (edges median-smoothed).
     static func neckSample(_ px: RGBABitmap, cx: Double, chin: Double, jaw: Double, faceCb: Double, faceCr: Double,
-                           ycc: (UnsafeMutablePointer<UInt8>) -> (Double, Double, Double)) -> (width: Double, Y: [Double], Cb: [Double], Cr: [Double])? {
+                           ycc: (UnsafeMutablePointer<UInt8>) -> (Double, Double, Double)) -> NeckSample? {
         func skin(_ x: Int, _ y: Int) -> Bool {
             let (Y, cb, cr) = ycc(px.clamped(x, y))
             return Y > 25 && ((cb - faceCb) * (cb - faceCb) + (cr - faceCr) * (cr - faceCr)).squareRoot() < 16
         }
         var widths = [Double](), Ys = [Double](), Cbs = [Double](), Crs = [Double]()
+        var rows = [(y: Int, l: Int, r: Int)](), unbroken = true
         let x0 = Int(cx), lim = Int(0.6 * jaw)
-        for y in Int(chin + 0.12 * jaw)..<min(px.h, Int(chin + 0.32 * jaw)) {
-            guard skin(x0, y) else { continue }
-            var l = x0, r = x0
-            while x0 - l < lim && skin(l - 1, y) { l -= 1 }
-            while r - x0 < lim && skin(r + 1, y) { r += 1 }
+        for y in Int(chin + 0.12 * jaw)..<min(px.h, Int(chin + 0.6 * jaw)) {
+            var l = x0, r = x0, ok = skin(x0, y)
+            if ok {
+                while x0 - l < lim && skin(l - 1, y) { l -= 1 }
+                while r - x0 < lim && skin(r + 1, y) { r += 1 }
+            }
             let w = Double(r - l)
             // a run hitting the limit leaked into a skin-coloured background
             // too wide = leaked into skin-coloured hair / background (necks are ~0.4–0.65 jaw)
-            guard w > 0.35 * jaw, w < 0.7 * jaw, x0 - l < lim, r - x0 < lim else { continue }
+            ok = ok && w > 0.35 * jaw && w < 0.7 * jaw && x0 - l < lim && r - x0 < lim
+            if unbroken { if ok { rows.append((y, l, r)) } else { unbroken = false } }
+            guard ok, Double(y) < chin + 0.32 * jaw else { continue }
             widths.append(w)
             let m = (r - l) / 10
             for x in stride(from: l + m, through: r - m, by: 2) {
@@ -415,7 +573,13 @@ public enum HeadSwap {
             }
         }
         guard widths.count >= max(4, Int(0.06 * jaw)) else { return nil }
-        return (widths.sorted()[widths.count / 2], Ys, Cbs, Crs)
+        // edges: running median of 7 (a stray dark pixel or hair strand must not notch the neck)
+        let ls = rows.map(\.l), rs = rows.map(\.r)
+        for i in rows.indices {
+            let lo = max(0, i - 3), hi = min(rows.count, i + 4)
+            rows[i].l = ls[lo..<hi].sorted()[(hi - lo) / 2]; rows[i].r = rs[lo..<hi].sorted()[(hi - lo) / 2]
+        }
+        return (widths.sorted()[widths.count / 2], Ys, Cbs, Crs, rows)
     }
 
     /// Hair below the cheekbones beside the face: pixels close to the hair colour (sampled at the

@@ -8,6 +8,7 @@ public struct EditView: View {
     @State private var model: EditViewModel
     @State private var tab: EditTab = .background
     @State private var showExport = false
+    @State private var showPreview = false
 
     enum EditTab: String, CaseIterable, Identifiable {
         case background = "Nền & áo"
@@ -96,6 +97,24 @@ public struct EditView: View {
             .frame(width: 128, height: 128 / model.target.aspect)
             .clipShape(.rect(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Fotowork.Palette.border))
+            // tap to see it large
+            .overlay(alignment: .bottomTrailing) {
+                if model.preview != nil {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.bvp(size: 11, .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(.black.opacity(0.45), in: .circle)
+                        .padding(6)
+                }
+            }
+            .contentShape(.rect)
+            .onTapGesture { if model.preview != nil { showPreview = true } }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Xem ảnh lớn")
+            .fullScreenCover(isPresented: $showPreview) {
+                if let image = model.preview { PhotoPreview(image: image) }
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -321,6 +340,72 @@ struct ProgressBar: View {
             }
         }
         .frame(height: 6)
+    }
+}
+
+/// The edited photo full screen: pinch or double-tap to zoom, drag to pan when zoomed.
+private struct PhotoPreview: View {
+    let image: UIImage
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1
+    @State private var baseScale: CGFloat = 1
+    @State private var offset: CGSize = .zero
+    @State private var baseOffset: CGSize = .zero
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            Fotowork.Palette.cameraBg.ignoresSafeArea()
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .clipShape(.rect(cornerRadius: 8))
+                .padding(.horizontal, 24)
+                .scaleEffect(scale)
+                .offset(offset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gesture(zoom.simultaneously(with: pan))
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring(duration: 0.3)) {
+                        if scale > 1 { reset() } else { scale = 2.5; baseScale = 2.5 }
+                    }
+                }
+                .accessibilityLabel("Ảnh sau khi chỉnh")
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.bvp(.headline, .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(.white.opacity(0.16), in: .circle)
+                    .overlay(Circle().stroke(.white.opacity(0.32)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Đóng")
+            .padding(.leading, 20)
+            .padding(.top, 8)
+        }
+        .statusBarHidden()
+    }
+
+    private var zoom: some Gesture {
+        MagnifyGesture()
+            .onChanged { scale = min(5, max(1, baseScale * $0.magnification)) }
+            .onEnded { _ in
+                baseScale = scale
+                if scale <= 1 { withAnimation(.spring(duration: 0.3)) { reset() } }
+            }
+    }
+
+    private var pan: some Gesture {
+        DragGesture()
+            .onChanged { v in
+                guard scale > 1 else { return }
+                offset = CGSize(width: baseOffset.width + v.translation.width, height: baseOffset.height + v.translation.height)
+            }
+            .onEnded { _ in baseOffset = offset }
+    }
+
+    private func reset() {
+        scale = 1; baseScale = 1; offset = .zero; baseOffset = .zero
     }
 }
 

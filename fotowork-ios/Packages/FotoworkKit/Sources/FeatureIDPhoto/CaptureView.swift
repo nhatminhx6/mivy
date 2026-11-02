@@ -66,15 +66,7 @@ public struct CaptureView: View {
 
     private var topBar: some View {
         HStack(spacing: 10) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.bvp(.headline, .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(ctrlFill, in: .circle)
-                    .overlay(Circle().stroke(ctrlStroke))
-            }
-            .buttonStyle(.plain)
+            closeButton
 
             Spacer()
             VStack(spacing: 1) {
@@ -205,6 +197,19 @@ public struct CaptureView: View {
         .overlay(RoundedRectangle(cornerRadius: Fotowork.Radius.hero, style: .continuous).stroke(ctrlStroke))
     }
 
+    private var closeButton: some View {
+        Button { dismiss() } label: {
+            Image(systemName: "xmark")
+                .font(.bvp(.headline, .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .background(ctrlFill, in: .circle)
+                .overlay(Circle().stroke(ctrlStroke))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Đóng")
+    }
+
     // MARK: Review
 
     private var reviewOverlay: some View {
@@ -245,6 +250,9 @@ public struct CaptureView: View {
                 .padding(.top, 6)
             }
             .padding(28)
+        }
+        .overlay(alignment: .topLeading) {
+            closeButton.padding(.horizontal, 16).padding(.top, 8)
         }
     }
 }

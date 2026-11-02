@@ -8,5 +8,7 @@ Thân người mẫu mặc vest dùng cho `HeadSwap`. Gen **offline 1 lần**, k
 3. Tự xem ảnh: chính diện, đầu thẳng, **lộ cổ rõ**, nền trắng, vai không bị cắt.
 4. Cắt nền + đo hàm:
    `swiftc -O prep_body.swift -o prep && ./prep in.png body-<giới>-<màu>.png body-<giới>-<màu>.json`
+4b. Khử viền trắng ở mép cắt (nếu không, nền xanh/xám sẽ lộ một đường sáng dọc vai):
+   `swiftc -O defringe_body.swift -o defringe && ./defringe body-<giới>-<màu>.png` (sửa tại chỗ).
 5. Chép 2 file vào `Packages/FotoworkKit/Sources/FotoworkImaging/Resources/Garments/`,
    thêm case vào `OutfitOption` (PortraitEditor.swift).
