@@ -1,0 +1,71 @@
+name: FotoDocs
+options:
+  bundleIdPrefix: com.mivy
+  developmentLanguage: vi
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_STRICT_CONCURRENCY: complete
+
+packages:
+  FotoDocsKit:
+    path: Packages/FotoDocsKit
+
+targets:
+  FotoDocs:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: FotoDocs
+    dependencies:
+      - package: FotoDocsKit
+        product: FotoDocsCore
+      - package: FotoDocsKit
+        product: FotoDocsDesign
+      - package: FotoDocsKit
+        product: FeatureIDPhoto
+      - package: FotoDocsKit
+        product: FeatureDocuments
+      - package: FotoDocsKit
+        product: FeatureAvatar
+      - package: FotoDocsKit
+        product: FeatureSettings
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mivy.fotodocs
+        GENERATE_INFOPLIST_FILE: "YES"
+        CODE_SIGNING_ALLOWED: "NO"
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_CFBundleDisplayName: FotoDocs
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSCameraUsageDescription: "FotoDocs dùng camera để chụp ảnh thẻ ngay trên máy. Ảnh không được gửi lên máy chủ."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "FotoDocs cần truy cập thư viện ảnh để bạn chọn ảnh có sẵn. Ảnh được xử lý ngay trên máy."
+    scheme:
+      testTargets:
+        - FotoDocsTests
+
+  FotoDocsTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - package: FotoDocsKit
+        product: FotoDocsCore
+      - package: FotoDocsKit
+        product: FotoDocsImaging
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.mivy.fotodocs.tests
+        CODE_SIGNING_ALLOWED: "NO"

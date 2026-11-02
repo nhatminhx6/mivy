@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "vi",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "FotoDocs"
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "FotoDocs uses the camera to take ID photos on your device. Photos are never uploaded to any server."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "FotoDocs dùng camera để chụp ảnh thẻ ngay trên máy. Ảnh không được gửi lên máy chủ."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "FotoDocs needs photo library access so you can pick an existing photo. Photos are processed on your device."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "FotoDocs cần truy cập thư viện ảnh để bạn chọn ảnh có sẵn. Ảnh được xử lý ngay trên máy."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
