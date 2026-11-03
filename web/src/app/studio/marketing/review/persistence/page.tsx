@@ -1022,13 +1022,13 @@ export default function BrowserPersistenceQCHarness() {
   const failCount = Object.values(testResults).filter((t) => t.status === 'fail').length;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
+    <main className="min-h-screen bg-mv-surface text-slate-100 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Navigation & Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <Link href="/studio/marketing/review" className="text-white hover:text-zinc-300 text-sm font-medium">
+              <Link href="/studio/marketing/review" className="text-mv-fg hover:text-zinc-300 text-sm font-medium">
                 ← So sánh Concept
               </Link>
               <span className="text-slate-600">|</span>
@@ -1036,9 +1036,9 @@ export default function BrowserPersistenceQCHarness() {
                 Studio Marketing
               </Link>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-mv-fg flex items-center gap-3">
               Native IndexedDB Browser QC Harness
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-white/20 text-zinc-300 border border-white/30">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-ink/[0.08] text-zinc-300 border border-mv-hair-strong">
                 Enforced Dev-Only
               </span>
             </h1>
@@ -1099,26 +1099,26 @@ export default function BrowserPersistenceQCHarness() {
 
         {/* Metrics Banner */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
+          <div className="bg-mv-surface border border-slate-800 rounded-xl p-3">
             <div className="text-xs text-slate-400 font-medium">Tổng số Test Cases</div>
-            <div className="text-2xl font-bold text-white mt-1">6 Cases</div>
+            <div className="text-2xl font-bold text-mv-fg mt-1">6 Cases</div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
+          <div className="bg-mv-surface border border-slate-800 rounded-xl p-3">
             <div className="text-xs text-slate-400 font-medium">Kết Quả Hiện Tại</div>
             <div className="text-2xl font-bold mt-1 flex items-center gap-2">
-              <span className="text-white">{passCount} PASS</span>
+              <span className="text-mv-fg">{passCount} PASS</span>
               {failCount > 0 && <span className="text-rose-400">/ {failCount} FAIL</span>}
             </div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
+          <div className="bg-mv-surface border border-slate-800 rounded-xl p-3">
             <div className="text-xs text-slate-400 font-medium">Records trong Native IDB</div>
             <div className="text-2xl font-bold text-amber-400 mt-1 font-mono">{idbRecordCount} Assets</div>
           </div>
-          <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3">
+          <div className="bg-mv-surface border border-slate-800 rounded-xl p-3">
             <div className="text-xs text-slate-400 font-medium">Actual F5 Reload Status</div>
             <div className="text-sm font-bold mt-2 flex items-center gap-2">
               {actualReloadDetected ? (
-                <span className="text-white flex items-center gap-1.5 font-mono">
+                <span className="text-mv-fg flex items-center gap-1.5 font-mono">
                   ✓ F5 Verified (No Reseed)
                 </span>
               ) : (
@@ -1131,12 +1131,12 @@ export default function BrowserPersistenceQCHarness() {
         {/* 6 Test Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {/* Card 1 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 1</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test1.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test1.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test1.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test1.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1144,10 +1144,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test1.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">Native IDB Persist & Resolve</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">Native IDB Persist & Resolve</h2>
               <p className="text-xs text-slate-400 mt-1">Lưu main/bg data URI vào IDB thật, xác minh key và giải mã khớp 100% byte.</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef1} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1157,7 +1157,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef1.current, 'qc-canvas-test1-roundtrip.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1165,12 +1165,12 @@ export default function BrowserPersistenceQCHarness() {
           </article>
 
           {/* Card 2 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 2</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test2.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test2.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test2.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test2.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1178,10 +1178,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test2.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">A→B→A Switch Persistence</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">A→B→A Switch Persistence</h2>
               <p className="text-xs text-slate-400 mt-1">Chuyển recruitment sang property, sửa B, quay lại A khôi phục đủ ảnh và text.</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef2} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1191,7 +1191,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef2.current, 'qc-canvas-test2-aba-switch.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1199,12 +1199,12 @@ export default function BrowserPersistenceQCHarness() {
           </article>
 
           {/* Card 3 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 3</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test3.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test3.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test3.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test3.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1212,10 +1212,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test3.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">Browser Reload State & IDB Restore</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">Browser Reload State & IDB Restore</h2>
               <p className="text-xs text-slate-400 mt-1">Nạp dữ liệu có sẵn từ storage, giải mã data URI từ native IDB (F5 thật).</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef3} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1225,7 +1225,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef3.current, 'qc-canvas-test3-reload-restore.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1233,12 +1233,12 @@ export default function BrowserPersistenceQCHarness() {
           </article>
 
           {/* Card 4 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 4</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test4.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test4.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test4.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test4.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1246,10 +1246,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test4.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">Intentional Clear During Resolve</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">Intentional Clear During Resolve</h2>
               <p className="text-xs text-slate-400 mt-1">Gỡ backgroundImage trong lúc resolve, đảm bảo không bị IDB hồi sinh đè lên.</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef4} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1259,7 +1259,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef4.current, 'qc-canvas-test4-clear-image.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1267,12 +1267,12 @@ export default function BrowserPersistenceQCHarness() {
           </article>
 
           {/* Card 5 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 5</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test5.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test5.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test5.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test5.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1280,10 +1280,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test5.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">Edited Text During Resolve</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">Edited Text During Resolve</h2>
               <p className="text-xs text-slate-400 mt-1">Sửa tiêu đề trong lúc resolve; tiêu đề mới được giữ và ảnh untouched resolve.</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef5} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1293,7 +1293,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef5.current, 'qc-canvas-test5-edited-text.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1301,12 +1301,12 @@ export default function BrowserPersistenceQCHarness() {
           </article>
 
           {/* Card 6 */}
-          <article className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
+          <article className="bg-mv-surface border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400 font-semibold">TEST 6</span>
                 <span className={`text-xs px-2 py-0.5 rounded font-mono font-bold ${
-                  testResults.test6.status === 'pass' ? 'bg-white/20 text-white border border-white/30' :
+                  testResults.test6.status === 'pass' ? 'bg-ink/[0.08] text-mv-fg border border-mv-hair-strong' :
                   testResults.test6.status === 'fail' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                   testResults.test6.status === 'running' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse' :
                   'bg-slate-800 text-slate-400'
@@ -1314,10 +1314,10 @@ export default function BrowserPersistenceQCHarness() {
                   {testResults.test6.status.toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-sm font-semibold text-white mt-1">Delayed Save Settle & Ownership</h2>
+              <h2 className="text-sm font-semibold text-mv-fg mt-1">Delayed Save Settle & Ownership</h2>
               <p className="text-xs text-slate-400 mt-1">Timer 100ms của edit cũ settle trong lúc B active không thể đè storage B.</p>
             </div>
-            <div className="aspect-[4/5] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 relative">
+            <div className="aspect-[4/5] bg-mv-surface rounded-lg overflow-hidden border border-slate-800 relative">
               <canvas ref={canvasRef6} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -1327,7 +1327,7 @@ export default function BrowserPersistenceQCHarness() {
               <button
                 type="button"
                 onClick={() => downloadCanvasPNG(canvasRef6.current, 'qc-canvas-test6-delayed-save.png')}
-                className="text-xs text-white hover:text-zinc-300 font-medium"
+                className="text-xs text-mv-fg hover:text-zinc-300 font-medium"
               >
                 ⬇ Tải PNG
               </button>
@@ -1336,8 +1336,8 @@ export default function BrowserPersistenceQCHarness() {
         </div>
 
         {/* Console Logs Terminal */}
-        <section className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner">
-          <div className="bg-slate-900/80 px-4 py-2 border-b border-slate-800 flex items-center justify-between">
+        <section className="bg-mv-surface border border-slate-800 rounded-xl overflow-hidden shadow-inner">
+          <div className="bg-mv-surface px-4 py-2 border-b border-slate-800 flex items-center justify-between">
             <span className="text-xs font-mono font-semibold text-slate-300">Assertion Logs Console</span>
             <span className="text-xs font-mono text-slate-500">{consoleLogs.length} messages</span>
           </div>
@@ -1346,7 +1346,7 @@ export default function BrowserPersistenceQCHarness() {
               <div className="text-slate-600 italic">Chưa có log. Bấm &quot;Chạy Tất Cả&quot; để thực thi kiểm thử native IDB.</div>
             ) : (
               consoleLogs.map((log, idx) => (
-                <div key={idx} className={log.includes('LỖI') ? 'text-rose-400 font-bold' : log.includes('HOÀN TẤT') || log.includes('XÁC MINH THÀNH CÔNG') ? 'text-white font-bold' : ''}>
+                <div key={idx} className={log.includes('LỖI') ? 'text-rose-400 font-bold' : log.includes('HOÀN TẤT') || log.includes('XÁC MINH THÀNH CÔNG') ? 'text-mv-fg font-bold' : ''}>
                   {log}
                 </div>
               ))

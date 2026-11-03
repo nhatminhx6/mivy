@@ -17,7 +17,7 @@ import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 
 type Variant = 'color' | 'black' | 'white' | 'avatar' | 'icon-full' | 'icon-fg';
-const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`;
+const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-300 hover:text-mv-fg hover:border-mv-hair-strong'}`;
 
 export default function LogoMakerPage() {
   const ready = useLogoFonts();
@@ -150,13 +150,13 @@ export default function LogoMakerPage() {
                 {groups.map((g) => (
                   <div key={g.id}>
                     <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-xs font-bold text-white">{g.name}</span>
+                      <span className="text-xs font-bold text-mv-fg">{g.name}</span>
                       <span className="text-[11px] text-slate-500">{g.items.length} mẫu</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
                       {g.items.map((l) => (
                         <button key={l.id} type="button" onClick={() => setSel(l)} data-testid="logo-tile" title={`${LOGO_KINDS.find((k) => k.id === l.kind)?.name} · ${fontById(l.fontId).family}`}
-                          className={`h-32 rounded-xl border p-3 transition-all ${cur.id === l.id ? 'border-indigo-400 ring-2 ring-indigo-400/50' : 'border-white/10 hover:border-white/40'}`}
+                          className={`h-32 rounded-xl border p-3 transition-all ${cur.id === l.id ? 'border-indigo-400 ring-2 ring-indigo-400/50' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                           style={{ background: l.palette.colorSurface }}>
                           <LogoSvg spec={l} name={shopName} slogan={slogan} style={{ width: '100%', height: '100%', display: 'block' }} />
                         </button>
@@ -184,16 +184,16 @@ export default function LogoMakerPage() {
         <div className="xl:sticky xl:top-4 self-start space-y-3">
           <div className="glass-card p-4 rounded-2xl hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06] flex flex-col xl:max-h-[calc(100vh-2rem)]">
             <div className="flex items-center justify-between shrink-0">
-              <span className="text-sm font-bold text-white">3 · Tinh chỉnh & tải</span>
+              <span className="text-sm font-bold text-mv-fg">3 · Tinh chỉnh & tải</span>
               <div className="flex gap-1">
                 {(['light', 'dark', 'none'] as const).map((b) => (
-                  <button key={b} type="button" onClick={() => setPreviewBg(b)} className={`text-[10px] px-2 py-1 rounded-full border ${previewBg === b ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>
+                  <button key={b} type="button" onClick={() => setPreviewBg(b)} className={`text-[10px] px-2 py-1 rounded-full border ${previewBg === b ? 'border-mv-accent text-mv-fg' : 'border-mv-hair text-slate-400'}`}>
                     {b === 'light' ? 'Nền sáng' : b === 'dark' ? 'Nền tối' : 'Trong suốt'}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="h-56 rounded-xl p-5 border border-white/10 shrink-0 mt-4" style={previewStyle} data-testid="logo-preview">
+            <div className="h-56 rounded-xl p-5 border border-mv-hair shrink-0 mt-4" style={previewStyle} data-testid="logo-preview">
               {ready && <LogoSvg spec={cur} name={shopName} slogan={slogan} tone={previewBg === 'dark' ? 'white' : 'color'} style={{ width: '100%', height: '100%', display: 'block' }} />}
             </div>
 
@@ -217,7 +217,7 @@ export default function LogoMakerPage() {
               <div className="flex flex-wrap gap-2">
                 {palettes.map((p) => (
                   <button key={p.name} type="button" title={p.name} onClick={() => upd({ palette: p })}
-                    className={`w-8 h-8 rounded-full border-2 transition-transform ${cur.palette.name === p.name ? 'border-white scale-110' : 'border-white/10 hover:border-white/40'}`}
+                    className={`w-8 h-8 rounded-full border-2 transition-transform ${cur.palette.name === p.name ? 'border-mv-accent scale-110' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                     style={{ background: `linear-gradient(135deg, ${p.colorPrimary} 50%, ${p.colorAccent} 50%)` }} />
                 ))}
               </div>
@@ -242,13 +242,13 @@ export default function LogoMakerPage() {
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-1" data-testid="logo-art-cats">
                     {[...artCatsForIndustry(industry), ...LOGO_ART_CATS.filter((c) => !artCatsForIndustry(industry).includes(c))].map((c) => (
-                      <button key={c.id} type="button" onClick={() => setArtCat(c.id)} className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${shownCat === c.id ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-400 hover:text-white'}`}>{c.name}</button>
+                      <button key={c.id} type="button" onClick={() => setArtCat(c.id)} className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${shownCat === c.id ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-400 hover:text-mv-fg'}`}>{c.name}</button>
                     ))}
                   </div>
                   <div className="grid grid-cols-5 gap-1.5" data-testid="logo-art-grid">
                     {LOGO_ART.filter((a) => a.cat === shownCat).map((a) => (
                       <button key={a.id} type="button" title={a.name} onClick={() => upd({ art: a.id })}
-                        className={`aspect-square rounded-lg bg-white p-1 border-2 ${cur.art === a.id ? 'border-indigo-400' : 'border-transparent hover:border-white/40'}`}>
+                        className={`aspect-square rounded-lg bg-white p-1 border-2 ${cur.art === a.id ? 'border-indigo-400' : 'border-transparent hover:border-mv-hair-strong'}`}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={artUrl(a.id)} alt={a.name} loading="lazy" className="w-full h-full object-contain" />
                       </button>
@@ -270,8 +270,8 @@ export default function LogoMakerPage() {
                         <div className="grid grid-cols-10 gap-1">
                           {items.map(({ id, Comp }) => (
                             <button key={id} type="button" title={id} onClick={() => upd({ icon: id })}
-                              className={`aspect-square rounded-md flex items-center justify-center border ${cur.icon === id ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/20'}`}>
-                              <Comp size={16} color="#e2e8f0" weight="fill" />
+                              className={`aspect-square rounded-md flex items-center justify-center border ${cur.icon === id ? 'border-mv-accent bg-mv-accent-soft text-mv-accent' : 'border-transparent text-[#2B3345] hover:border-mv-hair-strong hover:bg-mv-surface'}`}>
+                              <Comp size={16} color="currentColor" weight="fill" />
                             </button>
                           ))}
                         </div>
@@ -282,7 +282,7 @@ export default function LogoMakerPage() {
               </div>
             )}
 
-            <div className="pt-3 border-t border-white/10 space-y-2">
+            <div className="pt-3 border-t border-mv-hair space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => downloadPng('color', 2000, 'logo')} className="mv-btn mv-btn-primary !flex justify-center !py-2.5 !text-xs">
                   {busy === 'color' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PNG nền trong
@@ -298,9 +298,9 @@ export default function LogoMakerPage() {
                   <button type="button" onClick={() => downloadPng('white', 2000, 'logo-trang')} className="mv-btn mv-btn-ghost !flex justify-center !px-1 !py-2.5 !text-xs">{busy === 'white' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Bản trắng'}</button>
                 </div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 space-y-2.5" data-testid="icon-pack">
+              <div className="rounded-xl border border-mv-hair bg-ink/[0.03] p-3 space-y-2.5" data-testid="icon-pack">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">Bộ icon app & web</span>
+                  <span className="text-xs font-bold text-mv-fg">Bộ icon app & web</span>
                   <span className="text-[10px] text-slate-500">favicon · Android · iOS · store</span>
                 </div>
                 {ready && (
@@ -308,7 +308,7 @@ export default function LogoMakerPage() {
                     <div className="text-center"><LogoIconSvg spec={cur} name={shopName} bg={iconBg} style={{ width: 52, height: 52, borderRadius: 12, display: 'block' }} /><div className="text-[9px] text-slate-500 mt-1">iOS</div></div>
                     <div className="text-center"><LogoIconSvg spec={cur} name={shopName} bg={iconBg} style={{ width: 52, height: 52, borderRadius: '50%', display: 'block' }} /><div className="text-[9px] text-slate-500 mt-1">Android</div></div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 rounded-t-lg bg-slate-700/70 px-2 py-1.5 max-w-[150px]">
+                      <div className="flex items-center gap-1.5 rounded-t-lg bg-mv-surface border border-b-0 border-mv-hair-strong px-2 py-1.5 max-w-[150px]">
                         <LogoIconSvg spec={cur} name={shopName} bg={iconBg} style={{ width: 16, height: 16, borderRadius: 3, display: 'block', flexShrink: 0 }} />
                         <span className="text-[10px] text-slate-200 truncate">{shopName}</span>
                       </div>

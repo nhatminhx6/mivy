@@ -3,7 +3,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-export interface Me { id: number; email: string; name: string; balance: number; is_admin: boolean; prices?: { tryon: number } }
+export interface Me { id: number; email: string; name: string; phone: string; balance: number; is_admin: boolean; prices?: { tryon: number } }
 export interface Tx { id: number; email: string; amount: number; kind: 'signup' | 'topup' | 'charge' | 'refund'; note: string; balance_after: number; created_at: string }
 
 export class ApiError extends Error {
@@ -24,13 +24,51 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Cont
 export const authApi = {
   me: () => call<Me>('/v1/me'),
   login: (email: string, password: string) => call<Me>('/v1/auth/login', json({ email, password })),
-  register: (email: string, password: string, name: string) => call<Me>('/v1/auth/register', json({ email, password, name })),
+  register: (email: string, password: string, name: string, phone = '') => call<Me>('/v1/auth/register', json({ email, password, name, phone })),
+  updateMe: (p: { name?: string; phone?: string }) => call<Me>('/v1/me', { ...json(p), method: 'PATCH' }),
   logout: () => call('/v1/auth/logout', { method: 'POST' }),
   transactions: () => call<Tx[]>('/v1/me/transactions'),
   adminUsers: (q: string) => call<(Me & { created_at: string })[]>(`/v1/admin/users?q=${encodeURIComponent(q)}`),
   adminTopup: (email: string, amount: number, note: string) => call<{ email: string; balance: number }>('/v1/admin/topup', json({ email, amount, note })),
   adminTransactions: () => call<Tx[]>('/v1/admin/transactions'),
 };
+
+// ---------- đơn in ----------
+export type OrderStatus = 'new' | 'quoted' | 'deposited' | 'sample' | 'printing' | 'delivered' | 'cancelled';
+export type PrintProduct = 'card' | 'sticker' | 'keychain';
+export interface PrintOrder {
+  id: number; code: string; product: PrintProduct; title: string; quantity: number; material: string;
+  contact_name: string; phone: string; address: string; need_by: string; note: string;
+  status: OrderStatus; status_label: string; price: number | null; deposit: number | null; file_name: string;
+  created_at: string; updated_at: string | null;
+  user_id?: number; email?: string; admin_note?: string;
+}
+export interface Customer extends Me { note: string; created_at: string; orders: number; last_order_at: string | null; total: number }
+export const ORDER_STEPS: { id: OrderStatus; label: string }[] = [
+  { id: 'new', label: 'Mới gửi' }, { id: 'quoted', label: 'Đã báo giá' }, { id: 'deposited', label: 'Đã cọc' },
+  { id: 'sample', label: 'Đang in mẫu' }, { id: 'printing', label: 'Đang in' }, { id: 'delivered', label: 'Đã giao' },
+];
+export const STATUS_LABEL: Record<OrderStatus, string> = { ...Object.fromEntries(ORDER_STEPS.map((s) => [s.id, s.label])), cancelled: 'Đã huỷ' } as Record<OrderStatus, string>;
+const patch = (body: unknown): RequestInit => ({ ...json(body), method: 'PATCH' });
+export const orderApi = {
+  create: (form: FormData) => call<PrintOrder>('/v1/print-orders', { method: 'POST', body: form }),
+  mine: () => call<PrintOrder[]>('/v1/me/print-orders'),
+  fileUrl: (id: number) => `/v1/print-orders/${id}/file`,
+  previewUrl: (id: number) => `/v1/print-orders/${id}/preview`,
+  adminList: (status = '', q = '') => call<PrintOrder[]>(`/v1/admin/print-orders?status=${status}&q=${encodeURIComponent(q)}`),
+  adminUpdate: (id: number, p: Partial<Pick<PrintOrder, 'status' | 'price' | 'deposit' | 'admin_note'>>) => call<PrintOrder>(`/v1/admin/print-orders/${id}`, patch(p)),
+  customers: (q = '') => call<Customer[]>(`/v1/admin/customers?q=${encodeURIComponent(q)}`),
+  updateCustomer: (id: number, p: { name?: string; phone?: string; note?: string }) => call<Customer>(`/v1/admin/customers/${id}`, patch(p)),
+};
+export const fmtVnd = (n?: number | null) => (n == null ? '—' : `${n.toLocaleString('vi-VN')}đ`);
+export const zaloLink = (phone: string) => `https://zalo.me/${phone}`;
+// QR chuyển khoản (VietQR) có sẵn số tiền + mã đơn — cần NEXT_PUBLIC_BANK_BIN (mã/tên ngân hàng, vd 970436 hoặc vcb)
+export function vietQr(amount: number, info: string): string | null {
+  const bin = process.env.NEXT_PUBLIC_BANK_BIN || '';
+  if (!bin || !BANK.account) return null;
+  const q = new URLSearchParams({ amount: String(amount), addInfo: info, accountName: BANK.owner });
+  return `https://img.vietqr.io/image/${encodeURIComponent(bin)}-${encodeURIComponent(BANK.account)}-compact2.png?${q}`;
+}
 
 interface AuthCtx { me: Me | null; ready: boolean; refresh: () => Promise<void>; setBalance: (b: number) => void; logout: () => Promise<void> }
 const Ctx = createContext<AuthCtx>({ me: null, ready: false, refresh: async () => {}, setBalance: () => {}, logout: async () => {} });

@@ -20,7 +20,7 @@ public final class EditViewModel {
     public var faceFound: Bool { face.faceFound }
     public var checklist: [ChecklistItem] = []
 
-    private let source: UIImage
+    private var source: UIImage
     private let editor = PortraitEditor()
     private var face: FaceCheckResult = .empty
     private var prepared = false
@@ -39,9 +39,21 @@ public final class EditViewModel {
     }
 
     public func onAppear() async {
-        guard !prepared, let cgImage = source.cgImage else { return }
+        guard !prepared, var cgImage = source.cgImage else { return }
         isProcessing = true
-        let orientation = CGImagePropertyOrientation(source.imageOrientation)
+        var orientation = CGImagePropertyOrientation(source.imageOrientation)
+        if target.infant {
+            // a baby is photographed lying down at any angle: turn the picture so the face is upright
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            let baked = UIGraphicsImageRenderer(size: source.size, format: format).image { _ in source.draw(at: .zero) }
+            if let upright = baked.cgImage {
+                let leveled = await Task.detached { FaceLevel.leveled(upright) }.value ?? upright
+                cgImage = leveled
+                orientation = .up
+                source = UIImage(cgImage: leveled)
+            }
+        }
         face = FaceChecker.analyze(ciImage: CIImage(cgImage: cgImage), orientation: orientation)
         await editor.prepare(cgImage: cgImage, orientation: orientation)
         hasMask = await editor.hasMask()

@@ -30,7 +30,7 @@ public struct CaptureView: View {
                 Spacer(minLength: 0)
                 if model.cameraAvailable {
                     checksRow
-                    Text("Giữ yên, tự chụp khi đạt")
+                    Text(model.target.infant ? "Đặt bé nằm ngửa trên ga trắng, chụp thẳng từ trên xuống" : "Giữ yên, tự chụp khi đạt")
                         .font(.bvp(.subheadline, .semibold))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.6), radius: 6)
@@ -172,7 +172,9 @@ public struct CaptureView: View {
                 .foregroundStyle(.white)
             Text(model.permissionDenied
                  ? "Bật quyền camera trong Cài đặt, hoặc chọn một ảnh có sẵn."
-                 : "Không mở được camera. Bạn có thể chọn một ảnh có sẵn.")
+                 : model.target.infant
+                    ? "Chọn ảnh bé nằm ngửa trên ga trắng. App tự xoay ảnh cho mặt bé thẳng."
+                    : "Không mở được camera. Bạn có thể chọn một ảnh có sẵn.")
                 .font(.bvp(.subheadline))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.8))

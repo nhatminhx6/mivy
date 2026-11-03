@@ -86,7 +86,7 @@ struct ScanView: View {
     }
 }
 
-private struct DocActionTile: View {
+struct DocActionTile: View {
     let title: String
     let icon: String
     let tint: Color

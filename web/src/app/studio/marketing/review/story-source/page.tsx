@@ -258,20 +258,20 @@ function ScenarioViewer({
   };
 
   return (
-    <section className="rounded-2xl border border-white/15 bg-slate-900/60 p-5 space-y-4">
+    <section className="rounded-2xl border border-white/15 bg-black/60 p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-white">{title}</h2>
+          <h2 className="text-lg font-bold text-mv-fg">{title}</h2>
           <p className="text-xs text-slate-400">{subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-md bg-white/15 border border-white/30 px-2.5 py-1 text-xs font-mono text-zinc-300">
+          <span className="rounded-md bg-ink/[0.08] border border-mv-hair-strong px-2.5 py-1 text-xs font-mono text-zinc-300">
             mode: {resolved.isConcept ? 'concept-balanced' : 'legacy-sliced'} · items: {resolved.items.length} · pages: {resolved.pages.map((p) => p.length).join('/')} (total {resolved.totalPages})
           </span>
           <button
             type="button"
             onClick={downloadScenarioZip}
-            className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-indigo-400"
+            className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-mv-fg hover:bg-indigo-400"
           >
             Tải bộ ZIP kiểm tra
           </button>
@@ -282,7 +282,7 @@ function ScenarioViewer({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {resolved.pages.map((pageItems, idx) => (
-          <div key={idx} className="rounded-xl border border-white/10 bg-slate-950/60 p-3 space-y-2">
+          <div key={idx} className="rounded-xl border border-mv-hair bg-black/60 p-3 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-slate-300">
               <span className="font-semibold">
                 Trang {idx + 1}/{resolved.totalPages} ({pageItems.length} mục)
@@ -317,7 +317,7 @@ function ScenarioViewer({
                 WebkitFontSmoothing: 'subpixel-antialiased',
                 textRendering: 'geometricPrecision',
               }}
-              className="w-full rounded-lg border border-white/10"
+              className="w-full rounded-lg border border-mv-hair"
             />
             <ul className="text-[11px] text-slate-400 space-y-0.5 list-disc pl-4">
               {pageItems.length > 0 ? (
@@ -341,8 +341,8 @@ export default function StorySourceReviewPage() {
   const [aspect, setAspect] = useState<AspectRatio>('4:5');
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+    <main className="min-h-screen bg-mv-surface text-mv-fg p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-mv-hair pb-4">
         <div className="flex items-center gap-4">
           <a href="/studio/marketing/review" className="text-sm text-zinc-300 hover:underline">
             ← Quay lại trang Review
@@ -357,7 +357,7 @@ export default function StorySourceReviewPage() {
             aria-label="Khổ kiểm tra"
             value={aspect}
             onChange={(e) => setAspect(e.target.value as AspectRatio)}
-            className="rounded-lg bg-slate-800 border border-white/15 px-3 py-1.5 text-xs text-white"
+            className="rounded-lg bg-slate-800 border border-mv-hair px-3 py-1.5 text-xs text-mv-fg"
           >
             <option value="1:1">1:1 (1080×1080)</option>
             <option value="4:5">4:5 (1080×1350)</option>

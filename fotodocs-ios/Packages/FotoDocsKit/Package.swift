@@ -34,7 +34,8 @@ let package = Package(
         ),
         .target(
             name: "FeatureDocuments",
-            dependencies: ["FotoDocsCore", "FotoDocsImaging", "FotoDocsDesign"]
+            dependencies: ["FotoDocsCore", "FotoDocsImaging", "FotoDocsDesign"],
+            resources: [.copy("Resources/VisaForms")]
         ),
         .target(
             name: "FeatureAvatar",

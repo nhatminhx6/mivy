@@ -208,12 +208,12 @@ public enum StandardChecklist {
             ChecklistItem(id: "face", label: "Thấy rõ khuôn mặt", ok: face.faceFound, advisory: false),
             ChecklistItem(id: "bright", label: "Đủ sáng, không chói", ok: face.brightnessOK, advisory: false),
             ChecklistItem(id: "straight", label: "Mặt thẳng, không nghiêng", ok: face.straightOK, advisory: false),
-            ChecklistItem(id: "ears", label: "Lộ hai tai", ok: face.earsVisible, advisory: false),
+            ChecklistItem(id: "ears", label: "Lộ hai tai", ok: face.earsVisible, advisory: target.infant),
             ChecklistItem(id: "bg-solid", label: "Nền đồng màu", ok: solidBackground, advisory: false),
             ChecklistItem(id: "bg-white", label: "Nền sáng đúng chuẩn", ok: solidBackground, advisory: false),
             ChecklistItem(id: "aspect", label: "Đúng tỉ lệ \(target.sizeText)", ok: true, advisory: false),
             ChecklistItem(id: "res", label: "Đủ độ phân giải in", ok: enoughRes, advisory: false),
-            ChecklistItem(id: "neutral", label: "Biểu cảm trung tính", ok: true, advisory: true),
+            ChecklistItem(id: "neutral", label: target.infant ? "Bé mở mắt, ngậm miệng" : "Biểu cảm trung tính", ok: true, advisory: true),
             ChecklistItem(id: "noglass", label: "Không kính / vật che", ok: true, advisory: true),
         ]
     }

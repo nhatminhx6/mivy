@@ -9,13 +9,13 @@ export function CollapsibleSection({ title, children, right, defaultOpen = true,
   const [open, setOpen] = useState(defaultOpen);
   const base = tone === 'accent'
     ? 'glass-panel border border-indigo-500/30 bg-indigo-500/[0.04]'
-    : tone === 'card' ? 'glass-card hover:!transform-none' : 'glass-panel border border-white/10';
+    : tone === 'card' ? 'glass-card hover:!transform-none' : 'glass-panel border border-mv-hair';
   return (
     <div className={`${base} rounded-2xl`}>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <button type="button" onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 min-w-0 flex-1 text-left">
           <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? '' : '-rotate-90'}`} />
-          <span className="text-sm font-bold text-white truncate">{title}</span>
+          <span className="text-sm font-bold text-mv-fg truncate">{title}</span>
         </button>
         {right}
       </div>

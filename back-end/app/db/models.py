@@ -50,6 +50,9 @@ class User(Base):
     balance: Mapped[int] = mapped_column(Integer, default=0)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    # chăm sóc khách: SĐT/Zalo + ghi chú riêng của admin
+    phone: Mapped[str] = mapped_column(String(20), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
 
 
 class AuthSession(Base):
@@ -77,3 +80,42 @@ class WalletTx(Base):
     note: Mapped[str] = mapped_column(String(255), default="")
     balance_after: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+
+
+# ---------- Đơn in (khách gửi yêu cầu → admin báo giá, theo dõi tới lúc giao) ----------
+class OrderStatus(StrEnum):
+    NEW = "new"  # khách vừa gửi
+    QUOTED = "quoted"  # đã báo giá, chờ cọc
+    DEPOSITED = "deposited"  # đã cọc
+    SAMPLE = "sample"  # đang in mẫu cho khách duyệt
+    PRINTING = "printing"  # khách duyệt mẫu, đang in lô
+    DELIVERED = "delivered"  # đã giao xong
+    CANCELLED = "cancelled"
+
+
+class PrintOrder(Base):
+    __tablename__ = "print_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    product: Mapped[str] = mapped_column(String(20))  # card | sticker | keychain
+    title: Mapped[str] = mapped_column(String(200))
+    quantity: Mapped[int] = mapped_column(Integer)
+    material: Mapped[str] = mapped_column(String(120), default="")
+    contact_name: Mapped[str] = mapped_column(String(120), default="")
+    phone: Mapped[str] = mapped_column(String(20))
+    address: Mapped[str] = mapped_column(String(300), default="")
+    need_by: Mapped[str] = mapped_column(String(10), default="")  # YYYY-MM-DD
+    note: Mapped[str] = mapped_column(Text, default="")
+    design: Mapped[str] = mapped_column(Text, default="")  # JSON thiết kế để mở lại/sửa
+    file_name: Mapped[str] = mapped_column(String(200))  # file in gửi xưởng
+    status: Mapped[str] = mapped_column(String(20), default=OrderStatus.NEW, index=True)
+    price: Mapped[int | None] = mapped_column(Integer, nullable=True)  # tổng tiền (VNĐ)
+    deposit: Mapped[int | None] = mapped_column(Integer, nullable=True)  # tiền cọc (VNĐ)
+    admin_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )

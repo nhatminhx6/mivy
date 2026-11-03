@@ -29,6 +29,12 @@ public struct IDPhotoHomeView: View {
                         header
                         hero
                         grid
+                        wideTile(title: "Ảnh cho bé", subtitle: "Hộ chiếu trẻ em · bé nằm cũng được, app tự xoay thẳng", icon: "figure.and.child.holdinghands") {
+                            router.push(.baby)
+                        }
+                        wideTile(title: "Ảnh nộp online", subtitle: "DS-160, hộ chiếu online, thi THPT… đúng px và KB", icon: "icloud.and.arrow.up") {
+                            router.path.append(IDHomeRoute.online)
+                        }
                         quickTools
                     }
                     .padding(.horizontal, 20)
@@ -37,6 +43,11 @@ public struct IDPhotoHomeView: View {
                 }
                 .navigationDestination(for: CaptureTarget.self) { target in
                     CaptureView(target: target)
+                }
+                .navigationDestination(for: IDHomeRoute.self) { route in
+                    switch route {
+                    case .online: OnlinePhotoView { router.push($0) }
+                    }
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -183,6 +194,28 @@ public struct IDPhotoHomeView: View {
                         .frame(width: 34, height: 34)
                         .background(FotoDocs.Palette.primaryTint, in: .circle)
                 }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fotoCard(FotoDocs.Radius.tile)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func wideTile(title: String, subtitle: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.bvp(.title3))
+                    .foregroundStyle(FotoDocs.Palette.primary)
+                    .frame(width: 44, height: 44)
+                    .background(FotoDocs.Palette.primaryTint, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.bvp(.headline, .semibold)).foregroundStyle(FotoDocs.Palette.textPrimary)
+                    Text(subtitle).font(.bvp(.footnote)).foregroundStyle(FotoDocs.Palette.textSecondary).lineLimit(2)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right").foregroundStyle(FotoDocs.Palette.textMuted)
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -41,7 +41,7 @@ export default function SignagePage() {
   const dots = (list: string[], cur: string | undefined, key: 'color' | 'ink') => (
     <div className="flex flex-wrap gap-2">
       {list.map((c) => <button key={c} type="button" onClick={() => set({ [key]: c })} aria-label={c}
-        className={`w-8 h-8 rounded-full border-2 transition-transform ${cur === c ? 'border-white scale-110' : 'border-white/15 hover:border-white/40'}`} style={{ background: c }} />)}
+        className={`w-8 h-8 rounded-full border-2 transition-transform ${cur === c ? 'border-mv-accent scale-110' : 'border-mv-hair hover:border-mv-hair-strong'}`} style={{ background: c }} />)}
     </div>
   );
   const slug = slugify(data.name || data.street || 'bang-hieu', 'bang-hieu');
@@ -86,7 +86,7 @@ export default function SignagePage() {
     downloadBlob(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }), `${slug}-file-cat-${spec.w / 10}x${spec.h / 10}cm.svg`);
   });
 
-  const swatch = (on: boolean) => `flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15 text-white' : 'border-white/10 text-slate-300 hover:border-white/30'}`;
+  const swatch = (on: boolean) => `flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`;
   const matChip = (m: (typeof MATERIALS)[number]) => (
     <span className="w-5 h-5 rounded-md shrink-0 border border-black/20" style={{ background: m.grad ? `linear-gradient(135deg, ${m.grad.join(',')})` : m.base }} />
   );
@@ -104,8 +104,8 @@ export default function SignagePage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
                 {SIGN_KINDS.map((k) => (
                   <button key={k.id} type="button" onClick={() => pickKind(k.id)} data-testid="sign-kind"
-                    className={`rounded-xl border px-3 py-2.5 text-left transition-all ${kind === k.id ? 'border-indigo-400 ring-2 ring-indigo-400/40 bg-indigo-500/10' : 'border-white/10 hover:border-white/30'}`}>
-                    <div className="text-xs font-bold text-white">{k.name}</div>
+                    className={`rounded-xl border px-3 py-2.5 text-left transition-all ${kind === k.id ? 'border-indigo-400 ring-2 ring-indigo-400/40 bg-indigo-500/10' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
+                    <div className="text-xs font-bold text-mv-fg">{k.name}</div>
                     <div className="text-[10px] text-slate-400 mt-0.5 leading-snug">{k.desc}</div>
                   </button>
                 ))}
@@ -116,8 +116,8 @@ export default function SignagePage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
                 {SIGN_TEMPLATES.map((x) => (
                   <button key={x.id} type="button" onClick={() => pickTpl(x.id)} data-testid="sign-tpl"
-                    className={`rounded-xl border p-1.5 text-left transition-all ${spec.tpl === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-white/10 hover:border-white/30'}`}>
-                    <div className="aspect-[4/3] rounded-lg overflow-hidden bg-black/20 flex items-center justify-center">
+                    className={`rounded-xl border p-1.5 text-left transition-all ${spec.tpl === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
+                    <div className="aspect-[4/3] rounded-lg overflow-hidden bg-ink/[0.04] flex items-center justify-center">
                       <SignSvg spec={x.id === spec.tpl ? spec : { ...spec, ...look(kind, x.id), tpl: x.id, w: x.w, h: x.h, fontId: x.font }} data={data} aspect={4 / 3} style={{ width: '100%', height: '100%', display: 'block' }} />
                     </div>
                     <div className="text-[11px] font-medium text-slate-300 mt-1.5 px-0.5">{x.name}</div>
@@ -137,17 +137,17 @@ export default function SignagePage() {
                 <div className="mt-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="mv-label">Hoạ tiết cắt</span>
-                    <button type="button" onClick={() => setData((d) => ({ ...d, icon: 'none' }))} className={`text-[11px] px-2 py-0.5 rounded-full border ${data.icon === 'none' ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>Không hoạ tiết</button>
+                    <button type="button" onClick={() => setData((d) => ({ ...d, icon: 'none' }))} className={`text-[11px] px-2 py-0.5 rounded-full border ${data.icon === 'none' ? 'border-mv-accent text-mv-fg' : 'border-mv-hair text-slate-400'}`}>Không hoạ tiết</button>
                   </div>
-                  <div className="max-h-48 overflow-y-auto pr-1 space-y-2 rounded-lg border border-white/[0.07] bg-white/[0.02] p-2">
+                  <div className="max-h-48 overflow-y-auto pr-1 space-y-2 rounded-lg border border-mv-hair bg-ink/[0.03] p-2">
                     {ICON_CATS.filter((c) => ICON_PICK_CATS.includes(c.id)).map((cat) => (
                       <div key={cat.id}>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1">{cat.name}</div>
                         <div className="grid grid-cols-10 sm:grid-cols-[repeat(14,minmax(0,1fr))] gap-1">
                           {LOGO_ICONS.filter((ic) => ic.cat === cat.id).map(({ id, Comp }) => (
                             <button key={id} type="button" title={id} onClick={() => setData((d) => ({ ...d, icon: id }))}
-                              className={`aspect-square rounded-md flex items-center justify-center border ${data.icon === id ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/20'}`}>
-                              <Comp size={16} color="#e2e8f0" weight="fill" />
+                              className={`aspect-square rounded-md flex items-center justify-center border ${data.icon === id ? 'border-mv-accent bg-mv-accent-soft text-mv-accent' : 'border-transparent text-[#2B3345] hover:border-mv-hair-strong hover:bg-mv-surface'}`}>
+                              <Comp size={16} color="currentColor" weight="fill" />
                             </button>
                           ))}
                         </div>
@@ -166,8 +166,8 @@ export default function SignagePage() {
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5" data-testid="sign-palettes">
                       {PRINT_PALETTES.map((p) => (
                         <button key={p.id} type="button" onClick={() => set({ color: p.face, ink: p.ink, accent: p.accent })} title={p.name}
-                          className={`flex items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-[10px] text-slate-300 ${spec.color === p.face && spec.accent === p.accent ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/10 hover:border-white/30'}`}>
-                          <span className="relative w-6 h-6 rounded shrink-0 border border-white/20 grid place-items-center text-[11px] font-black" style={{ background: p.face, color: p.ink }}>A<span className="absolute bottom-0.5 inset-x-1 h-0.5 rounded" style={{ background: p.accent }} /></span>
+                          className={`flex items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-[10px] text-slate-300 ${spec.color === p.face && spec.accent === p.accent ? 'border-indigo-400 bg-indigo-500/10' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
+                          <span className="relative w-6 h-6 rounded shrink-0 border border-mv-hair grid place-items-center text-[11px] font-black" style={{ background: p.face, color: p.ink }}>A<span className="absolute bottom-0.5 inset-x-1 h-0.5 rounded" style={{ background: p.accent }} /></span>
                           <span className="truncate">{p.name}</span>
                         </button>
                       ))}
@@ -234,7 +234,7 @@ export default function SignagePage() {
 
           {/* Mockup ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <span className="text-sm font-bold text-white">Xem trước</span>
+            <span className="text-sm font-bold text-mv-fg">Xem trước</span>
             <div className="grid grid-cols-8 gap-1" data-testid="sign-scenes">
               {SIGN_SCENES.map((x) => (
                 <button key={x.id} type="button" onClick={() => set({ scene: x.id, ...(kind === 'cnc' ? x.cnc : {}) })} title={x.name} aria-label={x.name}
@@ -247,10 +247,10 @@ export default function SignagePage() {
               <span className="text-[10px] text-slate-500 mr-1">Tường trơn:</span>
               {WALLS.map((w) => (
                 <button key={w.id} type="button" onClick={() => set({ wall: w.id, scene: '' })} title={w.name}
-                  className={`text-[10px] px-2 py-0.5 rounded-full border ${!spec.scene && spec.wall === w.id ? 'border-white text-white' : 'border-white/15 text-slate-400'}`}>{w.name}</button>
+                  className={`text-[10px] px-2 py-0.5 rounded-full border ${!spec.scene && spec.wall === w.id ? 'border-mv-accent text-mv-fg' : 'border-mv-hair text-slate-400'}`}>{w.name}</button>
               ))}
             </div>
-            <div ref={previewRef} className="rounded-xl overflow-hidden border border-white/10" data-testid="sign-preview">
+            <div ref={previewRef} className="rounded-xl overflow-hidden border border-mv-hair" data-testid="sign-preview">
               <SignSvg spec={t.shape === 'circle' ? { ...spec, h: spec.w } : spec} data={data} aspect={4 / 3} style={{ width: '100%', display: 'block' }} />
             </div>
             <div className="text-[11px] text-slate-400">

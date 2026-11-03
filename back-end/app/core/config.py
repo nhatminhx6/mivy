@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     # Người mẫu AI: FASHN VTON 1.5 trên Hugging Face (đổi sang Space riêng/Modal khi có)
     fashn_space: str = "fashn-ai/fashn-vton-1.5"
     hf_token: str = ""  # token HF của Mivy → nhiều lượt GPU hơn
+    # Đơn in: file in khách gửi + báo admin qua Telegram (để trống = không báo)
+    print_dir: Path = Path("./data/print_orders")
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    site_url: str = ""  # vd https://mivy.vn — gắn link trang quản trị vào tin báo
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

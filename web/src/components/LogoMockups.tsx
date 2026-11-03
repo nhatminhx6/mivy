@@ -162,20 +162,20 @@ export const LogoMockups = forwardRef<LogoMockupsHandle, {
         {all.map(({ id, label }, i) => (
           <div key={id}>
             <button type="button" onClick={() => lb.open(i)} aria-label={`Xem lớn ${label}`} className="group relative block w-full cursor-zoom-in">
-              <div ref={(el) => { tiles.current[id] = el; }} data-testid="mockup-tile" data-mockup={id} className="aspect-square rounded-xl overflow-hidden border border-white/10 bg-white transition-colors group-hover:border-indigo-400">
+              <div ref={(el) => { tiles.current[id] = el; }} data-testid="mockup-tile" data-mockup={id} className="aspect-square rounded-xl overflow-hidden border border-mv-hair bg-white transition-colors group-hover:border-indigo-400">
                 {PHOTO_ITEMS.some((p) => p.id === id)
                   ? <PhotoMockup item={id} logo={logo} mockup={mockups[id]} name={name} slogan={slogan} accent={palette.colorAccent} />
                   : <CodeMockup item={id} p={palette} logo={renderLogo} name={name} slogan={slogan} contact={contact} />}
               </div>
-              <span className="pointer-events-none absolute inset-0 rounded-xl flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover:bg-slate-950/35 group-hover:opacity-100">
-                <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900">
+              <span className="pointer-events-none absolute inset-0 rounded-xl flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/35 group-hover:opacity-100">
+                <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-mv-fg">
                   {lb.loading === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Maximize2 className="w-3.5 h-3.5" />} Xem lớn
                 </span>
               </span>
             </button>
             <div className="flex items-center justify-between mt-1 px-0.5">
               <span className="text-[11px] text-slate-400">{label}</span>
-              <button type="button" onClick={() => downloadOne(id)} title={`Tải ${label}`} aria-label={`Tải ${label}`} className="text-slate-400 hover:text-white">
+              <button type="button" onClick={() => downloadOne(id)} title={`Tải ${label}`} aria-label={`Tải ${label}`} className="text-slate-400 hover:text-mv-fg">
                 {busy === id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
               </button>
             </div>

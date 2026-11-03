@@ -82,7 +82,7 @@ const PRESETS: { name: string; layout: PLLayout; theme: PosterThemeId; illus: st
   },
 ];
 
-const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`;
+const chip = (on: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${on ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-300 hover:text-mv-fg hover:border-mv-hair-strong'}`;
 
 // Nạp font bảng giá (link Google Fonts) rồi chờ sẵn sàng — đo độ vừa khổ cần font thật.
 function usePriceFonts(): boolean {
@@ -188,11 +188,11 @@ export default function PriceListPage() {
             <div className="mv-label mb-1.5">Màu</div>
             <div className="flex flex-wrap gap-2 mb-4">
               {kit && (() => { const bc = posterColorsFromBrand(kit); return (
-                <button type="button" onClick={() => setThemeId('brand')} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === 'brand' ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                <button type="button" onClick={() => setThemeId('brand')} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === 'brand' ? 'border-mv-accent bg-ink/[0.05] text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>
                   <span className="w-5 h-5 rounded-full" style={{ background: bc.main, boxShadow: `inset 0 0 0 3px ${bc.soft}` }} />Thương hiệu
                 </button>); })()}
               {POSTER_THEMES.map((t) => (
-                <button key={t.id} type="button" onClick={() => setThemeId(t.id)} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === t.id ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                <button key={t.id} type="button" onClick={() => setThemeId(t.id)} className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold ${themeId === t.id ? 'border-mv-accent bg-ink/[0.05] text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>
                   <span className="w-5 h-5 rounded-full" style={{ background: t.main, boxShadow: `inset 0 0 0 3px ${t.soft}` }} />{t.name}
                 </button>
               ))}
@@ -202,7 +202,7 @@ export default function PriceListPage() {
               <div className="grid grid-cols-10 sm:grid-cols-12 gap-1 max-h-28 overflow-y-auto pr-1">
                 {ILLUSTRATIONS.map((il) => (
                   <button key={il.id} type="button" title={il.name} onClick={() => toggleIllus(il.id)}
-                    className={`aspect-square rounded-md border p-0.5 ${illus.includes(il.id) ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-white/25'}`}>
+                    className={`aspect-square rounded-md border p-0.5 ${illus.includes(il.id) ? 'border-indigo-400 bg-indigo-500/20' : 'border-transparent hover:border-mv-hair-strong'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={illustrationUrl(il.id)} alt={il.name} className="w-full h-full object-contain" loading="lazy" />
                   </button>
@@ -239,7 +239,7 @@ export default function PriceListPage() {
             ) : (
               <div className="space-y-3">
                 {data.sections.map((sec, si) => (
-                  <div key={si} className="rounded-xl border border-white/10 p-3 space-y-2 bg-white/[0.02]">
+                  <div key={si} className="rounded-xl border border-mv-hair p-3 space-y-2 bg-ink/[0.03]">
                     <div className="flex items-center gap-2">
                       <input className="mv-input flex-1 min-w-0 !font-bold" value={sec.title} onChange={(e) => setSec(si, { title: e.target.value })} placeholder="Tên nhóm" />
                       <label className="flex items-center gap-1.5 text-[11px] text-slate-300 shrink-0">
@@ -282,7 +282,7 @@ export default function PriceListPage() {
         <div className="lg:sticky lg:top-4 self-start space-y-3">
           <div className="glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-white">Xem trước</span>
+              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
               <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">{aspect === 'A4' ? 'A4 · 2480×3508 · 300dpi' : `PNG · ${A.w * 2}×${A.h * 2}`}</span>
             </div>
             <button type="button" onClick={download} disabled={busy || !fontsReady} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-60">
@@ -294,7 +294,7 @@ export default function PriceListPage() {
               </div>
             )}
           </div>
-          <div className="glass-panel rounded-2xl p-3 border border-white/10" style={{ maxWidth: aspect === '9:16' || aspect === 'A4' ? 360 : undefined, marginInline: 'auto' }}>
+          <div className="glass-panel rounded-2xl p-3 border border-mv-hair" style={{ maxWidth: aspect === '9:16' || aspect === 'A4' ? 360 : undefined, marginInline: 'auto' }}>
             <div className="rounded-xl overflow-hidden" data-testid="pl-preview">
               <Scaled w={A.w} h={A.h} nodeRef={(el) => { nodeRef.current = el; }}>
                 <PriceBoard data={data} layout={layout} aspect={aspect} T={T} brand={brand} illus={layout === 'elegant' ? [] : illus} fit={FIT_STEPS[idx]} bodyRef={(el) => { bodyRef.current = el; }} />

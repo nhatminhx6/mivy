@@ -46,7 +46,7 @@ export function IndustryForm({state,onChange}:{state:MarketingState;onChange:(s:
    // KHÔNG tự set conceptId: giữ nguyên renderer hiện tại (hero nền đặc), tránh nhảy sang layout "chữ đè ảnh".
    onChange({...state,industryFields:data,name:nextAuto.headline,details:Object.values(visibleData).filter(Boolean).join('\n'),offer:data.salary||data.price||'',copies:newCopies});
  };
- return <fieldset className="space-y-3 border border-white/20 rounded-xl p-3"><legend className="px-2 text-zinc-300">Thông tin riêng theo ngành</legend>
+ return <fieldset className="space-y-3 border border-mv-hair rounded-xl p-3"><legend className="px-2 text-zinc-300">Thông tin riêng theo ngành</legend>
  <p className="text-slate-400">Điền thông tin để em cập nhật poster cho anh nhé. Các ô trống sẽ không xuất hiện.</p>
  
  {missing.length > 0 && (
@@ -58,15 +58,15 @@ export function IndustryForm({state,onChange}:{state:MarketingState;onChange:(s:
  {fields.map(f=><label key={f.key} className="block text-slate-300">
    <div className="flex justify-between items-end">
      <span>{f.label}</span>
-     {f.multiline && initial[f.key] && <button type="button" onClick={() => update(f.key, (initial[f.key] as string).replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n'))} className="text-xs text-slate-500 hover:text-white">Chuẩn hóa dòng</button>}
+     {f.multiline && initial[f.key] && <button type="button" onClick={() => update(f.key, (initial[f.key] as string).replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n'))} className="text-xs text-slate-500 hover:text-mv-fg">Chuẩn hóa dòng</button>}
    </div>
-   {f.multiline?<textarea aria-label={f.label} placeholder={isEn && f.placeholderEn ? f.placeholderEn : f.placeholder} rows={3} value={initial[f.key]||''} onChange={e=>update(f.key,e.target.value)} className="mt-1 w-full rounded-lg bg-slate-950 p-2"/>:<input aria-label={f.label} placeholder={isEn && f.placeholderEn ? f.placeholderEn : f.placeholder} value={initial[f.key]||''} onChange={e=>update(f.key,e.target.value)} className="mt-1 w-full rounded-lg bg-slate-950 p-2"/>}
+   {f.multiline?<textarea aria-label={f.label} placeholder={isEn && f.placeholderEn ? f.placeholderEn : f.placeholder} rows={3} value={initial[f.key]||''} onChange={e=>update(f.key,e.target.value)} className="mt-1 w-full rounded-lg bg-mv-surface p-2"/>:<input aria-label={f.label} placeholder={isEn && f.placeholderEn ? f.placeholderEn : f.placeholder} value={initial[f.key]||''} onChange={e=>update(f.key,e.target.value)} className="mt-1 w-full rounded-lg bg-mv-surface p-2"/>}
  </label>)}
 
  <details className="mt-4 border-t border-slate-700 pt-2">
    <summary className="text-slate-400 cursor-pointer text-sm font-medium">Ghi chú nháp (Raw Notes)</summary>
    <div className="mt-1 text-xs text-slate-500 mb-2">Chỉ lưu nháp, em không xử lý AI hay xuất lên poster.</div>
-   <textarea rows={4} value={initial.__notes || ''} onChange={e => update('__notes', e.target.value)} className="w-full rounded-lg bg-slate-950 p-2 text-slate-300 text-sm" placeholder={isEn ? "Paste raw text here..." : "Dán nội dung thô vào đây để tham khảo..."} />
+   <textarea rows={4} value={initial.__notes || ''} onChange={e => update('__notes', e.target.value)} className="w-full rounded-lg bg-mv-surface p-2 text-slate-300 text-sm" placeholder={isEn ? "Paste raw text here..." : "Dán nội dung thô vào đây để tham khảo..."} />
  </details>
  </fieldset>;
 }

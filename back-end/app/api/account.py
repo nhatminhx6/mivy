@@ -36,13 +36,20 @@ def fail(e: AccountError) -> HTTPException:
 
 
 def public(u: User) -> dict:
-    return {"id": u.id, "email": u.email, "name": u.name, "balance": u.balance, "is_admin": u.is_admin}
+    return {"id": u.id, "email": u.email, "name": u.name, "phone": u.phone or "", "balance": u.balance,
+            "is_admin": u.is_admin}
 
 
 class RegisterIn(BaseModel):
     email: str
     password: str
     name: str = ""
+    phone: str = ""
+
+
+class ProfileIn(BaseModel):
+    name: str | None = None
+    phone: str | None = None
 
 
 class LoginIn(BaseModel):
@@ -66,7 +73,7 @@ def set_cookie(request: Request, response: Response, token: str) -> None:
 async def register(body: RegisterIn, request: Request, response: Response) -> dict:
     svc = accounts(request)
     try:
-        await svc.register(body.email, body.password, body.name)
+        await svc.register(body.email, body.password, body.name, body.phone)
         user, token = await svc.login(body.email, body.password)
     except AccountError as e:
         raise fail(e) from e
@@ -95,6 +102,14 @@ async def logout(request: Request, response: Response) -> dict:
 @router.get("/me")
 async def me(request: Request, user: User = Depends(current_user)) -> dict:
     return {**public(user), "prices": {"tryon": request.app.state.settings.tryon_price}}
+
+
+@router.patch("/me")
+async def update_me(body: ProfileIn, request: Request, user: User = Depends(current_user)) -> dict:
+    try:
+        return public(await accounts(request).update_profile(user.id, body.name, body.phone))
+    except AccountError as e:
+        raise fail(e) from e
 
 
 def tx_out(tx, email: str) -> dict:

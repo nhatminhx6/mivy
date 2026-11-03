@@ -1,12 +1,11 @@
 'use client';
 // QC v2 — test 100% tính năng gen hình: poster (mọi ngành × full/matrix × template × MÙA × STICKER × VIỀN),
-// banner sản phẩm, bảng giá, brand-assets (bìa + wordmark), vật phẩm.
+// bảng giá, brand-assets (bìa + wordmark), vật phẩm.
 // Audit: canvas trống · chữ tràn mép · số lệch text · TRANG TRÍ ĐÈ CTA/nội dung · box tràn khung.
 import { useEffect, useRef, useState } from 'react';
 import { CATEGORIES, TEMPLATES } from '@/lib/template-catalog';
 import { CATEGORY_SAMPLES } from '@/lib/category-samples';
 import { drawIndustryPoster } from '@/lib/design-engine';
-import { BANNER_SIZES, drawProductBanner } from '@/lib/product-banner-engine';
 import { drawPriceList } from '@/lib/pricelist-engine';
 import { ASSET_KINDS, COVER_TEMPLATES, drawBrandAsset, drawWordmark } from '@/lib/brandasset-engine';
 import { MERCH_ITEMS, drawMerch } from '@/lib/merch-engine';
@@ -187,13 +186,6 @@ export default function QCPage() {
           {row.items.map((it) => <Poster key={it.id} st={it.st} kind={it.kind} id={it.id} />)}
         </Row>
       ))}
-
-      {/* BANNER sản phẩm */}
-      <Row label="Banner sản phẩm (khổ × nền)">
-        {BANNER_SIZES.flatMap((sz) => (['studio', 'gradient', 'solid'] as const).map((bgStyle) => (
-          <Sync key={`banner|${sz.id}|${bgStyle}`} id={`banner|${sz.id}|${bgStyle}`} draw={(c) => drawProductBanner(c, { size: sz.id, bgStyle, headline: 'SẢN PHẨM MỚI', price: '199.000đ', oldPrice: '299.000đ', saleTag: '-30%', cta: 'MUA NGAY', brandName: 'MIVY', colorPrimary: '#0f172a', colorAccent: '#6366f1', fontHeadingId: 'be-vietnam', fontBodyId: 'be-vietnam' })} />
-        )))}
-      </Row>
 
       {/* BẢNG GIÁ */}
       <Row label="Bảng giá (style × khổ)">

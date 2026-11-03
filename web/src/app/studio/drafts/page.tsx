@@ -34,10 +34,10 @@ export default function DraftsPage() {
           <div className="glass-card p-6 space-y-6">
             <div className="flex items-start justify-between">
               <div>
-                <span className="mv-label inline-block px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white">
+                <span className="mv-label inline-block px-2 py-0.5 rounded bg-ink/[0.03] border border-mv-hair text-mv-fg">
                   {draft.industry}
                 </span>
-                <h2 className="text-xl font-bold text-white mt-2">{draft.name || 'Chiến dịch chưa đặt tên'}</h2>
+                <h2 className="text-xl font-bold text-mv-fg mt-2">{draft.name || 'Chiến dịch chưa đặt tên'}</h2>
                 <p className="text-xs text-slate-400 mt-1">Thương hiệu: {draft.brand || 'Mivy'}</p>
               </div>
               <button
@@ -50,11 +50,11 @@ export default function DraftsPage() {
               </button>
             </div>
 
-            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap">
+            <div className="p-4 rounded-xl bg-black/40 border border-mv-hair text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap">
               {draft.details}
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between pt-4 border-t border-mv-hair">
               <span className="text-xs text-slate-500 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
                 <span>Được lưu trên trình duyệt</span>
@@ -68,10 +68,10 @@ export default function DraftsPage() {
           </div>
         ) : (
           <div className="glass-card p-12 text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-slate-400">
+            <div className="w-12 h-12 rounded-2xl bg-ink/[0.03] border border-mv-hair flex items-center justify-center mx-auto text-slate-400">
               <BookmarkCheck className="w-6 h-6" />
             </div>
-            <h2 className="text-base font-bold text-white">Chưa có bản nháp nào được lưu</h2>
+            <h2 className="text-base font-bold text-mv-fg">Chưa có bản nháp nào được lưu</h2>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
               Khi anh tạo và chỉnh sửa poster trong Studio, thông tin sẽ được tự động lưu lại tại đây.
             </p>

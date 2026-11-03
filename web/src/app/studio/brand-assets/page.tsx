@@ -100,7 +100,7 @@ export default function BrandAssetsPage() {
       <div className="grid lg:grid-cols-[1fr_340px] gap-7 items-start">
         {/* Preview stage */}
         <div className="glass-card p-6 flex flex-col items-center lg:sticky lg:top-4 self-start">
-          <div className="w-full rounded-xl bg-black/25 border border-white/[0.05] p-5 flex items-center justify-center min-h-[420px]">
+          <div className="w-full rounded-xl bg-ink/[0.04] border border-mv-hair p-5 flex items-center justify-center min-h-[420px]">
             <canvas ref={canvasRef} className="rounded-lg shadow-2xl max-h-[460px] w-auto" style={{ maxWidth: kind === 'avatar' ? 360 : '100%', aspectRatio: `${cur.w}/${cur.h}` }} />
           </div>
           <div className="w-full flex items-center justify-between mt-4">
@@ -128,7 +128,7 @@ export default function BrandAssetsPage() {
             <div className="grid grid-cols-4 gap-1.5" data-testid="cover-scenes">
               {COVER_SCENES.map((x) => (
                 <button key={x.id} type="button" onClick={() => setScene(x.id)} title={x.label}
-                  className={`rounded-lg overflow-hidden border text-left transition-all ${scene === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-white/10 hover:border-white/30'}`}>
+                  className={`rounded-lg overflow-hidden border text-left transition-all ${scene === x.id ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
                   <img src={x.src} alt={x.label} className="w-full aspect-[21/9] object-cover object-right" loading="lazy" />
                   <div className="text-[10px] text-slate-300 px-1.5 py-1 truncate">{x.label}</div>
                 </button>
@@ -169,7 +169,7 @@ export default function BrandAssetsPage() {
             </div>
             {style === 'photo' && (
               <div className="flex items-center gap-2 mt-2.5">
-                {bgUrl ? <div className="relative"><img src={bgUrl} className="w-12 h-12 object-cover rounded-lg border border-white/10" alt="bg" /><button onClick={() => setBgUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button></div> : <span className="text-xs text-slate-500">Chưa có ảnh nền</span>}
+                {bgUrl ? <div className="relative"><img src={bgUrl} className="w-12 h-12 object-cover rounded-lg border border-mv-hair" alt="bg" /><button onClick={() => setBgUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-mv-fg" /></button></div> : <span className="text-xs text-slate-500">Chưa có ảnh nền</span>}
                 <label className="mv-btn mv-btn-ghost cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải ảnh nền<input type="file" accept="image/*" className="sr-only" onChange={onFile(setBgUrl)} /></label>
               </div>
             )}
@@ -178,7 +178,7 @@ export default function BrandAssetsPage() {
           <div>
             <div className="mv-label mb-2.5">Logo</div>
             <div className="flex items-center gap-2">
-              {logoUrl ? <div className="relative"><img src={logoUrl} className="w-12 h-12 object-contain rounded-lg bg-white/10 border border-white/10" alt="logo" /><button onClick={() => setLogoUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button></div> : <span className="text-xs text-slate-500">Chưa có — dùng chữ cái đầu</span>}
+              {logoUrl ? <div className="relative"><img src={logoUrl} className="w-12 h-12 object-contain rounded-lg bg-ink/[0.05] border border-mv-hair" alt="logo" /><button onClick={() => setLogoUrl('')} className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-mv-fg" /></button></div> : <span className="text-xs text-slate-500">Chưa có — dùng chữ cái đầu</span>}
               <label className="mv-btn mv-btn-ghost cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải logo<input type="file" accept="image/*" className="sr-only" onChange={onFile(setLogoUrl)} /></label>
             </div>
           </div>
@@ -209,8 +209,8 @@ export default function BrandAssetsPage() {
           <div>
             <div className="mv-label mb-2.5">Màu &amp; font</div>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Nền</label>
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-white/15 p-0" /> Nhấn</label>
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={primary} onChange={(e) => setPrimary(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-mv-hair p-0" /> Nền</label>
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"><input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border border-mv-hair p-0" /> Nhấn</label>
               <select value={fontId} onChange={(e) => setFontId(e.target.value)} className="mv-chip-select flex-1">
                 {FONT_PRESETS.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
               </select>

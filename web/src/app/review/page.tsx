@@ -2,7 +2,6 @@
 // Công cụ tự-soi chất lượng NỘI DUNG/thiết kế (render cỡ lớn). Nội bộ, giống /studio/qc nhưng to để nhìn.
 import { useEffect, useRef } from 'react';
 import { drawIndustryPoster } from '@/lib/design-engine';
-import { drawProductBanner } from '@/lib/product-banner-engine';
 import { drawPriceList } from '@/lib/pricelist-engine';
 import { drawBrandAsset } from '@/lib/brandasset-engine';
 import { drawMerch } from '@/lib/merch-engine';
@@ -26,8 +25,6 @@ const JOBS: Job[] = [
   { id: 'retail-full', label: 'Retail · full-photo', needBg: 'retail', draw: (c, i) => drawIndustryPoster(c, st('retail', 'general' as IndustryId, {}), 'launch', st('retail', 'general' as IndustryId, {}).copies.launch, null, i.retail, null) },
   { id: 'tpl-magazine', label: 'Template · magazine', needBg: 'travel', draw: (c, i) => drawIndustryPoster(c, st('travel', 'service' as IndustryId, { tpl: 'magazine' }), 'launch', st('travel', 'service' as IndustryId, {}).copies.launch, null, i.travel, null) },
   { id: 'tpl-editorial', label: 'Template · editorial', needBg: 'beauty', draw: (c, i) => drawIndustryPoster(c, st('beauty', 'service' as IndustryId, { tpl: 'editorial' }), 'launch', st('beauty', 'service' as IndustryId, {}).copies.launch, null, i.beauty, null) },
-  { id: 'banner-studio', label: 'Banner · studio', draw: (c) => drawProductBanner(c, { size: 'square', bgStyle: 'studio', headline: 'GIÁ SỐC HÔM NAY', price: '199.000đ', oldPrice: '299.000đ', saleTag: 'MUA 1 TẶNG 1', cta: 'CHỐT ĐƠN NGAY', brandName: 'MIVY', colorPrimary: '#0f172a', colorAccent: '#6366f1', fontHeadingId: 'be-vietnam', fontBodyId: 'be-vietnam' }) },
-  { id: 'banner-grad', label: 'Banner · gradient', draw: (c) => drawProductBanner(c, { size: 'post', bgStyle: 'gradient', headline: 'SĂN DEAL CHỐT ĐƠN', price: '249.000đ', oldPrice: '399.000đ', saleTag: 'GIẢM 40%', cta: 'INBOX GIÁ TỐT', brandName: 'MIVY', colorPrimary: '#0f172a', colorAccent: '#e11d48', fontHeadingId: 'be-vietnam', fontBodyId: 'be-vietnam' }) },
   { id: 'menu', label: 'Menu · elegant', draw: (c) => drawPriceList(c, { title: 'MENU', brandName: 'NAMI COFFEE', contact: '0909 123 456 · 12 Lê Lợi', style: 'elegant', aspect: '4:5', colorPrimary: '#2b2219', colorAccent: '#b4703a', fontHeadingId: 'be-vietnam', fontBodyId: 'be-vietnam', items: [{ name: 'Cà phê sữa đá', price: '25.000đ', desc: 'Đậm vị, pha phin' }, { name: 'Bạc xỉu', price: '30.000đ' }, { name: 'Trà đào cam sả', price: '35.000đ', desc: 'Giải nhiệt' }, { name: 'Bánh mì chảo', price: '45.000đ' }, { name: 'Matcha latte', price: '40.000đ' }] }) },
   { id: 'cover', label: 'Bìa FB · elegant', draw: (c) => drawBrandAsset(c, { kind: 'fb', coverTemplate: 'elegant', style: 'gradient', colorPrimary: '#14281f', colorSecondary: '#14281f', colorAccent: '#b4703a', brandName: 'NAMI COFFEE', slogan: 'Cà phê rang xay mỗi sáng', contact: '0909 · 12 Lê Lợi, Q1', badge: 'KHAI TRƯƠNG', usps: ['Rang mộc', 'Nguyên chất', 'Giao nhanh'], fontHeadingId: 'be-vietnam', fontBodyId: 'be-vietnam' }) },
   { id: 'merch', label: 'Áo thun', draw: (c, i) => drawMerch(c, { item: 'tshirt', productColor: '#1f2937', bgColor: '#f4f4f5', brandName: 'MIVY', slogan: 'Since 2024', accent: '#6366f1', fontHeadingId: 'be-vietnam', contact: '', mode: 'photo', mockupImg: i.tshirt }) },

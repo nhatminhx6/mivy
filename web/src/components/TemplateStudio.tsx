@@ -114,7 +114,7 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
       <div className="flex flex-wrap gap-1.5 mb-5">
         {groups.map((g) => (
           <button key={g} type="button" onClick={() => setGroup(g)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${group === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}>{g}</button>
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${group === g ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg hover:border-mv-hair-strong'}`}>{g}</button>
         ))}
       </div>
 
@@ -123,7 +123,7 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
           const W = 260; const s = W / t.w;
           return (
             <button key={t.id} type="button" onClick={() => openEditor(t)} style={{ width: W }} className="group text-left space-y-2">
-              <div className="rounded-xl overflow-hidden border border-white/10 group-hover:border-indigo-500/50 bg-black/40 relative transition-colors" style={{ width: W, height: Math.round(t.h * s) }}>
+              <div className="rounded-xl overflow-hidden border border-mv-hair group-hover:border-indigo-500/50 bg-black/40 relative transition-colors" style={{ width: W, height: Math.round(t.h * s) }}>
                 <div style={{ width: t.w, height: t.h, transform: `scale(${s})`, transformOrigin: 'top left', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: t.html }} />
                 <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-sm font-semibold"><Pencil className="w-4 h-4" /> Sửa &amp; tải</div>
               </div>
@@ -135,18 +135,18 @@ export function TemplateStudio({ embedded = false }: { embedded?: boolean }) {
 
       {editing && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex flex-col" style={{ height: '100dvh' }}>
-          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-            <div className="text-sm text-white font-semibold">{editing.title}</div>
+          <div className="flex items-center justify-between px-5 py-3 border-b border-mv-hair">
+            <div className="text-sm text-mv-fg font-semibold">{editing.title}</div>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => fileRef.current?.click()} className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs"><ImagePlus className="w-4 h-4" /> Thả ảnh</button>
               <AsyncButton onClick={download} disabled={busy} loadingText="Đang tạo…" className="mv-btn mv-btn-ghost !px-4 !py-1.5 !text-xs disabled:opacity-50"><Download className="w-4 h-4" /> Tải PNG</AsyncButton>
-              <div className="flex items-center rounded-lg border border-white/15 overflow-hidden">
+              <div className="flex items-center rounded-lg border border-mv-hair overflow-hidden">
                 <select value={printSizeId} onChange={(e) => setPrintSizeId(e.target.value)} disabled={busy}
-                  className="bg-white/5 text-slate-200 text-xs px-2 py-1.5 focus:outline-none max-w-[190px]">
+                  className="bg-ink/[0.03] text-slate-200 text-xs px-2 py-1.5 focus:outline-none max-w-[190px]">
                   {Array.from(new Set(PRINT_SIZES.map((s) => s.group))).map((g) => (
-                    <optgroup key={g} label={g} className="bg-slate-900">
+                    <optgroup key={g} label={g} className="bg-mv-surface">
                       {PRINT_SIZES.filter((s) => s.group === g).map((s) => (
-                        <option key={s.id} value={s.id} className="bg-slate-900">{s.label}</option>
+                        <option key={s.id} value={s.id} className="bg-mv-surface">{s.label}</option>
                       ))}
                     </optgroup>
                   ))}

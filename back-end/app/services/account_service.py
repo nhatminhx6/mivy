@@ -12,6 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.db.models import AuthSession, User, WalletKind, WalletTx
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PHONE_RE = re.compile(r"^0\d{9,10}$")
+
+
+def normalize_phone(raw: str) -> str:
+    """'+84 909.123.456' → '0909123456'. Không phải SĐT Việt Nam hợp lệ → ''."""
+    digits = re.sub(r"\D", "", raw or "")
+    if digits.startswith("84") and len(digits) >= 11:
+        digits = "0" + digits[2:]
+    return digits if PHONE_RE.match(digits) else ""
 
 
 class AccountError(Exception):
@@ -50,17 +59,19 @@ class AccountService:
         self.admins = {e.strip().lower() for e in admin_emails.split(",") if e.strip()}
         self.session_days = session_days
 
-    async def register(self, email: str, password: str, name: str = "") -> User:
+    async def register(self, email: str, password: str, name: str = "", phone: str = "") -> User:
         email = email.strip().lower()
         if not EMAIL_RE.match(email):
             raise AccountError("bad_email", "Email không hợp lệ.")
         if len(password) < 6:
             raise AccountError("weak_password", "Mật khẩu cần ít nhất 6 ký tự.")
+        if phone.strip() and not normalize_phone(phone):
+            raise AccountError("bad_phone", "Số điện thoại không hợp lệ.")
         async with self.sessions() as s, s.begin():
             if await s.scalar(select(User).where(User.email == email)):
                 raise AccountError("email_taken", "Email này đã có tài khoản, đăng nhập nhé.", 409)
             user = User(
-                email=email, name=name.strip()[:120], password_hash=hash_password(password),
+                email=email, name=name.strip()[:120], password_hash=hash_password(password), phone=normalize_phone(phone),
                 balance=self.signup_bonus, is_admin=email in self.admins,
             )
             s.add(user)
@@ -97,6 +108,19 @@ class AccountService:
     async def get(self, user_id: int) -> User | None:
         async with self.sessions() as s:
             return await s.get(User, user_id)
+
+    async def update_profile(self, user_id: int, name: str | None, phone: str | None) -> User:
+        async with self.sessions() as s, s.begin():
+            u = await s.get(User, user_id)
+            if not u:
+                raise AccountError("no_user", "Không tìm thấy tài khoản.", 404)
+            if phone is not None:
+                if phone.strip() and not normalize_phone(phone):
+                    raise AccountError("bad_phone", "Số điện thoại không hợp lệ.")
+                u.phone = normalize_phone(phone)
+            if name is not None:
+                u.name = name.strip()[:120]
+        return u
 
     # ---- ví ----
     async def charge(self, user_id: int, amount: int, note: str) -> int:

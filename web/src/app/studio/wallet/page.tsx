@@ -19,7 +19,7 @@ export default function WalletPage() {
 
   if (!ready) return null;
   if (!me) return (
-    <div className="p-6 lg:p-8"><div className="glass-panel border border-white/10 rounded-2xl p-10 text-center space-y-3">
+    <div className="p-6 lg:p-8"><div className="glass-panel border border-mv-hair rounded-2xl p-10 text-center space-y-3">
       <p className="text-sm text-slate-300">Đăng nhập để xem ví và nạp tiền.</p>
       <Link href="/login?next=/studio/wallet" className="mv-btn mv-btn-primary !inline-flex"><LogIn className="w-4 h-4" /> Đăng nhập</Link>
     </div></div>
@@ -29,9 +29,9 @@ export default function WalletPage() {
   const copy = (k: string, v: string) => { navigator.clipboard?.writeText(v).catch(() => null); setCopied(k); setTimeout(() => setCopied(''), 1500); };
   const price = me.prices?.tryon ?? 2;
   const row = (k: string, label: string, v: string) => (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-white/[0.06] last:border-0">
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-mv-hair last:border-0">
       <span className="text-xs text-slate-400">{label}</span>
-      <button type="button" onClick={() => copy(k, v)} className="text-sm font-semibold text-white flex items-center gap-1.5 hover:text-indigo-200">{v} <Copy className="w-3.5 h-3.5 text-slate-500" />{copied === k && <span className="text-[10px] text-emerald-300">đã chép</span>}</button>
+      <button type="button" onClick={() => copy(k, v)} className="text-sm font-semibold text-mv-fg flex items-center gap-1.5 hover:text-indigo-200">{v} <Copy className="w-3.5 h-3.5 text-slate-500" />{copied === k && <span className="text-[10px] text-emerald-300">đã chép</span>}</button>
     </div>
   );
 
@@ -41,12 +41,12 @@ export default function WalletPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="glass-panel border border-amber-500/30 bg-amber-500/[0.05] rounded-2xl p-5 space-y-2">
           <div className="text-xs text-slate-400 flex items-center gap-1.5"><Wallet className="w-4 h-4 text-amber-300" /> Số dư</div>
-          <div className="text-3xl font-black text-white" data-testid="wallet-balance">{fmtDong(me.balance)}</div>
+          <div className="text-3xl font-black text-mv-fg" data-testid="wallet-balance">{fmtDong(me.balance)}</div>
           <div className="text-xs text-slate-400">≈ {Math.floor(me.balance / price)} lượt Người mẫu AI ({price} đồng / lượt)</div>
         </div>
-        <div className="glass-panel border border-white/10 rounded-2xl p-5 space-y-3" data-testid="wallet-topup">
-          <div className="text-sm font-bold text-white">Nạp tiền bằng chuyển khoản</div>
-          <div className="flex flex-wrap gap-1.5">{PACKS.map((p) => <button key={p} type="button" onClick={() => setPack(p)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${pack === p ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white'}`}>{p}k → {p} đồng</button>)}</div>
+        <div className="glass-panel border border-mv-hair rounded-2xl p-5 space-y-3" data-testid="wallet-topup">
+          <div className="text-sm font-bold text-mv-fg">Nạp tiền bằng chuyển khoản</div>
+          <div className="flex flex-wrap gap-1.5">{PACKS.map((p) => <button key={p} type="button" onClick={() => setPack(p)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${pack === p ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-300 hover:text-mv-fg'}`}>{p}k → {p} đồng</button>)}</div>
           {BANK_ID && BANK.account && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={`https://img.vietqr.io/image/${BANK_ID}-${BANK.account}-compact2.png?amount=${pack * 1000}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(BANK.owner)}`} alt="Mã QR chuyển khoản" className="w-44 h-44 rounded-xl bg-white mx-auto" />
@@ -62,10 +62,10 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <div className="glass-panel border border-white/10 rounded-2xl p-5">
-        <div className="text-sm font-bold text-white mb-3">Lịch sử</div>
+      <div className="glass-panel border border-mv-hair rounded-2xl p-5">
+        <div className="text-sm font-bold text-mv-fg mb-3">Lịch sử</div>
         {txs.length ? (
-          <div className="divide-y divide-white/[0.06]" data-testid="wallet-history">
+          <div className="divide-y divide-mv-hair" data-testid="wallet-history">
             {txs.map((t) => (
               <div key={t.id} className="flex items-center gap-3 py-2 text-xs">
                 <span className="text-slate-500 w-32 shrink-0">{new Date(t.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</span>

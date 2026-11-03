@@ -42,11 +42,11 @@ onOpen: (i: number) => void; onDownload: (a: AssetDef) => void; setNode: (id: st
 return (
   <div className="glass-card !p-2 group">
     <button type="button" onClick={() => onOpen(i)} aria-label={`Xem lớn ${a.label}`} data-testid="asset-tile"
-      className="relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-white/[0.06]"
-      style={{ background: 'repeating-conic-gradient(#20242c 0 25%, #171a20 0 50%) 0 0/16px 16px' }}>
+      className="relative block w-full cursor-zoom-in overflow-hidden rounded-lg border border-mv-hair"
+      style={{ background: 'repeating-conic-gradient(#E9EDF4 0 25%, #FFFFFF 0 50%) 0 0/16px 16px' }}>
       <Scaled w={a.w} h={a.h} nodeRef={(el) => setNode(a.id, el)}>{a.render(ctx)}</Scaled>
-      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/0 opacity-0 transition-all group-hover:bg-slate-950/45 group-hover:opacity-100">
-        <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900">
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/45 group-hover:opacity-100">
+        <span className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-mv-fg">
           {loading === i ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Maximize2 className="w-3.5 h-3.5" />} Xem lớn
         </span>
       </span>
@@ -193,12 +193,12 @@ export default function BrandPackPage() {
                 ))}
               </div>
               {/* Tuỳ chỉnh bìa Highlight: chọn icon, sửa chữ, thêm/bớt */}
-              <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-3 space-y-2">
+              <div className="mt-4 rounded-xl border border-mv-hair bg-ink/[0.03] p-3 space-y-2">
                 <div className="mv-label">Tuỳ chỉnh bìa Highlight</div>
                 {(ctx.highlights || []).map((h, idx) => {
                   const Ic = hlIcon(h.icon);
                   return (
-                    <div key={h.id} className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2 space-y-1.5">
+                    <div key={h.id} className="rounded-lg border border-mv-hair bg-ink/[0.03] p-2 space-y-1.5">
                       <div className="flex items-center gap-2">
                         <span className="grid place-items-center w-8 h-8 rounded-lg shrink-0" style={{ background: ctx.p.colorAccent }}><Ic size={16} color="#ffffff" weight="bold" /></span>
                         <input className="mv-input !py-1.5 !text-xs flex-1 min-w-0" value={h.label} onChange={(e) => updateHL(idx, { label: e.target.value })} placeholder="Tên mục" />
@@ -224,7 +224,7 @@ export default function BrandPackPage() {
 
           {/* Chỉnh nhanh (ghim) */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-4 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <div className="text-sm font-bold text-white">Chỉnh nhanh</div>
+            <div className="text-sm font-bold text-mv-fg">Chỉnh nhanh</div>
             <div>
               <div className="mv-label mb-1.5">Logo</div>
               <div className="flex items-center gap-2">
@@ -232,7 +232,7 @@ export default function BrandPackPage() {
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={c.logo} alt="logo" className="w-14 h-14 object-contain rounded-lg bg-white p-1" />
-                    <button type="button" onClick={() => set({ logo: undefined })} aria-label="Bỏ logo" className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-white" /></button>
+                    <button type="button" onClick={() => set({ logo: undefined })} aria-label="Bỏ logo" className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full p-0.5"><X className="w-3 h-3 text-mv-fg" /></button>
                   </div>
                 ) : <span className="text-[11px] text-slate-400">Đang dùng logo chữ tạm</span>}
                 <label className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs cursor-pointer"><Upload className="w-3.5 h-3.5" /> Tải logo
@@ -252,7 +252,7 @@ export default function BrandPackPage() {
               <div className="flex flex-wrap gap-2">
                 {palettes.map((p) => (
                   <button key={p.name} type="button" title={p.name} onClick={() => set({ p })}
-                    className={`w-8 h-8 rounded-full border-2 transition-transform ${c.p.name === p.name ? 'border-white scale-110' : 'border-white/10 hover:border-white/40'}`}
+                    className={`w-8 h-8 rounded-full border-2 transition-transform ${c.p.name === p.name ? 'border-mv-accent scale-110' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                     style={{ background: `linear-gradient(135deg, ${p.colorPrimary} 50%, ${p.colorAccent} 50%)` }} />
                 ))}
               </div>

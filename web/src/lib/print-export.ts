@@ -69,6 +69,12 @@ export async function exportPrintPdf(node: HTMLElement, opts: PrintExportOpts): 
     cacheBust: false, fontEmbedCSS, skipFonts: !fontEmbedCSS,
   });
 
+  return pdfFromImage(dataUrl, designW, designH, size, bleedMm);
+}
+
+// Ảnh (PNG data URL) → trang PDF in: ảnh phủ vùng bleed, vạch cắt ở 4 góc vùng thành phẩm.
+// Ảnh đã gồm sẵn bleed (đúng tỉ lệ bleed box) thì đặt khít, không bị phóng.
+export async function pdfFromImage(dataUrl: string, designW: number, designH: number, size: Pick<PrintSize, 'wMm' | 'hMm'>, bleedMm = DEFAULT_BLEED_MM): Promise<Blob> {
   // Kích thước trang = trim + bleed 2 cạnh + khoảng trắng chứa vạch cắt 2 cạnh.
   const bleedBoxW = size.wMm + bleedMm * 2;
   const bleedBoxH = size.hMm + bleedMm * 2;

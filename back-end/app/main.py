@@ -11,6 +11,7 @@ from app.api.account import router as account_router
 from app.api.creative import router as creative_router
 from app.api.generations import router as generations_router
 from app.api.health import router as health_router
+from app.api.print_orders import router as print_orders_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.db.database import Database
@@ -21,6 +22,7 @@ from app.engines.product_engine import ProductImageEngine
 from app.services.account_service import AccountService
 from app.services.generation_service import GenerationService
 from app.services.job_queue import JobQueue
+from app.services.print_order_service import PrintOrderService
 from app.services.storage_service import StorageService
 from app.services.text_service import TextService
 from app.services.tryon_service import TryOnService
@@ -83,6 +85,11 @@ def create_app(
             database.sessions, resolved_settings.signup_bonus,
             resolved_settings.admin_emails, resolved_settings.session_days,
         )
+        resolved_settings.print_dir.mkdir(parents=True, exist_ok=True)
+        app.state.print_orders = PrintOrderService(
+            database.sessions, resolved_settings.print_dir, resolved_settings.telegram_bot_token,
+            resolved_settings.telegram_chat_id, resolved_settings.site_url,
+        )
         if not hasattr(app.state, "tryon"):  # test có thể thay bằng bản giả
             app.state.tryon = TryOnService(resolved_settings.fashn_space, resolved_settings.hf_token)
 
@@ -113,6 +120,7 @@ def create_app(
     )
     app.include_router(health_router)
     app.include_router(account_router)
+    app.include_router(print_orders_router)
     app.include_router(creative_router)
     app.include_router(generations_router)
 

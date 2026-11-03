@@ -31,16 +31,16 @@ export default function PricingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Nav */}
-      <header className="sticky top-0 z-50 glass-panel border-b border-white/[0.07] px-6 py-4">
+      <header className="sticky top-0 z-50 glass-panel border-b border-mv-hair px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 text-white font-black text-sm shadow-lg shadow-indigo-500/30">M</span>
-            <span className="text-xl font-black tracking-tight text-white">mivy</span>
+            <span className="grid place-items-center w-8 h-8 rounded-lg bg-mv-accent text-white font-extrabold text-sm">M</span>
+            <span className="text-xl font-black tracking-tight text-mv-fg">mivy</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm text-slate-300 font-medium">
-            <Link href="/" className="hover:text-white transition-colors">Trang chủ</Link>
-            <Link href="/pricing" className="text-white">Giá</Link>
-            <Link href="/studio" className="hover:text-white transition-colors">Studio</Link>
+            <Link href="/" className="hover:text-mv-fg transition-colors">Trang chủ</Link>
+            <Link href="/pricing" className="text-mv-fg">Giá</Link>
+            <Link href="/studio" className="hover:text-mv-fg transition-colors">Studio</Link>
           </nav>
           <Link href="/studio" className="mv-btn mv-btn-primary">Vào Studio <ArrowRight className="w-4 h-4" /></Link>
         </div>
@@ -54,7 +54,7 @@ export default function PricingPage() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/25 text-indigo-200 text-xs font-semibold mb-6">
               <Sparkles className="w-3.5 h-3.5" /> Mọi thứ render bằng code · 0đ chi phí API
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[1.1] mb-4">
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-mv-fg leading-[1.1] mb-4">
               Giá đơn giản,<br />dùng được ngay
             </h1>
             <p className="text-slate-400 text-base max-w-lg mx-auto">
@@ -79,11 +79,11 @@ export default function PricingPage() {
             <div className="glass-card p-7 flex flex-col">
               <div className="flex items-center gap-2 mb-1">
                 <Store className="w-4 h-4 text-slate-400" />
-                <h2 className="text-lg font-bold text-white">Dùng thử</h2>
+                <h2 className="text-lg font-bold text-mv-fg">Dùng thử</h2>
               </div>
               <p className="text-sm text-slate-400 mb-5">Làm quen, xuất thử thiết kế đầu tiên.</p>
               <div className="mb-6">
-                <span className="text-4xl font-black text-white">0đ</span>
+                <span className="text-4xl font-black text-mv-fg">0đ</span>
                 <span className="text-slate-500 text-sm"> / mãi mãi</span>
               </div>
               <Link href="/studio" className="mv-btn mv-btn-ghost w-full justify-center mb-6">Bắt đầu miễn phí</Link>
@@ -104,11 +104,11 @@ export default function PricingPage() {
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold px-3 py-1 rounded-full bg-indigo-500 text-white shadow-lg shadow-indigo-500/40">PHỔ BIẾN</div>
               <div className="flex items-center gap-2 mb-1">
                 <Sparkles className="w-4 h-4 text-indigo-300" />
-                <h2 className="text-lg font-bold text-white">Pro</h2>
+                <h2 className="text-lg font-bold text-mv-fg">Pro</h2>
               </div>
               <p className="text-sm text-slate-400 mb-5">Cho shop bán hàng nghiêm túc, cần bộ hình chuyên nghiệp.</p>
               <div className="mb-1 flex items-end gap-1.5">
-                <span className="text-4xl font-black text-white">{vnd(proPrice)}</span>
+                <span className="text-4xl font-black text-mv-fg">{vnd(proPrice)}</span>
                 <span className="text-slate-500 text-sm mb-1">/ tháng</span>
               </div>
               <p className="text-[12px] text-slate-500 mb-6 h-4">
@@ -142,7 +142,7 @@ export default function PricingPage() {
               { q: 'Dữ liệu ảnh của tôi có bị gửi lên server không?', a: 'Tách nền & dựng banner chạy ngay trong trình duyệt của anh. Ảnh không rời máy anh.' },
             ].map((f) => (
               <details key={f.q} className="glass-card p-5 group">
-                <summary className="flex items-center justify-between cursor-pointer list-none text-sm font-semibold text-white">
+                <summary className="flex items-center justify-between cursor-pointer list-none text-sm font-semibold text-mv-fg">
                   {f.q}
                   <span className="text-slate-500 group-open:rotate-45 transition-transform text-lg leading-none">+</span>
                 </summary>
@@ -153,9 +153,9 @@ export default function PricingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/[0.07] py-8 px-6 text-center text-sm text-slate-500">
+      <footer className="border-t border-mv-hair py-8 px-6 text-center text-sm text-slate-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="font-bold text-white">mivy</span>
+          <span className="font-bold text-mv-fg">mivy</span>
           <p>© {new Date().getFullYear()} Mivy · Công cụ thiết kế bán hàng cho shop Việt.</p>
         </div>
       </footer>

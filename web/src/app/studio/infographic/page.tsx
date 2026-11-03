@@ -391,16 +391,16 @@ export default function InfographicStudio() {
         {/* CỘT TRÁI: điều khiển */}
         <div className="space-y-4 min-w-0">
           {/* Bộ nhận diện: nhập 1 lần ở /studio/brand → tự điền vào poster */}
-          <div className="glass-panel border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="glass-panel border border-mv-hair rounded-2xl px-4 py-3 flex items-center gap-3">
             {kit ? (<>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {kit.logo ? <img src={kit.logo} alt="" className="w-9 h-9 rounded-lg bg-white object-contain p-1 shrink-0" /> : <BadgeCheck className="w-5 h-5 text-indigo-300 shrink-0" />}
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-white truncate">Bộ nhận diện: {kit.name || 'Chưa đặt tên'}</div>
+                <div className="text-sm font-bold text-mv-fg truncate">Bộ nhận diện: {kit.name || 'Chưa đặt tên'}</div>
                 <div className="text-[11px] text-slate-400">Tự điền tên shop, logo, liên hệ & màu thương hiệu vào ảnh.</div>
               </div>
               <button type="button" role="switch" aria-checked={useKit} onClick={toggleKit} title="Bật/tắt bộ nhận diện"
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${useKit ? 'bg-indigo-500 border-indigo-400 text-white' : 'border-white/20 text-slate-300 hover:border-white/40'}`}>
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${useKit ? 'bg-indigo-500 border-indigo-400 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>
                 {useKit ? 'Đang dùng' : 'Dùng'}
               </button>
             </>) : (<>
@@ -422,7 +422,7 @@ export default function InfographicStudio() {
                 <div className="flex flex-wrap gap-2">
                   {g.list.map((t) => (
                     <button key={t.name} type="button" onClick={() => loadTemplate(t)}
-                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${data === t.data ? 'border-indigo-400 bg-indigo-500/15 text-white' : 'border-white/15 text-slate-200 hover:border-indigo-400 hover:text-white'}`}>{t.name}</button>
+                      className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${data === t.data ? 'border-indigo-400 bg-indigo-500/15 text-mv-fg' : 'border-mv-hair text-slate-200 hover:border-indigo-400 hover:text-mv-fg'}`}>{t.name}</button>
                   ))}
                 </div>
               </div>
@@ -436,7 +436,7 @@ export default function InfographicStudio() {
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {POSTER_VARIANTS.map((pv) => (
                   <button key={pv.id} type="button" onClick={() => set({ variant: pv.id })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(data.variant || 'split') === pv.id ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`}>
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${(data.variant || 'split') === pv.id ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-300 hover:text-mv-fg hover:border-mv-hair-strong'}`}>
                     {pv.name}
                   </button>
                 ))}
@@ -445,12 +445,12 @@ export default function InfographicStudio() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {kit && (() => { const bc = posterColorsFromBrand(kit); return (
                   <button type="button" onClick={() => setThemeId('brand')} title="Màu từ bộ nhận diện"
-                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === 'brand' ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === 'brand' ? 'border-mv-accent bg-ink/[0.05] text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>
                     <span className="w-5 h-5 rounded-full" style={{ background: bc.main, boxShadow: `inset 0 0 0 3px ${bc.soft}` }} />Thương hiệu
                   </button>); })()}
                 {POSTER_THEMES.map((t) => (
                   <button key={t.id} type="button" onClick={() => setThemeId(t.id)} title={t.name}
-                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === t.id ? 'border-white bg-white/10 text-white' : 'border-white/15 text-slate-300 hover:border-white/40'}`}>
+                    className={`flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${themeId === t.id ? 'border-mv-accent bg-ink/[0.05] text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>
                     <span className="w-5 h-5 rounded-full" style={{ background: t.main, boxShadow: `inset 0 0 0 3px ${t.soft}` }} />{t.name}
                   </button>
                 ))}
@@ -464,7 +464,7 @@ export default function InfographicStudio() {
                   <div className="flex flex-wrap gap-2">
                     {AD_BACKGROUNDS.filter((b) => b.group === group).map((b) => (
                       <button key={b.id} type="button" onClick={() => setBgId(b.id)} title={b.name}
-                        className={`w-9 h-9 rounded-lg border-2 transition-all ${bgId === b.id ? 'border-white scale-110 shadow-lg' : 'border-white/10 hover:border-white/40'}`}
+                        className={`w-9 h-9 rounded-lg border-2 transition-all ${bgId === b.id ? 'border-mv-accent scale-110 shadow-lg' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                         style={{ background: b.css, backgroundSize: 'cover' }} />
                     ))}
                   </div>
@@ -476,7 +476,7 @@ export default function InfographicStudio() {
             <div className="flex flex-wrap gap-1.5">
               {(['4:5', '1:1', '9:16'] as Aspect[]).map((a) => (
                 <button key={a} type="button" onClick={() => setAspect(a)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${aspect === a ? 'bg-white text-slate-950 border-white' : 'border-white/15 text-slate-300 hover:text-white hover:border-white/40'}`}>
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${aspect === a ? 'bg-mv-accent text-white border-mv-accent' : 'border-mv-hair text-slate-300 hover:text-mv-fg hover:border-mv-hair-strong'}`}>
                   {a === '4:5' ? 'Dọc 4:5' : a === '1:1' ? 'Vuông 1:1' : 'Story 9:16'}
                 </button>
               ))}
@@ -508,7 +508,7 @@ export default function InfographicStudio() {
           {/* 4 · Poster: minh hoạ 3D + card */}
           {isPoster && (<>
           <CollapsibleSection title="4 · Hình chính" right={<span className="text-[11px] text-slate-400">{(data.hero || []).length}/3</span>}>
-            <div className="mb-3 pb-3 border-b border-white/10">
+            <div className="mb-3 pb-3 border-b border-mv-hair">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="mv-label">Ảnh sản phẩm của anh</span>
                 <label className="mv-btn mv-btn-ghost !px-3 !py-1.5 !text-xs cursor-pointer">
@@ -521,16 +521,16 @@ export default function InfographicStudio() {
                 <div className="flex gap-2.5 flex-wrap">
                   {customHeroes.map((src, i) => (
                     <div key={i} className="relative w-20">
-                      <div className="w-20 h-20 rounded-lg border border-white/15 p-1" style={{ background: 'repeating-conic-gradient(#ffffff14 0 25%, transparent 0 50%) 0 0/12px 12px' }}>
+                      <div className="w-20 h-20 rounded-lg border border-mv-hair p-1" style={{ background: 'repeating-conic-gradient(#12172612 0 25%, transparent 0 50%) 0 0/12px 12px' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={src} alt="" className="w-full h-full object-contain" />
                       </div>
                       <button type="button" onClick={() => cutoutHero(src)} disabled={!!cutting}
-                        className="mt-1 w-full flex items-center justify-center gap-1 rounded-md border border-white/15 py-1 text-[10px] font-semibold text-slate-200 hover:border-indigo-400 disabled:opacity-50">
+                        className="mt-1 w-full flex items-center justify-center gap-1 rounded-md border border-mv-hair py-1 text-[10px] font-semibold text-slate-200 hover:border-indigo-400 disabled:opacity-50">
                         {cutting === src ? <><Loader2 className="w-3 h-3 animate-spin" /> Đang tách…</> : '✂ Tách nền'}
                       </button>
                       <button type="button" onClick={() => toggleHero(src)} title="Bỏ ảnh"
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center"><X className="w-3 h-3 text-white" /></button>
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center"><X className="w-3 h-3 text-mv-fg" /></button>
                     </div>
                   ))}
                 </div>
@@ -544,7 +544,7 @@ export default function InfographicStudio() {
                 const v = (data.hero || [])[i]; const on = heroSlot === i;
                 return (
                   <button key={i} type="button" onClick={() => setHeroSlot(i)}
-                    className={`relative w-16 h-16 rounded-lg border-2 p-1.5 transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 border-dashed hover:border-white/30'}`}>
+                    className={`relative w-16 h-16 rounded-lg border-2 p-1.5 transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15' : 'border-mv-hair border-dashed hover:border-mv-hair-strong'}`}>
                     {v ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={isCustomHero(v) ? v : illustrationUrl(v)} alt="" className="w-full h-full object-contain" />
@@ -559,7 +559,7 @@ export default function InfographicStudio() {
                 const idx = (data.hero || []).indexOf(il.id);
                 return (
                   <button key={il.id} type="button" onClick={() => pickHero(il.id)} title={`${il.name} · ${il.group}`}
-                    className={`relative aspect-square rounded-lg border p-1 transition-colors ${idx >= 0 ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 hover:border-white/30 bg-white/[0.03]'}`}>
+                    className={`relative aspect-square rounded-lg border p-1 transition-colors ${idx >= 0 ? 'border-indigo-400 bg-indigo-500/15' : 'border-mv-hair hover:border-mv-hair-strong bg-ink/[0.03]'}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={illustrationUrl(il.id)} alt={il.name} className="w-full h-full object-contain" loading="lazy" />
                     {idx >= 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-indigo-500 text-[9px] font-bold text-white flex items-center justify-center">{idx + 1}</span>}
@@ -644,9 +644,9 @@ export default function InfographicStudio() {
             </div>
             {zipErr && <p className="text-[11px] text-rose-300 text-center">{zipErr}</p>}
           </div>
-          <div className="glass-panel rounded-2xl p-3 border border-white/10 flex flex-col min-h-0 lg:flex-1">
+          <div className="glass-panel rounded-2xl p-3 border border-mv-hair flex flex-col min-h-0 lg:flex-1">
             <div className="flex items-center justify-between mb-2 shrink-0">
-              <span className="text-sm font-bold text-white">Xem trước <span className="ml-1 text-[10px] font-semibold text-indigo-200">PNG · 2×</span></span>
+              <span className="text-sm font-bold text-mv-fg">Xem trước <span className="ml-1 text-[10px] font-semibold text-indigo-200">PNG · 2×</span></span>
               <button type="button" onClick={() => setFull(true)} data-testid="preview-full" className="mv-btn mv-btn-ghost !px-2.5 !py-1.5 !text-xs"><Maximize2 className="w-3.5 h-3.5" /> Toàn màn hình</button>
             </div>
             <div className="min-h-0 lg:flex-1 cursor-zoom-in" onClick={() => setFull(true)} data-testid="preview-box">
@@ -659,7 +659,7 @@ export default function InfographicStudio() {
       {full && typeof document !== 'undefined' && createPortal((
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setFull(false)} data-testid="preview-overlay">
           <button type="button" onClick={() => setFull(false)}
-            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20">
+            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-ink/[0.05] hover:bg-ink/[0.08] text-mv-fg text-sm font-semibold border border-mv-hair">
             <X className="w-4 h-4" /> Đóng
           </button>
           <div className="w-full h-full pointer-events-none">

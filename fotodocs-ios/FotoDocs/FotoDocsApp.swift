@@ -14,6 +14,6 @@ struct FotoDocsApp: App {
             RootView()
                 .environment(\.font, .bvp(.body))
         }
-        .modelContainer(for: DossierItem.self)
+        .modelContainer(for: [DossierItem.self, ExpenseReceipt.self])
     }
 }

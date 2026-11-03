@@ -764,7 +764,7 @@ export default function MarketingStudioPage() {
           <select
             value={state.categoryId || (state.industry === 'general' ? 'retail' : state.industry)}
             onChange={(e) => changeCategory(e.target.value)}
-            className="mv-input !w-auto !px-2.5 !py-1 !text-xs font-semibold text-white">
+            className="mv-input !w-auto !px-2.5 !py-1 !text-xs font-semibold text-mv-fg">
             {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <span className="text-slate-500">— nạp nội dung mồi + bộ ảnh nền. Thiết kế chọn bên dưới.</span>
@@ -775,10 +775,10 @@ export default function MarketingStudioPage() {
           <p className="text-[11px] text-slate-400 mb-2">Chọn vibe — nội dung anh điền tự khoác lên, giữ nguyên chữ.</p>
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
             <button type="button" onClick={() => setStyleGroup('Tất cả')}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === 'Tất cả' ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>Tất cả</button>
+              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === 'Tất cả' ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg'}`}>Tất cả</button>
             {SKIN_GROUPS.map((g) => (
               <button key={g} type="button" onClick={() => setStyleGroup(g)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${styleGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg'}`}>{g}</button>
             ))}
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1">
@@ -787,7 +787,7 @@ export default function MarketingStudioPage() {
               const w = 72; const sc = w / tpl.w;
               return (
                 <button key={s.id} type="button" onClick={() => setHtmlStyleId(s.id)} title={s.name}
-                  className={`shrink-0 rounded-lg overflow-hidden border bg-black/40 relative transition-colors ${htmlStyleId === s.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-white/10 hover:border-white/30'}`}
+                  className={`shrink-0 rounded-lg overflow-hidden border bg-black/40 relative transition-colors ${htmlStyleId === s.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-mv-hair hover:border-white/30'}`}
                   style={{ width: w, height: Math.round(tpl.h * sc) }}>
                   <div style={{ width: tpl.w, height: tpl.h, transform: `scale(${sc})`, transformOrigin: 'top left', pointerEvents: 'none' }} dangerouslySetInnerHTML={{ __html: tpl.html }} />
                 </button>
@@ -802,13 +802,13 @@ export default function MarketingStudioPage() {
           <div className="flex flex-wrap items-center gap-1.5 mb-3">
             {BG_GROUPS.map((g) => (
               <button key={g} type="button" onClick={() => setBgGroup(g)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${bgGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white'}`}>{g}</button>
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${bgGroup === g ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg'}`}>{g}</button>
             ))}
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {bgList.map((b) => (
               <button key={b.id} type="button" onClick={() => setHtmlBgId(b.id)} title={b.name}
-                className={`shrink-0 w-11 h-11 rounded-lg border relative transition-colors ${htmlBgId === b.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-white/15 hover:border-white/40'}`}
+                className={`shrink-0 w-11 h-11 rounded-lg border relative transition-colors ${htmlBgId === b.id ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                 style={{ background: b.css || 'repeating-linear-gradient(45deg,#2a2a33 0 6px,#33333d 6px 12px)' }}>
                 {b.id === 'none' && <span className="absolute inset-0 flex items-center justify-center text-[9px] text-slate-300">mẫu</span>}
               </button>
@@ -824,7 +824,7 @@ export default function MarketingStudioPage() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[11px] text-slate-400">Đang chỉnh sửa</span>
-                <h3 className="text-sm font-bold text-white leading-tight">{posterNames[state.selected]}</h3>
+                <h3 className="text-sm font-bold text-mv-fg leading-tight">{posterNames[state.selected]}</h3>
               </div>
               <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">PNG · {AD_SIZES.find((s) => s.id === htmlSizeId)?.w}×{AD_SIZES.find((s) => s.id === htmlSizeId)?.h}</span>
             </div>
@@ -836,7 +836,7 @@ export default function MarketingStudioPage() {
                   type="button"
                   onClick={() => setHtmlSizeId(sz.id)}
                   title={sz.hint}
-                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${htmlSizeId === sz.id ? 'border-indigo-500 bg-indigo-500/20 text-white' : 'border-white/10 text-slate-300 hover:border-white/30'}`}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${htmlSizeId === sz.id ? 'border-indigo-500 bg-indigo-500/20 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}
                 >
                   {sz.name}
                 </button>
@@ -852,7 +852,7 @@ export default function MarketingStudioPage() {
             </AsyncButton>
           </div>
 
-          <div className="glass-panel rounded-2xl p-3 border border-white/10 space-y-2.5">
+          <div className="glass-panel rounded-2xl p-3 border border-mv-hair space-y-2.5">
             {/* Poster đang chọn — TO, lấp đầy cột */}
             <div
               onClick={() => { if (activeHtmlTemplate) setHtmlFull(true); else openPreview(state.selected); }}
@@ -893,7 +893,7 @@ export default function MarketingStudioPage() {
             <div className="grid grid-cols-3 gap-2">
               {(['launch', 'story', 'action'] as PosterKind[]).map((kind) => (
                 <button key={kind} type="button" onClick={() => saveState({ ...state, selected: kind })}
-                  className={`rounded-lg px-2 py-2 text-[11px] font-semibold border transition-colors ${state.selected === kind ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}>
+                  className={`rounded-lg px-2 py-2 text-[11px] font-semibold border transition-colors ${state.selected === kind ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg hover:border-mv-hair-strong'}`}>
                   {posterNames[kind].split('.')[0]}. {posterNames[kind].split('(')[1]?.replace(')', '') || ['Hero', 'Tiêu chí', 'Kết nối'][['launch', 'story', 'action'].indexOf(kind)]}
                 </button>
               ))}
@@ -910,7 +910,7 @@ export default function MarketingStudioPage() {
               return (
                 <div className="glass-card flex items-center justify-between !p-3 !rounded-xl hover:!transform-none">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-white">Carousel Phân Trang:</span>
+                    <span className="text-xs font-bold text-mv-fg">Carousel Phân Trang:</span>
                     <span className="text-xs text-slate-300">
                       Trang {currentStoryPage + 1} / {totalStoryPages} · ({totalStoryPoints} yêu cầu chuyên môn)
                     </span>
@@ -925,7 +925,7 @@ export default function MarketingStudioPage() {
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-mono font-bold text-white px-2">
+                    <span className="text-xs font-mono font-bold text-mv-fg px-2">
                       {currentStoryPage + 1} / {totalStoryPages}
                     </span>
                     <button
@@ -968,7 +968,7 @@ export default function MarketingStudioPage() {
       <CollapsibleSection tone="card" title="🎨 Thiết kế & Trang trí">
       <div className="space-y-4 mv-fade">
         {/* Nhóm điều khiển có nhãn cho dễ tìm */}
-        <div className="space-y-2.5 border-t border-white/10 pt-4">
+        <div className="space-y-2.5 border-t border-mv-hair pt-4">
           {/* ===== Nhóm 1: KIỂU (layout + theme) — chỉ cho bản canvas ===== */}
           {!htmlStyleId && !state.conceptId && (
           <>
@@ -1005,7 +1005,7 @@ export default function MarketingStudioPage() {
                   key={th.id}
                   type="button"
                   onClick={() => saveState({ ...state, theme: th.id })}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${state.theme === th.id ? 'bg-indigo-500/15 border-indigo-500/50 text-white' : 'border-white/10 text-slate-400 hover:text-white hover:border-white/25'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${state.theme === th.id ? 'bg-indigo-500/15 border-indigo-500/50 text-mv-fg' : 'border-mv-hair text-slate-400 hover:text-mv-fg hover:border-mv-hair-strong'}`}
                 >
                   {th.name}
                 </button>
@@ -1070,14 +1070,14 @@ export default function MarketingStudioPage() {
           )}
 
           {/* Viền + Bo góc (slider) */}
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-ink/[0.03] border border-mv-hair text-[11px] font-semibold text-slate-200">
             <span>Viền</span>
             <input type="range" min={0} max={24} value={state.borderWidth ?? 0}
               onChange={(e) => setBorder(Number(e.target.value))}
               className="w-20 accent-indigo-500 cursor-pointer" />
             <span className="w-6 text-right text-slate-400">{state.borderWidth ?? 0}</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-ink/[0.03] border border-mv-hair text-[11px] font-semibold text-slate-200">
             <span>Bo góc</span>
             <input type="range" min={0} max={80} value={state.borderRadius ?? 0}
               onChange={(e) => setRadius(Number(e.target.value))}
@@ -1086,15 +1086,15 @@ export default function MarketingStudioPage() {
           </div>
 
           {/* Màu viền */}
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-white/[0.025] border border-white/[0.07] text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-[11px] bg-ink/[0.03] border border-mv-hair text-[11px] font-semibold text-slate-200">
             <span>Màu viền</span>
             <input type="color" value={state.borderColor || '#ffffff'}
               onChange={(e) => setBorderColor(e.target.value)}
               title="Chọn màu viền"
-              className="w-7 h-6 rounded cursor-pointer bg-transparent border border-white/20 p-0" />
+              className="w-7 h-6 rounded cursor-pointer bg-transparent border border-mv-hair p-0" />
             {state.borderColor && (
               <button type="button" onClick={() => setBorderColor(undefined)} title="Về màu mặc định"
-                className="text-slate-400 hover:text-white">↺</button>
+                className="text-slate-400 hover:text-mv-fg">↺</button>
             )}
           </div>
             </div>
@@ -1108,7 +1108,7 @@ export default function MarketingStudioPage() {
             const c1 = state.seasonC1 || cur?.c1 || '#000000', c2 = state.seasonC2 || cur?.c2 || '#ffffff';
             const motif = state.seasonMotif || seasonMotifOf(state.season);
             const swatch = (val: string, key: 'seasonC1' | 'seasonC2', title: string) => (
-              <label title={title} className="relative w-8 h-8 rounded-lg cursor-pointer border border-white/20 hover:border-white/50 transition-colors" style={{ background: val }}>
+              <label title={title} className="relative w-8 h-8 rounded-lg cursor-pointer border border-mv-hair hover:border-mv-hair-strong transition-colors" style={{ background: val }}>
                 <input type="color" value={val} onChange={(e) => setDecor({ [key]: e.target.value })} aria-label={title} data-testid={key === 'seasonC1' ? 'decor-c1' : 'decor-c2'} className="absolute inset-0 opacity-0 cursor-pointer" />
               </label>
             );
@@ -1117,7 +1117,7 @@ export default function MarketingStudioPage() {
                 <span className="mv-label w-24 shrink-0 pt-3">Dịp</span>
                 <div className="flex-1 min-w-0 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full shrink-0 border border-white/15" style={{ background: on ? `linear-gradient(135deg, ${c1}, ${c2})` : 'rgba(255,255,255,0.05)' }} />
+                    <span className="w-6 h-6 rounded-full shrink-0 border border-mv-hair" style={{ background: on ? `linear-gradient(135deg, ${c1}, ${c2})` : 'rgba(255,255,255,0.05)' }} />
                     <select value={state.season || 'none'} onChange={(e) => setSeason(e.target.value)} data-testid="season-select"
                       title="Trang trí theo dịp" className="mv-input !w-auto !py-2 !px-3 !text-xs font-semibold">
                       {SEASON_PRESETS.map((s) => <option key={s.id} value={s.id}>{s.id === 'none' ? 'Không trang trí' : s.label}</option>)}
@@ -1136,7 +1136,7 @@ export default function MarketingStudioPage() {
                         {SEASON_MOTIFS.map((m) => (
                           <button key={m.id} type="button" title={m.label} aria-label={m.label} data-active={motif === m.id}
                             onClick={() => setDecor({ seasonMotif: m.id === seasonMotifOf(state.season) ? undefined : m.id })}
-                            className={`w-8 h-8 p-1.5 rounded-lg border transition-colors ${motif === m.id ? 'border-indigo-400 bg-indigo-500/15' : 'border-white/10 hover:border-white/30'}`}
+                            className={`w-8 h-8 p-1.5 rounded-lg border transition-colors ${motif === m.id ? 'border-indigo-400 bg-indigo-500/15' : 'border-mv-hair hover:border-mv-hair-strong'}`}
                             dangerouslySetInnerHTML={{ __html: motifIconSvg(m.id, c1) }} />
                         ))}
                       </div>
@@ -1145,7 +1145,7 @@ export default function MarketingStudioPage() {
                         {swatch(c1, 'seasonC1', 'Màu chính')}
                         {swatch(c2, 'seasonC2', 'Màu phụ')}
                         {(state.seasonC1 || state.seasonC2) && (
-                          <button type="button" onClick={() => setDecor({ seasonC1: undefined, seasonC2: undefined })} className="text-[11px] text-slate-400 hover:text-white underline ml-1">Màu theo dịp</button>
+                          <button type="button" onClick={() => setDecor({ seasonC1: undefined, seasonC2: undefined })} className="text-[11px] text-slate-400 hover:text-mv-fg underline ml-1">Màu theo dịp</button>
                         )}
                       </div>
                     </div>
@@ -1270,8 +1270,8 @@ export default function MarketingStudioPage() {
             </div>
           </CollapsibleSection>
         <div className="glass-card p-6 rounded-2xl space-y-5 hover:!transform-none">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <button type="button" onClick={() => setNoiDungOpen((o) => !o)} className="text-base font-bold text-white flex items-center gap-2">
+          <div className="flex items-center justify-between border-b border-mv-hair pb-4">
+            <button type="button" onClick={() => setNoiDungOpen((o) => !o)} className="text-base font-bold text-mv-fg flex items-center gap-2">
               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${noiDungOpen ? '' : '-rotate-90'}`} />
               <span>3 · Nội dung</span>
             </button>
@@ -1361,13 +1361,13 @@ export default function MarketingStudioPage() {
 
             <div className="space-y-4">
               <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
-                <p className="font-bold text-white">4 · Ảnh nền</p>
+                <p className="font-bold text-mv-fg">4 · Ảnh nền</p>
                 <p className="text-slate-400">Chọn nền mẫu có sẵn, hoặc tải ảnh của anh (sẽ tự làm mờ cho chữ nổi).</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                   {bgsFor(state.categoryId).map((url, i) => (
                     <button key={url} type="button" title={`Nền ${i + 1}`}
                       onClick={() => saveState({ ...state, bgUrl: url, backgroundImage: '' })}
-                      className={`shrink-0 w-[72px] h-[72px] rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-indigo-500' : 'border-white/10 hover:border-white/30'}`}>
+                      className={`shrink-0 w-[72px] h-[72px] rounded-lg overflow-hidden border-2 transition-all ${state.bgUrl === url && !state.backgroundImage ? 'border-indigo-500' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
                       <img src={url} alt={`Nền ${i + 1}`} className="w-full h-full object-cover"
                         onError={(e) => { const b = e.currentTarget.closest('button'); if (b) b.style.display = 'none'; }} />
                     </button>
@@ -1393,7 +1393,7 @@ export default function MarketingStudioPage() {
                 </>}
               </div>
               {!isProductLayout && <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
-                <p className="font-bold text-white">Ảnh chính</p>
+                <p className="font-bold text-mv-fg">Ảnh chính</p>
                 <p className="text-slate-400">Sản phẩm, nhân vật hoặc hình minh họa nổi bật.</p>
                 {state.image && <div className="mv-hover-zoom rounded-lg"><img src={state.cutout || state.image} alt="Ảnh chính của anh" className="w-full h-32 object-contain rounded-lg" /></div>}
                 <label className="mv-btn mv-btn-ghost !flex w-full justify-center !py-2 !text-xs">Tải ảnh chính<input aria-label="Tải ảnh chính" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImageUpload} className="sr-only" /></label>
@@ -1420,12 +1420,12 @@ export default function MarketingStudioPage() {
 
               {/* Ảnh sản phẩm (combo) + giá — CHỈ cho bố cục "Sản phẩm" */}
               {isProductLayout && <div className="glass-card p-4 space-y-2.5 hover:!transform-none">
-                <p className="font-bold text-white">Ảnh sản phẩm (combo · tối đa 3)</p>
+                <p className="font-bold text-mv-fg">Ảnh sản phẩm (combo · tối đa 3)</p>
                 <p className="text-slate-400">Cho bố cục “Sản phẩm”: nền riêng + sản phẩm nổi ở giữa. Nên dùng ảnh tách nền (PNG trong suốt).</p>
                 {(state.products?.length ?? 0) > 0 && (
                   <div className="grid grid-cols-3 gap-2">
                     {state.products!.map((p, i) => (
-                      <div key={i} className="relative rounded-lg bg-black/30 border border-white/10 p-1 flex flex-col gap-1">
+                      <div key={i} className="relative rounded-lg bg-ink/[0.04] border border-mv-hair p-1 flex flex-col gap-1">
                         <img src={p} alt={`Sản phẩm ${i + 1}`} className="w-full h-20 object-contain" />
                         <button type="button" aria-label={`Gỡ sản phẩm ${i + 1}`}
                           onClick={() => saveState({ ...state, products: state.products!.filter((_, j) => j !== i) })}
@@ -1433,7 +1433,7 @@ export default function MarketingStudioPage() {
                         <button type="button" aria-label={`Tách nền sản phẩm ${i + 1}`}
                           disabled={cuttingIdx != null}
                           onClick={() => cutoutProductAt(i)}
-                          className={`w-full text-[10px] py-1 rounded-md border border-white/15 text-slate-200 hover:border-indigo-400 ${cuttingIdx != null ? 'opacity-60 pointer-events-none' : ''}`}>
+                          className={`w-full text-[10px] py-1 rounded-md border border-mv-hair text-slate-200 hover:border-indigo-400 ${cuttingIdx != null ? 'opacity-60 pointer-events-none' : ''}`}>
                           {cuttingIdx === i ? '⏳ Đang tách…' : '✂ Tách nền'}
                         </button>
                       </div>
@@ -1451,7 +1451,7 @@ export default function MarketingStudioPage() {
                   <label className="block text-[11px] text-slate-400">Giá gốc<input value={state.priceOld || ''} onChange={e => saveState({ ...state, priceOld: e.target.value })} placeholder="580K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
                   <label className="block text-[11px] text-slate-400">Giá sale<input value={state.priceNew || ''} onChange={e => saveState({ ...state, priceNew: e.target.value })} placeholder="419K" className="mv-input mt-1 !py-1.5 !text-xs" /></label>
                 </div>
-                {(state.products?.length ?? 0) > 0 && <details className="border-t border-white/10 mt-1 pt-1">
+                {(state.products?.length ?? 0) > 0 && <details className="border-t border-mv-hair mt-1 pt-1">
                   <summary className="text-[11px] text-slate-400 cursor-pointer select-none py-1 hover:text-slate-200">⚙ Chỉnh vị trí sản phẩm</summary>
                   <div className="space-y-2.5 pt-2">
                   <label className="block text-[11px] text-slate-300">Phóng to {((state.mainImageZoom ?? 100) - 100 > 0 ? '+' : '')}{(state.mainImageZoom ?? 100) - 100}<input aria-label="Phóng to ảnh chính" className="w-full accent-indigo-500 cursor-pointer" type="range" min="-100" max="100" value={(state.mainImageZoom ?? 100) - 100} onChange={e=>saveState({...state,mainImageZoom:100 + Number(e.target.value)})}/></label>
@@ -1473,21 +1473,21 @@ export default function MarketingStudioPage() {
             </button>
 
             {statusText && (
-              <p className="text-center text-xs text-white animate-pulse font-medium">
+              <p className="text-center text-xs text-mv-fg animate-pulse font-medium">
                 {statusText}
               </p>
             )}
           </form>
 
           {/* Facts Review & Verification Section */}
-          <div className="pt-3 border-t border-white/10">
+          <div className="pt-3 border-t border-mv-hair">
             <button
               type="button"
               onClick={() => setFactsExpanded(!factsExpanded)}
-              className="w-full py-2 flex items-center justify-between text-left hover:text-white transition-colors text-slate-300"
+              className="w-full py-2 flex items-center justify-between text-left hover:text-mv-fg transition-colors text-slate-300"
             >
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-white" />
+                <CheckCircle2 className="w-4 h-4 text-mv-fg" />
                 <span className="text-xs font-bold">Đối Chiếu Facts Nguồn</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-200 font-semibold">
                   {currentFacts.length} ý
@@ -1523,7 +1523,7 @@ export default function MarketingStudioPage() {
                               type="checkbox"
                               checked={fact.selected}
                               onChange={(e) => handleToggleFact(fIdx, e.target.checked)}
-                              className="rounded border-white/20 text-white focus:ring-0 w-3 h-3"
+                              className="rounded border-mv-hair text-mv-fg focus:ring-0 w-3 h-3"
                             />
                             <span className="text-[10px] font-mono text-slate-400">#{fact.id}</span>
                           </label>
@@ -1566,7 +1566,7 @@ export default function MarketingStudioPage() {
           onClick={() => setHtmlFull(false)}
         >
           <button type="button" onClick={() => setHtmlFull(false)}
-            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20">
+            className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-ink/[0.05] hover:bg-ink/[0.08] text-mv-fg text-sm font-semibold border border-mv-hair">
             <X className="w-4 h-4" /> Đóng
           </button>
           <div onClick={(e) => e.stopPropagation()} className="max-h-[92vh] overflow-auto rounded-xl shadow-2xl">
@@ -1583,14 +1583,14 @@ export default function MarketingStudioPage() {
         >
           {/* Modal Header */}
           <div
-            className="w-full max-w-5xl flex items-center justify-between pb-3 border-b border-white/10"
+            className="w-full max-w-5xl flex items-center justify-between pb-3 border-b border-mv-hair"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-white">
+              <span className="text-xs font-bold uppercase tracking-wider text-mv-fg">
                 Xem Trước Poster
               </span>
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-mv-fg">
                 {posterNames[previewKind]}
               </h2>
             </div>
@@ -1625,7 +1625,7 @@ export default function MarketingStudioPage() {
             <button
               type="button"
               onClick={handlePrevPreview}
-              className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              className="absolute left-2 sm:left-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-white text-white border border-white/20 backdrop-blur transition-all shadow-xl"
               title="Mẫu trước (Phím ←)"
             >
               <ChevronLeft className="w-6 h-6" />
@@ -1636,7 +1636,7 @@ export default function MarketingStudioPage() {
               <img
                 src={previewUrl}
                 alt={posterNames[previewKind]}
-                className="max-h-[80vh] w-auto max-w-[72vw] object-contain rounded-2xl border border-white/10 ring-1 ring-white/10 select-none"
+                className="max-h-[80vh] w-auto max-w-[72vw] object-contain rounded-2xl border border-mv-hair ring-1 ring-mv-hair select-none"
               />
             </div>
 
@@ -1644,7 +1644,7 @@ export default function MarketingStudioPage() {
             <button
               type="button"
               onClick={handleNextPreview}
-              className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-slate-950 text-white border border-white/20 backdrop-blur transition-all shadow-xl"
+              className="absolute right-2 sm:right-4 z-10 p-3 rounded-full bg-black/60 hover:bg-indigo-400 hover:text-white text-white border border-white/20 backdrop-blur transition-all shadow-xl"
               title="Mẫu tiếp theo (Phím →)"
             >
               <ChevronRight className="w-6 h-6" />
@@ -1653,7 +1653,7 @@ export default function MarketingStudioPage() {
 
           {/* Bottom Thumbnails Strip */}
           <div
-            className="flex items-center gap-3 bg-black/60 border border-white/10 px-4 py-2 rounded-2xl backdrop-blur"
+            className="flex items-center gap-3 bg-black/60 border border-mv-hair px-4 py-2 rounded-2xl backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mv-seg">
@@ -1669,7 +1669,7 @@ export default function MarketingStudioPage() {
               </button>
             ))}
             </div>
-            <span className="text-[11px] text-slate-500 border-l border-white/10 pl-3">
+            <span className="text-[11px] text-slate-500 border-l border-mv-hair pl-3">
               Dùng phím ← / → để chuyển mẫu · Esc để đóng
             </span>
           </div>
