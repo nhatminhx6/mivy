@@ -78,7 +78,8 @@ export const matById = (id: string) => MATERIALS.find((m) => m.id === id) || MAT
 // cảnh tường ảnh thật gen sẵn offline (/public/scenes) — giữa tường chừa trống để gắn bảng
 // cnc: kiểu CNC hợp với bức tường này (vd tường Hội An → sơn thẳng, gỗ Nhật → chữ rời đen) — không ép tấm nền lên mọi tường
 // light: [hệ số chuẩn hoá độ sáng tường (≈1/độ sáng vùng giữa), độ đậm] → bóng lá/ánh đèn của cảnh hắt lên bảng
-export const SIGN_SCENES: { id: string; name: string; src: string; cnc: Partial<SignSpec>; light: [number, number] }[] = [
+// zone: [tâm x, tâm y, rộng tối đa, cao tối đa] theo tỉ lệ ảnh — cảnh có chỗ gắn bảng cố định (vd dải mặt tiền trên cửa kính); không có thì đặt giữa
+export const SIGN_SCENES: { id: string; name: string; src: string; cnc: Partial<SignSpec>; light: [number, number]; zone?: [number, number, number, number] }[] = [
   { id: 'congnghiep', name: 'Xi măng công nghiệp', src: '/scenes/bh-1-congnghiep.jpg', cnc: { style: 'loose', letter: 'black' }, light: [1.28, 0.9] },
   { id: 'bar-dem', name: 'Bar gạch đêm', src: '/scenes/bh-2-bar-dem.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [3.5, 0.55] },
   { id: 'hoian', name: 'Tường vàng Hội An', src: '/scenes/bh-3-hoian.jpg', cnc: { style: 'paint', letter: 'black' }, light: [1.27, 0.9] },
@@ -86,7 +87,7 @@ export const SIGN_SCENES: { id: string; name: string; src: string; cnc: Partial<
   { id: 'nha-trang', name: 'Tường trắng tối giản', src: '/scenes/bh-5-nha-trang.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [1.08, 0.9] },
   { id: 'nhiet-doi', name: 'Đất nung nhiệt đới', src: '/scenes/bh-6-nhiet-doi.jpg', cnc: { style: 'paint', letter: 'white' }, light: [1.5, 0.95] },
   { id: 'sang-trong', name: 'Đá đen sang trọng', src: '/scenes/bh-7-sang-trong.jpg', cnc: { style: 'loose', letter: 'gold' }, light: [4, 0.45] },
-  { id: 'pho-vn', name: 'Mặt phố Việt', src: '/scenes/bh-8-pho-vn.jpg', cnc: { style: 'loose', letter: 'white' }, light: [1.2, 0.6] },
+  { id: 'pho-vn', name: 'Mặt phố Việt', src: '/scenes/bh-8-pho-vn.jpg', cnc: { style: 'loose', letter: 'white' }, light: [1.2, 0.6], zone: [0.506, 0.25, 0.78, 0.22] },
 ];
 // mỗi loại bảng hợp vài cảnh → các mẫu xoay vòng cảnh
 const KIND_SCENES: Record<SignKind, string[]> = {
@@ -250,7 +251,10 @@ const LOOKS: Record<SignKind, Partial<SignSpec>[]> = {
 };
 export function lookFor(kind: SignKind, tplId: string): Partial<SignSpec> {
   const l = LOOKS[kind]; const i = Math.max(0, SIGN_TEMPLATES.findIndex((t) => t.id === tplId));
-  const sc = KIND_SCENES[kind]; const scene = sc[i % sc.length];
+  // cảnh có dải gắn bảng hẹp (mặt phố) chỉ hợp bảng ngang dài; bảng vuông/tròn/dọc xoay sang tường khác
+  const tp = SIGN_TEMPLATES[i]; const all = KIND_SCENES[kind];
+  const fit = all.filter((id) => !SIGN_SCENES.find((x) => x.id === id)?.zone || tp.w / tp.h >= 2);
+  const sc = fit.length ? fit : all; const scene = sc[i % sc.length];
   const rec = kind === 'cnc' ? SIGN_SCENES.find((x) => x.id === scene)?.cnc : undefined;
   return { halo: true, ...l[i % l.length], scene, ...rec };
 }
@@ -538,7 +542,14 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
   const M = Math.max(W, H) * (!spec.scene ? 0.14 : ((spec.style === 'paint' || spec.style === 'loose') && (spec.kind || 'cnc') === 'cnc') || spec.kind === 'channel' ? 0.24 : 0.42); /* chữ thẳng tường: không tấm → chữ to hơn */ const th = Math.max(W, H) * 0.007; // lề tường + độ dày tấm
   let VW = W + M * 2, VH = H + M * 2;
   if (aspect) { if (VW / VH < aspect) VW = VH * aspect; else VH = VW / aspect; }
-  const ox = (VW - W) / 2, oy = (VH - H) / 2;
+  let ox = (VW - W) / 2, oy = (VH - H) / 2;
+  const zone = SIGN_SCENES.find((x) => x.id === spec.scene)?.zone;
+  if (zone) { // bảng nằm gọn trong vùng gắn bảng của cảnh (ảnh 4:3, phủ kín khung kiểu slice)
+    const [zcx, zcy, zw, zh] = zone, ia = 4 / 3, a = aspect || ia;
+    VW = a >= ia ? Math.max(W / zw, (H * ia) / zh) : Math.max((W * a) / (zw * ia), (H * a) / zh); VH = VW / a;
+    const Iw = Math.max(VW, VH * ia), Ih = Iw / ia;
+    ox = (VW - Iw) / 2 + zcx * Iw - W / 2; oy = (VH - Ih) / 2 + zcy * Ih - H / 2;
+  }
   const kind = spec.kind || 'cnc';
   if (kind !== 'cnc') return <SignKindSvg spec={spec} data={data} uid={uid} t={t} W={W} H={H} ox={ox} oy={oy} th={th} VW={VW} VH={VH} shape={shape} font={font} m={m} L={L} style={style} className={className} />;
   const plate = (

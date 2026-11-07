@@ -9,7 +9,7 @@ import {
   cardSize, defaultCardData, palettesFor, useCardFonts, type CardData, type CardKind, type CardSpec,
 } from '@/lib/card-engine';
 import { lunarLine } from '@/lib/lunar';
-import { svgToJpeg, svgToPng, svgToPrintPdf } from '@/lib/svg-export';
+import { svgFileBlob, svgToJpeg, svgToPng, svgToPrintPdf } from '@/lib/svg-export';
 import { downloadBlob } from '@/lib/html-export';
 import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
@@ -60,6 +60,11 @@ export default function CardsPage() {
   const downloadPdf = () => run('pdf', async () => {
     const el = printRef.current?.querySelector('svg'); if (!el) return;
     downloadBlob(await svgToPrintPdf(el, CARD_FONT_CSS, sz, CARD_BLEED_MM), `${slug}-${sz.id}cm-file-in.pdf`);
+  });
+  // File vector cho xưởng mở bằng AI/Corel: chữ đã outline (text→path) nên không cần font ở xưởng
+  const downloadSvg = () => run('svg', async () => {
+    const el = printRef.current?.querySelector('svg'); if (!el) return;
+    downloadBlob(await svgFileBlob(el, CARD_FONT_CSS), `${slug}-${sz.id}cm-file-in.svg`);
   });
 
   // file gửi kèm đơn in: PDF in (có lề xén) + ảnh xem trước
@@ -163,12 +168,15 @@ export default function CardsPage() {
               <CardSvg spec={spec} data={data} style={{ width: '100%', display: 'block' }} />
             </div>
             <div className="text-[11px] text-slate-400 text-center">{sz.name} · in 300dpi · lề xén {CARD_BLEED_MM}mm mỗi cạnh</div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="grid grid-cols-3 gap-2 pt-1">
               <button type="button" onClick={downloadPng} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs" data-testid="card-png">
-                {busy === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Ảnh PNG
+                {busy === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PNG
               </button>
               <button type="button" onClick={downloadPdf} className="mv-btn mv-btn-primary !flex justify-center !py-2.5 !text-xs" data-testid="card-pdf">
-                {busy === 'pdf' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />} File in PDF
+                {busy === 'pdf' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />} PDF in
+              </button>
+              <button type="button" onClick={downloadSvg} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs" data-testid="card-svg" title="File vector, chữ đã outline — xưởng mở bằng AI/Corel, không cần font">
+                {busy === 'svg' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />} SVG vector
               </button>
             </div>
             <PrintRequest product="card" title={orderTitle} design={{ spec, data }} makeFiles={makeFiles} />

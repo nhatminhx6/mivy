@@ -169,14 +169,14 @@ export const CATEGORY_SAMPLES: Record<string, CategorySample> = {
     },
   },
   personal: {
-    name: 'Coach Minh – Định Hướng Sự Nghiệp',
-    brand: 'Coach Minh',
+    name: 'Coach Tuấn – Định Hướng Sự Nghiệp',
+    brand: 'Coach Tuấn',
     offer: 'Buổi khám phá miễn phí 30 phút',
     goal: 'personal',
     details:
       'Đồng hành người đi làm 1–5 năm muốn chuyển hướng\n10 năm kinh nghiệm quản lý nhân sự\nBuổi 1-1 phân tích điểm mạnh, lộ trình\nHỗ trợ chỉnh CV và luyện phỏng vấn\nTư vấn online hoặc trực tiếp',
     copies: {
-      launch: { headline: 'Coach Minh', subline: 'Gỡ rối và định hướng sự nghiệp', cta: 'Đặt lịch ngay', caption: '🧭 COACH MINH – ĐỊNH HƯỚNG SỰ NGHIỆP\n\n📌 10 năm kinh nghiệm quản lý nhân sự\n📌 Buổi khám phá miễn phí 30 phút\n\nĐặt lịch để bắt đầu!' },
+      launch: { headline: 'Coach Tuấn', subline: 'Gỡ rối và định hướng sự nghiệp', cta: 'Đặt lịch ngay', caption: '🧭 COACH TUẤN – ĐỊNH HƯỚNG SỰ NGHIỆP\n\n📌 10 năm kinh nghiệm quản lý nhân sự\n📌 Buổi khám phá miễn phí 30 phút\n\nĐặt lịch để bắt đầu!' },
       story: { headline: 'Em Giúp Được Gì', subline: 'Rõ ràng từng bước đi', cta: 'Xem chi tiết', caption: '🎯 NỘI DUNG ĐỒNG HÀNH\n\n- Phân tích điểm mạnh, lộ trình\n- Chỉnh CV và luyện phỏng vấn\n- Tư vấn online hoặc trực tiếp', points: ['Phân tích điểm mạnh và lộ trình', 'Chỉnh CV và luyện phỏng vấn', 'Tư vấn online hoặc trực tiếp'] },
       action: { headline: 'Bắt Đầu Hôm Nay', subline: 'Buổi khám phá miễn phí', cta: 'Nhắn tin đặt lịch', caption: '📬 ĐẶT BUỔI KHÁM PHÁ\n\n- Miễn phí 30 phút đầu\n- Phù hợp người đi làm 1–5 năm\n- Nhắn tin để xếp lịch', points: ['Miễn phí buổi khám phá 30 phút', 'Phù hợp người đi làm 1–5 năm', 'Nhắn tin để xếp lịch'] },
     },

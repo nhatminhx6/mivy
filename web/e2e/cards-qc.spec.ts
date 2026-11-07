@@ -54,7 +54,7 @@ test('Thiệp: đổi khổ + tên/địa chỉ dài vẫn không tràn', async 
   test.setTimeout(240_000);
   await page.goto('/studio/cards');
   await expect(page.getByTestId('card-tpl')).toHaveCount(28, { timeout: 60_000 });
-  await page.getByTestId('card-groom').fill('Nguyễn Trần Hoàng Minh Nhật');
+  await page.getByTestId('card-groom').fill('Nguyễn Trần Hoàng Gia Khánh');
   await page.getByTestId('card-bride').fill('Lê Phạm Ngọc Thu Hà Phương');
   await page.getByTestId('card-address').fill('Nhà hàng tiệc cưới Riverside Palace, 360D Bến Vân Đồn, Phường 1, Quận 4, Thành phố Hồ Chí Minh');
   await page.getByTestId('card-groomFamily').fill('Ông Nguyễn Trần Văn Hoàng Long\nBà Phạm Thị Ngọc Bích\nQ. Tân Phú, TP.HCM');

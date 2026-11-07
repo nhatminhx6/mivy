@@ -74,6 +74,22 @@ def test_login_logout(ctx) -> None:
     assert c.get("/v1/me").status_code == 200
 
 
+def test_native_app_gets_bearer_token(ctx) -> None:
+    c, _ = ctx
+    app = {"X-Mivy-Client": "fotodocs-ios"}
+    assert "token" not in register(c, "web@b.vn")  # web: cookie only
+    c.cookies.clear()
+    r = c.post("/v1/auth/register", json={"email": "app@b.vn", "password": "matkhau1"}, headers=app)
+    token = r.json()["token"]
+    c.cookies.clear()
+    auth = {"Authorization": f"Bearer {token}"}
+    assert c.get("/v1/me", headers=auth).json()["email"] == "app@b.vn"
+    assert c.post("/v1/auth/login", json={"email": "app@b.vn", "password": "matkhau1"}, headers=app).json()["token"]
+    c.cookies.clear()
+    c.post("/v1/auth/logout", headers=auth)
+    assert c.get("/v1/me", headers=auth).status_code == 401
+
+
 def test_tryon_needs_login(ctx) -> None:
     c, fake = ctx
     assert tryon(c).status_code == 401 and fake.calls == 0

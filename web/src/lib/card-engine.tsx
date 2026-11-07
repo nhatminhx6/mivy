@@ -148,7 +148,7 @@ export type CardData = Record<string, string>;
 export interface CardField { key: string; label: string; ph?: string; type?: 'text' | 'date' | 'time' | 'multiline'; hint?: string; half?: boolean }
 export const CARD_FIELDS: Record<CardKind, CardField[]> = {
   wedding: [
-    { key: 'groom', label: 'Chú rể', ph: 'Minh Nhật', half: true },
+    { key: 'groom', label: 'Chú rể', ph: 'Quốc Bảo', half: true },
     { key: 'bride', label: 'Cô dâu', ph: 'Thu Hà', half: true },
     { key: 'invite', label: 'Dòng báo tin', ph: 'Trân trọng báo tin lễ thành hôn' },
     { key: 'date', label: 'Ngày cưới', type: 'date', half: true },
@@ -173,7 +173,7 @@ export const CARD_FIELDS: Record<CardKind, CardField[]> = {
 };
 export function defaultCardData(kind: CardKind): CardData {
   if (kind === 'wedding') return {
-    groom: 'Minh Nhật', bride: 'Thu Hà', invite: 'Trân trọng báo tin lễ thành hôn của con chúng tôi',
+    groom: 'Quốc Bảo', bride: 'Thu Hà', invite: 'Trân trọng báo tin lễ thành hôn của con chúng tôi',
     date: '2026-12-20', time: '10:00', lunar: lunarLine('2026-12-20'), venue: 'Tư gia nhà trai',
     address: '123 Lũy Bán Bích, P. Tân Thới Hòa, Q. Tân Phú, TP.HCM',
     groomFamily: 'Ông Nguyễn Văn An\nBà Trần Thị Bình', brideFamily: 'Ông Lê Văn Cường\nBà Phạm Thị Dung',

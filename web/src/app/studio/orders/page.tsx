@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Download, Loader2, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
-import { BANK, ORDER_STEPS, fmtVnd, orderApi, useAuth, vietQr, type PrintOrder } from '@/lib/auth';
+import { BANK, ORDER_STEPS, STATUS_GUIDE, fmtVnd, orderApi, useAuth, vietQr, type PrintOrder } from '@/lib/auth';
 
 export default function MyOrdersPage() {
   const { me, ready } = useAuth();
@@ -61,6 +61,7 @@ function OrderCard({ o }: { o: PrintOrder }) {
             ))}
           </div>
         )}
+        <p className="text-xs leading-relaxed text-slate-400" data-testid="order-guide">{STATUS_GUIDE[o.status]}</p>
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
           <span className="text-slate-400">Tổng: <b className="text-mv-fg">{o.price ? fmtVnd(o.price) : 'đang báo giá'}</b></span>
           {o.deposit != null && <span className="text-slate-400">Cọc: <b className="text-mv-fg">{fmtVnd(o.deposit)}</b></span>}

@@ -4,6 +4,7 @@ import FotoDocsDesign
 struct AvatarResultView: View {
     @Environment(\.dismiss) private var dismiss
     let image: UIImage
+    var backgroundReplaced = true
     @State private var share: SharePayload?
 
     var body: some View {
@@ -19,6 +20,15 @@ struct AvatarResultView: View {
                     .scaledToFit()
                     .frame(maxWidth: 300, maxHeight: 300)
                     .shadow(color: .black.opacity(0.4), radius: 20, y: 10)
+
+                if !backgroundReplaced {
+                    Label("Chưa tách được người khỏi nền ảnh này nên vẫn giữ nền gốc. Thử ảnh chụp rõ người, nền đơn giản hơn.",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.bvp(.footnote, .semibold))
+                        .foregroundStyle(FotoDocs.Palette.warning)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: 320)
+                }
 
                 HStack(spacing: 14) {
                     Button {

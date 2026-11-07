@@ -19,6 +19,8 @@ struct VisaHomeView: View {
     @State private var showScanner = false
     @State private var reading = false
     @State private var message: (text: String, ok: Bool)?
+    /// Fields read by the last CCCD scan (nil value = not on this side of the card).
+    @State private var readFields: [(label: String, value: String?)] = []
     @State private var editing = false
 
     enum ScanKind { case cccd, passport }
@@ -40,12 +42,32 @@ struct VisaHomeView: View {
                         .fotoCard(16)
                     }
                     if let message {
-                        Label(message.text, systemImage: message.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .font(.bvp(.subheadline, .semibold))
-                            .foregroundStyle(message.ok ? FotoDocs.Palette.success : FotoDocs.Palette.warning)
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .fotoCard(16)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label(message.text, systemImage: message.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .font(.bvp(.subheadline, .semibold))
+                                .foregroundStyle(message.ok ? FotoDocs.Palette.success : FotoDocs.Palette.warning)
+                            if !readFields.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(readFields, id: \.label) { f in
+                                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                            Text(f.label)
+                                                .font(.bvp(.caption, .semibold))
+                                                .foregroundStyle(FotoDocs.Palette.textSecondary)
+                                                .frame(width: 96, alignment: .leading)
+                                            Text(f.value ?? "Chưa có · nhập tay")
+                                                .font(.bvp(.subheadline, f.value == nil ? .regular : .semibold))
+                                                .foregroundStyle(f.value == nil ? FotoDocs.Palette.textMuted : FotoDocs.Palette.textPrimary)
+                                        }
+                                    }
+                                }
+                                Button("Kiểm tra / sửa thông tin") { editing = true }
+                                    .font(.bvp(.subheadline, .semibold))
+                                    .foregroundStyle(FotoDocs.Palette.primary)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fotoCard(16)
                     }
                     Text("Chọn nước để điền form")
                         .font(.bvp(.headline, .semibold))
@@ -153,7 +175,7 @@ struct VisaHomeView: View {
 
     private var scanRow: some View {
         HStack(spacing: 12) {
-            scanTile(.cccd, title: "Quét CCCD", detail: "Mặt trước, có mã QR", icon: "qrcode.viewfinder")
+            scanTile(.cccd, title: "Quét CCCD", detail: "Mặt có ảnh chân dung", icon: "qrcode.viewfinder")
             scanTile(.passport, title: "Quét hộ chiếu", detail: "Trang có ảnh", icon: "person.text.rectangle")
         }
     }
@@ -220,20 +242,28 @@ struct VisaHomeView: View {
 
     private func read(_ image: UIImage) async {
         message = nil
+        readFields = []
         reading = true
         defer { reading = false }
         guard let cg = image.uprightForVision(maxSide: 3000).cgImage else { return }
         switch await IDDocumentReader.read(cg) {
         case .cccd(let info):
             store.profile.apply(info)
-            message = ("Đã đọc CCCD của \(info.fullName)", true)
+            message = ("Đã đọc mã QR trên CCCD", true)
+            readFields = info.summary
+        case .cccdText(let info):
+            store.profile.apply(info)
+            message = ("Đã đọc CCCD. Bạn xem lại các mục bên dưới, chữ in có thể đọc nhầm.", true)
+            readFields = info.summary.filter { $0.label != "Ngày cấp" }  // printed on the back of old cards
+        case .backSide:
+            message = ("Đây là mặt sau của thẻ. Bạn chọn ảnh mặt trước (mặt có ảnh chân dung) nhé.", false)
         case .passport(let mrz):
             store.profile.apply(mrz)
             message = ("Đã đọc hộ chiếu số \(mrz.number)", true)
         case .nothing:
             message = scanning == .passport
                 ? ("Chưa đọc được hộ chiếu. Chụp rõ trang có ảnh, thấy đủ 2 dòng mã ở cuối trang, không loá.", false)
-                : ("Chưa đọc được mã QR. Chụp rõ mặt trước CCCD gắn chip, đủ sáng, không loá.", false)
+                : ("Chưa đọc được CCCD. Chụp rõ mặt có ảnh chân dung, đủ sáng, không loá, thấy đủ 4 góc thẻ.", false)
         }
     }
 }

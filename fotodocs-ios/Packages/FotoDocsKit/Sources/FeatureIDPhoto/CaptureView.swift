@@ -30,12 +30,14 @@ public struct CaptureView: View {
                 Spacer(minLength: 0)
                 if model.cameraAvailable {
                     checksRow
-                    Text(model.target.infant ? "Đặt bé nằm ngửa trên ga trắng, chụp thẳng từ trên xuống" : "Giữ yên, tự chụp khi đạt")
+                    Text(guidance)
                         .font(.bvp(.subheadline, .semibold))
                         .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
                         .shadow(color: .black.opacity(0.6), radius: 6)
                         .padding(.top, 10)
                         .padding(.bottom, 14)
+                        .animation(.default, value: guidance)
                     controlBar
                 } else {
                     fallbackCard
@@ -52,7 +54,19 @@ public struct CaptureView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .fotoHidesTabBar()
-        .task { await model.onAppear() }
+        .task {
+            await model.onAppear()
+            #if DEBUG
+            // debug builds: `-editLast` reopens the last edited photo (Documents/debug-last-source.jpg) in the editor
+            if ProcessInfo.processInfo.arguments.contains("-editLast"),
+               let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+               let data = try? Data(contentsOf: docs.appendingPathComponent("debug-last-source.jpg")),
+               let image = UIImage(data: data) {
+                model.capturedImage = image
+                showEdit = true
+            }
+            #endif
+        }
         .onDisappear { model.onDisappear() }
         .onChange(of: pickedItem) { _, item in Task { await model.analyzePicked(item) } }
         .fullScreenCover(isPresented: $showEdit) {
@@ -80,17 +94,34 @@ public struct CaptureView: View {
             .overlay(Capsule().stroke(ctrlStroke))
             Spacer()
 
-            Button {} label: {
-                Image(systemName: "bolt.fill")
-                    .font(.bvp(.headline, .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(ctrlFill, in: .circle)
-                    .overlay(Circle().stroke(ctrlStroke))
+            // auto-capture on / off; the round shutter always works
+            Button { model.autoCapture.toggle() } label: {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(model.autoCapture ? FotoDocs.Palette.successBright : .white.opacity(0.35))
+                        .frame(width: 8, height: 8)
+                    Text("Tự chụp").font(.bvp(.caption, .bold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .frame(height: 48)
+                .background(ctrlFill, in: .capsule)
+                .overlay(Capsule().stroke(ctrlStroke))
             }
             .buttonStyle(.plain)
+            .disabled(!model.cameraAvailable)
+            .accessibilityLabel(model.autoCapture ? "Tự chụp đang bật" : "Tự chụp đang tắt")
         }
         .padding(.top, 8)
+    }
+
+    /// One line under the checks: what to fix, or what happens next.
+    private var guidance: String {
+        if model.target.infant { return "Đặt bé nằm ngửa trên ga trắng, chụp thẳng từ trên xuống" }
+        if let hint = model.autoHint { return model.autoCapture ? hint : "\(hint) · bấm nút tròn để chụp" }
+        let ready = model.autoCapture ? "Giữ yên, đang tự chụp…" : "Đã đạt, bấm nút tròn để chụp"
+        // ghép áo: chụp từ dưới lên làm cổ to, cằm sát vai — áo ghép không khớp
+        return model.target == .jobApplication ? "Máy ngang tầm mắt · \(ready)" : ready
     }
 
     // MARK: Checks

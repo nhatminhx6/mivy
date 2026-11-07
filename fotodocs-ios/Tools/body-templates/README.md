@@ -12,3 +12,11 @@ Thân người mẫu mặc vest dùng cho `HeadSwap`. Gen **offline 1 lần**, k
    `swiftc -O defringe_body.swift -o defringe && ./defringe body-<giới>-<màu>.png` (sửa tại chỗ).
 5. Chép 2 file vào `Packages/FotoDocsKit/Sources/FotoDocsImaging/Resources/Garments/`,
    thêm case vào `OutfitOption` (PortraitEditor.swift).
+
+## v2 — cổ áo đóng (2026-11-04)
+Cổ áo mở chữ V (mẫu cũ) để lộ một chữ V da cắt thẳng → nhìn ra ghép. Mẫu v2: sơ mi cài kín cúc trên cùng, chân cổ áo
+ôm sát cổ, cà vạt thắt cao (nam). **Gen ở máy gen, KHÔNG chạy trên máy dev của anh.**
+1. Máy gen (ComfyUI + Z-Image-Turbo GGUF): `COMFY=http://127.0.0.1:8188 python3 gen_body_closed.py out/`
+   → 4 mẫu × 4 seed = 16 ảnh `<tên>-s<seed>.png`.
+2. Chép thư mục `out/` về máy dev, chọn mỗi mẫu 1 ảnh: chính diện, đầu thẳng, vai đủ, chân cổ áo thấy rõ quanh cổ, cổ không bị tóc che.
+3. Bước 4, 4b, 5 như trên (đặt tên `body-<giới>-<màu>.png/.json` để thay mẫu cũ).

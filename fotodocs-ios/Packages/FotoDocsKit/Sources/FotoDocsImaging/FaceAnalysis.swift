@@ -12,6 +12,7 @@ public struct FaceCheckResult: Sendable, Equatable {
     public var earsVisible: Bool
     public var roll: Double      // degrees
     public var yaw: Double       // degrees
+    public var pitch: Double     // degrees, head nodding up / down
     public var brightness: Double // 0…1 luminance
     public var faceBoundingBox: CGRect // normalised, Vision coordinate space
 
@@ -22,6 +23,7 @@ public struct FaceCheckResult: Sendable, Equatable {
         earsVisible: Bool = false,
         roll: Double = 0,
         yaw: Double = 0,
+        pitch: Double = 0,
         brightness: Double = 0,
         faceBoundingBox: CGRect = .zero
     ) {
@@ -31,6 +33,7 @@ public struct FaceCheckResult: Sendable, Equatable {
         self.earsVisible = earsVisible
         self.roll = roll
         self.yaw = yaw
+        self.pitch = pitch
         self.brightness = brightness
         self.faceBoundingBox = faceBoundingBox
     }
@@ -49,6 +52,23 @@ public struct FaceCheckResult: Sendable, Equatable {
     public var passedCount: Int { checks.filter(\.ok).count }
     public var total: Int { checks.count }
     public var passed: Bool { passedCount == total }
+
+    /// Why the camera should not shoot by itself yet (stricter than the chips: an ID photo needs
+    /// the head level in all three axes and the neck and shoulders in frame), or nil when ready.
+    public var autoCaptureIssue: String? {
+        guard faceFound else { return "Đưa mặt vào khung" }
+        guard brightnessOK else { return brightness < FaceChecker.minBrightness ? "Ra chỗ sáng hơn" : "Tránh nguồn sáng chiếu thẳng" }
+        let b = faceBoundingBox  // normalised, origin bottom-left
+        if b.height > 0.42 { return "Lùi ra xa một chút" }
+        if b.height < 0.2 { return "Lại gần hơn một chút" }
+        if b.minY < 0.3 { return "Hạ máy thấp xuống, để thấy cổ và vai" }
+        if abs(b.midX - 0.5) > 0.08 { return "Đưa mặt vào giữa khung" }
+        if abs(roll) > FaceChecker.autoRoll { return "Giữ đầu thẳng, không nghiêng" }
+        if abs(yaw) > FaceChecker.autoYaw { return "Nhìn thẳng vào camera" }
+        if pitch > FaceChecker.autoPitch { return "Hơi cúi cằm xuống" }
+        if pitch < -FaceChecker.autoPitch { return "Hơi ngẩng đầu lên" }
+        return nil
+    }
 }
 
 /// On-device face/standard checker. Synchronous so it can run directly on the
@@ -59,6 +79,10 @@ public enum FaceChecker {
     static let maxYaw = 12.0
     static let earsYaw = 10.0
     static let minBrightness = 0.32
+    // auto-capture: stricter than the on-screen checks
+    static let autoRoll = 3.0
+    static let autoYaw = 6.0
+    static let autoPitch = 8.0
     static let maxBrightness = 0.96
 
     private static let context = CIContext(options: [.workingColorSpace: NSNull()])
@@ -86,6 +110,7 @@ public enum FaceChecker {
 
         let roll = degrees(face.roll)
         let yaw = degrees(face.yaw)
+        let pitch = degrees(face.pitch)
         let straight = abs(roll) <= maxRoll && abs(yaw) <= maxYaw
         let ears = abs(yaw) <= earsYaw
 
@@ -96,6 +121,7 @@ public enum FaceChecker {
             earsVisible: ears,
             roll: roll,
             yaw: yaw,
+            pitch: pitch,
             brightness: brightness,
             faceBoundingBox: face.boundingBox
         )

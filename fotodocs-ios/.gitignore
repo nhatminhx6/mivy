@@ -14,3 +14,4 @@ Packages/FotoDocsKit/.build/
 .DS_Store
 *.xcuserstate
 xcuserdata/
+.debug-out/

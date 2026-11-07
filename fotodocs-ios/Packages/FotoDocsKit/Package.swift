@@ -22,7 +22,9 @@ let package = Package(
         .target(
             name: "FotoDocsImaging",
             dependencies: ["FotoDocsCore"],
-            resources: [.copy("Resources/Garments")]
+            resources: [.copy("Resources/Garments"), .copy("Resources/Models")],
+            // per-pixel compositing is ~100× slower unoptimised: keep Debug builds usable on the phone
+            swiftSettings: [.unsafeFlags(["-O"])]
         ),
         .target(
             name: "FotoDocsDesign",

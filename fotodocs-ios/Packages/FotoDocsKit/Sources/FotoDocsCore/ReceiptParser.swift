@@ -62,7 +62,7 @@ public enum ReceiptParser {
     // MARK: Rows
 
     /// Joins boxes that sit on the same visual row (left → right), top → bottom.
-    static func group(_ lines: [OCRLine]) -> [String] {
+    public static func group(_ lines: [OCRLine]) -> [String] {
         let sorted = lines.filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }.sorted { $0.box.midY < $1.box.midY }
         var rows: [[OCRLine]] = []
         for line in sorted {

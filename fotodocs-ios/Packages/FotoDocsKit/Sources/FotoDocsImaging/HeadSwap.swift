@@ -12,9 +12,12 @@ public final class BodyTemplate: @unchecked Sendable {
     public let name: String
     let image: CGImage
     let chin: Double, cx: Double, jawW: Double
+    /// a real headless (ghost) suit with a stand-in neck behind it: the neck skin there is only for
+    /// measuring, never drawn on the user
+    let ghost: Bool
 
-    init(name: String, image: CGImage, chin: Double, cx: Double, jawW: Double) {
-        self.name = name; self.image = image; self.chin = chin; self.cx = cx; self.jawW = jawW
+    init(name: String, image: CGImage, chin: Double, cx: Double, jawW: Double, ghost: Bool = false) {
+        self.name = name; self.image = image; self.chin = chin; self.cx = cx; self.jawW = jawW; self.ghost = ghost
     }
 
     public static func bundled(_ name: String) -> BodyTemplate? {
@@ -26,7 +29,7 @@ public final class BodyTemplate: @unchecked Sendable {
               let src = CGImageSourceCreateWithURL(url as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(src, 0, nil)
         else { return nil }
-        return BodyTemplate(name: name, image: image, chin: chin, cx: cx, jawW: jaw)
+        return BodyTemplate(name: name, image: image, chin: chin, cx: cx, jawW: jaw, ghost: (meta["ghost"] ?? 0) > 0)
     }
 
     public static func bundleURL(_ name: String) -> URL? {
@@ -227,7 +230,33 @@ public enum HeadSwap {
                 k *= min(1.12, max(0.88, pow(kNeck / k, 0.7)))
             }
         }
+        // A face that tapers to the chin (V-line) is narrower above the neck than the model's at the
+        // same jaw width, so the model's neck looks too thick under it: grow the head until the lower
+        // face (mouth level) is as wide as the model's, up to +15%.
+        if let uLow = contourWidth(uPts, at: uChin - 0.28 * uJaw),
+           let mLow = skinRunWidth(bb, y: Int(bChin - 0.28 * bJaw), cx: Int(bCX), maxHalf: Int(0.6 * bJaw), ycc: ycc, skin: skinW),
+           uLow > 0.3 * uJaw, mLow > 0.3 * bJaw {
+            k *= min(1.15, max(1, mLow / (uLow * k)))
+        }
         k *= tuning.headScale
+
+        // Shading: a flat neck reads as part of the face (no jaw line, "thick neck"). The jaw casts
+        // a shadow just under it, following its curve, and the neck darkens towards its sides.
+        let liftPx = tuning.headLift * bJaw
+        for y in upTo..<min(collarY, iH) {
+            let (l, r) = y < rowTop ? (tl, tr) : (runs[y] ?? (tl, tr))
+            let half = max(1, Double(r - l) / 2), mid = Double(l + r) / 2
+            for x in l...r {
+                let ux = uCX + (Double(x) - bCX) / k
+                let jawBY = bChin - liftPx + ((FaceGeometry.jawY(uPts, ux) ?? uChin) - uChin) * k
+                let dy = Double(y) - jawBY
+                let under = dy < 0 ? 0.32 : 0.32 * exp(-dy / (0.14 * bJaw))
+                let rel = abs(Double(x) - mid) / half, s = max(0, min(1, (rel - 0.5) / 0.5))
+                let side = 0.18 * s * s * (3 - 2 * s)
+                let f = (1 - under) * (1 - side), p = neck.clamped(x, y)
+                for c in 0..<3 { p[c] = UInt8(Double(p[c]) * f) }
+            }
+        }
 
         // Grain: the model's neck (and the smooth fill behind the jaw) is cleaner than a phone
         // photo; add luminance noise so it matches the face's grain at the scale it is drawn.
@@ -287,7 +316,7 @@ public enum HeadSwap {
         var source = clean?.image ?? user
         let hr = FaceGeometry.grayContext(UW, UH)
         hr.setFillColor(gray: 0, alpha: 1); hr.fill(CGRect(x: 0, y: 0, width: UW, height: UH)); hr.setFillColor(gray: 1, alpha: 1)
-        let wideTop = uChin - 0.5 * uJaw, fadeTop = uChin - 0.42 * uJaw, fadeBot = uChin - 0.12 * uJaw
+        let wideTop = uChin - 0.5 * uJaw, fadeTop = uChin - 0.42 * uJaw
         // full width (hair, whole ears — a half-faded ear looks like a ghost) down to the ear lobes,
         // then a short fade instead of a hard line
         let wideFade = 0.12 * uJaw
@@ -302,15 +331,12 @@ public enum HeadSwap {
         hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - wideTop, width: 1.2 * uJaw, height: wideFade))
         // eyes → cheekbones: always solid (no seam between the full-width region and the jaw)
         hr.fill(CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeTop, width: 1.2 * uJaw, height: fadeTop - wideTop))
-        if hair == nil, let grad = CGGradient(colorsSpace: FaceGeometry.gray, colors: [CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1)] as CFArray, locations: [0, 1]) {
-            hr.saveGState()
-            hr.clip(to: CGRect(x: uCX - 0.6 * uJaw, y: UH - fadeBot, width: 1.2 * uJaw, height: fadeBot - fadeTop))
-            hr.drawLinearGradient(grad, start: CGPoint(x: 0, y: UH - fadeTop), end: CGPoint(x: 0, y: UH - fadeBot), options: [])
-            hr.restoreGState()
-        }
+        // Cheeks → chin: the jaw contour slightly widened, so the face's real outline comes from the
+        // person mask (crisp over the new backdrop) while the old collar beside the jaw stays out.
+        // (A fade here blurred the lower cheeks into the backdrop.)
         let midY = uChin - 0.5 * uJaw
         let jaw = CGMutablePath()
-        jaw.addLines(between: uPts.map { CGPoint(x: uCX + ($0.x - uCX) * 0.97, y: UH - (midY + ($0.y - midY) * 0.97)) })
+        jaw.addLines(between: uPts.map { CGPoint(x: uCX + ($0.x - uCX) * 1.04, y: UH - (midY + ($0.y - midY) * 0.99)) })
         jaw.closeSubpath()
         hr.addPath(jaw); hr.fillPath()
         // long hair falling beside the neck stays (drawn over the suit)
@@ -400,6 +426,28 @@ public enum HeadSwap {
 
     /// Fades the lower jaw edge of `mask` within the neck's width: alpha × (soft jaw), where the
     /// soft jaw is the jaw polygon inset by ~2σ and blurred by σ (≈0 at the real jaw line).
+    /// Width of the face contour at row `y` (outermost crossings of the contour polyline).
+    static func contourWidth(_ pts: [CGPoint], at y: Double) -> Double? {
+        var xs = [Double]()
+        for (a, b) in zip(pts, pts.dropFirst()) where (a.y - y) * (b.y - y) <= 0 && a.y != b.y {
+            xs.append(a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x))
+        }
+        guard let lo = xs.min(), let hi = xs.max(), hi > lo else { return nil }
+        return hi - lo
+    }
+
+    /// Width of the skin run through `cx` on row `y` of the body image (the model's face there).
+    static func skinRunWidth(_ px: RGBABitmap, y: Int, cx: Int, maxHalf: Int,
+                             ycc: (UnsafeMutablePointer<UInt8>) -> (Double, Double, Double),
+                             skin: (Double, Double, Double) -> Double) -> Double? {
+        func isSkin(_ x: Int) -> Bool { let p = px.clamped(x, y); guard p[3] > 128 else { return false }; let (Y, cb, cr) = ycc(p); return skin(Y, cb, cr) > 0.3 }
+        guard isSkin(cx) else { return nil }
+        var l = cx, r = cx
+        while cx - l < maxHalf && isSkin(l - 1) { l -= 1 }
+        while r - cx < maxHalf && isSkin(r + 1) { r += 1 }
+        return Double(r - l)
+    }
+
     static func softChin(_ mask: CGImage, pts: [CGPoint], cx: Double, chin: Double, jaw: Double, neckHalf: Double, full: CGRect) -> CGImage? {
         let sigma = max(1.5, 0.018 * jaw)
         let midY = chin - 0.5 * jaw, inset = 0.97 - 4 * sigma / jaw
@@ -438,7 +486,7 @@ public enum HeadSwap {
     /// the local backdrop colour B and the local subject colour F (means of clear background /
     /// solid subject pixels around it): its alpha is how far it lies from B towards F, and its
     /// colour has B taken out. Low contrast (light skin on a light wall) is left as it was.
-    static func decontaminate(_ px: RGBABitmap, person: CGImage, pts: [CGPoint], cx: Double, chin: Double, jaw: Double, top: Double? = nil, depth: Double = 0.03, keepCentre: Double = 0) -> (image: CGImage, mask: CGImage)? {
+    static func decontaminate(_ px: RGBABitmap, person: CGImage, pts: [CGPoint], cx: Double, chin: Double, jaw: Double, top: Double? = nil, depth: Double = 0.03, keepCentre: Double = 0, faceProb: ((Int, Int) -> Double)? = nil) -> (image: CGImage, mask: CGImage)? {
         let w = px.w, h = px.h
         // the face (jaw outline) and skin below the hairline (ears, neck) are never thinned: light
         // skin on a light wall sits between hair and backdrop colours and would turn see-through.
@@ -474,7 +522,8 @@ public enum HeadSwap {
         for j in 0..<ny { for i in 0..<nx where soft[j * nx + i] || (bn[j * nx + i] > 0 && fn[j * nx + i] > 0) {
             for jj in max(0, j - grow)...min(ny - 1, j + grow) { for ii in max(0, i - grow)...min(nx - 1, i + grow) { edge[jj * nx + ii] = true } }
         } }
-        var changed = false
+        // pass 1: local backdrop B / subject F colour per edge cell (averaged over the neighbourhood)
+        var cB = [Double](repeating: 0, count: nx * ny * 3), cF = cB, valid = [Bool](repeating: false, count: nx * ny)
         for j in 0..<ny {
             for i in 0..<nx where edge[j * nx + i] {
                 var B = [0.0, 0.0, 0.0], F = [0.0, 0.0, 0.0], nb = 0.0, nf = 0.0
@@ -486,18 +535,50 @@ public enum HeadSwap {
                     }
                 }
                 guard nb > 0, nf > 0 else { continue }
-                for q in 0..<3 { B[q] /= nb; F[q] /= nf }
-                let d = (0..<3).map { F[$0] - B[$0] }, L = d.reduce(0) { $0 + $1 * $1 }
-                guard L > 40 * 40 else { continue }
+                let k = j * nx + i
+                for q in 0..<3 { cB[k * 3 + q] = B[q] / nb; cF[k * 3 + q] = F[q] / nf }
+                valid[k] = true
+            }
+        }
+        // pass 2: per pixel, B / F interpolated between cell centres (constant per cell = stair-stepped edges)
+        var changed = false
+        for j in 0..<ny {
+            for i in 0..<nx where valid[j * nx + i] {
                 for y in (y0 + j * c)..<min(y1, y0 + (j + 1) * c) {
+                    let fy = Double(y - y0) / Double(c) - 0.5
+                    let j0 = Int(fy.rounded(.down)), ty = fy - Double(j0)
                     for x in (x0 + i * c)..<min(x1, x0 + (i + 1) * c) {
                         let mp = m.at(x, y); guard mp[0] > 0 else { continue }
+                        let fx = Double(x - x0) / Double(c) - 0.5
+                        let i0 = Int(fx.rounded(.down)), tx = fx - Double(i0)
+                        var B = [0.0, 0.0, 0.0], F = [0.0, 0.0, 0.0], wsum = 0.0
+                        for (di, dj, w) in [(0, 0, (1 - tx) * (1 - ty)), (1, 0, tx * (1 - ty)), (0, 1, (1 - tx) * ty), (1, 1, tx * ty)] {
+                            let ii = min(nx - 1, max(0, i0 + di)), jj = min(ny - 1, max(0, j0 + dj)), k = jj * nx + ii
+                            guard valid[k], w > 0 else { continue }
+                            for q in 0..<3 { B[q] += cB[k * 3 + q] * w; F[q] += cF[k * 3 + q] * w }
+                            wsum += w
+                        }
+                        guard wsum > 0 else { continue }
+                        for q in 0..<3 { B[q] /= wsum; F[q] /= wsum }
+                        let d = (0..<3).map { F[$0] - B[$0] }, L = d.reduce(0) { $0 + $1 * $1 }
+                        guard L > 40 * 40 else { continue }
+                        let fY = 0.299 * F[0] + 0.587 * F[1] + 0.114 * F[2]
+                        let fCb = 128 - 0.1687 * F[0] - 0.3313 * F[1] + 0.5 * F[2], fCr = 128 + 0.5 * F[0] - 0.4187 * F[1] - 0.0813 * F[2]
+                        let fSkin = fY > 60 && fCr > 136 && fCr < 176 && fCb > 80 && fCb < 128
                         let p = px.at(x, y)
-                        guard Double(y) < hairline || !skin(p), !face.contains(CGPoint(x: x, y: y)),
-                              abs(Double(x) - cx) >= keepCentre * jaw else { continue }
+                        guard abs(Double(x) - cx) >= keepCentre * jaw else { continue }
+                        let inFace = face.contains(CGPoint(x: x, y: y))
+                        // the face's edge is only cleaned where the subject around is skin (no hair close by:
+                        // between dark hair and a light wall, light skin would read as half wall)
+                        guard !inFace || fSkin else { continue }
+                        // what the parts model is sure is face (a light beard against a light wall reads as wall
+                        // by colour): left alone, wherever the jaw outline ends
+                        if let faceProb, faceProb(x, y) > 0.6 { continue }
                         let raw = (0..<3).reduce(0.0) { $0 + (Double(p[$1]) - B[$1]) * d[$1] } / L
-                        // clearly subject (incl. lighter strands): untouched
-                        guard raw < 0.7 else { continue }
+                        // clearly subject (incl. lighter strands): untouched. Skin-coloured pixels (ears, neck,
+                        // lower jaw edge) only when they are mostly wall: a skin/wall blend passes the skin test
+                        let skinLike = inFace || (Double(y) >= hairline && skin(p))
+                        guard raw < (skinLike ? 0.5 : 0.7) else { continue }
                         let t = min(1, max(0, (raw - 0.2) / 0.5)), alpha = t * t * (3 - 2 * t)
                         // colour with the backdrop taken out; faint pixels take the local subject
                         // colour (dividing a small difference only amplifies noise)

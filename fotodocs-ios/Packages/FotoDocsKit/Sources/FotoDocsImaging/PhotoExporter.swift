@@ -70,7 +70,10 @@ public enum PhotoExporter {
         guard let dest = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else {
             return nil
         }
-        CGImageDestinationAddImage(dest, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
+        // 300 dpi in the metadata, so printers and print shops lay it out at the real size
+        let props: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: quality,
+                                      kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
+        CGImageDestinationAddImage(dest, image, props as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { return nil }
         return data as Data
     }

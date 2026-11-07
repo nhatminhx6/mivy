@@ -8,6 +8,10 @@ public enum IDDocumentReader {
     public enum Result: Sendable {
         case cccd(CCCDInfo)
         case passport(PassportMRZ)
+        /// Read from the printed front of a card without a QR code (old CCCD, CMND): less certain.
+        case cccdText(CCCDInfo)
+        /// The back of an old CCCD / CMND: the details are on the other side.
+        case backSide
         case nothing
     }
 
@@ -32,6 +36,21 @@ public enum IDDocumentReader {
         }
         let lines = (text.results ?? []).compactMap { $0.topCandidates(1).first?.string }
         if let mrz = PassportMRZ.parse(lines) { return .passport(mrz) }
+
+        // no QR, no MRZ: read the printed Vietnamese text (old CCCD without chip, CMND)
+        let vi = VNRecognizeTextRequest()
+        vi.recognitionLevel = .accurate
+        vi.recognitionLanguages = ["vi-VT", "en-US"]
+        VisionCompute.prepare(vi)
+        try? handler.perform([vi])
+        let rows = ReceiptParser.group((vi.results ?? []).compactMap { obs in
+            obs.topCandidates(1).first.map { c in
+                let b = obs.boundingBox
+                return OCRLine(c.string, box: CGRect(x: b.minX, y: 1 - b.maxY, width: b.width, height: b.height))
+            }
+        })
+        if CCCDInfo.isBackSide(rows) { return .backSide }
+        if let info = CCCDInfo.parse(frontText: rows) { return .cccdText(info) }
         return .nothing
     }
 }

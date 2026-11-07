@@ -18,7 +18,7 @@ from app.services.account_service import AccountError, normalize_phone
 
 log = logging.getLogger(__name__)
 
-PRODUCTS = {"card": "Thiệp", "sticker": "Sticker", "keychain": "Móc khoá"}
+PRODUCTS = {"card": "Thiệp", "sticker": "Sticker", "keychain": "Móc khoá", "hashtag": "Hashtag cầm tay", "custom": "Đặt theo yêu cầu"}
 STATUS_LABEL = {
     OrderStatus.NEW: "Mới gửi",
     OrderStatus.QUOTED: "Đã báo giá",
@@ -29,6 +29,11 @@ STATUS_LABEL = {
     OrderStatus.CANCELLED: "Đã huỷ",
 }
 FILE_EXT = {".pdf", ".svg"}
+# Đơn custom: khách gửi file của họ hoặc ảnh tham khảo → nhận rộng hơn (ảnh, file thiết kế, nén).
+CUSTOM_EXT = FILE_EXT | {
+    ".png", ".jpg", ".jpeg", ".webp", ".heic",
+    ".ai", ".psd", ".cdr", ".eps", ".tif", ".tiff", ".zip",
+}
 MAX_FILE = 40 * 1024 * 1024
 MAX_PREVIEW = 6 * 1024 * 1024
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -92,8 +97,10 @@ class PrintOrderService:
         if need_by and not DATE_RE.match(need_by):
             raise AccountError("bad_date", "Ngày cần nhận không hợp lệ.")
         ext = Path(file_name or "").suffix.lower()
-        if ext not in FILE_EXT or not file_bytes or len(file_bytes) > MAX_FILE:
-            raise AccountError("bad_file", "File in phải là PDF/SVG, tối đa 40MB.")
+        allowed = CUSTOM_EXT if product == "custom" else FILE_EXT
+        if ext not in allowed or not file_bytes or len(file_bytes) > MAX_FILE:
+            kinds = "PDF/SVG/ảnh/AI/PSD/CDR/EPS/ZIP" if product == "custom" else "PDF/SVG"
+            raise AccountError("bad_file", f"File phải là {kinds}, tối đa 40MB.")
         if preview and len(preview) > MAX_PREVIEW:
             preview = None
         try:

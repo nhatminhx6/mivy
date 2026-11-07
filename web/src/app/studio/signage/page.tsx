@@ -10,6 +10,7 @@ import {
 } from '@/lib/signage-engine';
 import { drawWatermark } from '@/lib/design-engine';
 import { downloadBlob, embedFontCss } from '@/lib/html-export';
+import { svgFileBlob } from '@/lib/svg-export';
 import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
@@ -82,8 +83,10 @@ export default function SignagePage() {
     } finally { URL.revokeObjectURL(url); }
   });
   const downloadCut = () => run('svg', async () => {
-    const svg = await svgWithFonts(cutRef.current?.querySelector('svg'));
-    downloadBlob(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }), `${slug}-file-cat-${spec.w / 10}x${spec.h / 10}cm.svg`);
+    const el = cutRef.current?.querySelector('svg');
+    if (!el) throw new Error('chưa có bảng');
+    // File cắt: chữ outline thành path → máy CNC/laser không cần cài font ở xưởng.
+    downloadBlob(await svgFileBlob(el, signFontCss([spec.fontId])), `${slug}-file-cat-${spec.w / 10}x${spec.h / 10}cm.svg`);
   });
 
   const swatch = (on: boolean) => `flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`;

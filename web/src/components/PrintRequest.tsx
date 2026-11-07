@@ -11,11 +11,15 @@ const QTY: Record<PrintProduct, number[]> = {
   card: [50, 100, 200, 300, 500],
   sticker: [50, 100, 200, 500, 1000],
   keychain: [10, 20, 50, 100, 200],
+  hashtag: [1, 2, 5, 10, 20],
+  custom: [1, 10, 50, 100, 500],
 };
 const MATERIALS: Record<PrintProduct, string[]> = {
   card: ['Giấy mỹ thuật (sang, dày)', 'Giấy couche (bóng, rẻ)', 'Giấy kraft (mộc)', 'Chưa biết — tư vấn giúp'],
   sticker: ['Decal giấy', 'Decal nhựa (chống nước)', 'Decal trong', 'Chưa biết — tư vấn giúp'],
   keychain: ['Mica trong 3mm', 'Mica trắng 3mm', 'Chưa biết — tư vấn giúp'],
+  hashtag: ['Formex 5mm (cứng, nhẹ)', 'Formex 3mm (rẻ)', 'Mica trắng 3mm (bền)', 'Chưa biết — tư vấn giúp'],
+  custom: ['Chưa biết — tư vấn giúp'],
 };
 const plusDays = (n: number) => { const d = new Date(Date.now() + n * 86400000); return d.toISOString().slice(0, 10); };
 

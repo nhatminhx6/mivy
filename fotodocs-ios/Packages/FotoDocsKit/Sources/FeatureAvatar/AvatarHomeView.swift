@@ -7,7 +7,7 @@ public struct AvatarHomeView: View {
     @State private var selected: AvatarTemplate?
     @State private var consent = false
     @State private var pickerItem: PhotosPickerItem?
-    @State private var result: UIImage?
+    @State private var result: (image: UIImage, backgroundReplaced: Bool)?
     @State private var isBusy = false
     @State private var showResult = false
 
@@ -49,7 +49,7 @@ public struct AvatarHomeView: View {
         .onChange(of: category) { _, _ in selected = nil }
         .onChange(of: pickerItem) { _, item in Task { await create(item) } }
         .fullScreenCover(isPresented: $showResult) {
-            if let result { AvatarResultView(image: result) }
+            if let result { AvatarResultView(image: result.image, backgroundReplaced: result.backgroundReplaced) }
         }
     }
 

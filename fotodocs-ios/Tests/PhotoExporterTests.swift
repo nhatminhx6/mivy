@@ -1,5 +1,6 @@
 import Testing
 import CoreGraphics
+import ImageIO
 import FotoDocsCore
 import FotoDocsImaging
 
@@ -80,5 +81,16 @@ struct PhotoExporterOrientationTests {
         while y < h, buf[(y * w + x) * 4] > 240, buf[(y * w + x) * 4 + 2] > 240 { y += 1 }
         let p = ((y + 5) * w + x) * 4   // a few px inside (edge is anti-aliased)
         #expect(buf[p] > 200 && buf[p + 2] < 60, "top of the first photo should be red, got y=\(y) rgb=\(buf[p]),\(buf[p+1]),\(buf[p+2])")
+    }
+}
+
+@Suite("PhotoExporter metadata")
+struct PhotoExporterMetadataTests {
+    @Test("JPEG says 300 dpi so it prints at real size")
+    func dpi() throws {
+        let data = try #require(PhotoExporter.jpeg(Sample.solidImage(100, 150, red: 1, green: 1, blue: 1), quality: 0.9))
+        let src = try #require(CGImageSourceCreateWithData(data as CFData, nil))
+        let props = try #require(CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any])
+        #expect((props[kCGImagePropertyDPIWidth] as? Double) == 300)
     }
 }

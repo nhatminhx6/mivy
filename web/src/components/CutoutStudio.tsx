@@ -3,7 +3,7 @@
 // → xem mockup → tải PNG, file cắt SVG (lớp In + CutContour), tờ A4/A5 xếp sẵn nhiều con cho xưởng.
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, FileCode2, Loader2, Scissors, Upload, LayoutGrid } from 'lucide-react';
+import { AlertTriangle, Download, FileCode2, Loader2, Scissors, Upload, LayoutGrid } from 'lucide-react';
 import {
   CUT_PRESETS, CUT_SHAPES, CutoutSvg, EDGE_COLORS, ICONS_3D, KEYCHAIN_SIZES, SHEETS, STICKER_SIZES, STROKE_COLORS, SheetSvg, TEXT_COLORS, TEXT_POS,
   buildCut, defaultCutSpec, icon3d, loadImage, sheetFit, type CutKind, type CutResult, type CutSpec,
@@ -31,6 +31,7 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
   const [source, setSource] = useState<Source>(first.icon ? 'icon' : 'none');
   const [iconId, setIconId] = useState<string>(first.icon || 'red_heart');
   const [upload, setUpload] = useState<string | null>(null);
+  const [artPx, setArtPx] = useState<{ w: number; h: number } | null>(null);
   const [res, setRes] = useState<CutResult | null>(null);
   const [resKey, setResKey] = useState('');
   const [thumbs, setThumbs] = useState<Record<string, CutResult>>({});
@@ -86,13 +87,20 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
     setBusy(key);
     try { await fn(); } catch (e) { alert('Lỗi: ' + ((e as Error)?.message || e)); } finally { setBusy(''); }
   };
-  const onUpload = (f?: File | null) => f && run('up', async () => { setUpload(await scaleImage(f, 1400)); setSource('upload'); });
-  const removeBg = () => upload && run('bg', async () => setUpload(await cutoutImage(upload)));
+  // Đo px thật của ảnh (sau khi scale) để cảnh báo DPI thấp so với khổ in.
+  const measureArt = async (url: string) => { try { const im = await loadImage(url); setArtPx({ w: im.naturalWidth, h: im.naturalHeight }); } catch { setArtPx(null); } };
+  const onUpload = (f?: File | null) => f && run('up', async () => { const url = await scaleImage(f, 1400); setUpload(url); setSource('upload'); await measureArt(url); });
+  const removeBg = () => upload && run('bg', async () => { const url = await cutoutImage(upload); setUpload(url); await measureArt(url); });
 
   const slug = slugify(`${COPY[kind].file}-${spec.text.split('\n')[0] || presetId}`, COPY[kind].file);
   const sizeTag = res ? `${res.trimW}x${res.trimH}mm` : '';
   const sheet = SHEETS.find((s) => s.id === sheetId) || SHEETS[0];
   const fit = res ? sheetFit(res, sheet) : null;
+  // Cảnh báo DPI: px cạnh dài của ảnh / khổ thành phẩm. < 200dpi → in dễ mờ.
+  const longMm = res ? Math.max(res.trimW, res.trimH) : spec.sizeMm;
+  const effDpi = source === 'upload' && artPx ? Math.round(Math.max(artPx.w, artPx.h) / (longMm / 25.4)) : null;
+  const lowRes = effDpi != null && effDpi < 200;
+  const needPx = Math.ceil((longMm / 25.4) * 300);
   const downloadPng = () => run('png', async () => {
     const el = mockRef.current?.querySelector('svg'); if (!el) return;
     downloadBlob(await svgToPng(el, undefined, 1400), `${slug}.png`);
@@ -237,6 +245,12 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
             <div className="text-[11px] text-slate-400 text-center" data-testid="cut-dims">
               {res && <>Thành phẩm ≈ {res.trimW} × {res.trimH} mm{kind === 'keychain' && ' · lỗ khoen Ø4.4mm'}{spec.shape === 'diecut' && ` · viền ${spec.borderMm}mm`}</>}
             </div>
+            {lowRes && (
+              <div className="flex items-start gap-2 text-[11px] text-amber-200 bg-amber-400/10 border border-amber-400/30 rounded-lg px-2.5 py-2" data-testid="cut-lowres">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <span>Ảnh ~{effDpi}dpi ở khổ này — in ra dễ mờ/rỗ. Nên dùng ảnh cạnh dài ≥ {needPx}px.</span>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button type="button" onClick={downloadPng} disabled={!res} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs" data-testid="cut-png">
                 {busy === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Ảnh PNG
@@ -255,7 +269,7 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
             </div>
             {res && <PrintRequest product={kind} title={orderTitle} defaultMaterial={kind === 'keychain' ? (spec.material === 'clear' ? 'Mica trong 3mm' : 'Mica trắng 3mm') : undefined}
               design={{ spec, icon: source === 'icon' ? iconId : null, upload: source === 'upload' }} makeFiles={makeFiles} />}
-            <p className="text-[11px] leading-relaxed text-slate-500">File cắt đúng mm, 2 lớp: <b>In</b> (hình + nền) và <b>CutContour</b> (đường cắt đỏ){kind === 'keychain' ? ' kèm lỗ khoen' : ''}. Xưởng nạp thẳng vào máy in–cắt{kind === 'keychain' ? ' laser mica' : ' decal'}.</p>
+            <p className="text-[11px] leading-relaxed text-slate-500">File cắt đúng mm, 2 lớp: <b>In</b> (hình + nền) và <b>CutContour</b> (đường cắt, spot Magenta chuẩn RIP){kind === 'keychain' ? ' kèm lỗ khoen' : ''}. Xưởng nạp thẳng vào máy in–cắt{kind === 'keychain' ? ' laser mica' : ' decal'}.</p>
           </div>
         </div>
       )}

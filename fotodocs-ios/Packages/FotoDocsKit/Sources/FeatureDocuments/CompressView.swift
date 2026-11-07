@@ -100,8 +100,10 @@ private struct FlowChipsSimple: View {
         HStack(spacing: 10) {
             ForEach(values, id: \.self) { kb in
                 Button { action(kb) } label: {
-                    Text("\(kb) KB")
+                    Text(kb >= 1000 ? "\(kb / 1000) MB" : "\(kb) KB")
                         .font(.bvp(.subheadline, .semibold))
+                        .lineLimit(1)
+                        .fixedSize()
                         .foregroundStyle(selected == kb ? .white : FotoDocs.Palette.primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)

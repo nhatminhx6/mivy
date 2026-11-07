@@ -119,13 +119,19 @@ public struct VisaProfile: Codable, Equatable, Sendable {
     public var nationalityEN: String { nationalityCode == "VNM" ? "VIETNAMESE" : nationalityCode }
     public var countryEN: String { nationalityCode == "VNM" ? "VIET NAM" : nationalityCode }
 
-    /// Merge what the CCCD QR code holds. Names only fill in when the passport has not set them.
+    /// Merge what the CCCD holds. The Latin name is kept when it already matches (passport spelling
+    /// wins); a different person's card replaces it.
     public mutating func apply(_ c: CCCDInfo) {
+        let cardName = Latin.upper(c.fullName)
+        let current = [surname, givenNames].filter { !$0.isEmpty }.joined(separator: " ")
+        if !cardName.isEmpty, !current.isEmpty, cardName != current {
+            self = VisaProfile()  // someone else's card: nothing saved belongs to them
+        }
         idNumber = c.idNumber
         if !c.oldIDNumber.isEmpty { oldIDNumber = c.oldIDNumber }
-        fullNameVN = c.fullName
-        if surname.isEmpty && givenNames.isEmpty {
-            let parts = Latin.upper(c.fullName).split(separator: " ").map(String.init)
+        if !c.fullName.isEmpty { fullNameVN = c.fullName }
+        if !cardName.isEmpty && cardName != current {
+            let parts = cardName.split(separator: " ").map(String.init)
             surname = parts.first ?? ""
             givenNames = parts.dropFirst().joined(separator: " ")
         }
@@ -169,6 +175,17 @@ public struct CCCDInfo: Equatable, Sendable {
     public var sex: Sex?
     public var address: String
     public var issueDate: DayDate?
+
+    public init(idNumber: String, oldIDNumber: String, fullName: String, dateOfBirth: DayDate?, sex: Sex?,
+                address: String, issueDate: DayDate?) {
+        self.idNumber = idNumber
+        self.oldIDNumber = oldIDNumber
+        self.fullName = fullName
+        self.dateOfBirth = dateOfBirth
+        self.sex = sex
+        self.address = address
+        self.issueDate = issueDate
+    }
 
     public static func parse(_ payload: String) -> CCCDInfo? {
         let f = payload.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: "|")
@@ -298,5 +315,96 @@ public struct PassportMRZ: Equatable, Sendable {
     private static func yymmdd(_ s: String, century: Int) -> DayDate? {
         guard s.count == 6, let y = Int(s.prefix(2)), let m = Int(s.dropFirst(2).prefix(2)), let d = Int(s.suffix(2)) else { return nil }
         return DayDate(year: century + y, month: m, day: d)
+    }
+}
+
+// MARK: - CCCD / CMND printed text (cards without a QR code)
+
+public extension CCCDInfo {
+    /// Reads the front of a citizen ID card from OCR lines (top → bottom): old CCCD without a chip,
+    /// or a 9/12-digit CMND. Less certain than the QR code: the user checks the result.
+    static func parse(frontText lines: [String]) -> CCCDInfo? {
+        let rows = lines.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let folded = rows.map { Latin.upper($0) }
+        func index(_ keys: [String]) -> Int? { folded.firstIndex { f in keys.contains { f.contains($0) } } }
+        func after(_ i: Int) -> String {  // value after ":" on the same row, else the next row
+            if let c = rows[i].firstIndex(of: ":") {
+                let v = rows[i][rows[i].index(after: c)...].trimmingCharacters(in: .whitespaces)
+                if !v.isEmpty { return v }
+            }
+            return i + 1 < rows.count ? rows[i + 1] : ""
+        }
+
+        // ID number: 12 digits (CCCD) or 9 (CMND), next to "Số" / "No"
+        var id = ""
+        for (i, f) in folded.enumerated() where f.contains("SO") || f.contains("NO") || i < 6 {
+            let runs = rows[i].split { !$0.isNumber }.map(String.init)
+            if let run = runs.first(where: { $0.count == 12 }) ?? runs.first(where: { $0.count == 9 && (f.contains("SO") || f.contains("NO")) }) {
+                id = run
+                break
+            }
+        }
+        guard !id.isEmpty else { return nil }
+
+        var name = ""
+        if let i = index(["HO VA TEN", "HO, CHU DEM", "FULL NAME", "HO TEN"]) {
+            name = after(i).replacingOccurrences(of: "Full name", with: "").trimmingCharacters(in: CharacterSet(charactersIn: " :"))
+        }
+        let dobRow = index(["NGAY, THANG, NAM SINH", "NGAY THANG NAM SINH", "NGAY SINH", "SINH NGAY", "DATE OF BIRTH"])
+        let dob = dobRow.flatMap { i in firstDate(rows[i]) ?? (i + 1 < rows.count ? firstDate(rows[i + 1]) : nil) }
+
+        var sex: Sex?
+        if let i = index(["GIOI TINH", "SEX"]) {
+            let f = folded[i]
+            sex = f.contains("NU") ? .female : (f.contains("NAM") ? .male : nil)
+        }
+
+        // permanent address: may wrap onto the next line; stops at the expiry / next label
+        var address = ""
+        if let i = index(["NOI THUONG TRU", "NOI DKHK THUONG TRU", "PLACE OF RESIDENCE"]) {
+            let stops = ["CO GIA TRI", "DATE OF EXPIRY", "DAC DIEM", "QUE QUAN", "NGAY"]
+            var parts: [String] = []
+            if let c = rows[i].firstIndex(of: ":") {  // value starting on the label row
+                parts.append(rows[i][rows[i].index(after: c)...].trimmingCharacters(in: .whitespaces))
+            }
+            var j = i + 1
+            while j < rows.count, parts.filter({ !$0.isEmpty }).count < 3 {
+                if stops.contains(where: { folded[j].contains($0) }) {
+                    // the last address line often shares a row with "Có giá trị đến: dd/mm/yyyy": keep what follows the date
+                    if folded[j].contains("CO GIA TRI"), let r = rows[j].range(of: #"\d{1,2}/\d{1,2}/\d{4}"#, options: .regularExpression) {
+                        parts.append(rows[j][r.upperBound...].trimmingCharacters(in: .whitespaces))
+                    }
+                    break
+                }
+                parts.append(rows[j])
+                j += 1
+            }
+            address = parts.filter { !$0.isEmpty }.joined(separator: " ")
+                .trimmingCharacters(in: CharacterSet(charactersIn: " .,;:-"))  // specks read as stray punctuation
+        }
+        return CCCDInfo(idNumber: id, oldIDNumber: "", fullName: name, dateOfBirth: dob, sex: sex, address: address, issueDate: nil)
+    }
+
+    /// What was read, in display order, for the "read these" summary after a scan.
+    public var summary: [(label: String, value: String?)] {
+        [("Số CCCD", idNumber.isEmpty ? nil : idNumber),
+         ("Họ tên", fullName.isEmpty ? nil : fullName),
+         ("Ngày sinh", dateOfBirth?.formatted(.dmySlash)),
+         ("Giới tính", sex?.vi),
+         ("Nơi thường trú", address.isEmpty ? nil : address),
+         ("Ngày cấp", issueDate?.formatted(.dmySlash))]
+    }
+
+    /// The back of an old CCCD / CMND (fingerprints, "Đặc điểm nhận dạng"): not the side with the details.
+    static func isBackSide(_ lines: [String]) -> Bool {
+        let all = Latin.upper(lines.joined(separator: " "))
+        return all.contains("DAC DIEM NHAN DANG") || all.contains("NGON TRO")
+    }
+
+    private static func firstDate(_ s: String) -> DayDate? {
+        let digits = s.split { !$0.isNumber }.map(String.init)
+        guard let i = digits.firstIndex(where: { $0.count <= 2 }), i + 2 < digits.count,
+              let d = Int(digits[i]), let m = Int(digits[i + 1]), let y = Int(digits[i + 2]), digits[i + 2].count == 4 else { return nil }
+        return DayDate(year: y, month: m, day: d)
     }
 }

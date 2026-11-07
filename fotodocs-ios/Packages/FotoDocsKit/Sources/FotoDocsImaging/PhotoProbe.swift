@@ -21,6 +21,19 @@ public enum PhotoProbe {
         )
     }
 
+    /// Backdrop already white-ish and even (light, low colour, top band and sides alike).
+    public static func isPlainLightBackdrop(_ image: CIImage) -> Bool {
+        let e = image.extent
+        let bands = [
+            CGRect(x: e.minX, y: e.maxY - e.height * 0.1, width: e.width, height: e.height * 0.1),
+            CGRect(x: e.minX, y: e.midY, width: e.width * 0.07, height: e.height * 0.35),
+            CGRect(x: e.maxX - e.width * 0.07, y: e.midY, width: e.width * 0.07, height: e.height * 0.35),
+        ].map { rgb(image, in: $0) }
+        let lum = bands.map { 0.299 * $0.r + 0.587 * $0.g + 0.114 * $0.b }
+        let chroma = bands.map { max($0.r, $0.g, $0.b) - min($0.r, $0.g, $0.b) }
+        return lum.min()! >= 0.82 && chroma.max()! <= 0.08 && lum.max()! - lum.min()! <= 0.08
+    }
+
     /// Mean luminance of the top band and the two side strips: where the backdrop shows.
     static func borderBrightness(_ image: CIImage) -> Double {
         let e = image.extent
@@ -34,13 +47,18 @@ public enum PhotoProbe {
     }
 
     private static func average(_ image: CIImage, in rect: CGRect) -> Double {
+        let c = rgb(image, in: rect)
+        return 0.299 * c.r + 0.587 * c.g + 0.114 * c.b
+    }
+
+    private static func rgb(_ image: CIImage, in rect: CGRect) -> (r: Double, g: Double, b: Double) {
         let f = CIFilter.areaAverage()
         f.inputImage = image
         f.extent = rect
-        guard let out = f.outputImage else { return 0.5 }
+        guard let out = f.outputImage else { return (0.5, 0.5, 0.5) }
         var px = [UInt8](repeating: 0, count: 4)
         context.render(out, toBitmap: &px, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
                        format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
-        return (0.299 * Double(px[0]) + 0.587 * Double(px[1]) + 0.114 * Double(px[2])) / 255
+        return (Double(px[0]) / 255, Double(px[1]) / 255, Double(px[2]) / 255)
     }
 }

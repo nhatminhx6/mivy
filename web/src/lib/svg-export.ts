@@ -3,6 +3,7 @@
 import { drawWatermark } from './design-engine';
 import { embedFontCss } from './html-export';
 import { pdfFromImage } from './print-export';
+import { preloadFontsFor, outlineTextInto } from './svg-outline';
 
 const MM_PER_IN = 25.4;
 const dataUrlCache = new Map<string, Promise<string>>();
@@ -20,8 +21,9 @@ export function toDataUrl(url: string): Promise<string> {
   return dataUrlCache.get(url)!;
 }
 
-// Bản sao SVG tự chứa (font + ảnh nhúng) — dùng để vẽ ra ảnh hoặc tải file .svg
-export async function selfContainedSvg(el: SVGSVGElement, fontImportCss?: string): Promise<SVGSVGElement> {
+// Bản sao SVG tự chứa (font + ảnh nhúng) — dùng để vẽ ra ảnh hoặc tải file .svg.
+// opts.outline: đổi <text> → <path> cho FILE IN (độc lập font ở xưởng). Đo trên el gốc (đang trong DOM).
+export async function selfContainedSvg(el: SVGSVGElement, fontImportCss?: string, opts: { outline?: boolean } = {}): Promise<SVGSVGElement> {
   const svg = el.cloneNode(true) as SVGSVGElement;
   svg.removeAttribute('style'); svg.removeAttribute('class');
   if (fontImportCss) {
@@ -34,6 +36,9 @@ export async function selfContainedSvg(el: SVGSVGElement, fontImportCss?: string
     if (!href || href.startsWith('data:')) return;
     im.setAttribute('href', await toDataUrl(href));
   }));
+  if (opts.outline) {
+    try { await preloadFontsFor(el); outlineTextInto(el, svg); } catch { /* lỗi outline → giữ <text>, không chặn xuất file */ }
+  }
   return svg;
 }
 
@@ -65,12 +70,12 @@ export async function svgToPng(el: SVGSVGElement, fontImportCss: string | undefi
 export async function svgToPrintPdf(el: SVGSVGElement, fontImportCss: string | undefined, trim: { wMm: number; hMm: number }, bleedMm: number, dpi = 300): Promise<Blob> {
   const wMm = trim.wMm + bleedMm * 2, hMm = trim.hMm + bleedMm * 2;
   const outW = Math.round((wMm / MM_PER_IN) * dpi), outH = Math.round((hMm / MM_PER_IN) * dpi);
-  const c = await svgToCanvas(await selfContainedSvg(el, fontImportCss), outW, outH, '#ffffff');
+  const c = await svgToCanvas(await selfContainedSvg(el, fontImportCss, { outline: true }), outW, outH, '#ffffff');
   return pdfFromImage(c.toDataURL('image/png'), outW, outH, trim, bleedMm);
 }
 
 export async function svgFileBlob(el: SVGSVGElement, fontImportCss?: string): Promise<Blob> {
-  return new Blob([new XMLSerializer().serializeToString(await selfContainedSvg(el, fontImportCss))], { type: 'image/svg+xml' });
+  return new Blob([new XMLSerializer().serializeToString(await selfContainedSvg(el, fontImportCss, { outline: true }))], { type: 'image/svg+xml' });
 }
 
 // Ảnh JPEG nhỏ gọn (nền trắng, không watermark) — làm ảnh xem trước gửi kèm đơn in

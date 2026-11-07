@@ -18,7 +18,7 @@ def accounts(request: Request) -> AccountService:
 
 
 async def current_user(request: Request) -> User:
-    token = request.cookies.get(COOKIE) or request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    token = request.cookies.get(COOKIE) or bearer(request)
     user = await accounts(request).user_by_token(token) if token else None
     if not user:
         raise HTTPException(401, {"code": "unauthorized", "message": "Đăng nhập để dùng tính năng này nhé."})
@@ -63,6 +63,19 @@ class TopupIn(BaseModel):
     note: str = ""
 
 
+def bearer(request: Request) -> str:
+    return request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+
+
+def session_out(request: Request, user: User, token: str) -> dict:
+    """Web keeps the session in the httpOnly cookie; native apps (header `X-Mivy-Client`) get the token
+    in the body, to store in the Keychain and send back as `Authorization: Bearer`."""
+    out = public(user)
+    if request.headers.get("x-mivy-client"):
+        out["token"] = token
+    return out
+
+
 def set_cookie(request: Request, response: Response, token: str) -> None:
     st = request.app.state.settings
     response.set_cookie(COOKIE, token, max_age=st.session_days * 86400, httponly=True, samesite="lax",
@@ -78,7 +91,7 @@ async def register(body: RegisterIn, request: Request, response: Response) -> di
     except AccountError as e:
         raise fail(e) from e
     set_cookie(request, response, token)
-    return public(user)
+    return session_out(request, user, token)
 
 
 @router.post("/auth/login")
@@ -88,12 +101,12 @@ async def login(body: LoginIn, request: Request, response: Response) -> dict:
     except AccountError as e:
         raise fail(e) from e
     set_cookie(request, response, token)
-    return public(user)
+    return session_out(request, user, token)
 
 
 @router.post("/auth/logout")
 async def logout(request: Request, response: Response) -> dict:
-    if token := request.cookies.get(COOKIE):
+    if token := request.cookies.get(COOKIE) or bearer(request):
         await accounts(request).logout(token)
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}

@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import CoreGraphics
+import CoreImage
 import FotoDocsCore
 import FotoDocsImaging
 
@@ -76,5 +77,19 @@ struct TravelDocsTests {
         #expect(TranslationTemplate.all.map(\.id) == ["birth", "residence", "employment"])
         let ids = TranslationTemplate.all.flatMap { t in t.fields.map { "\(t.id).\($0.id)" } }
         #expect(Set(ids).count == ids.count)  // unique ids per template
+    }
+}
+
+@Suite("Backdrop probe")
+struct BackdropProbeTests {
+    private func solid(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat) -> CIImage {
+        CIImage(color: CIColor(red: r, green: g, blue: b)).cropped(to: CGRect(x: 0, y: 0, width: 300, height: 400))
+    }
+
+    @Test("White backdrop counts, blue and grey-dark do not")
+    func backdrop() {
+        #expect(PhotoProbe.isPlainLightBackdrop(solid(0.97, 0.97, 0.96)))
+        #expect(!PhotoProbe.isPlainLightBackdrop(solid(0.3, 0.5, 0.9)))
+        #expect(!PhotoProbe.isPlainLightBackdrop(solid(0.5, 0.5, 0.5)))
     }
 }

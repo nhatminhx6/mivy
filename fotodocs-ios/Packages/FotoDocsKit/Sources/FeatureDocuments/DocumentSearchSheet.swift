@@ -68,6 +68,8 @@ struct DocumentSearchSheet: View {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(FotoDocs.Palette.textSecondary)
                     TextField("Tìm công cụ, giấy tờ…", text: $query)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
                         .font(.bvp(.body))
                         .focused($focused)
                         .submitLabel(.search)

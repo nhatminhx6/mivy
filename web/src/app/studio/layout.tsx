@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AccountBox } from '@/components/AccountBox';
 import { AuthProvider } from '@/lib/auth';
-import { Loader2, Menu, X, Sparkles, Palette, PanelTop, ListOrdered, Wand2, Package, Flame, LayoutGrid, Signpost, Heart, Sticker, KeyRound } from 'lucide-react';
+import { Loader2, Menu, X, Sparkles, Palette, PanelTop, ListOrdered, Wand2, Package, Flame, LayoutGrid, Signpost, Heart, Sticker, KeyRound, FileUser, FileUp, Hash } from 'lucide-react';
 
 // 3 trụ: In ấn · Thương hiệu · Quảng cáo (đã bỏ trụ Ảnh sản phẩm cho sàn). Trang trùng/lẻ đã gộp hoặc ẩn khỏi menu (route vẫn còn).
 const GROUPS = [
@@ -15,6 +15,9 @@ const GROUPS = [
       { label: 'Thiệp cưới · sinh nhật', href: '/studio/cards', icon: Heart },
       { label: 'Sticker', href: '/studio/sticker', icon: Sticker },
       { label: 'Móc khoá', href: '/studio/keychain', icon: KeyRound },
+      { label: 'Hashtag cầm tay', href: '/studio/hashtag', icon: Hash },
+      { label: 'Đặt in theo yêu cầu', href: '/studio/print-custom', icon: FileUp },
+      { label: 'Tạo CV', href: '/studio/cv', icon: FileUser },
     ],
   },
   {
@@ -79,6 +82,7 @@ function StudioShell({ children }: { children: React.ReactNode }) {
     if (pathname.includes('/templates')) return 'Mẫu thiết kế';
     if (pathname.includes('/wallet')) return 'Ví của tôi';
     if (pathname.includes('/admin')) return 'Quản trị';
+    if (pathname.includes('/print-custom')) return 'Đặt in theo yêu cầu';
     if (pathname.includes('/studio/orders')) return 'Đơn in của tôi';
     if (pathname.includes('/cards')) return 'Thiệp cưới · sinh nhật';
     if (pathname.includes('/sticker')) return 'Sticker';

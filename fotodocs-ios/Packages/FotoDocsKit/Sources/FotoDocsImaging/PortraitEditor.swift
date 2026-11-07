@@ -84,9 +84,12 @@ public actor PortraitEditor {
     private let context = CIContext(options: [.useSoftwareRenderer: false])
     private var source: CIImage?
     private var mask: CIImage?
-    private var bodies: [String: BodyTemplate] = [:]
+    private var garments: [String: Garment] = [:]
 
     public init() {}
+
+    /// Suffixes of the extra builds a suit template may come in (`body-man-navy-thick`…).
+    static let builds = ["-full"]   // men: the ghost-suit templates fit any neck (collar opening warped to it)
 
     public func prepare(cgImage: CGImage, orientation: CGImagePropertyOrientation) {
         let oriented = CIImage(cgImage: cgImage).oriented(orientation)
@@ -105,18 +108,26 @@ public actor PortraitEditor {
         return context.createCGImage(image.cropped(to: crop), from: crop)
     }
 
-    /// `render(settings:targetAspect:)` plus the selected outfit. With an outfit the frame comes
-    /// from the body template (head placed on it), then zoom / offset are applied to that frame.
+    /// `render(settings:targetAspect:)` plus the selected outfit: the suit is laid over the user's own
+    /// body (`GarmentOverlay`, head and neck untouched), then cropped like a normal render.
     public func renderWithOutfit(settings: EditSettings, targetAspect: CGFloat) -> PortraitRender? {
         guard let name = settings.outfit.templateAsset else {
             return render(settings: settings, targetAspect: targetAspect).map { PortraitRender(image: $0, outfitFitted: true) }
         }
-        if bodies[name] == nil { bodies[name] = BodyTemplate.bundled(name) }
+        if garments[name] == nil { garments[name] = Garment.bundled(name) }
+        // the same suit on other builds (thick / slim neck…): the overlay picks the one that fits the neck
+        let builds = Self.builds.compactMap { b -> Garment? in
+            let n = name + b
+            if garments[n] == nil, BodyTemplate.bundleURL(n) != nil { garments[n] = Garment.bundled(n) }
+            return garments[n]
+        }
         let rgb = settings.background.rgb ?? (1, 1, 1)
         let backdrop = CGColor(srgbRed: rgb.r, green: rgb.g, blue: rgb.b, alpha: 1)
-        if let body = bodies[name], let full = adjusted(settings),
-           let user = context.createCGImage(full, from: full.extent),
-           let dressed = HeadSwap.compose(user: user, body: body, aspect: Double(targetAspect), background: backdrop, tuning: settings.outfitTuning) {
+        // the overlay cuts the person out itself (cleaning the old wall out of the edges): original backdrop in
+        if let garment = garments[name], let full = adjusted(settings, replaceBackground: false),
+           let whole = context.createCGImage(full, from: full.extent),
+           let user = Self.headAndShoulders(whole),
+           let dressed = GarmentOverlay.compose(user: user, garment: garment, alternatives: builds, background: backdrop, tuning: settings.outfitTuning) {
             let ci = CIImage(cgImage: dressed)
             let crop = Self.aspectCropRect(in: ci.extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
             if let out = context.createCGImage(ci.cropped(to: crop), from: crop) { return PortraitRender(image: out, outfitFitted: true) }
@@ -124,16 +135,43 @@ public actor PortraitEditor {
         return render(settings: settings, targetAspect: targetAspect).map { PortraitRender(image: $0, outfitFitted: false) }
     }
 
+    /// An ID photo only needs head and shoulders: a waist-up or full-body photo is cropped to that first,
+    /// so the suit (a head-and-shoulders template) fills the frame instead of ending mid-chest.
+    static func headAndShoulders(_ image: CGImage) -> CGImage? {
+        guard let pts = FaceGeometry.jawContour(image),
+              let minX = pts.map(\.x).min(), let maxX = pts.map(\.x).max(),
+              let top = pts.map(\.y).min() else { return image }
+        let jaw = maxX - minX, cx = (minX + maxX) / 2
+        let W = Double(image.width), H = Double(image.height)
+        // hair above the contour (~1 jaw), down to just above where the suit templates end (~1.25 jaw under the chin)
+        guard let chin = pts.map(\.y).max() else { return image }
+        let y0 = max(0, top - 1.0 * jaw), y1 = min(H, chin + 1.12 * jaw)
+        let w = min(W, 3.2 * jaw), h = y1 - y0
+        let x0 = max(0, min(W - w, cx - w / 2))
+        // already head-and-shoulders: leave it
+        if h >= H * 0.95, w >= W * 0.95 { return image }
+        return image.cropping(to: CGRect(x: x0, y: y0, width: w, height: h).integral) ?? image
+    }
+
     /// Background replacement + lighting on the full (uncropped) source.
-    private func adjusted(_ settings: EditSettings) -> CIImage? {
+    private func adjusted(_ settings: EditSettings, replaceBackground: Bool = true) -> CIImage? {
         guard var image = source else { return nil }
         let extent = image.extent
-        if let rgb = settings.background.rgb, let mask {
+        if replaceBackground, let rgb = settings.background.rgb, let mask {
             let background = CIImage(color: CIColor(red: rgb.r, green: rgb.g, blue: rgb.b)).cropped(to: extent)
             let blend = CIFilter.blendWithMask()
             blend.inputImage = image
             blend.backgroundImage = background
-            blend.maskImage = mask
+            // Vision's mask edge is soft and a little loose: half-covered edge pixels still carry the old
+            // wall (a light halo around cheeks and hair on a coloured backdrop) — pull the edge inward
+            let curve = CIFilter.toneCurve()
+            curve.inputImage = mask
+            curve.point0 = CGPoint(x: 0, y: 0)
+            curve.point1 = CGPoint(x: 0.4, y: 0.03)
+            curve.point2 = CGPoint(x: 0.65, y: 0.35)
+            curve.point3 = CGPoint(x: 0.88, y: 0.9)
+            curve.point4 = CGPoint(x: 1, y: 1)
+            blend.maskImage = curve.outputImage ?? mask
             image = blend.outputImage ?? image
         }
         let colorControls = CIFilter.colorControls()
@@ -177,7 +215,10 @@ public actor PortraitEditor {
 
         let clampedX = min(max(x, extent.minX), extent.maxX - cropW)
         let clampedY = min(max(y, extent.minY), extent.maxY - cropH)
-        return CGRect(x: clampedX, y: clampedY, width: cropW, height: cropH)
+        // whole pixels, inside the image: a fractional edge renders as a half-transparent (light) last column
+        let x0 = ceil(clampedX), y0 = ceil(clampedY)
+        let x1 = min(floor(clampedX + cropW), floor(extent.maxX)), y1 = min(floor(clampedY + cropH), floor(extent.maxY))
+        return CGRect(x: x0, y: y0, width: max(1, x1 - x0), height: max(1, y1 - y0))
     }
 }
 

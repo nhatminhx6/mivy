@@ -20,8 +20,15 @@ public enum CardScanner {
         if out.extent.height > out.extent.width {  // card held upright: turn it to landscape
             out = out.oriented(.left)
         }
+        // the perspective filter only estimates the proportions; every ID-1 card is 85.6 × 54 mm
+        let e = out.extent
+        out = out.transformed(by: CGAffineTransform(translationX: -e.minX, y: -e.minY))
+            .transformed(by: CGAffineTransform(scaleX: 1, y: e.width / idAspect / e.height))
         return context.createCGImage(out, from: out.extent)
     }
+
+    /// ID-1 card (CCCD, driving licence, bank card): 85.6 × 53.98 mm.
+    public static let idAspect: CGFloat = 85.6 / 53.98
 
     private struct Quad { var tl, tr, bl, br: CGPoint }
 

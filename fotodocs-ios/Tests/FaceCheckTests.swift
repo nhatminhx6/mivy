@@ -36,3 +36,28 @@ struct FaceCheckTests {
         #expect(result.checks.count == 4)
     }
 }
+
+@Suite("Auto-capture rules")
+struct AutoCaptureTests {
+    private func good() -> FaceCheckResult {
+        FaceCheckResult(faceFound: true, brightnessOK: true, straightOK: true, earsVisible: true,
+                        roll: 1, yaw: 2, pitch: 3, brightness: 0.6, faceBoundingBox: CGRect(x: 0.35, y: 0.45, width: 0.3, height: 0.3))
+    }
+
+    @Test("Level, centred, neck in frame: ready")
+    func ready() { #expect(good().autoCaptureIssue == nil) }
+
+    @Test("Slight tilt that the chips accept still blocks auto-capture")
+    func strict() {
+        var r = good(); r.roll = 6  // chips allow up to 8°
+        #expect(r.autoCaptureIssue == "Giữ đầu thẳng, không nghiêng")
+        r = good(); r.pitch = 14
+        #expect(r.autoCaptureIssue == "Hơi cúi cằm xuống")
+    }
+
+    @Test("Chin near the bottom: neck and shoulders not in frame")
+    func neck() {
+        var r = good(); r.faceBoundingBox = CGRect(x: 0.35, y: 0.12, width: 0.3, height: 0.3)
+        #expect(r.autoCaptureIssue == "Hạ máy thấp xuống, để thấy cổ và vai")
+    }
+}

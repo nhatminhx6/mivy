@@ -1,7 +1,7 @@
 'use client';
 // Sticker + móc khoá mica: ghép HÌNH (ảnh tách nền / hình 3D) + CHỮ → dò đường cắt theo hình (die-cut) bằng code.
 // Đường cắt = viền alpha nở ra `border` mm (khoảng cách Euclid chính xác) → lấp lỗ → dò biên → làm mượt.
-// Xuất SVG đúng mm, 2 lớp: "In" (hình + nền) và "CutContour" (đường cắt đỏ) — máy cắt decal/laser đọc thẳng.
+// Xuất SVG đúng mm, 2 lớp: "In" (hình + nền) và "CutContour" (đường cắt, spot 100% Magenta chuẩn RIP) — máy cắt decal/laser đọc thẳng.
 import { useId, type CSSProperties } from 'react';
 import { nameFont } from './card-engine';
 
@@ -52,8 +52,8 @@ export const CUT_PRESETS: CutPreset[] = [
   { id: 'baby', kind: 'sticker', name: 'Chữ tròn', icon: null, spec: { shape: 'diecut', edge: '#FFFFFF', text: 'Bé yêu\ncủa mẹ', font: 'lobster', textColor: '#2C78DC', textStroke: '', textPos: 'only' } },
   { id: 'queen', kind: 'sticker', name: 'Queen', icon: 'crown', spec: { shape: 'heart', edge: '#FFE4EE', text: 'Queen', font: 'greatvibes', textColor: '#B08D57', textStroke: '', textPos: 'below' } },
   { id: 'ship', kind: 'sticker', name: 'Đã đóng gói', icon: 'delivery_truck', spec: { shape: 'rounded', edge: '#DDEEFF', text: 'Đóng gói\ncẩn thận', font: 'montserrat', textColor: '#2C78DC', textStroke: '', textPos: 'below' } },
-  { id: 'k-bear', kind: 'keychain', name: 'Tên + gấu', icon: 'teddy_bear', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Minh Anh', font: 'lobster', textColor: '#E3437A', textStroke: '#FFFFFF', textPos: 'below' } },
-  { id: 'k-couple', kind: 'keychain', name: 'Cặp đôi', icon: 'red_heart', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Nhật & Hà', font: 'greatvibes', textColor: '#B4234A', textStroke: '#FFFFFF', textPos: 'over' } },
+  { id: 'k-bear', kind: 'keychain', name: 'Tên + gấu', icon: 'teddy_bear', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Bảo Anh', font: 'lobster', textColor: '#E3437A', textStroke: '#FFFFFF', textPos: 'below' } },
+  { id: 'k-couple', kind: 'keychain', name: 'Cặp đôi', icon: 'red_heart', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Khang & Vy', font: 'greatvibes', textColor: '#B4234A', textStroke: '#FFFFFF', textPos: 'over' } },
   { id: 'k-boba', kind: 'keychain', name: 'Trà sữa', icon: 'bubble_tea', spec: { shape: 'diecut', material: 'white', edge: '#FFFFFF', text: 'Boba', font: 'baloo', textColor: '#7446D6', textStroke: '#FFFFFF', textPos: 'below' } },
   { id: 'k-star', kind: 'keychain', name: 'Lucky', icon: 'glowing_star', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'LUCKY', font: 'bungee', textColor: '#E58F00', textStroke: '#FFFFFF', textPos: 'below' } },
   { id: 'k-gem', kind: 'keychain', name: 'Tròn', icon: 'gem_stone', spec: { shape: 'circle', material: 'white', edge: '#DDEEFF', text: 'Ngọc', font: 'dancing', textColor: '#2C78DC', textStroke: '', textPos: 'below' } },
@@ -136,7 +136,7 @@ function composeArt(spec: CutSpec, img: HTMLImageElement | null, boxW: number, b
   return c;
 }
 
-function trimAlpha(c: HTMLCanvasElement): HTMLCanvasElement {
+export function trimAlpha(c: HTMLCanvasElement): HTMLCanvasElement {
   const { width: w, height: h } = c;
   const a = c.getContext('2d')!.getImageData(0, 0, w, h).data;
   let x0 = w, y0 = h, x1 = -1, y1 = -1;
@@ -320,6 +320,61 @@ function topNearCenter(c: HTMLCanvasElement): { x: number; y: number } {
 const f1 = (v: number) => Math.round(v * 10) / 10;
 
 // ---------- dựng sticker / móc khoá ----------
+// Bế viền theo hình: nở viền trắng quanh hình/chữ → gộp thành 1 khối → dò đường cắt mượt.
+// P = số px ảnh trên 1mm; sizeMm = cạnh dài nhất của đường cắt; tab = chừa tai móc khoá (trả lỗ xỏ).
+export function diecutFromArt(art: HTMLCanvasElement, o: { sizeMm: number; borderMm: number; edge: string; P: number; tab?: boolean }): CutResult {
+  const P = o.P, b = Math.max(1, o.borderMm);
+  const cmm = Math.max(2, b * 1.5);
+  const pad = Math.ceil((b + cmm + 1.5) * P);
+  const tab = o.tab ? Math.ceil(TAB_R * 2 * P) : 0;
+  const W = art.width + pad * 2, H = art.height + pad * 2 + tab;
+  const ax = pad, ay = pad + tab;
+  const g = Math.min(1, 440 / Math.max(W, H));
+  const gw = Math.ceil(W * g), gh = Math.ceil(H * g);
+  const mc = document.createElement('canvas'); mc.width = gw; mc.height = gh;
+  const mx = mc.getContext('2d', { willReadFrequently: true })!;
+  mx.drawImage(art, ax * g, ay * g, art.width * g, art.height * g);
+  let hole: { cx: number; cy: number; r: number } | undefined;
+  if (o.tab) {
+    const top = topNearCenter(art);
+    const hx = ax + top.x, hy = ay + top.y - (TAB_R - 1.4) * P;
+    hole = { cx: hx, cy: hy, r: HOLE_R * P };
+    mx.fillStyle = '#000';
+    mx.beginPath(); mx.arc(hx * g, hy * g, Math.max(2.6, TAB_R - b) * P * g, 0, Math.PI * 2); mx.fill();
+    mx.fillRect((hx - 2 * P) * g, hy * g, 4 * P * g, (ay + top.y - hy + 1.5 * P) * g);
+  }
+  const px = mx.getImageData(0, 0, gw, gh).data;
+  const base = new Uint8Array(gw * gh);
+  for (let i = 0; i < gw * gh; i++) base[i] = px[i * 4 + 3] > 24 ? 1 : 0;
+  const r = b * P * g;
+  let c = cmm * P * g;
+  let mask: Uint8Array = base;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    mask = closeMask(base, gw, gh, r, c);
+    fillHoles(mask, gw, gh);
+    const { lab, sizes, best } = components(mask, gw, gh);
+    const big = sizes.filter((s, i) => i > 0 && i !== best && s > sizes[best] * 0.02).length;
+    if (!big) { keepOnly(mask, lab, best); break; }
+    if (attempt < 2) { c *= 2; continue; }
+    mask = hullMask(mask, gw, gh);
+  }
+  let pts = traceOuter(mask, gw, gh);
+  pts = chaikin(simplify(pts, 0.6), 3).map((v) => v / g);
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+  for (let i = 0; i < pts.length; i += 2) { bx0 = Math.min(bx0, pts[i]); bx1 = Math.max(bx1, pts[i]); by0 = Math.min(by0, pts[i + 1]); by1 = Math.max(by1, pts[i + 1]); }
+  const s = (o.sizeMm * 10) / Math.max(bx1 - bx0, by1 - by0);
+  const T = (v: number, off: number) => (v - off) * s + MARGIN;
+  let d = '';
+  for (let i = 0; i < pts.length; i += 2) d += `${i ? 'L' : 'M'}${f1(T(pts[i], bx0))} ${f1(T(pts[i + 1], by0))}`;
+  d += 'Z';
+  return {
+    w: (bx1 - bx0) * s + MARGIN * 2, h: (by1 - by0) * s + MARGIN * 2, d, fill: o.edge,
+    art: { href: art.toDataURL('image/png'), x: T(ax, bx0), y: T(ay, by0), w: art.width * s, h: art.height * s },
+    hole: hole && { cx: T(hole.cx, bx0), cy: T(hole.cy, by0), r: hole.r * s },
+    trimW: Math.round(((bx1 - bx0) * s) / 10), trimH: Math.round(((by1 - by0) * s) / 10),
+  };
+}
+
 export function buildCut(spec: CutSpec, img: HTMLImageElement | null): CutResult {
   const P = PXMM;
   const isKey = spec.kind === 'keychain';
@@ -327,55 +382,7 @@ export function buildCut(spec: CutSpec, img: HTMLImageElement | null): CutResult
     const b = Math.max(1, spec.borderMm);
     const content = Math.max(12, spec.sizeMm - b * 2) * P;
     const art = trimAlpha(composeArt(spec, img, content, content));
-    const cmm = Math.max(2, b * 1.5);
-    const pad = Math.ceil((b + cmm + 1.5) * P);
-    const tab = isKey ? Math.ceil(TAB_R * 2 * P) : 0;
-    const W = art.width + pad * 2, H = art.height + pad * 2 + tab;
-    const ax = pad, ay = pad + tab;
-    const g = Math.min(1, 440 / Math.max(W, H));
-    const gw = Math.ceil(W * g), gh = Math.ceil(H * g);
-    const mc = document.createElement('canvas'); mc.width = gw; mc.height = gh;
-    const mx = mc.getContext('2d', { willReadFrequently: true })!;
-    mx.drawImage(art, ax * g, ay * g, art.width * g, art.height * g);
-    let hole: { cx: number; cy: number; r: number } | undefined;
-    if (isKey) {
-      const top = topNearCenter(art);
-      const hx = ax + top.x, hy = ay + top.y - (TAB_R - 1.4) * P;
-      hole = { cx: hx, cy: hy, r: HOLE_R * P };
-      mx.fillStyle = '#000';
-      mx.beginPath(); mx.arc(hx * g, hy * g, Math.max(2.6, TAB_R - b) * P * g, 0, Math.PI * 2); mx.fill();
-      mx.fillRect((hx - 2 * P) * g, hy * g, 4 * P * g, (ay + top.y - hy + 1.5 * P) * g);
-    }
-    const px = mx.getImageData(0, 0, gw, gh).data;
-    const base = new Uint8Array(gw * gh);
-    for (let i = 0; i < gw * gh; i++) base[i] = px[i * 4 + 3] > 24 ? 1 : 0;
-    const r = b * P * g;
-    let c = cmm * P * g;
-    let mask: Uint8Array = base;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      mask = closeMask(base, gw, gh, r, c);
-      fillHoles(mask, gw, gh);
-      const { lab, sizes, best } = components(mask, gw, gh);
-      const big = sizes.filter((s, i) => i > 0 && i !== best && s > sizes[best] * 0.02).length;
-      if (!big) { keepOnly(mask, lab, best); break; }
-      if (attempt < 2) { c *= 2; continue; }
-      mask = hullMask(mask, gw, gh);
-    }
-    let pts = traceOuter(mask, gw, gh);
-    pts = chaikin(simplify(pts, 0.6), 3).map((v) => v / g);
-    let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
-    for (let i = 0; i < pts.length; i += 2) { bx0 = Math.min(bx0, pts[i]); bx1 = Math.max(bx1, pts[i]); by0 = Math.min(by0, pts[i + 1]); by1 = Math.max(by1, pts[i + 1]); }
-    const s = (spec.sizeMm * 10) / Math.max(bx1 - bx0, by1 - by0);
-    const T = (v: number, o: number) => (v - o) * s + MARGIN;
-    let d = '';
-    for (let i = 0; i < pts.length; i += 2) d += `${i ? 'L' : 'M'}${f1(T(pts[i], bx0))} ${f1(T(pts[i + 1], by0))}`;
-    d += 'Z';
-    return {
-      w: (bx1 - bx0) * s + MARGIN * 2, h: (by1 - by0) * s + MARGIN * 2, d, fill: spec.edge,
-      art: { href: art.toDataURL('image/png'), x: T(ax, bx0), y: T(ay, by0), w: art.width * s, h: art.height * s },
-      hole: hole && { cx: T(hole.cx, bx0), cy: T(hole.cy, by0), r: hole.r * s },
-      trimW: Math.round(((bx1 - bx0) * s) / 10), trimH: Math.round(((by1 - by0) * s) / 10),
-    };
+    return diecutFromArt(art, { sizeMm: spec.sizeMm, borderMm: spec.borderMm, edge: spec.edge, P, tab: isKey });
   }
 
   // hình cố định: tròn / vuông bo / trái tim — vẽ theo đơn vị 0.1mm
@@ -419,6 +426,12 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 
 // ---------- SVG: mockup (xem) / file cắt (gửi xưởng) / tờ nhiều con ----------
 const RING_R = 95;
+// Màu spot "CutContour" chuẩn ngành in–cắt = 100% Magenta (hiển thị #EC008C). RIP nhận là đường cắt.
+const CUTCONTOUR = '#EC008C';
+// Bleed die-cut: nền in tràn RA NGOÀI đường cắt (lệch dao không lòi mép trắng). Đơn vị SVG = 0.1mm,
+// stroke canh giữa path nên bề rộng = 2× lượng tràn. 1.5mm tràn → stroke 30 đơn vị.
+const BLEED_MM = 1.5;
+const BLEED_STROKE = BLEED_MM * 2 * 10;
 
 export function CutoutSvg({ res, spec, mode, style }: { res: CutResult; spec: CutSpec; mode: 'mockup' | 'cut'; style?: CSSProperties }) {
   const uid = useId().replace(/:/g, '');
@@ -435,10 +448,16 @@ export function CutoutSvg({ res, spec, mode, style }: { res: CutResult; spec: Cu
       <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${f1(res.w)} ${f1(res.h)}`} width={`${f1(res.w / 10)}mm`} height={`${f1(res.h / 10)}mm`} style={style}>
         <defs>{holeMask}</defs>
         <g id="In" mask={res.hole ? `url(#${hm})` : undefined}>
-          <path d={res.d} fill={clear ? 'none' : res.fill} />
+          {/* nền + bleed: stroke cùng màu nền để in tràn ra ngoài đường cắt ~1.5mm (die-cut không lòi mép) */}
+          <path d={res.d} fill={clear ? 'none' : res.fill}
+            stroke={clear ? undefined : res.fill} strokeWidth={clear ? undefined : BLEED_STROKE}
+            strokeLinejoin="round" strokeLinecap="round" />
           <image href={res.art.href} x={f1(res.art.x)} y={f1(res.art.y)} width={f1(res.art.w)} height={f1(res.art.h)} />
         </g>
-        <g id="CutContour" fill="none" stroke="#FF0000" strokeWidth={1}>
+        {/* Lớp cắt theo chuẩn CutContour: tên lớp "CutContour" + màu spot 100%% Magenta (#EC008C) —
+            RIP/máy bế (Roland VersaWorks, Caldera, Onyx…) nhận đây là đường cắt, không in ra. */}
+        <g id="CutContour" data-name="CutContour" fill="none" stroke={CUTCONTOUR} strokeWidth={1}>
+          <title>CutContour</title>
           <path d={res.d} />
           {res.hole && <circle cx={f1(res.hole.cx)} cy={f1(res.hole.cy)} r={f1(res.hole.r)} />}
         </g>

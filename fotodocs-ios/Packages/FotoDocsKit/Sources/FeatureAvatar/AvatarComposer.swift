@@ -5,8 +5,13 @@ import FotoDocsImaging
 enum AvatarComposer {
     /// Composites the subject onto a code-rendered backdrop, clipped to the template shape.
     /// If `cutout` is nil (no subject mask), the whole photo is placed over the backdrop.
-    static func compose(photo: UIImage, template: AvatarTemplate, size: CGFloat = 1024) -> UIImage {
+    /// `backgroundReplaced` is false when the person could not be cut out (the photo fills the frame).
+    static func compose(photo: UIImage, template: AvatarTemplate, size: CGFloat = 1024) -> (image: UIImage, backgroundReplaced: Bool) {
         let cutout = makeCutout(photo)
+        return (render(photo: photo, cutout: cutout, template: template, size: size), cutout != nil)
+    }
+
+    private static func render(photo: UIImage, cutout: UIImage?, template: AvatarTemplate, size: CGFloat) -> UIImage {
         let canvas = CGRect(x: 0, y: 0, width: size, height: size)
         let renderer = UIGraphicsImageRenderer(size: canvas.size)
         return renderer.image { ctx in

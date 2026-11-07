@@ -220,10 +220,8 @@ public struct EditView: View {
                         .foregroundStyle(FotoDocs.Palette.primary)
                 }
             }
-            tuningRow("Cỡ đầu", "Nhỏ", "To", \.headScale, 0.85...1.15)
-            tuningRow("Vị trí đầu", "Thấp", "Cao", \.headLift, -0.1...0.1)
-            tuningRow("Độ sáng cổ", "Tối", "Sáng", \.neckBrightness, -0.2...0.2)
-            tuningRow("Màu da cổ", "Lạnh", "Ấm", \.neckWarmth, -1...1)
+            tuningRow("Cỡ áo", "Nhỏ", "To", \.headScale, 0.85...1.15)
+            tuningRow("Vị trí áo", "Thấp", "Cao", \.headLift, -0.1...0.1)
         }
         .padding(16)
         .fotoCard()

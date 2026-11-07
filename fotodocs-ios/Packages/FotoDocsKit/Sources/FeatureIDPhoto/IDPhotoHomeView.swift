@@ -52,7 +52,13 @@ public struct IDPhotoHomeView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
-        .task { model.loadIfNeeded(using: store) }
+        .task {
+            model.loadIfNeeded(using: store)
+            #if DEBUG
+            // debug builds: `-editLast` opens the job-photo flow with the last edited photo (see CaptureView)
+            if ProcessInfo.processInfo.arguments.contains("-editLast") { router.push(.jobApplication) }
+            #endif
+        }
         .sheet(isPresented: $showCountrySheet) {
             CountryPickerSheet(origins: model.origins, selected: model.selectedOrigin) { origin in
                 model.selectedOrigin = origin

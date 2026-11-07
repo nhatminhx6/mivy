@@ -1,6 +1,7 @@
 import Testing
 import Foundation
 import FotoDocsCore
+import FotoDocsImaging
 
 @Suite("VisaProfile")
 struct VisaProfileTests {
@@ -64,5 +65,65 @@ struct VisaProfileTests {
         #expect(value("schengen", "dob") == "05-03-1990")
         #expect(value("jp", "address") == "12 LE LOI, PHUONG BEN NGHE")
         #expect(VisaForms.all.map(\.id).sorted() == ["au", "cn", "jp", "kr", "schengen", "tw", "uk", "us"])
+    }
+}
+
+@Suite("CCCD printed text")
+struct CCCDTextTests {
+    // OCR rows of an old (2016) CCCD front, sample data
+    private let front = [
+        "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "Độc lập - Tự do - Hạnh phúc", "CĂN CƯỚC CÔNG DÂN",
+        "Số: 079090001234", "Họ và tên:", "NGUYỄN VĂN MẪU", "Ngày, tháng, năm sinh: 15/03/1990",
+        "Giới tính: Nam Quốc tịch: Việt Nam", "Quê quán: Phường 1,", "Quận 3, TP Hồ Chí Minh",
+        "Nơi thường trú: 12 Lê Lợi,", "Có giá trị đến: 15/03/2030 Phường Bến Nghé, Quận 1, TP Hồ Chí Minh .",
+    ]
+
+    @Test("Old CCCD front: number, name, birth date, sex, address across two rows")
+    func oldFront() throws {
+        let c = try #require(CCCDInfo.parse(frontText: front))
+        #expect(c.idNumber == "079090001234")
+        #expect(c.fullName == "NGUYỄN VĂN MẪU")
+        #expect(c.dateOfBirth == DayDate(year: 1990, month: 3, day: 15))
+        #expect(c.sex == .male)
+        #expect(c.address == "12 Lê Lợi, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh")
+    }
+
+    @Test("Back side is recognised, not parsed")
+    func back() {
+        let rows = ["Đặc điểm nhận dạng: Nốt ruồi", "Ngày 11 tháng 10 năm 2016", "NGÓN TRỎ TRÁI"]
+        #expect(CCCDInfo.isBackSide(rows))
+        #expect(!CCCDInfo.isBackSide(front))
+    }
+
+    @Test("CMND 9 digits")
+    func cmnd() {
+        let c = CCCDInfo.parse(frontText: ["GIẤY CHỨNG MINH NHÂN DÂN", "Số 023456789", "Họ tên TRẦN THỊ MẪU", "Sinh ngày 01-02-1985"])
+        #expect(c?.idNumber == "023456789")
+        #expect(c?.dateOfBirth == DayDate(year: 1985, month: 2, day: 1))
+    }
+}
+
+@Suite("Card crop")
+struct CardCropTests {
+    @Test("ID-1 proportions")
+    func aspect() { #expect(abs(CardScanner.idAspect - 1.5858) < 0.001) }
+}
+
+@Suite("Profile merge")
+struct ProfileMergeTests {
+    @Test("Another person's CCCD replaces the name; the same person keeps the passport spelling")
+    func names() {
+        var p = VisaProfile()
+        p.surname = "NGUYEN"
+        p.givenNames = "VAN MAU"
+        p.passportNumber = "C1234567"
+        p.oldIDNumber = "212345678"
+        p.idIssueDate = DayDate(year: 2021, month: 4, day: 20)
+        p.apply(CCCDInfo(idNumber: "079090001234", oldIDNumber: "", fullName: "Trần Thị Mẫu", dateOfBirth: nil, sex: .female, address: "", issueDate: nil))
+        #expect(p.latinFullName == "TRAN THI MAU")
+        #expect(!p.hasPassport)  // the old passport belonged to someone else
+        #expect(p.oldIDNumber.isEmpty && p.idIssueDate == nil)
+        p.apply(CCCDInfo(idNumber: "079090001234", oldIDNumber: "", fullName: "Trần Thị Mẫu", dateOfBirth: nil, sex: .female, address: "", issueDate: nil))
+        #expect(p.surname == "TRAN" && p.givenNames == "THI MAU")
     }
 }

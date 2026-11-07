@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { BANK, KIND_LABEL, authApi, fmtDong, useAuth, type Tx } from '@/lib/auth';
 
 const PACKS = [50, 100, 200, 500]; // đồng = nghìn đồng
-const BANK_ID = process.env.NEXT_PUBLIC_BANK_ID || ''; // mã ngân hàng VietQR, vd vcb, mbbank, tcb
+const BANK_ID = process.env.NEXT_PUBLIC_BANK_ID || process.env.NEXT_PUBLIC_BANK_BIN || ''; // mã ngân hàng VietQR, vd vcb, mbbank, tcb (dùng chung 1 biến với trang đơn in)
 
 export default function WalletPage() {
   const { me, ready, refresh } = useAuth();

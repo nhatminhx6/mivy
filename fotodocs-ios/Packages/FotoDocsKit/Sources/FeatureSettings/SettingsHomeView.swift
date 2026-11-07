@@ -4,6 +4,8 @@ import FotoDocsDesign
 
 public struct SettingsHomeView: View {
     @Environment(\.presetStore) private var store
+    @Environment(\.mivyAccount) private var account
+    @State private var showAuth = false
     @State private var data: PresetData?
     @State private var showSizes = false
     @State private var showPrivacy = false
@@ -36,6 +38,9 @@ public struct SettingsHomeView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     header
+                    if let account {
+                        AccountCard(account: account) { showAuth = true }
+                    }
                     card {
                         button(icon: "ruler.fill", tint: FotoDocs.Palette.primary, title: "Bảng cỡ ảnh",
                                value: "\((data?.visaDestinations.count ?? 0) + (data?.originPassports.count ?? 0)) quy chuẩn") { showSizes = true }
@@ -70,6 +75,11 @@ public struct SettingsHomeView: View {
         .task { data = try? store.load() }
         .sheet(isPresented: $showSizes) { SizesSheet(data: data) }
         .sheet(isPresented: $showPrivacy) { PrivacySheet() }
+        .sheet(isPresented: $showAuth) {
+            if let account {
+                if account.isSignedIn { AccountSheet(account: account) } else { AuthSheet(account: account) }
+            }
+        }
         .confirmationDialog("Xoá toàn bộ checklist Bộ hồ sơ?", isPresented: $confirmClear, titleVisibility: .visible) {
             Button("Xoá", role: .destructive) {
                 let n = onClearDossier()

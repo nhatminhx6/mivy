@@ -3,7 +3,7 @@
 // cho vừa khổ (kể cả A4 in 300dpi). Lấy logo/tên/liên hệ/màu từ bộ nhận diện. Render 100% bằng code.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AlertTriangle, ClipboardPaste, Download, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { AlertTriangle, ClipboardPaste, Download, FileDown, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
 import type { BrandKit } from '@/types';
 import { contactLine, loadBrand } from '@/lib/brand-presets';
 import { POSTER_THEMES, type PosterThemeId } from '@/lib/infographic-engine';
@@ -11,6 +11,7 @@ import { posterColorsFromBrand } from '@/lib/poster-engine';
 import { ILLUSTRATIONS, illustrationUrl } from '@/lib/illustrations';
 import { suggestMenuTitle } from '@/lib/copy-library';
 import { downloadBlob, embedFontCss } from '@/lib/html-export';
+import { PRINT_SIZES, exportPrintPdf } from '@/lib/print-export';
 import { slugify } from '@/lib/image-utils';
 import {
   FIT_STEPS, PL_ASPECTS, PL_FONT_CSS, PL_LAYOUTS, PriceBoard, fitStart, parsePriceText, serializePriceText,
@@ -166,6 +167,19 @@ export default function PriceListPage() {
     } finally { setBusy(false); }
   };
 
+  // File in A4 thật: PDF 300dpi + lề tràn (bleed) + vạch cắt — xưởng in đúng khổ, xén không lẹm chữ.
+  const downloadPdf = async () => {
+    if (!nodeRef.current || busy) return;
+    setBusy(true);
+    try {
+      const size = PRINT_SIZES.find((s) => s.id === 'a4')!;
+      const b = await exportPrintPdf(nodeRef.current, {
+        size, designW: A.w, designH: A.h, fontEmbedCSS: await embedFontCss(PL_FONT_CSS),
+      });
+      downloadBlob(b, `${slugify(`${brand.name} ${data.title}`, 'bang-gia')}-a4-file-in.pdf`);
+    } finally { setBusy(false); }
+  };
+
   const itemCount = data.sections.reduce((n, s) => n + s.items.length, 0);
 
   return (
@@ -288,6 +302,11 @@ export default function PriceListPage() {
             <button type="button" onClick={download} disabled={busy || !fontsReady} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-60">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Tải ảnh PNG
             </button>
+            {aspect === 'A4' && (
+              <button type="button" onClick={downloadPdf} disabled={busy || !fontsReady} data-testid="pl-pdf" title="PDF in chuẩn: đúng khổ A4, có lề tràn (bleed) + vạch cắt để xưởng xén không lẹm chữ" className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-xs disabled:opacity-60">
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} Tải PDF in (bleed + vạch cắt)
+              </button>
+            )}
             {overflow && (
               <div className="flex items-start gap-2 text-[11px] text-amber-200 bg-amber-400/10 border border-amber-400/30 rounded-lg px-2.5 py-2" data-testid="pl-overflow">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> Danh sách dài quá khổ này. Chọn khổ Story 9:16 hoặc A4, hoặc bớt món / mô tả.

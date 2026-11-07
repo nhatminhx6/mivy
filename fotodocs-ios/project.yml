@@ -41,7 +41,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mivy.fotodocs
         GENERATE_INFOPLIST_FILE: "YES"
-        CODE_SIGNING_ALLOWED: "NO"
+        # signed locally ("-") so the Keychain works on the simulator; set a team for devices
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_CFBundleDisplayName: FotoDocs
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
@@ -68,4 +70,6 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: "YES"
         PRODUCT_BUNDLE_IDENTIFIER: com.mivy.fotodocs.tests
-        CODE_SIGNING_ALLOWED: "NO"
+        # signed locally ("-") so the Keychain works on the simulator; set a team for devices
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual

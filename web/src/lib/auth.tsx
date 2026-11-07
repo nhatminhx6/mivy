@@ -35,7 +35,7 @@ export const authApi = {
 
 // ---------- đơn in ----------
 export type OrderStatus = 'new' | 'quoted' | 'deposited' | 'sample' | 'printing' | 'delivered' | 'cancelled';
-export type PrintProduct = 'card' | 'sticker' | 'keychain';
+export type PrintProduct = 'card' | 'sticker' | 'keychain' | 'hashtag' | 'custom';
 export interface PrintOrder {
   id: number; code: string; product: PrintProduct; title: string; quantity: number; material: string;
   contact_name: string; phone: string; address: string; need_by: string; note: string;
@@ -49,6 +49,16 @@ export const ORDER_STEPS: { id: OrderStatus; label: string }[] = [
   { id: 'sample', label: 'Đang in mẫu' }, { id: 'printing', label: 'Đang in' }, { id: 'delivered', label: 'Đã giao' },
 ];
 export const STATUS_LABEL: Record<OrderStatus, string> = { ...Object.fromEntries(ORDER_STEPS.map((s) => [s.id, s.label])), cancelled: 'Đã huỷ' } as Record<OrderStatus, string>;
+// Mỗi trạng thái nói cho khách biết đang tới đâu + cần làm gì → bớt hỏi, bớt lo khi chạy đơn thật.
+export const STATUS_GUIDE: Record<OrderStatus, string> = {
+  new: 'Mivy đang xem file và tìm xưởng phù hợp, sẽ báo giá qua Zalo trong ngày.',
+  quoted: 'Đã có báo giá — chuyển cọc để Mivy in mẫu cho bạn duyệt.',
+  deposited: 'Đã nhận cọc. Mivy đang chuẩn bị in mẫu, sẽ gửi ảnh mẫu qua Zalo để bạn duyệt.',
+  sample: 'Đang in mẫu — Mivy gửi mẫu cho bạn duyệt trước khi in số lượng lớn.',
+  printing: 'Đang in số lượng của bạn — Mivy sẽ báo khi giao.',
+  delivered: 'Đã giao — cảm ơn bạn! Cần in thêm cứ quay lại nhé.',
+  cancelled: 'Đơn đã huỷ. Cần hỗ trợ cứ nhắn Zalo cho Mivy.',
+};
 const patch = (body: unknown): RequestInit => ({ ...json(body), method: 'PATCH' });
 export const orderApi = {
   create: (form: FormData) => call<PrintOrder>('/v1/print-orders', { method: 'POST', body: form }),
@@ -62,9 +72,12 @@ export const orderApi = {
 };
 export const fmtVnd = (n?: number | null) => (n == null ? '—' : `${n.toLocaleString('vi-VN')}đ`);
 export const zaloLink = (phone: string) => `https://zalo.me/${phone}`;
+// Kênh liên hệ Mivy cho khách (đặt in theo yêu cầu, hỏi đáp). Số/Zalo công khai, điền ở web/.env.local.
+export const MIVY_ZALO = process.env.NEXT_PUBLIC_MIVY_ZALO || '';
+export const mivyZaloLink = MIVY_ZALO ? zaloLink(MIVY_ZALO) : '';
 // QR chuyển khoản (VietQR) có sẵn số tiền + mã đơn — cần NEXT_PUBLIC_BANK_BIN (mã/tên ngân hàng, vd 970436 hoặc vcb)
 export function vietQr(amount: number, info: string): string | null {
-  const bin = process.env.NEXT_PUBLIC_BANK_BIN || '';
+  const bin = process.env.NEXT_PUBLIC_BANK_BIN || process.env.NEXT_PUBLIC_BANK_ID || '';
   if (!bin || !BANK.account) return null;
   const q = new URLSearchParams({ amount: String(amount), addInfo: info, accountName: BANK.owner });
   return `https://img.vietqr.io/image/${encodeURIComponent(bin)}-${encodeURIComponent(BANK.account)}-compact2.png?${q}`;

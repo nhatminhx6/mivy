@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Image as ImageIcon, Layers, ShieldCheck, CheckCircle2, Wand2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Image as ImageIcon, Layers, ShieldCheck, CheckCircle2, Wand2, Printer, MessageCircle } from 'lucide-react';
 import PosterShowcase from '@/components/PosterShowcase';
 
 export default function HomePage() {
+  const mivyZalo = process.env.NEXT_PUBLIC_MIVY_ZALO || '';
+  const zaloHref = mivyZalo ? `https://zalo.me/${mivyZalo}` : '';
   const features = [
     { icon: Layers, c: '#818cf8', title: 'Bộ poster đồng bộ một ý', desc: 'Một chiến dịch ra trọn bộ: poster chính (Hero), tiêu chí chi tiết và kênh liên hệ — cùng tông, cùng nội dung, không lệch.' },
     { icon: ImageIcon, c: '#38bdf8', title: 'Đủ khổ, khỏi canh tay', desc: 'Xuất 1 lần ra đủ khổ vuông, dọc, Story — khỏi canh tay từng cái.' },
@@ -165,6 +167,11 @@ export default function HomePage() {
             <h2 className="text-3xl sm:text-5xl font-black mb-5 relative z-10 text-mv-fg">Bắt đầu miễn phí ngay</h2>
             <p className="text-slate-400 text-base sm:text-lg max-w-xl mx-auto mb-8 relative z-10">Không cài đặt, không thẻ thanh toán. Mở Studio và xuất bộ ảnh đầu tiên cho shop của anh.</p>
             <Link href="/studio" className="mv-btn mv-btn-primary !px-8 !py-4 !text-base relative z-10">Mở Mivy Studio <ArrowRight className="w-5 h-5" /></Link>
+            <p className="text-slate-400 text-sm mt-6 relative z-10">
+              Cần in thứ chưa có sẵn — có file riêng, hộp giấy, standee, tem dán?{' '}
+              <Link href="/studio/print-custom" className="text-indigo-300 font-semibold hover:underline inline-flex items-center gap-1"><Printer className="w-4 h-4" /> Đặt in theo yêu cầu</Link>
+              {zaloHref && <>{' · '}<a href={zaloHref} target="_blank" rel="noopener noreferrer" className="text-indigo-300 font-semibold hover:underline inline-flex items-center gap-1"><MessageCircle className="w-4 h-4" /> Nhắn Zalo</a></>}
+            </p>
           </div>
         </section>
       </main>
@@ -177,7 +184,11 @@ export default function HomePage() {
             <span className="font-bold text-mv-fg">mivy</span>
             <span>· studio thiết kế cho người bán</span>
           </div>
-          <p>© {new Date().getFullYear()} Mivy</p>
+          <div className="flex items-center gap-4">
+            <Link href="/studio/print-custom" className="hover:text-mv-fg transition-colors">Đặt in theo yêu cầu</Link>
+            {zaloHref && <a href={zaloHref} target="_blank" rel="noopener noreferrer" className="hover:text-mv-fg transition-colors inline-flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> Zalo</a>}
+            <p>© {new Date().getFullYear()} Mivy</p>
+          </div>
         </div>
       </footer>
     </div>

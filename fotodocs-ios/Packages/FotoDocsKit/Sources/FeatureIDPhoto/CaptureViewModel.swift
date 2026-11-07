@@ -15,8 +15,16 @@ public final class CaptureViewModel {
     public var capturedImage: UIImage?
     public var isBusy = false
 
+    /// Shoot by itself once the pose has been right and still for a moment. Off = shutter only.
+    public var autoCapture = true
+    /// What to fix before the camera shoots by itself (nil = ready, holding still).
+    public var autoHint: String?
+
     private let camera = CameraService()
     private var autoStreak = 0
+    private var lastCenter: CGPoint?
+    /// ~2 s at the analysis rate (every 6th frame)
+    private static let autoFrames = 10
 
     public init(target: CaptureTarget) {
         self.target = target
@@ -49,12 +57,15 @@ public final class CaptureViewModel {
     private func apply(_ result: FaceCheckResult) {
         guard capturedImage == nil else { return }
         self.result = result
-        if result.passed {
-            autoStreak += 1
-            if autoStreak >= 8 { autoStreak = 0; camera.capturePhoto() }
-        } else {
-            autoStreak = 0
-        }
+        let b = result.faceBoundingBox, center = CGPoint(x: b.midX, y: b.midY)
+        let still = lastCenter.map { hypot($0.x - center.x, $0.y - center.y) < 0.02 } ?? false
+        lastCenter = center
+        var issue = result.autoCaptureIssue
+        if issue == nil && !still { issue = "Giữ yên" }
+        autoHint = issue
+        guard autoCapture, issue == nil else { autoStreak = 0; return }
+        autoStreak += 1
+        if autoStreak >= Self.autoFrames { autoStreak = 0; camera.capturePhoto() }
     }
 
     public func shutter() {
@@ -67,6 +78,7 @@ public final class CaptureViewModel {
     }
 
     public func retake() {
+        autoStreak = 0
         capturedImage = nil
         result = .empty
         if cameraAvailable { camera.start() }
