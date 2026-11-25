@@ -3,7 +3,9 @@
 // cho vừa khổ (kể cả A4 in 300dpi). Lấy logo/tên/liên hệ/màu từ bộ nhận diện. Render 100% bằng code.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AlertTriangle, ClipboardPaste, Download, FileDown, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { AlertTriangle, Box, ClipboardPaste, Download, FileDown, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Mockup3D';
+import type { PL3DFrame, PL3DScene } from '@/lib/pricelist-3d';
 import type { BrandKit } from '@/types';
 import { contactLine, loadBrand } from '@/lib/brand-presets';
 import { POSTER_THEMES, type PosterThemeId } from '@/lib/infographic-engine';
@@ -20,6 +22,12 @@ import {
 import { Scaled } from '@/components/BrandAssets';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
+import { PrintRequest } from '@/components/PrintRequest';
+
+// Khổ thật cho 3D: để bàn (tờ ép plastic + kệ mica) / treo tường (tấm bồi trong khung)
+const TABLE_MM: Record<PLAspect, [number, number]> = { A4: [210, 297], '4:5': [200, 250], '9:16': [180, 320], '1:1': [210, 210] };
+const WALL_MM: Record<PLAspect, [number, number]> = { A4: [420, 594], '4:5': [400, 500], '9:16': [450, 800], '1:1': [500, 500] };
+const FRAMES: { id: PL3DFrame; name: string }[] = [{ id: 'black', name: 'Khung nhôm đen' }, { id: 'oak', name: 'Khung gỗ sồi' }, { id: 'white', name: 'Khung trắng' }];
 
 const PRESETS: { name: string; layout: PLLayout; theme: PosterThemeId; illus: string[]; data: PriceData }[] = [
   {
@@ -121,6 +129,10 @@ export default function PriceListPage() {
   const [busy, setBusy] = useState(false);
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const view3d = useRef<Mockup3DHandle | null>(null);
+  const [tab, setTab] = useState<'3d' | 'flat'>('3d');
+  const [scene3d, setScene3d] = useState<PL3DScene | null>(null); // null = tự theo khổ (A4 để bàn, còn lại treo tường)
+  const [frame3d, setFrame3d] = useState<PL3DFrame>('black');
 
   useEffect(() => {
     const b = loadBrand();
@@ -181,6 +193,52 @@ export default function PriceListPage() {
   };
 
   const itemCount = data.sections.reduce((n, s) => n + s.items.length, 0);
+
+  // Gửi yêu cầu in: A4 → PDF in (bleed + vạch cắt); khổ khác → PNG 2x. Xem trước = ảnh 3D (lỗi thì ảnh phẳng).
+  const makeFiles = async () => {
+    if (!nodeRef.current) throw new Error('Chưa dựng xong bảng giá');
+    const fontEmbedCSS = await embedFontCss(PL_FONT_CSS);
+    const base = slugify(`${brand.name} ${data.title}`, 'bang-gia');
+    const { toBlob, toJpeg } = await import('html-to-image');
+    let file: Blob, fileName: string;
+    if (aspect === 'A4') {
+      file = await exportPrintPdf(nodeRef.current, { size: PRINT_SIZES.find((x) => x.id === 'a4')!, designW: A.w, designH: A.h, fontEmbedCSS });
+      fileName = `${base}-a4-file-in.pdf`;
+    } else {
+      const b = await toBlob(nodeRef.current, { width: A.w, height: A.h, pixelRatio: 2, fontEmbedCSS, cacheBust: false, style: { transform: 'none' } });
+      if (!b) throw new Error('Không tạo được file');
+      file = b; fileName = `${base}-${aspect.replace(':', 'x')}.png`;
+    }
+    const flat = async () => {
+      const url = await toJpeg(nodeRef.current!, { width: A.w, height: A.h, pixelRatio: 1, quality: 0.88, fontEmbedCSS, cacheBust: false, style: { transform: 'none' } });
+      return (await fetch(url)).blob();
+    };
+    const preview = view3d.current && tab === '3d'
+      ? await view3d.current.snapshot(1200, 900).then((c) => new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('snap'))), 'image/jpeg', 0.9))).catch(flat)
+      : await flat();
+    return { file, fileName, preview };
+  };
+
+  // ---------- 3D: chụp đúng bản thiết kế (HTML) → canvas → texture ----------
+  const scene = scene3d ?? (aspect === 'A4' ? 'table' : 'wall');
+  const mm = (scene === 'table' ? TABLE_MM : WALL_MM)[aspect];
+  const build3d = async () => {
+    const [{ toCanvas }, css, m] = await Promise.all([import('html-to-image'), embedFontCss(PL_FONT_CSS), import('@/lib/pricelist-3d')]);
+    const el = nodeRef.current;
+    const k = Math.min(1, 1600 / A.h);
+    const canvas = el ? await toCanvas(el, { width: A.w, height: A.h, canvasWidth: Math.round(A.w * k), canvasHeight: Math.round(A.h * k), pixelRatio: 1, fontEmbedCSS: css, cacheBust: false, style: { transform: 'none' } }) : null;
+    return m.pricelistBuilder({ canvas, wMm: mm[0], hMm: mm[1], scene, frame: frame3d });
+  };
+  const download3d = async () => {
+    if (!view3d.current || busy) return;
+    setBusy(true);
+    try {
+      const c = await view3d.current.snapshot(1600, 1200, { watermark: true });
+      const b = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+      if (b) downloadBlob(b, `${slugify(`${brand.name} ${data.title}`, 'bang-gia')}-3d.png`);
+    } finally { setBusy(false); }
+  };
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') (window as unknown as { __plSnap?: (w: number, h: number) => Promise<string> }).__plSnap = async (w, h) => (await view3d.current!.snapshot(w, h)).toDataURL('image/png');
 
   return (
     <div className="p-6 lg:p-8">
@@ -296,24 +354,45 @@ export default function PriceListPage() {
         <div className="lg:sticky lg:top-4 self-start space-y-3">
           <div className="glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
+              <span className="text-sm font-bold text-mv-fg flex items-center gap-2">Xem trước <PreviewTabs value={tab} onChange={setTab} /></span>
               <span className="text-[10px] font-semibold text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 px-2 py-1 rounded-full">{aspect === 'A4' ? 'A4 · 2480×3508 · 300dpi' : `PNG · ${A.w * 2}×${A.h * 2}`}</span>
             </div>
             <button type="button" onClick={download} disabled={busy || !fontsReady} className="mv-btn mv-btn-primary w-full !flex justify-center !py-3 !text-sm disabled:opacity-60">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Tải ảnh PNG
+            </button>
+            <button type="button" onClick={download3d} disabled={busy || !fontsReady || tab !== '3d'} data-testid="pl-3d-png" title="Ảnh thành phẩm 3D (đăng mạng / gửi khách duyệt)" className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-xs disabled:opacity-60">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Box className="w-4 h-4" />} Tải ảnh 3D
             </button>
             {aspect === 'A4' && (
               <button type="button" onClick={downloadPdf} disabled={busy || !fontsReady} data-testid="pl-pdf" title="PDF in chuẩn: đúng khổ A4, có lề tràn (bleed) + vạch cắt để xưởng xén không lẹm chữ" className="mv-btn mv-btn-ghost w-full !flex justify-center !py-2.5 !text-xs disabled:opacity-60">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} Tải PDF in (bleed + vạch cắt)
               </button>
             )}
+            <PrintRequest product="pricelist" title={`${aspect === 'A4' ? 'Menu / bảng giá A4' : `Bảng giá ${aspect}`} — ${brand.name || data.title}`}
+              defaultMaterial={scene === 'wall' ? 'Bảng có khung (nhôm/gỗ)' : 'Tờ A4 ép plastic'} design={{ data, layout, aspect, themeId }} makeFiles={makeFiles} />
             {overflow && (
               <div className="flex items-start gap-2 text-[11px] text-amber-200 bg-amber-400/10 border border-amber-400/30 rounded-lg px-2.5 py-2" data-testid="pl-overflow">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" /> Danh sách dài quá khổ này. Chọn khổ Story 9:16 hoặc A4, hoặc bớt món / mô tả.
               </div>
             )}
           </div>
-          <div className="glass-panel rounded-2xl p-3 border border-mv-hair" style={{ maxWidth: aspect === '9:16' || aspect === 'A4' ? 360 : undefined, marginInline: 'auto' }}>
+          {tab === '3d' && (
+            <div className="glass-panel rounded-2xl p-3 border border-mv-hair space-y-2.5" data-testid="pl-3d">
+              <Mockup3DView ref={view3d} build={build3d} rebuildKey={JSON.stringify([fitKey, idx, themeId, scene, frame3d])} refitKey={`${aspect}|${scene}`} debounce={600} className="rounded-lg aspect-[4/5] w-full" />
+              <div className="flex flex-wrap gap-1.5" data-testid="pl-3d-scene">
+                <button type="button" onClick={() => setScene3d('table')} className={chip(scene === 'table')}>Để bàn · kệ mica</button>
+                <button type="button" onClick={() => setScene3d('wall')} className={chip(scene === 'wall')}>Treo tường · có khung</button>
+              </div>
+              {scene === 'wall' && (
+                <div className="flex flex-wrap gap-1.5" data-testid="pl-3d-frame">
+                  {FRAMES.map((f) => <button key={f.id} type="button" onClick={() => setFrame3d(f.id)} className={chip(frame3d === f.id)}>{f.name}</button>)}
+                </div>
+              )}
+              <p className="text-[11px] text-slate-400">{scene === 'table' ? `Tờ ép plastic ${mm[0] / 10}×${mm[1] / 10} cm + kệ mica chữ L` : `Bảng treo ${mm[0] / 10}×${mm[1] / 10} cm trong khung`} · kéo để xoay</p>
+            </div>
+          )}
+          {/* bản thiết kế phẳng: luôn dựng (đo tự vừa khổ + xuất file) — ở tab 3D thì đẩy ra ngoài màn hình */}
+          <div className="glass-panel rounded-2xl p-3 border border-mv-hair" style={tab === '3d' ? { position: 'fixed', left: -100000, top: 0, width: 380 } : { maxWidth: aspect === '9:16' || aspect === 'A4' ? 360 : undefined, marginInline: 'auto' }}>
             <div className="rounded-xl overflow-hidden" data-testid="pl-preview">
               <Scaled w={A.w} h={A.h} nodeRef={(el) => { nodeRef.current = el; }}>
                 <PriceBoard data={data} layout={layout} aspect={aspect} T={T} brand={brand} illus={layout === 'elegant' ? [] : illus} fit={FIT_STEPS[idx]} bodyRef={(el) => { bodyRef.current = el; }} />

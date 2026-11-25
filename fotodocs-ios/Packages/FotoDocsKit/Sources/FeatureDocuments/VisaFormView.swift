@@ -182,8 +182,15 @@ struct VisaHomeView: View {
 
     private func scanTile(_ kind: ScanKind, title: String, detail: String, icon: String) -> some View {
         Menu {
-            if VNDocumentCameraViewController.isSupported {
-                Button("Chụp ảnh", systemImage: "camera") { scanning = kind; showScanner = true }
+            if DocumentScanner.isAvailable {
+                Button("Chụp ảnh", systemImage: "camera") {
+                    scanning = kind
+                    if let fake = DocumentScanner.simulated([kind == .cccd ? "cccd-fake" : "passport-fake"]), let page = fake.first {
+                        Task { await read(page) }
+                    } else {
+                        showScanner = true
+                    }
+                }
             }
             Button("Chọn ảnh có sẵn", systemImage: "photo") { scanning = kind; showPicker = true }
         } label: {
@@ -227,7 +234,7 @@ struct VisaHomeView: View {
                 Text(spec.channel).font(.bvp(.caption)).foregroundStyle(FotoDocs.Palette.textSecondary).lineLimit(2)
             }
             Spacer(minLength: 8)
-            if spec.id == JapanVisaPDF.countryID && JapanVisaPDF.isAvailable {
+            if OfficialVisaForm.of(spec.id) != nil {
                 Text("PDF").font(.bvp(.caption2, .bold)).foregroundStyle(FotoDocs.Palette.primary)
                     .padding(.horizontal, 8).frame(height: 22)
                     .background(FotoDocs.Palette.primaryTint, in: .capsule)
@@ -283,7 +290,7 @@ struct VisaCopyView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     header
-                    if spec.id == JapanVisaPDF.countryID && JapanVisaPDF.isAvailable {
+                    if OfficialVisaForm.of(spec.id) != nil {
                         PillButton("Điền form PDF chính thức", systemImage: "doc.richtext") { showPDF = true }
                     }
                     Text("Chạm vào một ô để copy, rồi dán vào form.")
@@ -336,7 +343,9 @@ struct VisaCopyView: View {
         }
         .sensoryFeedback(.success, trigger: copied) { _, new in new != nil }
         .sheet(isPresented: $editing) { VisaProfileSheet(store: store) }
-        .sheet(isPresented: $showPDF) { JapanVisaPDFSheet(profile: store.profile) }
+        .sheet(isPresented: $showPDF) {
+            if let form = OfficialVisaForm.of(spec.id) { OfficialVisaFormSheet(form: form, profile: store.profile) }
+        }
     }
 
     private var header: some View {
@@ -432,7 +441,7 @@ struct VisaProfileSheet: View {
                     TextField("Số hộ chiếu", text: $store.profile.passportNumber).textInputAutocapitalization(.characters)
                     DayField(title: "Ngày cấp", value: $store.profile.passportIssueDate)
                     DayField(title: "Ngày hết hạn", value: $store.profile.passportExpiry)
-                    TextField("Nơi cấp, vd: Cục Quản lý xuất nhập cảnh", text: $store.profile.passportIssuePlace)
+                    TextField("Nơi cấp, vd: Cục Quản lý xuất nhập cảnh (app tự ghi tiếng Anh)", text: $store.profile.passportIssuePlace)
                 }
                 Section("Liên hệ") {
                     TextField("Số điện thoại, vd: +84 912 345 678", text: $store.profile.phone).keyboardType(.phonePad)

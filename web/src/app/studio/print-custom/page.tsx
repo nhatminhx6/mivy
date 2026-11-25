@@ -31,6 +31,11 @@ export default function PrintCustomPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (me) { setName((n) => n || me.name); setPhone((p) => p || me.phone || ''); } }, [me]);
+  // Khách bấm sản phẩm chưa có editor ở trang /in → điền sẵn tên cần in
+  useEffect(() => {
+    const need = new URLSearchParams(window.location.search).get('need');
+    if (need) setTitle((t) => t || need);
+  }, []);
 
   const pick = (f?: File | null) => {
     if (!f) return;

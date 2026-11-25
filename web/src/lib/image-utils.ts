@@ -54,6 +54,6 @@ export async function cutoutImage(src: string, trim = true): Promise<string> {
 // "Bánh Mì Cô Ba!" → "banh-mi-co-ba"
 export function slugify(s: string, fallback = 'mivy'): string {
   const out = s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd')
-    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/, ''); // cắt 40 ký tự xong bỏ '-' thừa cuối
   return out || fallback;
 }

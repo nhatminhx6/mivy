@@ -3,7 +3,7 @@
 // (300dpi, lề xén 3mm, vạch cắt) đưa thẳng cho xưởng. Mẫu = bố cục × màu × font, render code 100%.
 
 import { useEffect, useRef, useState } from 'react';
-import { Download, FileDown, Loader2 } from 'lucide-react';
+import { Box, Download, FileDown, Loader2 } from 'lucide-react';
 import {
   CARD_BLEED_MM, CARD_FIELDS, CARD_FONT_CSS, CARD_KINDS, CARD_LAYOUTS, CARD_SIZES, CARD_TEMPLATES, CardSvg, NAME_FONTS,
   cardSize, defaultCardData, palettesFor, useCardFonts, type CardData, type CardKind, type CardSpec,
@@ -15,6 +15,7 @@ import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
 import { PrintRequest } from '@/components/PrintRequest';
+import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Mockup3D';
 
 const FIRST: Record<CardKind, CardSpec> = {
   wedding: { kind: 'wedding', layout: 'frame', palette: 'ivory', font: 'greatvibes', size: '12x17' },
@@ -28,6 +29,8 @@ export default function CardsPage() {
   const [busy, setBusy] = useState('');
   const previewRef = useRef<HTMLDivElement | null>(null);
   const printRef = useRef<HTMLDivElement | null>(null);
+  const view3d = useRef<Mockup3DHandle | null>(null);
+  const [tab, setTab] = useState<'3d' | 'flat'>('3d');
 
   // ?kind=birthday mở thẳng thiệp sinh nhật
   useEffect(() => {
@@ -71,9 +74,31 @@ export default function CardsPage() {
   const makeFiles = async () => {
     const pdfEl = printRef.current?.querySelector('svg'), pvEl = previewRef.current?.querySelector('svg');
     if (!pdfEl || !pvEl) throw new Error('Chưa dựng xong thiệp, thử lại nhé.');
-    const [file, preview] = await Promise.all([svgToPrintPdf(pdfEl, CARD_FONT_CSS, sz, CARD_BLEED_MM), svgToJpeg(pvEl, CARD_FONT_CSS, 900)]);
+    const toJpeg = (c: HTMLCanvasElement) => new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('Không tạo được ảnh'))), 'image/jpeg', 0.9));
+    const preview3d = () => view3d.current ? view3d.current.snapshot(1200, 900).then(toJpeg) : Promise.reject(new Error('no 3d'));
+    const [file, preview] = await Promise.all([
+      svgToPrintPdf(pdfEl, CARD_FONT_CSS, sz, CARD_BLEED_MM),
+      preview3d().catch(() => svgToJpeg(pvEl, CARD_FONT_CSS, 900)),
+    ]);
     return { file, fileName: `${slug}-${sz.id}cm-file-in.pdf`, preview };
   };
+  // 3D: thiệp cưới rút hé từ phong bì + dấu sáp; sinh nhật dựng đế gỗ + confetti
+  const pal = palettesFor(kind).find((p) => p.id === spec.palette) || palettesFor(kind)[0];
+  const ini = (n?: string) => (n || '').trim().split(/\s+/).pop()?.charAt(0).toUpperCase() || '';
+  const initials = kind === 'wedding' ? [ini(data.groom), ini(data.bride)].filter(Boolean).join('&') || '♥' : ini(data.name);
+  const build3d = () => import('@/lib/cards-3d').then((m) => m.cardsBuilder({
+    el: previewRef.current?.querySelector('svg') as SVGSVGElement | null, wMm: sz.wMm, hMm: sz.hMm, kind,
+    pal: { bg: pal.bg, panel: pal.panel, ink: pal.ink, accent: pal.accent, dark: pal.dark, extra: pal.extra }, initials, fontCss: CARD_FONT_CSS,
+  }));
+  const download3d = () => run('3d', async () => {
+    if (!view3d.current) return;
+    const c = await view3d.current.snapshot(1600, 1200, { watermark: true });
+    const b = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+    if (b) downloadBlob(b, `${slug}-3d.png`);
+  });
+  // dev: QC chụp 3D lớn ở góc mặc định
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') (window as unknown as { __cdSnap?: (w: number, h: number) => Promise<string> }).__cdSnap = async (w, h) => (await view3d.current!.snapshot(w, h)).toDataURL('image/png');
+
   const orderTitle = `${CARD_KINDS.find((k) => k.id === kind)?.name} ${sz.name} · ${CARD_LAYOUTS.find((l) => l.id === spec.layout)?.name}`;
 
   const chip = (on: boolean) => `rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`;
@@ -163,12 +188,21 @@ export default function CardsPage() {
 
           {/* Xem trước ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <span className="text-sm font-bold text-mv-fg">Xem trước</span>
-            <div ref={previewRef} className="mx-auto rounded-lg overflow-hidden shadow-[0_10px_30px_-10px_rgba(15,23,42,0.35)]" style={{ maxWidth: Math.round(380 * Math.min(1, sz.wMm / sz.hMm) * 1.2) }} data-testid="card-preview">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
+              <PreviewTabs value={tab} onChange={setTab} />
+            </div>
+            {tab === '3d' && (
+              <Mockup3DView ref={view3d} build={build3d} rebuildKey={JSON.stringify([spec, data])} refitKey={`${kind}|${spec.size}`} debounce={400} className="rounded-lg aspect-[4/3] w-full" />
+            )}
+            <div ref={previewRef} className={`mx-auto rounded-lg overflow-hidden shadow-[0_10px_30px_-10px_rgba(15,23,42,0.35)] ${tab === '3d' ? 'hidden' : ''}`} style={{ maxWidth: Math.round(380 * Math.min(1, sz.wMm / sz.hMm) * 1.2) }} data-testid="card-preview">
               <CardSvg spec={spec} data={data} style={{ width: '100%', display: 'block' }} />
             </div>
             <div className="text-[11px] text-slate-400 text-center">{sz.name} · in 300dpi · lề xén {CARD_BLEED_MM}mm mỗi cạnh</div>
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <button type="button" onClick={download3d} disabled={tab !== '3d'} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs disabled:opacity-40" data-testid="card-3d" title="Ảnh thành phẩm 3D (mở tab Thành phẩm 3D)">
+                {busy === '3d' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Box className="w-3.5 h-3.5" />} Ảnh 3D
+              </button>
               <button type="button" onClick={downloadPng} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs" data-testid="card-png">
                 {busy === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} PNG
               </button>

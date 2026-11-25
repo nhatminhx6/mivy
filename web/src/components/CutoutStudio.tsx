@@ -15,6 +15,7 @@ import { cutoutImage, scaleImage, slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
 import { PrintRequest } from '@/components/PrintRequest';
+import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Mockup3D';
 
 type Source = 'icon' | 'upload' | 'none';
 const COPY: Record<CutKind, { title: string; sub: string; file: string }> = {
@@ -37,6 +38,18 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
   const [thumbs, setThumbs] = useState<Record<string, CutResult>>({});
   const [sheetId, setSheetId] = useState('a4');
   const [busy, setBusy] = useState('');
+  const [tab, setTab] = useState<'3d' | 'flat'>('3d');
+  const resRef = useRef(res); resRef.current = res;
+  // móc khoá 3D: đùn khối mica từ đúng đường cắt hiện tại
+  // sticker 3D: decal cắt theo đúng đường cắt, dán laptop + bình nước + 1 con đang bóc khỏi đế
+  const build3d = () => kind === 'keychain'
+    ? import('@/lib/cutout-3d').then((m) => m.cutoutBuilder({ res: resRef.current, material: spec.material === 'clear' ? 'clear' : 'white', ring: true }))
+    : import('@/lib/sticker-3d').then((m) => m.stickerBuilder({ res: resRef.current }));
+  const view3d = useRef<Mockup3DHandle | null>(null);
+  // hook cho QC/soi ảnh (chỉ bản dev): chụp 3D sticker ở góc mặc định
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined' && kind === 'sticker') {
+    (window as unknown as { __stSnap?: (w: number, h: number) => Promise<string> }).__stSnap = async (w, h) => (await view3d.current!.snapshot(w, h)).toDataURL('image/png');
+  }
   const fileRef = useRef<HTMLInputElement | null>(null);
   const mockRef = useRef<HTMLDivElement | null>(null);
   const cutRef = useRef<HTMLDivElement | null>(null);
@@ -117,7 +130,13 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
   const makeFiles = async () => {
     const cutEl = cutRef.current?.querySelector('svg'), pvEl = mockRef.current?.querySelector('svg');
     if (!cutEl || !pvEl) throw new Error('Chưa dựng xong, thử lại nhé.');
-    const [file, preview] = await Promise.all([svgFileBlob(cutEl), svgToJpeg(pvEl, undefined, 900)]);
+    const snap3d = async () => {
+      const c = await view3d.current!.snapshot(1200, 1200);
+      return await new Promise<Blob>((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error('snapshot'))), 'image/jpeg', 0.9));
+    };
+    // sticker: ảnh xem trước gửi xưởng = ảnh thành phẩm 3D (lỗi thì quay về mockup phẳng)
+    const preview3d = kind === 'sticker' && view3d.current ? snap3d().catch(() => svgToJpeg(pvEl, undefined, 900)) : svgToJpeg(pvEl, undefined, 900);
+    const [file, preview] = await Promise.all([svgFileBlob(cutEl), preview3d]);
     return { file, fileName: `${slug}-${sizeTag}-file-cat.svg`, preview };
   };
   const orderTitle = `${COPY[kind].title} ${res ? `${res.trimW}×${res.trimH}mm` : ''} · ${CUT_SHAPES.find((s) => s.id === spec.shape)?.name}`;
@@ -238,8 +257,14 @@ export function CutoutStudio({ kind }: { kind: CutKind }) {
 
           {/* Mockup ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <span className="text-sm font-bold text-mv-fg">Xem trước</span>
-            <div ref={mockRef} className="rounded-xl bg-[#EEF1F6] aspect-square grid place-items-center overflow-hidden" data-testid="cut-preview" data-ready={res && resKey === key ? 1 : 0}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
+              <PreviewTabs value={tab} onChange={setTab} />
+            </div>
+            {tab === '3d' && res && (
+              <Mockup3DView ref={kind === 'sticker' ? view3d : undefined} build={build3d} rebuildKey={`${resKey}|${spec.material}`} refitKey={`${res.trimW}x${res.trimH}`} debounce={250} className="rounded-xl aspect-square w-full" />
+            )}
+            <div ref={mockRef} className={`rounded-xl bg-[#EEF1F6] aspect-square grid place-items-center overflow-hidden ${tab === '3d' && res ? 'hidden' : ''}`} data-testid="cut-preview" data-ready={res && resKey === key ? 1 : 0}>
               {res ? <CutoutSvg res={res} spec={spec} mode="mockup" style={{ width: '86%', height: '86%' }} /> : <Loader2 className="w-5 h-5 animate-spin text-slate-400" />}
             </div>
             <div className="text-[11px] text-slate-400 text-center" data-testid="cut-dims">

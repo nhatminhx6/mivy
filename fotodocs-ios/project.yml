@@ -52,6 +52,7 @@ targets:
         INFOPLIST_KEY_NSCameraUsageDescription: "FotoDocs dùng camera để chụp ảnh thẻ ngay trên máy. Ảnh không được gửi lên máy chủ."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "FotoDocs cần truy cập thư viện ảnh để bạn chọn ảnh có sẵn. Ảnh được xử lý ngay trên máy."
     scheme:
+      storeKitConfiguration: FotoDocs/Products.storekit
       testTargets:
         - FotoDocsTests
 
@@ -66,6 +67,12 @@ targets:
         product: FotoDocsCore
       - package: FotoDocsKit
         product: FotoDocsImaging
+      - package: FotoDocsKit
+        product: FeatureDocuments
+      - package: FotoDocsKit
+        product: FotoDocsDesign
+      - package: FotoDocsKit
+        product: FeatureIDPhoto
     settings:
       base:
         GENERATE_INFOPLIST_FILE: "YES"

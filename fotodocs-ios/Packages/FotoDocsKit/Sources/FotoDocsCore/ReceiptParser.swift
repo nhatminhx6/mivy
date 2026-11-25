@@ -201,12 +201,16 @@ public enum ReceiptParser {
     private static let categoryWords: [(ExpenseCategory, [String])] = [
         (.travel, ["grab", "be group", "xanh sm", "taxi", "mai linh", "vinasun", "gojek", "xang", "petrolimex", "dau diesel",
                    "ve may bay", "vietjet", "vietnam airlines", "bamboo", "vexere", "xe khach", "gui xe", "parking",
-                   "bot ", "phi duong", "cau duong", "duong sat", "ve tau", "vetc", "epass"]),
+                   "bot ", "phi duong", "cau duong", "duong sat", "ve tau", "vetc", "epass",
+                   // OCR glues "VIETNAM AIRLINES" together; parking lots say "giữ xe" / "đỗ xe"
+                   "airline", "e-ticket", "chuyen bay", "giu xe", "do xe", "bai xe"]),
         (.lodging, ["hotel", "khach san", "homestay", "resort", "motel", "nha nghi", "agoda", "booking.com", "luu tru",
                     "phong nghi", "check-in", "check in"]),
         (.meal, ["cafe", "coffee", "ca phe", "nha hang", "quan an", "restaurant", "com ", "pho ", "bun ", "tra sua",
                  "highlands", "phuc long", "starbucks", "kfc", "lotteria", "jollibee", "pizza", "bia", "lau ", "nuong",
-                 "an uong", "do uong", "food", "bakery", "banh mi"]),
+                 "an uong", "do uong", "food", "bakery", "banh mi",
+                 // dishes on a street-food bill where the stall has no "quán / nhà hàng" in its name
+                 "banh xeo", "nem ", "bun ", "mi quang", "hu tieu", "banh canh", "com ga", "nuoc ngot", "tra da"]),
     ]
 
     static func category(_ text: String) -> ExpenseCategory {

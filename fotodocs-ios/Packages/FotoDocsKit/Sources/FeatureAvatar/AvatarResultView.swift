@@ -49,7 +49,7 @@ struct AvatarResultView: View {
             }
             .padding(28)
         }
-        .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
+        .sheet(item: $share) { payload in FilePreviewSheet(url: payload.url) }
     }
 
     private func saveAndShare() {

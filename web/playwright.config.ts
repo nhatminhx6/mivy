@@ -6,13 +6,13 @@ export default defineConfig({
   timeout: 90_000,
   fullyParallel: false,
   use: {
-    baseURL: 'http://localhost:3009',
+    baseURL: process.env.QC_BASE || 'http://localhost:3009',
     channel: 'chrome',
     headless: true,
   },
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:3009',
+    url: process.env.QC_BASE || 'http://localhost:3009',
     reuseExistingServer: true,
     timeout: 60_000,
   },

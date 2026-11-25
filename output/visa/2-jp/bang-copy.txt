@@ -1,0 +1,62 @@
+🇯🇵 Nhật Bản — Form giấy nộp qua đại lý được uỷ thác / VFS
+
+Surname (as shown in passport)
+    LE
+    Họ
+Given and middle names (as shown in passport)
+    THU HA
+    Tên đệm + tên
+Date of birth
+    21/07/1995
+    Ngày sinh
+Place of birth (City / State or Province / Country)
+    HO CHI MINH CITY, VIET NAM
+    Nơi sinh
+Sex
+    FEMALE
+    Giới tính
+Marital status
+    SINGLE
+    Tình trạng hôn nhân
+Nationality or citizenship
+    VIET NAM
+    Quốc tịch
+ID No. issued to you by your government
+    079195004321
+    Số CCCD
+Passport type
+    ORDINARY
+    Loại hộ chiếu
+Passport No.
+    C7654321
+    Số hộ chiếu
+Place of issue
+    IMMIGRATION DEPARTMENT
+    Nơi cấp
+Date of issue
+    10/08/2021
+    Ngày cấp hộ chiếu
+Issuing authority
+    IMMIGRATION DEPARTMENT
+    Cơ quan cấp
+Date of expiry
+    10/08/2031
+    Ngày hết hạn hộ chiếu
+Your current residential address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ đang ở (đang ở chỗ khác thường trú thì ghi cả hai)
+Mobile No.
+    0912 345 678
+    Số di động
+E-mail
+    thuha.le@gmail.com
+    Email
+Current profession or occupation and position
+    ACCOUNTANT
+    Nghề nghiệp + chức vụ
+Name of employer
+    PHO XUA COMPANY LIMITED
+    Tên nơi làm việc
+Address of employer
+    12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nơi làm việc

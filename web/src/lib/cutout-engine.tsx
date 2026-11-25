@@ -33,7 +33,7 @@ export interface CutSpec {
 }
 
 export const ICONS_3D = [
-  'red_heart', 'birthday_cake', 'party_popper', 'wrapped_gift', 'teddy_bear', 'ring', 'crown', 'gem_stone', 'glowing_star', 'sparkles',
+  'red_heart', 'birthday_cake', 'party_popper', 'wrapped_gift', 'teddy_bear', 'ring', 'crown', 'gem_stone', 'glowing_star', 'sparkles', 'lotion_bottle',
   'bubble_tea', 'hot_beverage', 'pizza', 'hamburger', 'fire', 'rocket', 'airplane', 'video_game', 'camera', 'potted_plant',
   'house', 'trophy', 'thumbs_up', 'light_bulb', 'robot', 'dress', 'lipstick', 'high_heeled_shoe', 'handbag', 't_shirt',
   'running_shoe', 'shopping_bags', 'money_bag', 'delivery_truck', 'beach_with_umbrella', 'artist_palette', 'alarm_clock', 'laptop',
@@ -52,6 +52,20 @@ export const CUT_PRESETS: CutPreset[] = [
   { id: 'baby', kind: 'sticker', name: 'Chữ tròn', icon: null, spec: { shape: 'diecut', edge: '#FFFFFF', text: 'Bé yêu\ncủa mẹ', font: 'lobster', textColor: '#2C78DC', textStroke: '', textPos: 'only' } },
   { id: 'queen', kind: 'sticker', name: 'Queen', icon: 'crown', spec: { shape: 'heart', edge: '#FFE4EE', text: 'Queen', font: 'greatvibes', textColor: '#B08D57', textStroke: '', textPos: 'below' } },
   { id: 'ship', kind: 'sticker', name: 'Đã đóng gói', icon: 'delivery_truck', spec: { shape: 'rounded', edge: '#DDEEFF', text: 'Đóng gói\ncẩn thận', font: 'montserrat', textColor: '#2C78DC', textStroke: '', textPos: 'below' } },
+  // --- Tem nước hoa chiết: mỗi mẫu một bố cục (sang, tối giản, hợp chai chiết) ---
+  { id: 'perfume-script', kind: 'sticker', name: 'Nước hoa · script', icon: null, spec: { shape: 'circle', edge: '#FFF1C2', text: 'Rose Blanc\n10ml', font: 'greatvibes', textColor: '#B08D57', textStroke: '', textPos: 'only' } },
+  { id: 'perfume-bottle', kind: 'sticker', name: 'Nước hoa · chai', icon: 'lotion_bottle', spec: { shape: 'rounded', edge: '#FFFFFF', text: 'Eau de Nuit\n10ml', font: 'cormorant', textColor: '#111827', textStroke: '', textPos: 'below' } },
+  { id: 'perfume-noir', kind: 'sticker', name: 'Nước hoa · noir', icon: null, spec: { shape: 'rounded', edge: '#111827', text: 'NOIR\n50ml', font: 'playfair', textColor: '#FFFFFF', textStroke: '', textPos: 'only' } },
+  { id: 'perfume-gem', kind: 'sticker', name: 'Nước hoa · đá quý', icon: 'gem_stone', spec: { shape: 'circle', edge: '#FFE4EE', text: 'Velvet\nBloom', font: 'allura', textColor: '#B4234A', textStroke: '', textPos: 'below' } },
+  { id: 'perfume-seal', kind: 'sticker', name: 'Niêm phong chiết', icon: 'glowing_star', spec: { shape: 'circle', edge: '#E9E1FF', text: 'Nước hoa\nchiết · 10ml', font: 'montserrat', textColor: '#7446D6', textStroke: '', textPos: 'below' } },
+  { id: 'perfume-sparkle', kind: 'sticker', name: 'Nước hoa · lấp lánh', icon: 'sparkles', spec: { shape: 'diecut', edge: '#FFFFFF', text: 'Floral', font: 'dancing', textColor: '#E3437A', textStroke: '#FFFFFF', textPos: 'over' } },
+  // --- Tem nhãn F&B (quán ăn, cà phê, tiệm bánh): dán ly, nhãn hộp, logo, niêm phong ---
+  { id: 'fnb-cup-seal', kind: 'sticker', name: 'Niêm phong ly', icon: 'glowing_star', spec: { shape: 'circle', edge: '#FFF1C2', text: 'Đã niêm phong\nan toàn', font: 'montserrat', textColor: '#B45309', textStroke: '', textPos: 'below' } },
+  { id: 'fnb-box', kind: 'sticker', name: 'Nhãn hộp cơm', icon: 'hamburger', spec: { shape: 'rounded', edge: '#DDEEFF', text: 'Cơm nhà\nngon mỗi ngày', font: 'baloo', textColor: '#2C78DC', textStroke: '', textPos: 'below' } },
+  { id: 'fnb-pizza', kind: 'sticker', name: 'Món nóng giòn', icon: 'pizza', spec: { shape: 'diecut', edge: '#FFFFFF', text: 'Nóng giòn', font: 'bungee', textColor: '#DC2626', textStroke: '#FFFFFF', textPos: 'over' } },
+  { id: 'fnb-bakery', kind: 'sticker', name: 'Tiệm bánh', icon: 'birthday_cake', spec: { shape: 'diecut', edge: '#FFE4EE', text: 'Fresh Bakery', font: 'dancing', textColor: '#E3437A', textStroke: '#FFFFFF', textPos: 'below' } },
+  { id: 'fnb-logo-badge', kind: 'sticker', name: 'Logo quán', icon: null, spec: { shape: 'circle', edge: '#111827', text: 'COFFEE\n& TEA', font: 'montserrat', textColor: '#FFFFFF', textStroke: '', textPos: 'only' } },
+  { id: 'fnb-thanks-order', kind: 'sticker', name: 'Cảm ơn đặt món', icon: 'shopping_bags', spec: { shape: 'rounded', edge: '#E9E1FF', text: 'Cảm ơn\nđã đặt món', font: 'baloo', textColor: '#7446D6', textStroke: '', textPos: 'below' } },
   { id: 'k-bear', kind: 'keychain', name: 'Tên + gấu', icon: 'teddy_bear', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Bảo Anh', font: 'lobster', textColor: '#E3437A', textStroke: '#FFFFFF', textPos: 'below' } },
   { id: 'k-couple', kind: 'keychain', name: 'Cặp đôi', icon: 'red_heart', spec: { shape: 'diecut', material: 'clear', edge: '#FFFFFF', text: 'Khang & Vy', font: 'greatvibes', textColor: '#B4234A', textStroke: '#FFFFFF', textPos: 'over' } },
   { id: 'k-boba', kind: 'keychain', name: 'Trà sữa', icon: 'bubble_tea', spec: { shape: 'diecut', material: 'white', edge: '#FFFFFF', text: 'Boba', font: 'baloo', textColor: '#7446D6', textStroke: '#FFFFFF', textPos: 'below' } },
@@ -550,7 +564,11 @@ export function SheetSvg({ res, spec, sheet }: { res: CutResult; spec: CutSpec; 
         </g>
       </defs>
       <g id="In">{cells.map((c, i) => <use key={i} href={`#${uid}-p`} x={f1(c.x)} y={f1(c.y)} />)}</g>
-      <g id="CutContour" fill="none" stroke="#FF0000" strokeWidth={1}>{cells.map((c, i) => <use key={i} href={`#${uid}-c`} x={f1(c.x)} y={f1(c.y)} />)}</g>
+      {/* Lớp cắt sheet dùng CHUNG chuẩn CutContour (spot 100% Magenta #EC008C) như bản đơn lẻ — RIP máy cắt đọc thẳng */}
+      <g id="CutContour" data-name="CutContour" fill="none" stroke={CUTCONTOUR} strokeWidth={1}>
+        <title>CutContour</title>
+        {cells.map((c, i) => <use key={i} href={`#${uid}-c`} x={f1(c.x)} y={f1(c.y)} />)}
+      </g>
     </svg>
   );
 }

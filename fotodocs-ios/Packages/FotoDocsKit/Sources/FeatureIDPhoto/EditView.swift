@@ -50,7 +50,7 @@ public struct EditView: View {
         .task { await model.onAppear() }
         .fullScreenCover(isPresented: $showExport) {
             if let image = model.preview {
-                ExportView(target: model.target, image: image)
+                ExportView(target: model.target, image: image, hasOutfit: model.settings.outfit != .keep && !model.outfitMissing)
             }
         }
     }

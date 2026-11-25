@@ -21,7 +21,14 @@ public struct CaptureView: View {
             FotoDocs.Palette.cameraBg.ignoresSafeArea()
 
             if model.cameraAvailable {
-                CameraPreview(session: model.session).ignoresSafeArea()
+                if let still = model.simFrame {
+                    // simulator: a still photo stands in for the camera
+                    Color.clear.ignoresSafeArea().overlay {
+                        Image(uiImage: still).resizable().scaledToFill()
+                    }.clipped()
+                } else {
+                    CameraPreview(session: model.session).ignoresSafeArea()
+                }
                 FaceGuideOverlay().allowsHitTesting(false)
             }
 

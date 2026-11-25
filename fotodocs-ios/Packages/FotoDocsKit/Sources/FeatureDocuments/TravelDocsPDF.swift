@@ -93,8 +93,12 @@ enum TravelDocsPDF {
                     y += h
                 }
             }
-            y += 30
-            if y > page.height - margin - 80 { ctx.beginPage(); y = margin }
+            // keep the signature on the page it signs (a translator's signature alone on page 2 won't be
+            // notarised): tighten the gap first, the hand-signed part may run into the bottom margin
+            let block: CGFloat = 32
+            if y + 30 + block + 40 <= page.height - margin { y += 30 }
+            else if y + 12 + block <= page.height - margin { y += 12 }
+            else { ctx.beginPage(); y = margin }
             let sign = CGRect(x: page.width - margin - 220, y: y, width: 220, height: 16)
             if t.isLetter {
                 text("(Signature and company stamp)", in: sign, size: 9.5, color: .darkGray, align: .center)

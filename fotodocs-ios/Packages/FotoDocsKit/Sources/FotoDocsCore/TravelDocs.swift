@@ -149,8 +149,8 @@ public struct TranslationTemplate: Identifiable, Sendable {
             F("religion", "Tôn giáo", "Religion", placeholder: "None"),
             F("nationality", "Quốc tịch", "Nationality", prefill: { _ in "Vietnamese" }),
             F("origin", "Quê quán", "Native place"),
-            F("permanent", "Nơi thường trú", "Permanent residence", .multiline, prefill: { Latin.upper($0.address) }),
-            F("current", "Nơi ở hiện tại", "Current residence", .multiline, prefill: { Latin.upper($0.address) }),
+            F("permanent", "Nơi thường trú", "Permanent residence", .multiline, prefill: { Latin.address($0.address) }),
+            F("current", "Nơi ở hiện tại", "Current residence", .multiline, prefill: { Latin.address($0.address) }),
         ]),
         Section(title: "Household", fields: [
             F("head", "Họ tên chủ hộ", "Head of household", .name),
@@ -166,8 +166,8 @@ public struct TranslationTemplate: Identifiable, Sendable {
 
     public static let employment = TranslationTemplate(id: "employment", nameVi: "Xác nhận công tác + đồng ý nghỉ phép", titleEn: "CERTIFICATE OF EMPLOYMENT AND LEAVE APPROVAL", isLetter: true, sections: [
         Section(title: "Company", fields: [
-            F("company", "Tên công ty", "Company", .name, prefill: { $0.employer }),
-            F("companyAddress", "Địa chỉ công ty", "Address", .multiline, prefill: { Latin.upper($0.employerAddress) }),
+            F("company", "Tên công ty", "Company", .name, prefill: { Latin.company($0.employer) }),
+            F("companyAddress", "Địa chỉ công ty", "Address", .multiline, prefill: { Latin.address($0.employerAddress) }),
             F("companyPhone", "Điện thoại công ty", "Telephone"),
         ]),
         Section(title: "This is to certify that", fields: [

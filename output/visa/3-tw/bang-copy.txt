@@ -1,0 +1,59 @@
+🇹🇼 Đài Loan — Khai online ở visawebapp.boca.gov.tw
+
+Nationality (step 1)
+    VIET NAM, SOCIALIST REPUBLIC OF
+    Chọn trong danh sách ở bước 1
+Surname / Family name
+    LE
+    Họ (in hoa, không dấu)
+Given name(s)
+    THU HA
+    Tên đệm + tên
+Sex
+    FEMALE
+    Giới tính
+Date of birth
+    1995/07/21
+    Ngày sinh
+Place of birth
+    HO CHI MINH CITY
+    Nơi sinh
+Country of birth
+    VIET NAM
+    Nước sinh
+DOMESTIC ID No.
+    079195004321
+    Số CCCD
+Passport Type
+    REGULAR
+    Loại hộ chiếu
+Passport number
+    C7654321
+    Số hộ chiếu
+Place of Issue
+    IMMIGRATION DEPARTMENT
+    Nơi cấp hộ chiếu
+Date of issue
+    2021/08/10
+    Ngày cấp hộ chiếu
+Date of expiry
+    2031/08/10
+    Ngày hết hạn hộ chiếu
+Home address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ thường trú
+Telephone / Mobile
+    0912 345 678
+    Số điện thoại
+E-mail
+    thuha.le@gmail.com
+    Email
+Marital status
+    SINGLE
+    Tình trạng hôn nhân
+Current occupation
+    ACCOUNTANT
+    Nghề nghiệp
+Name and Address of Employer or School
+    PHO XUA COMPANY LIMITED, 12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Tên + địa chỉ nơi làm việc

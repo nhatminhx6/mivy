@@ -44,7 +44,14 @@ public enum CardScanner {
         VisionCompute.prepare(request)
         try? VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
         let scale = { (p: CGPoint) in CGPoint(x: p.x * w, y: p.y * h) }
-        if let r = (request.results ?? []).max(by: { area($0.boundingBox) < area($1.boundingBox) }) {
+        // a scan or screenshot already cut to the card: the whole picture is the card, and the biggest
+        // rectangle inside it is only the portrait box or a printed frame
+        let ratio = max(w, h) / min(w, h)
+        let whole = Quad(tl: CGPoint(x: 0, y: h), tr: CGPoint(x: w, y: h), bl: .zero, br: CGPoint(x: w, y: 0))
+        let cardShaped = abs(ratio / idAspect - 1) < 0.12
+        let best = (request.results ?? []).max(by: { area($0.boundingBox) < area($1.boundingBox) })
+        if cardShaped && (best.map { area($0.boundingBox) < 0.6 } ?? true) { return whole }
+        if let r = best {
             return Quad(tl: scale(r.topLeft), tr: scale(r.topRight), bl: scale(r.bottomLeft), br: scale(r.bottomRight))
         }
         let detector = CIDetector(ofType: CIDetectorTypeRectangle, context: nil,

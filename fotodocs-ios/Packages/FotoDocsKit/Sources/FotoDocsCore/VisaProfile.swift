@@ -29,6 +29,7 @@ public struct DayDate: Codable, Hashable, Sendable {
         case ymdSlash      // 1990/03/15
         case dMonY         // 15 MAR 1990
         case dMonYDash     // 15-MAR-1990
+        case ymdDash       // 1990-03-15 (China's online form)
     }
 
     private static let months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
@@ -41,6 +42,7 @@ public struct DayDate: Codable, Hashable, Sendable {
         case .ymdSlash: return "\(y)/\(m)/\(d)"
         case .dMonY: return "\(d) \(Self.months[month - 1]) \(y)"
         case .dMonYDash: return "\(d)-\(Self.months[month - 1])-\(y)"
+        case .ymdDash: return "\(y)-\(m)-\(d)"
         }
     }
 
@@ -160,6 +162,69 @@ public enum Latin {
             .folding(options: [.diacriticInsensitive], locale: Locale(identifier: "vi_VN"))
             .uppercased()
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// A Vietnamese address the way English forms and translations write it, upper case without diacritics:
+    /// "45 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh" → "45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY".
+    public static func address(_ s: String) -> String {
+        s.split(separator: ",").map { part -> String in
+            let raw = part.trimmingCharacters(in: .whitespaces)
+            let low = raw.lowercased()
+            for (vi, en, numberFirst) in units {
+                // matched with the diacritics on: "Tịnh Biên" is a name, "Tỉnh" a province; "Dương Đông" ≠ "Đường"
+                guard low.hasPrefix(vi) else { continue }
+                let rest = raw.dropFirst(vi.count)
+                guard let next = rest.first, next == " " || next == "." || (vi.count <= 2 && next.isNumber) else { continue }
+                let name = upper(rest.trimmingCharacters(in: CharacterSet(charactersIn: ". ")))
+                if name.isEmpty { break }
+                if name == "HCM" || name == "HO CHI MINH" { return "HO CHI MINH CITY" }
+                // "Quận 1" → "DISTRICT 1", "Quận Bình Thạnh" → "BINH THANH DISTRICT"
+                return numberFirst && name.allSatisfy(\.isNumber) ? "\(en) \(name)" : "\(name) \(en)"
+            }
+            return upper(raw)
+        }.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    /// Longest first ("thị xã" before "xã"); the flag puts a number after the unit ("WARD 12").
+    private static let units: [(String, String, Bool)] = [
+        ("thành phố", "CITY", false), ("thị trấn", "TOWN", false), ("thị xã", "TOWN", false),
+        ("phường", "WARD", true), ("quận", "DISTRICT", true), ("huyện", "DISTRICT", false), ("tỉnh", "PROVINCE", false),
+        ("đường", "STREET", false), ("xã", "COMMUNE", false), ("tp", "CITY", false), ("p", "WARD", true), ("q", "DISTRICT", true),
+    ]
+
+    /// Passport issuing authority in English: the Vietnamese immigration office prints as "IMMIGRATION DEPARTMENT"
+    /// (what the passport itself says in English); anything else (a city…) like an address.
+    public static func issuer(_ s: String) -> String {
+        let n = upper(s).replacingOccurrences(of: ".", with: " ")
+        if n.contains("XUAT NHAP CANH") || n.contains("QLXNC") || n.split(separator: " ").contains("XNC") { return "IMMIGRATION DEPARTMENT" }
+        return address(s)
+    }
+
+    /// Phone in international form for foreign forms: "0912 345 678" → "+84 912 345 678"; already "+…" stays.
+    public static func phoneIntl(_ s: String) -> String {
+        let t = s.trimmingCharacters(in: .whitespaces)
+        guard t.hasPrefix("0"), t.count > 1 else { return t }
+        return "+84 " + t.dropFirst()
+    }
+
+    /// The city where the passport was issued, for forms that ask a CITY ("City where issued", China 1.7D):
+    /// the immigration department is an authority, not a city, so that case is left for the user to type.
+    public static func issueCity(_ s: String) -> String {
+        issuer(s) == "IMMIGRATION DEPARTMENT" ? "" : address(s)
+    }
+
+    /// A Vietnamese company name in its English legal form: "Công ty TNHH Phố Xưa" → "PHO XUA COMPANY LIMITED".
+    public static func company(_ s: String) -> String {
+        let n = upper(s)
+        let forms: [(String, String)] = [
+            ("CONG TY TNHH MOT THANH VIEN", "ONE MEMBER COMPANY LIMITED"), ("CONG TY TNHH MTV", "ONE MEMBER COMPANY LIMITED"),
+            ("CONG TY TRACH NHIEM HUU HAN", "COMPANY LIMITED"), ("CONG TY TNHH", "COMPANY LIMITED"),
+            ("CONG TY CO PHAN", "JOINT STOCK COMPANY"), ("CTCP", "JOINT STOCK COMPANY"), ("CONG TY", "COMPANY"),
+        ]
+        for (vi, en) in forms where n.hasPrefix(vi + " ") {
+            return n.dropFirst(vi.count).trimmingCharacters(in: .whitespaces) + " " + en
+        }
+        return n
     }
 }
 

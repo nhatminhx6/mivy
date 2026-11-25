@@ -17,3 +17,18 @@ enum Sample {
         return ctx.makeImage()!
     }
 }
+
+import Foundation
+
+/// Output folders in `mivy/output/<topic>/` are rewritten on every run, but the hand-made part survives:
+/// `man-hinh/` (screenshots and files exported from the app by hand) and `GHI-CHU.md` (notes, bugs fixed).
+enum OutputFolder {
+    static let kept: Set<String> = ["man-hinh", "GHI-CHU.md", "doi-chieu"]
+
+    static func reset(_ dir: URL) {
+        let fm = FileManager.default
+        for name in (try? fm.contentsOfDirectory(atPath: dir.path)) ?? [] where !kept.contains(name) {
+            try? fm.removeItem(at: dir.appendingPathComponent(name))
+        }
+    }
+}

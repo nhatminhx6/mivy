@@ -66,11 +66,13 @@ function loadFont(url: string): Promise<OTFont | null> {
         const ot: any = await import('opentype.js');
         const parse = ot.parse || ot.default?.parse;
         if (!parse) return null;
-        const buf = await (await fetch(url)).arrayBuffer();
-        const font = parse(buf) as OTFont;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`font ${res.status}`);
+        const font = parse(await res.arrayBuffer()) as OTFont;
         loaded.set(url, font);
         return font;
       } catch {
+        pending.delete(url); // lỗi tạm (mạng/server bận) → lần xuất sau thử tải lại, không nhớ thất bại cả phiên
         return null;
       }
     })());
@@ -104,6 +106,20 @@ function charStyles(textEl: Element): { ch: string; family: string; weight: numb
   return out;
 }
 
+// Xử lý khoảng trắng như SVG mặc định (xml:space="default"): bỏ xuống dòng, tab → cách, gộp nhiều cách thành 1,
+// cắt cách đầu/cuối — để số ký tự khớp getNumberOfChars() (vd "Hi   bạn").
+function collapseWs<T extends { ch: string }>(infos: T[]): T[] {
+  const out: T[] = [];
+  for (const inf of infos) {
+    if (inf.ch === '\n' || inf.ch === '\r') continue;
+    const ch = inf.ch === '\t' ? ' ' : inf.ch;
+    if (ch === ' ' && (out.length === 0 || out[out.length - 1].ch === ' ')) continue;
+    out.push(ch === inf.ch ? inf : { ...inf, ch });
+  }
+  while (out.length && out[out.length - 1].ch === ' ') out.pop();
+  return out;
+}
+
 // Tải trước mọi font mà SVG cần (phải gọi + await trước khi dựng path, vì opentype dùng kiểu đồng bộ sau đó).
 export async function preloadFontsFor(root: SVGSVGElement): Promise<void> {
   const urls = new Set<string>();
@@ -121,8 +137,9 @@ function buildPath(textEl: SVGTextContentElement): string | null {
   let n: number;
   try { n = textEl.getNumberOfChars(); } catch { return null; }
   if (!n) return null;
-  const infos = charStyles(textEl);
-  if (infos.length !== n) return null; // whitespace/cấu trúc lệch → bỏ qua cho an toàn
+  let infos = charStyles(textEl);
+  if (infos.length !== n) infos = collapseWs(infos); // SVG gộp khoảng trắng liên tiếp → làm y hệt rồi đếm lại
+  if (infos.length !== n) return null; // vẫn lệch → bỏ qua cho an toàn
   let d = '';
   for (let i = 0; i < n; i++) {
     const inf = infos[i];

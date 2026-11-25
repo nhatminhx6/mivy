@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import ImageIO
 import VisionKit
 import FotoDocsCore
 import FotoDocsImaging
@@ -71,7 +72,7 @@ struct ExpenseView: View {
             .ignoresSafeArea()
         }
         .sheet(item: $editing) { ExpenseEditSheet(receipt: $0) }
-        .sheet(item: $share) { ShareSheet(items: [$0.url]) }
+        .sheet(item: $share) { FilePreviewSheet(url: $0.url) }
         .confirmationDialog("Xoá tất cả \(receipts.count) hoá đơn?", isPresented: $askClear, titleVisibility: .visible) {
             Button("Xoá tất cả", role: .destructive) { receipts.forEach(context.delete) }
         }
@@ -116,8 +117,10 @@ struct ExpenseView: View {
 
     private var actions: some View {
         HStack(spacing: 12) {
-            if VNDocumentCameraViewController.isSupported {
-                Button { showScanner = true } label: {
+            if DocumentScanner.isAvailable {
+                Button {
+                    if let fake = DocumentScanner.simulated(["receipt-fake"]) { Task { await add(fake) } } else { showScanner = true }
+                } label: {
                     DocActionTile(title: "Chụp hoá đơn", icon: "doc.viewfinder", tint: FotoDocs.Palette.link)
                 }
                 .buttonStyle(.plain)
@@ -220,25 +223,28 @@ struct ExpenseView: View {
     private func loadPicked(_ items: [PhotosPickerItem]) async {
         guard !items.isEmpty else { return }
         pickerItems = []
-        var images: [UIImage] = []
+        var images: [UIImage] = [], taken: [Date?] = []
         for item in items {
             if let data = try? await item.loadTransferable(type: Data.self), let ui = UIImage(data: data) {
-                images.append(ui)
+                images.append(ui); taken.append(ReceiptPhoto.takenAt(data))
             }
         }
-        await add(images)
+        await add(images, taken: taken)
     }
 
-    private func add(_ images: [UIImage]) async {
+    /// `taken`: when each photo was shot (picked from the library). A receipt without a printed date (parking ticket,
+    /// handwritten slip) gets that day, not the day it is added: receipts are often photographed during the trip and
+    /// claimed weeks later.
+    private func add(_ images: [UIImage], taken: [Date?] = []) async {
         reading += images.count
-        for image in images {
+        for (n, image) in images.enumerated() {
             let upright = image.uprightForVision(maxSide: 2000)
             var parsed = ParsedReceipt()
             if let cg = upright.cgImage {
                 parsed = ReceiptParser.parse(await ReceiptReader.read(cg))
             }
             withAnimation {
-                context.insert(ExpenseReceipt(date: parsed.date ?? .now, amount: parsed.amount, vendor: parsed.vendor ?? "",
+                context.insert(ExpenseReceipt(date: parsed.date ?? (n < taken.count ? taken[n] : nil) ?? .now, amount: parsed.amount, vendor: parsed.vendor ?? "",
                                               category: parsed.category, imageData: upright.jpegData(compressionQuality: 0.7)))
                 reading -= 1
             }
@@ -360,5 +366,21 @@ private struct ExpenseEditSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fotoCard(14)
         }
+    }
+}
+
+/// Capture date of a picked photo, from its EXIF (local time, as the camera wrote it).
+enum ReceiptPhoto {
+    static func takenAt(_ data: Data) -> Date? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any] else { return nil }
+        let exif = props[kCGImagePropertyExifDictionary] as? [CFString: Any]
+        let tiff = props[kCGImagePropertyTIFFDictionary] as? [CFString: Any]
+        guard let raw = (exif?[kCGImagePropertyExifDateTimeOriginal] ?? exif?[kCGImagePropertyExifDateTimeDigitized]
+                         ?? tiff?[kCGImagePropertyTIFFDateTime]) as? String else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        return f.date(from: raw)
     }
 }

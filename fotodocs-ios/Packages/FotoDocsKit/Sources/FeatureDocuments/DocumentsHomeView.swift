@@ -2,7 +2,7 @@ import SwiftUI
 import FotoDocsDesign
 
 enum DocRoute: Hashable {
-    case scan, cccd, compress, sign, visa, expense, dossier
+    case scan, cccd, compress, sign, visa, expense, dossier, cv
 }
 
 public struct DocumentsHomeView: View {
@@ -41,6 +41,7 @@ public struct DocumentsHomeView: View {
                                 path.append(DocRoute.sign)
                             }
                         }
+                        wideCard("Tạo CV", "Chọn mẫu, điền thông tin, tải PDF khổ A4", icon: "person.text.rectangle", route: .cv)
                         wideCard("Điền form visa", "Quét CCCD, hộ chiếu → điền sẵn form", icon: "airplane", route: .visa)
                         wideCard("Công tác phí", "Chụp hoá đơn ra bảng kê Excel / PDF", icon: "receipt", route: .expense)
                         wideCard("Bộ hồ sơ", "Checklist giấy tờ cần chuẩn bị", icon: "checklist", route: .dossier)
@@ -59,6 +60,7 @@ public struct DocumentsHomeView: View {
                     case .visa: VisaHomeView()
                     case .expense: ExpenseView()
                     case .dossier: DossierView()
+                    case .cv: CVEditorView()
                     }
                 }
             }

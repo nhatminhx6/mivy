@@ -1,0 +1,167 @@
+import { test, expect, type Page } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
+
+// QC Túi rút: mọi mẫu × mọi khổ — hình/chữ trong vùng in, in lụa đúng số màu + film tách màu,
+// chuyển nhiệt (nền mờ, không film), logo 1 màu, chữ dài, mặt sau, tải PDF/PNG/SVG/ảnh 3D, 3 chất liệu 3D, không lỗi trang.
+const OUT = process.env.QC_OUT || path.join(__dirname, '..', 'test-results', 'drawstring');
+
+async function audit(page: Page, label: string) {
+  return page.locator('[data-testid="ds-print-front"] svg').evaluate((svg: SVGSVGElement, lb: string) => {
+    const vb = svg.viewBox.baseVal;
+    const r = svg.getBoundingClientRect();
+    const k = vb.width / r.width;
+    const skip = (el: Element) => !!el.closest('defs, mask, clipPath, [clip-path]');
+    const bad: string[] = [];
+    const colors = new Set<string>();
+    let texts = 0;
+    svg.querySelectorAll('text, path, circle, ellipse, rect, line, image').forEach((el) => {
+      if (skip(el)) return;
+      if (el.tagName === 'text') texts++;
+      for (const a of ['fill', 'stroke']) {
+        const v = el.getAttribute(a);
+        if (v && v !== 'none' && !el.closest('[data-tint]') && !el.hasAttribute('data-tint')) colors.add(v.toLowerCase());
+      }
+      const b = el.getBoundingClientRect();
+      if (b.width === 0 && b.height === 0) return;
+      const x0 = (b.left - r.left) * k + vb.x, y0 = (b.top - r.top) * k + vb.y;
+      const x1 = x0 + b.width * k, y1 = y0 + b.height * k;
+      const tol = 1.2;
+      if (x0 < -tol || y0 < -tol || x1 > vb.width + tol || y1 > vb.height + tol) bad.push(`${el.tagName}"${(el.textContent || '').slice(0, 24)}" [${x0.toFixed(1)},${y0.toFixed(1)},${x1.toFixed(1)},${y1.toFixed(1)}] ngoài ${vb.width}×${vb.height}`);
+    });
+    // chữ không đè nhau (so hộp từng <text>)
+    const boxes = [...svg.querySelectorAll('text')].filter((t) => !skip(t) && (t.textContent || '').trim().length > 1).map((t) => {
+      const b = t.getBoundingClientRect();
+      return { s: (t.textContent || '').slice(0, 20), x0: b.left, y0: b.top + b.height * 0.2, x1: b.right, y1: b.bottom - b.height * 0.2 };
+    });
+    const overlap: string[] = [];
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i], c = boxes[j];
+      const ix = Math.min(a.x1, c.x1) - Math.max(a.x0, c.x0), iy = Math.min(a.y1, c.y1) - Math.max(a.y0, c.y0);
+      if (ix > 2 && iy > 2) overlap.push(`"${a.s}" × "${c.s}"`);
+    }
+    return { lb, bad, overlap, colors: [...colors], texts, w: vb.width, h: vb.height };
+  }, label);
+}
+
+test('túi rút: mọi mẫu × khổ, số màu in lụa, film, chuyển nhiệt, logo, mặt sau, tải file, 3D', async ({ page }) => {
+  test.setTimeout(360_000);
+  fs.mkdirSync(OUT, { recursive: true });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/studio/drawstring');
+  const tpls = page.getByTestId('ds-tpl');
+  await expect(tpls.first()).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByTestId('mockup-3d').locator('canvas')).toHaveCount(1, { timeout: 60_000 });
+
+  const sizes = page.getByTestId('ds-size');
+  const nT = await tpls.count();
+  expect(nT).toBeGreaterThanOrEqual(10);
+  await page.getByTestId('tab-flat').click();
+  const flat = page.getByTestId('ds-flat');
+  for (let i = 0; i < nT; i++) {
+    await tpls.nth(i).click();
+    for (let z = 0; z < await sizes.count(); z++) {
+      await sizes.nth(z).click();
+      await page.waitForTimeout(120);
+      const r = await audit(page, `mẫu ${i} khổ ${z}`);
+      expect(r.bad, `${r.lb}: hình/chữ lòi khỏi vùng in`).toEqual([]);
+      expect(r.overlap, `${r.lb}: chữ đè nhau`).toEqual([]);
+      expect(r.texts, `${r.lb}: có chữ`).toBeGreaterThan(2);
+      const used = (await page.getByTestId('ds-used').innerText()).match(/#[0-9A-F]{6}/gi)!.map((c) => c.toLowerCase());
+      expect(r.colors.every((c) => used.includes(c)), `${r.lb}: màu lạ ${r.colors} ∉ ${used}`).toBe(true);
+      expect(r.colors.length).toBeLessThanOrEqual(used.length);
+      if (z === 1) await flat.screenshot({ path: path.join(OUT, `tui-rut-${String(i + 1).padStart(2, '0')}.png`) });
+    }
+  }
+
+  // số màu in lụa 1/2/3 trên mẫu 3 màu (giải chạy neon) + film tách màu
+  await tpls.nth(0).click();
+  await sizes.nth(1).click();
+  for (const n of [1, 2, 3]) {
+    await page.getByTestId(`ds-nink-${n}`).click();
+    await page.waitForTimeout(150);
+    const r = await audit(page, `${n} màu`);
+    expect(r.colors.length, `${n} màu: đếm màu`).toBe(n);
+    const seps = await page.locator('[data-testid="ds-seps"] svg[data-side="front"]').evaluateAll((els) => els.map((s) => {
+      const cs = new Set<string>(); let n2 = 0;
+      s.querySelectorAll('[data-ink] text, [data-ink] path, [data-ink] circle, [data-ink] ellipse, [data-ink] rect, [data-ink] line').forEach((e) => {
+        if (e.closest('defs, mask')) return; n2++;
+        for (const a of ['fill', 'stroke']) { const v = e.getAttribute(a); if (v && v !== 'none') cs.add(v.toLowerCase()); }
+      });
+      return { n: n2, colors: [...cs] };
+    }));
+    expect(seps.length, `${n} màu: số film`).toBe(n);
+    for (const s of seps) { expect(s.n).toBeGreaterThan(0); expect(s.colors).toEqual(['#000000']); }
+  }
+
+  // chuyển nhiệt: có nền mờ, không film
+  await page.getByTestId('ds-method-sub').click();
+  await expect(page.locator('[data-testid="ds-print-front"] [data-tint]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="ds-seps"] svg')).toHaveCount(0);
+  await page.getByTestId('ds-method-screen').click();
+  await page.getByTestId('ds-nink-2').click();
+
+  // logo khách: in lụa → lọc 1 màu
+  const png = await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = c.height = 200;
+    const x = c.getContext('2d')!; x.fillStyle = '#1b3a6b'; x.beginPath(); x.arc(100, 100, 80, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#fff'; x.font = 'bold 90px sans-serif'; x.textAlign = 'center'; x.fillText('Q', 100, 132);
+    return c.toDataURL('image/png').split(',')[1];
+  });
+  await page.getByTestId('ds-logo').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  for (const i of [0, 4, 6, 8]) {
+    await tpls.nth(i).click();
+    await page.waitForTimeout(150);
+    const img = page.locator('[data-testid="ds-print-front"] svg image');
+    await expect(img).toHaveCount(1);
+    expect(await img.getAttribute('filter')).toMatch(/url\(#dsink/);
+    const lr = await audit(page, `logo mẫu ${i}`);
+    expect(lr.bad).toEqual([]);
+    expect(lr.overlap).toEqual([]);
+  }
+  await flat.screenshot({ path: path.join(OUT, 'tui-rut-logo.png') });
+
+  // chữ dài ở mọi bố cục
+  for (const i of [0, 2, 4, 6, 8, 10]) {
+    await tpls.nth(i).click();
+    await page.getByTestId('ds-brand').fill('Câu lạc bộ chạy bộ cộng đồng Sài Gòn Xanh mở rộng');
+    await page.getByTestId('ds-title').fill('Chạy vì một Sài Gòn xanh hơn mỗi ngày cùng nhau');
+    await page.getByTestId('ds-subtitle').fill('12.04.2027 · Công viên Gia Định · TP. Hồ Chí Minh');
+    await page.waitForTimeout(150);
+    const r = await audit(page, `chữ dài mẫu ${i}`);
+    expect(r.bad, r.lb).toEqual([]);
+    expect(r.overlap, r.lb).toEqual([]);
+  }
+
+  // mặt sau (khổ 35×45 → vùng in 260×300mm)
+  await sizes.nth(1).click();
+  await page.getByTestId('ds-back').check();
+  await expect(page.locator('[data-testid="ds-print-back"] svg image, [data-testid="ds-print-back"] svg text').first()).toBeAttached();
+  await expect(page.locator('[data-testid="ds-seps"] svg')).toHaveCount(4);
+
+  const grab = async (id: string) => {
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 150_000 }), page.getByTestId(id).click()]);
+    const p = path.join(OUT, dl.suggestedFilename()); await dl.saveAs(p); return p;
+  };
+  // PDF: mỗi mặt = xem màu + file in + 2 film → 8 trang
+  const pdf = fs.readFileSync(await grab('ds-pdf'));
+  expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
+  expect((pdf.toString('latin1').match(/\/Type \/Page\b/g) || []).length).toBe(8);
+  const p = fs.readFileSync(await grab('ds-png'));
+  expect(p.readUInt32BE(16)).toBe(Math.round((260 / 25.4) * 200));
+  const svg = fs.readFileSync(await grab('ds-svg'), 'utf8');
+  expect(svg).toContain('viewBox="0 0 260 300"');
+  expect(svg).not.toContain('<text');
+
+  // 3D: 3 chất liệu + tải ảnh 3D
+  await page.getByTestId('tab-3d').click();
+  await expect(page.getByTestId('mockup-3d').locator('canvas')).toHaveCount(1, { timeout: 30_000 });
+  for (const m of ['canvas', 'nonwoven', 'du']) { await page.getByTestId(`ds-mat-${m}`).click(); await page.waitForTimeout(900); }
+  const p3 = fs.readFileSync(await grab('ds-3d'));
+  expect(p3.readUInt32BE(16)).toBe(1600);
+  await page.getByTestId('mockup-3d').screenshot({ path: path.join(OUT, 'tui-rut-3d.png') });
+  await expect(page.getByRole('button', { name: /Gửi yêu cầu in|Đặt in/ })).toBeVisible();
+  expect(errors).toEqual([]);
+});

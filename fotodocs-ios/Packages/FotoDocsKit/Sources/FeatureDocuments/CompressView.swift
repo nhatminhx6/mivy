@@ -50,7 +50,7 @@ struct CompressView: View {
         .fotoHidesTabBar()
         .toolbarBackground(FotoDocs.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadImage(newItem) } }
-        .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
+        .sheet(item: $share) { payload in FilePreviewSheet(url: payload.url) }
     }
 
     private var preview: some View {
@@ -66,6 +66,7 @@ struct CompressView: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 220)
+        .clipShape(RoundedRectangle(cornerRadius: FotoDocs.Radius.card, style: .continuous))  // photo corners follow the card
         .fotoCard()
     }
 

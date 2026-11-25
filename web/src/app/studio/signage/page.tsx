@@ -6,11 +6,13 @@ import { AlertTriangle, Download, FileCode2, Loader2 } from 'lucide-react';
 import { ICON_CATS, LOGO_ICONS } from '@/lib/logo-icons';
 import {
   CHALK_COLORS, FACE_COLORS, FONT_GROUPS, HALO_COLORS, INK_COLORS, MATERIALS, NEON_COLORS, PRINT_PALETTES, SIGN_FONTS, SIGN_KINDS, SIGN_SCENES, SIGN_TEMPLATES, SignSvg, WALLS,
-  KIND_VARIANTS, lookFor, signFont, variantOf, signFontCss, tplById, useSignFonts, type SignData, type SignField, type SignKind, type SignSpec,
+  KIND_VARIANTS, lookFor, signFont, variantOf, signFontCss, tplById, useSignFonts, platePath, matById, type SignData, type SignField, type SignKind, type SignSpec,
 } from '@/lib/signage-engine';
+import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Mockup3D';
 import { drawWatermark } from '@/lib/design-engine';
 import { downloadBlob, embedFontCss } from '@/lib/html-export';
-import { svgFileBlob } from '@/lib/svg-export';
+import { svgFileBlob, svgToJpeg } from '@/lib/svg-export';
+import { PrintRequest } from '@/components/PrintRequest';
 import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
@@ -30,6 +32,11 @@ export default function SignagePage() {
   const [busy, setBusy] = useState('');
   const previewRef = useRef<HTMLDivElement | null>(null);
   const cutRef = useRef<HTMLDivElement | null>(null);
+  const plateRef = useRef<HTMLDivElement | null>(null); // mặt tấm cho 3D (cắt đúng W×H)
+  const decalRef = useRef<HTMLDivElement | null>(null); // mặt có lề (neon, chữ rời) cho 3D
+  const view3d = useRef<Mockup3DHandle | null>(null);
+  const [tab, setTab] = useState<'3d' | 'flat'>('3d');
+  const [nightPick, setNightPick] = useState<boolean | null>(null); // null = tự theo loại (neon/hộp đèn/chữ LED → buổi tối)
 
   const t = tplById(spec.tpl);
   const font = signFont(spec.fontId);
@@ -47,6 +54,24 @@ export default function SignagePage() {
   );
   const slug = slugify(data.name || data.street || 'bang-hieu', 'bang-hieu');
   // chữ có lòng kín (O, A, Đ…) cắt thủng sẽ rơi lõi nếu không dùng font stencil
+  const litKind = kind === 'neon' || kind === 'lightbox' || kind === 'channel';
+  const night = nightPick ?? litKind;
+  const specR = t.shape === 'circle' ? { ...spec, h: spec.w } : spec;
+  const faceSpec = { ...specR, scene: '' };
+  const svgIn = (r: { current: HTMLDivElement | null }) => (r.current?.querySelector('svg') as SVGSVGElement | null) ?? null;
+  const build3d = () => import('@/lib/signage-3d').then((m) => m.signageBuilder({
+    plateSvg: svgIn(plateRef), decalSvg: svgIn(decalRef), fontCss: signFontCss([spec.fontId]),
+    w: specR.w, h: specR.h, platePath: platePath(specR.w, specR.h, t.shape), kind, style: spec.style, variant: variantOf(spec),
+    wall: spec.wall, wallColor: WALLS.find((w) => w.id === spec.wall)?.base || '#a3a19b', edgeColor: matById(spec.material).edge,
+    glow: spec.color || (kind === 'neon' ? '#ff4fa3' : '#ffd27a'), night,
+  }));
+  const download3d = () => run('3d', async () => {
+    if (!view3d.current) return;
+    const c = await view3d.current.snapshot(1600, 1200, { watermark: true });
+    const b = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+    if (b) downloadBlob(b, `${slug}-3d.png`);
+  });
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') (window as unknown as { __sgSnap?: (w: number, h: number) => Promise<string> }).__sgSnap = async (w, h) => (await view3d.current!.snapshot(w, h)).toDataURL('image/png');
   const counterWarn = kind === 'cnc' && spec.style === 'cut' && font.group !== 'stencil' && font.group !== 'script';
 
   const svgWithFonts = async (el: SVGSVGElement | null | undefined) => {
@@ -88,6 +113,23 @@ export default function SignagePage() {
     // File cắt: chữ outline thành path → máy CNC/laser không cần cài font ở xưởng.
     downloadBlob(await svgFileBlob(el, signFontCss([spec.fontId])), `${slug}-file-cat-${spec.w / 10}x${spec.h / 10}cm.svg`);
   });
+
+  // Gửi yêu cầu in: file = bản cắt/vector đúng mm (chữ outline), xem trước = ảnh 3D mặt tiền (lỗi thì mockup phẳng)
+  const signMaterial = kind === 'lightbox' ? 'Hộp đèn' : kind === 'neon' ? 'Neon flex' : kind === 'print' || kind === 'chalk' ? 'Bảng in bạt / decal'
+    : kind === 'channel' || (kind === 'cnc' && (spec.style === 'raised' || spec.style === 'standoff' || spec.style === 'loose')) ? 'Chữ nổi mica / inox'
+    : 'Alu / CNC cắt chữ';
+  const kindName = kind === 'cnc' ? `CNC · ${KIND_VARIANTS.cnc.find((o) => o.id === spec.style)?.name || ''}` : SIGN_KINDS.find((k) => k.id === kind)?.name || '';
+  const orderTitle = `Bảng hiệu ${kindName} ${spec.w / 10}×${(t.shape === 'circle' ? spec.w : spec.h) / 10}cm — ${data.name || 'bảng'}`;
+  const makeFiles = async () => {
+    const el = cutRef.current?.querySelector('svg');
+    if (!el) throw new Error('Chưa dựng xong file bảng hiệu');
+    const file = await svgFileBlob(el, signFontCss([spec.fontId]));
+    const flat = async () => { const pv = previewRef.current?.querySelector('svg'); if (!pv) throw new Error('Chưa có bản xem trước'); return svgToJpeg(pv, signFontCss([spec.fontId]), 1000); };
+    const preview = view3d.current
+      ? await view3d.current.snapshot(1200, 900).then((c) => new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('snap'))), 'image/jpeg', 0.9))).catch(flat)
+      : await flat();
+    return { file, fileName: `${slug}-${spec.w / 10}x${spec.h / 10}cm.svg`, preview };
+  };
 
   const swatch = (on: boolean) => `flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${on ? 'border-indigo-400 bg-indigo-500/15 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`;
   const matChip = (m: (typeof MATERIALS)[number]) => (
@@ -237,8 +279,20 @@ export default function SignagePage() {
 
           {/* Mockup ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <span className="text-sm font-bold text-mv-fg">Xem trước</span>
-            <div className="grid grid-cols-8 gap-1" data-testid="sign-scenes">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
+              <PreviewTabs value={tab} onChange={setTab} />
+            </div>
+            {tab === '3d' && (
+              <>
+                <Mockup3DView ref={view3d} build={build3d} rebuildKey={JSON.stringify([spec, data, night])} refitKey={`${spec.tpl}|${kind}|${spec.w}|${spec.h}`} debounce={400} className="rounded-xl aspect-[4/3] w-full" />
+                <label className="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" checked={night} onChange={(e) => setNightPick(e.target.checked)} data-testid="sign-night" />
+                  Xem buổi tối {litKind ? '(bảng bật đèn)' : '(đèn rọi bảng)'}
+                </label>
+              </>
+            )}
+            <div className={`grid grid-cols-8 gap-1 ${tab === '3d' ? 'hidden' : ''}`} data-testid="sign-scenes">
               {SIGN_SCENES.map((x) => (
                 <button key={x.id} type="button" onClick={() => set({ scene: x.id, ...(kind === 'cnc' ? x.cnc : {}) })} title={x.name} aria-label={x.name}
                   className={`aspect-[4/3] rounded-md overflow-hidden border-2 transition-all ${spec.scene === x.id ? 'border-indigo-400' : 'border-transparent opacity-70 hover:opacity-100'}`}>
@@ -253,7 +307,7 @@ export default function SignagePage() {
                   className={`text-[10px] px-2 py-0.5 rounded-full border ${!spec.scene && spec.wall === w.id ? 'border-mv-accent text-mv-fg' : 'border-mv-hair text-slate-400'}`}>{w.name}</button>
               ))}
             </div>
-            <div ref={previewRef} className="rounded-xl overflow-hidden border border-mv-hair" data-testid="sign-preview">
+            <div ref={previewRef} className={`rounded-xl overflow-hidden border border-mv-hair ${tab === '3d' ? 'hidden' : ''}`} data-testid="sign-preview">
               <SignSvg spec={t.shape === 'circle' ? { ...spec, h: spec.w } : spec} data={data} aspect={4 / 3} style={{ width: '100%', display: 'block' }} />
             </div>
             <div className="text-[11px] text-slate-400">
@@ -266,6 +320,11 @@ export default function SignagePage() {
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 pt-1">
+              {tab === '3d' && (
+                <button type="button" onClick={download3d} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs col-span-2" data-testid="sign-3d-png">
+                  {busy === '3d' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Ảnh 3D mặt tiền
+                </button>
+              )}
               <button type="button" onClick={downloadPng} className="mv-btn mv-btn-ghost !flex justify-center !py-2.5 !text-xs">
                 {busy === 'png' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} Ảnh mockup
               </button>
@@ -273,6 +332,7 @@ export default function SignagePage() {
                 {busy === 'svg' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileCode2 className="w-3.5 h-3.5" />} {kind === 'cnc' ? 'File cắt CNC (SVG)' : 'File vector (SVG)'}
               </button>
             </div>
+            <PrintRequest product="signage" title={orderTitle} defaultMaterial={signMaterial} design={{ spec, data }} makeFiles={makeFiles} />
             <p className="text-[11px] leading-relaxed text-slate-500">File cắt đúng kích thước thật (mm): viền đỏ = đường cắt tấm, phần đen = chữ/hoạ tiết cắt. Gửi file cho xưởng laser/CNC — xưởng chuyển chữ sang outline trước khi cắt.</p>
           </div>
         </div>
@@ -282,6 +342,13 @@ export default function SignagePage() {
       {ready && (
         <div ref={cutRef} aria-hidden style={{ position: 'fixed', left: -100000, top: 0, pointerEvents: 'none' }}>
           <SignSvg spec={t.shape === 'circle' ? { ...spec, h: spec.w } : spec} data={data} mode="cut" />
+        </div>
+      )}
+      {/* mặt bảng cho 3D: tấm cắt đúng khung + bản có lề (quầng neon / chữ rời) — nền trong suốt */}
+      {ready && (
+        <div aria-hidden style={{ position: 'fixed', left: -100000, top: 0, width: 800, pointerEvents: 'none' }}>
+          <div ref={plateRef}><SignSvg spec={faceSpec} data={data} face="plate" style={{ width: 800, display: 'block' }} /></div>
+          <div ref={decalRef}><SignSvg spec={faceSpec} data={data} face="decal" style={{ width: 800, display: 'block' }} /></div>
         </div>
       )}
     </div>

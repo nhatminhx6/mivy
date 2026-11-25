@@ -7,8 +7,8 @@ public struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: ExportViewModel
 
-    public init(target: CaptureTarget, image: UIImage) {
-        _model = State(initialValue: ExportViewModel(target: target, image: image))
+    public init(target: CaptureTarget, image: UIImage, hasOutfit: Bool = false) {
+        _model = State(initialValue: ExportViewModel(target: target, image: image, hasOutfit: hasOutfit))
     }
 
     private struct Option {
@@ -40,7 +40,11 @@ public struct ExportView: View {
                         ForEach(options, id: \.mode) { optionCard($0) }
                     }
                     privacyNote
-                    PillButton(ctaLabel, systemImage: "square.and.arrow.down") { model.exportFile() }
+                    if model.unlocked {
+                        PillButton(ctaLabel, systemImage: "square.and.arrow.down") { model.exportFile() }
+                    } else {
+                        paywall
+                    }
                     if let note = model.statusNote {
                         Text(note).font(.bvp(.footnote)).foregroundStyle(FotoDocs.Palette.textSecondary)
                             .multilineTextAlignment(.center)
@@ -55,8 +59,9 @@ public struct ExportView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .task { await model.loadStore() }
         .sheet(item: Binding(get: { model.shareItem }, set: { model.shareItem = $0 })) { item in
-            ShareSheet(items: [item.url])
+            FilePreviewSheet(url: item.url)
         }
     }
 
@@ -77,7 +82,7 @@ public struct ExportView: View {
 
     private var previewCard: some View {
         VStack(spacing: 12) {
-            Image(uiImage: model.image)
+            Image(uiImage: model.previewImage)
                 .resizable().scaledToFit()
                 .frame(maxHeight: 180)
                 .clipShape(.rect(cornerRadius: 8))
@@ -103,7 +108,9 @@ public struct ExportView: View {
                     Text(option.desc).font(.bvp(.caption)).foregroundStyle(FotoDocs.Palette.textSecondary)
                 }
                 Spacer(minLength: 6)
-                Text("Miễn phí").font(.bvp(.caption, .bold)).foregroundStyle(FotoDocs.Palette.success)
+                if model.unlocked {
+                    Image(systemName: "checkmark.seal.fill").font(.bvp(.subheadline)).foregroundStyle(FotoDocs.Palette.success)
+                }
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,10 +123,47 @@ public struct ExportView: View {
     private var privacyNote: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.shield.fill").font(.bvp(.footnote)).foregroundStyle(FotoDocs.Palette.success)
-            Text("Ảnh xử lý trên máy, không tải lên máy chủ. Đang miễn phí để thử.")
+            Text("Ảnh xử lý trên máy, không tải lên máy chủ.")
                 .font(.bvp(.caption)).foregroundStyle(FotoDocs.Palette.textSecondary)
             Spacer()
         }
+    }
+
+    /// Not paid yet: buy this photo (clean HD files, every option), or take the watermarked file to try.
+    private var paywall: some View {
+        VStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(model.product.title).font(.bvp(.headline, .bold)).foregroundStyle(FotoDocs.Palette.textPrimary)
+                ForEach(paywallPoints, id: \.self) { point in
+                    Label {
+                        Text(point).foregroundStyle(FotoDocs.Palette.textSecondary)
+                    } icon: {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(FotoDocs.Palette.success)
+                    }
+                    .font(.bvp(.footnote))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .fotoCard(18)
+            PillButton("Mở khoá ảnh này · \(model.priceText)", systemImage: "lock.open.fill") {
+                Task { await model.buyAndExport() }
+            }
+            .disabled(model.buying)
+            Button("Tải bản xem thử (có watermark)") { model.exportFile() }
+                .font(.bvp(.subheadline, .semibold))
+                .foregroundStyle(FotoDocs.Palette.primary)
+            Text("Trả 1 lần cho ảnh này, không đăng ký định kỳ.")
+                .font(.bvp(.caption))
+                .foregroundStyle(FotoDocs.Palette.textMuted)
+        }
+    }
+
+    private var paywallPoints: [String] {
+        var out = ["File in 10×15 và file số nộp online, không watermark", "Độ nét 300 dpi, đúng cỡ \(model.target.sizeText)"]
+        if model.hasOutfit { out.insert("Ảnh mặc vest, không cần có vest thật", at: 0) }
+        out.append("Tải lại bao nhiêu lần cũng được")
+        return out
     }
 
     private var ctaLabel: String {

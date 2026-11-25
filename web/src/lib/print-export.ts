@@ -72,20 +72,19 @@ export async function exportPrintPdf(node: HTMLElement, opts: PrintExportOpts): 
   return pdfFromImage(dataUrl, designW, designH, size, bleedMm);
 }
 
-// Ảnh (PNG data URL) → trang PDF in: ảnh phủ vùng bleed, vạch cắt ở 4 góc vùng thành phẩm.
-// Ảnh đã gồm sẵn bleed (đúng tỉ lệ bleed box) thì đặt khít, không bị phóng.
-export async function pdfFromImage(dataUrl: string, designW: number, designH: number, size: Pick<PrintSize, 'wMm' | 'hMm'>, bleedMm = DEFAULT_BLEED_MM): Promise<Blob> {
-  // Kích thước trang = trim + bleed 2 cạnh + khoảng trắng chứa vạch cắt 2 cạnh.
+// Kích thước trang in (mm) = trim + bleed 2 cạnh + khoảng trắng chứa vạch cắt 2 cạnh.
+export function printPageDims(size: Pick<PrintSize, 'wMm' | 'hMm'>, bleedMm = DEFAULT_BLEED_MM) {
   const bleedBoxW = size.wMm + bleedMm * 2;
   const bleedBoxH = size.hMm + bleedMm * 2;
-  const pageW = bleedBoxW + MARK_ROOM_MM * 2;
-  const pageH = bleedBoxH + MARK_ROOM_MM * 2;
+  return { bleedBoxW, bleedBoxH, pageW: bleedBoxW + MARK_ROOM_MM * 2, pageH: bleedBoxH + MARK_ROOM_MM * 2 };
+}
 
-  const { jsPDF } = await import('jspdf');
-  const orientation = pageW >= pageH ? 'landscape' : 'portrait';
-  const pdf = new jsPDF({ unit: 'mm', format: [pageW, pageH], orientation, compress: true });
+// jsPDF bất kỳ (any vì type nằm trong dynamic import)
+type Pdf = { addImage: (...a: unknown[]) => void; setDrawColor: (...a: number[]) => void; setLineWidth: (n: number) => void; line: (...a: number[]) => void; saveGraphicsState?: () => void };
 
-  // Ảnh phủ TOÀN vùng bleed box (cover, canh giữa) → mép thiết kế tràn ra tận lề xén.
+// Vẽ 1 trang in vào pdf đang có: ảnh phủ vùng bleed (cover, canh giữa) + vạch cắt 4 góc vùng thành phẩm.
+export function drawPrintPage(pdf: Pdf, dataUrl: string, designW: number, designH: number, size: Pick<PrintSize, 'wMm' | 'hMm'>, bleedMm = DEFAULT_BLEED_MM) {
+  const { bleedBoxW, bleedBoxH } = printPageDims(size, bleedMm);
   const bx = MARK_ROOM_MM, by = MARK_ROOM_MM;
   const imgRatio = designW / designH;
   const boxRatio = bleedBoxW / bleedBoxH;
@@ -94,28 +93,31 @@ export async function pdfFromImage(dataUrl: string, designW: number, designH: nu
   else { drawW = bleedBoxW; drawH = bleedBoxW / imgRatio; }
   const dx = bx + (bleedBoxW - drawW) / 2;
   const dy = by + (bleedBoxH - drawH) / 2;
-  // Cắt phần ảnh tràn ngoài bleed box cho gọn trang.
   pdf.saveGraphicsState?.();
   pdf.addImage(dataUrl, 'PNG', dx, dy, drawW, drawH, undefined, 'FAST');
 
   // Vạch cắt (crop marks) ở 4 góc vùng TRIM, nằm trong khoảng trắng ngoài bleed → không đè nội dung.
-  const tx0 = MARK_ROOM_MM + bleedMm;            // mép trái vùng trim
-  const ty0 = MARK_ROOM_MM + bleedMm;            // mép trên vùng trim
-  const tx1 = tx0 + size.wMm;                     // mép phải
-  const ty1 = ty0 + size.hMm;                     // mép dưới
+  const tx0 = MARK_ROOM_MM + bleedMm, ty0 = MARK_ROOM_MM + bleedMm;
+  const tx1 = tx0 + size.wMm, ty1 = ty0 + size.hMm;
   pdf.setDrawColor(0, 0, 0);
   pdf.setLineWidth(0.15);
-  const gap = bleedMm;                            // chừa đúng vùng bleed, không chạm trim
+  const gap = bleedMm;
   const corner = (cx: number, cy: number, sx: number, sy: number) => {
-    // vạch ngang: từ góc trim kéo ra ngoài
     pdf.line(cx - sx * gap, cy, cx - sx * (gap + MARK_LEN_MM), cy);
-    // vạch dọc
     pdf.line(cx, cy - sy * gap, cx, cy - sy * (gap + MARK_LEN_MM));
   };
   corner(tx0, ty0, 1, 1);
   corner(tx1, ty0, -1, 1);
   corner(tx0, ty1, 1, -1);
   corner(tx1, ty1, -1, -1);
+}
 
+// Ảnh (PNG data URL) → trang PDF in 1 mặt. Ảnh đã gồm sẵn bleed thì đặt khít, không bị phóng.
+export async function pdfFromImage(dataUrl: string, designW: number, designH: number, size: Pick<PrintSize, 'wMm' | 'hMm'>, bleedMm = DEFAULT_BLEED_MM): Promise<Blob> {
+  const { pageW, pageH } = printPageDims(size, bleedMm);
+  const { jsPDF } = await import('jspdf');
+  const orientation = pageW >= pageH ? 'landscape' : 'portrait';
+  const pdf = new jsPDF({ unit: 'mm', format: [pageW, pageH], orientation, compress: true });
+  drawPrintPage(pdf as unknown as Pdf, dataUrl, designW, designH, size, bleedMm);
   return pdf.output('blob');
 }

@@ -21,6 +21,24 @@ async function check(page: Page, tag: string, allowOverflow = false) {
     const out: string[] = [];
     if (!allow && (body.scrollHeight > body.clientHeight + 1 || body.scrollWidth > body.clientWidth + 1)) out.push('thân bảng giá bị tràn');
     if (node.innerHTML.includes('NaN')) out.push('NaN');
+    // cột phải CÂN: chia ≥2 cột thì cột nào cũng có món, cột thấp nhất ≥ 45% cột cao nhất
+    const cols = Array.from(body.querySelectorAll('[data-pl-col]')) as HTMLElement[];
+    if (cols.length >= 2) {
+      const hs = cols.map((c) => c.getBoundingClientRect().height);
+      if (cols.some((c) => !c.querySelector('[data-pl-price]'))) out.push(`có cột trống (${cols.length} cột)`);
+      else if (Math.min(...hs) < Math.max(...hs) * 0.45) out.push(`cột lệch: ${hs.map((h) => Math.round(h)).join('/')}`);
+    }
+    // 2 cột giá (M/L, lẻ/sỉ): chữ giá không được dính nhau
+    const textBox = (el: Element) => { const rg = document.createRange(); rg.selectNodeContents(el); return rg.getBoundingClientRect(); };
+    body.querySelectorAll('[data-pl-section]').forEach((sec) => {
+      sec.querySelectorAll(':scope > div').forEach((row) => {
+        const ps = Array.from(row.querySelectorAll('[data-pl-price]')).filter((e) => e.textContent!.trim());
+        for (let i = 1; i < ps.length; i++) {
+          const a = textBox(ps[i - 1]), b = textBox(ps[i]);
+          if (b.left - a.right < 4) out.push(`giá dính nhau: "${ps[i - 1].textContent}${ps[i].textContent}"`);
+        }
+      });
+    });
     node.querySelectorAll('*').forEach((el) => {
       if (!Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent!.trim())) return;
       const r = el.getBoundingClientRect();
@@ -37,6 +55,7 @@ test('Bảng giá: mọi mẫu × khổ vừa khổ + mọi bố cục', async (
   test.setTimeout(300_000);
   fs.mkdirSync(OUT, { recursive: true });
   await page.goto('/studio/pricelist');
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   await expect(page.locator('[data-testid="pl-preview"] [data-pl-body]')).toBeVisible({ timeout: 60_000 });
   for (const p of PRESETS) {
     await page.getByRole('button', { name: p, exact: true }).click();
@@ -56,6 +75,7 @@ test('Bảng giá: mọi mẫu × khổ vừa khổ + mọi bố cục', async (
     const f = path.join(OUT, dl.suggestedFilename()); await dl.saveAs(f);
     expect(pngWH(fs.readFileSync(f)), p).toEqual([2160, 2700]);
   }
+  await expect(page.getByTestId('print-request'), 'có nút Gửi yêu cầu in').toBeVisible();
   // A4 in 300dpi
   await page.getByRole('button', { name: 'A4 in', exact: true }).click();
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Tải ảnh PNG/ }).click()]);
@@ -66,6 +86,7 @@ test('Bảng giá: mọi mẫu × khổ vừa khổ + mọi bố cục', async (
 
 test('Bảng giá: dán nhanh từ Excel/ghi chú tách đúng', async ({ page }) => {
   await page.goto('/studio/pricelist');
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   await page.getByRole('button', { name: /Dán nhanh/ }).click();
   const text = ['# Cà phê', 'Cà phê sữa đá - 29k', 'Bạc xỉu | 32.000đ | Ít ngọt', 'Cà phê muối (mới)\t25000', '', '# Trà sữa | M | L', 'Trà sữa trân châu (hot) | 30k | 37k', 'Trà đào\t35k\t42k\tCó topping'].join('\n');
   await page.getByTestId('pl-paste').fill(text);
@@ -79,6 +100,7 @@ test('Bảng giá: dán nhanh từ Excel/ghi chú tách đúng', async ({ page }
 test('Bảng giá: menu 40 món tự chia cột; 9:16 & A4 vừa, 1:1 báo tràn', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto('/studio/pricelist');
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   await page.getByRole('button', { name: /Dán nhanh/ }).click();
   const lines: string[] = [];
   for (let s = 1; s <= 4; s++) { lines.push(`# Nhóm ${s}`); for (let i = 1; i <= 10; i++) lines.push(`Món số ${s}.${i} thơm ngon - ${20 + i}k`); }
@@ -88,7 +110,7 @@ test('Bảng giá: menu 40 món tự chia cột; 9:16 & A4 vừa, 1:1 báo tràn
     await page.getByRole('button', { name: a, exact: true }).click();
     await check(page, `40 món · ${a}`);
   }
-  const cols = await page.locator('[data-pl-body]').evaluate((el) => Number(getComputedStyle(el).columnCount));
+  const cols = await page.locator('[data-pl-body]').evaluate((el) => el.querySelectorAll('[data-pl-col]').length);
   expect(cols, 'menu dài phải chia cột').toBeGreaterThanOrEqual(2);
   // 1:1 với 40 món: tự chia 3 cột + co chữ vẫn phải vừa (không cắt chữ)
   await page.getByRole('button', { name: 'Vuông 1:1', exact: true }).click();
@@ -104,6 +126,7 @@ test('Bảng giá: menu 40 món tự chia cột; 9:16 & A4 vừa, 1:1 báo tràn
 
 test('Bảng giá: áp bộ nhận diện (tên, logo, liên hệ, màu)', async ({ page }) => {
   await page.goto('/studio/pricelist');
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   await page.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 300; c.height = 120;
     const x = c.getContext('2d')!; x.fillStyle = '#b91c1c'; x.fillRect(0, 0, 300, 120);

@@ -17,6 +17,7 @@ import { slugify } from '@/lib/image-utils';
 import { CollapsibleSection } from '@/components/CollapsibleSection';
 import { PageHeader } from '@/components/PageHeader';
 import { PrintRequest } from '@/components/PrintRequest';
+import { Mockup3DView, PreviewTabs } from '@/components/Mockup3D';
 
 const BOARD = { kind: 'sticker', material: 'white' } as CutSpec; // CutoutSvg chỉ đọc kind/material
 const BG = '#454b54'; // nền đá xám cho bảng trắng nổi lên như ảnh thật
@@ -29,6 +30,10 @@ export default function HashtagPage() {
   const [res, setRes] = useState<CutResult | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, CutResult>>({});
   const [busy, setBusy] = useState('');
+  const [tab, setTab] = useState<'3d' | 'flat'>('3d');
+  const resRef = useRef(res); resRef.current = res;
+  // hashtag 3D: tấm formex trắng 5mm đùn từ đúng đường cắt
+  const build3d = () => import('@/lib/cutout-3d').then((m) => m.cutoutBuilder({ res: resRef.current, material: 'formex', ring: false }));
   const mockRef = useRef<HTMLDivElement | null>(null);
   const cutRef = useRef<HTMLDivElement | null>(null);
 
@@ -178,8 +183,14 @@ export default function HashtagPage() {
 
           {/* Mockup ghim + tải */}
           <div className="lg:sticky lg:top-4 self-start glass-card p-4 rounded-2xl space-y-3 hover:!transform-none border border-indigo-500/40 ring-1 ring-indigo-500/25 bg-indigo-500/[0.06]">
-            <span className="text-sm font-bold text-mv-fg">Xem trước</span>
-            <div ref={mockRef} className="rounded-xl aspect-[4/3] grid place-items-center overflow-hidden" style={{ background: BG }} data-testid="ht-preview" data-ready={fresh ? 1 : 0}>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold text-mv-fg">Xem trước</span>
+              <PreviewTabs value={tab} onChange={setTab} />
+            </div>
+            {tab === '3d' && res && (
+              <Mockup3DView build={build3d} rebuildKey={`${JSON.stringify(spec)}|${res.d.length}|${res.art.href.length}|${res.fill}`} refitKey={`${res.trimW}x${res.trimH}`} debounce={300} className="rounded-xl aspect-[4/3] w-full" />
+            )}
+            <div ref={mockRef} className={`rounded-xl aspect-[4/3] grid place-items-center overflow-hidden ${tab === '3d' && res ? 'hidden' : ''}`} style={{ background: BG }} data-testid="ht-preview" data-ready={fresh ? 1 : 0}>
               {res ? <CutoutSvg res={res} spec={BOARD} mode="mockup" style={{ width: '92%', height: '92%' }} /> : <Loader2 className="w-5 h-5 animate-spin text-slate-300" />}
             </div>
             <div className="text-[11px] text-slate-400 text-center" data-testid="ht-dims">

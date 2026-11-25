@@ -46,7 +46,9 @@ public struct AvatarHomeView: View {
                 ProgressView().tint(FotoDocs.Palette.primary).padding(20).fotoCard()
             }
         }
-        .onChange(of: category) { _, _ in selected = nil }
+        // a style is always picked (the first of the tab), so "Chọn ảnh" only waits for the consent tick
+        .onAppear { if selected == nil { selected = AvatarCatalog.templates(for: category).first } }
+        .onChange(of: category) { _, c in selected = AvatarCatalog.templates(for: c).first }
         .onChange(of: pickerItem) { _, item in Task { await create(item) } }
         .fullScreenCover(isPresented: $showResult) {
             if let result { AvatarResultView(image: result.image, backgroundReplaced: result.backgroundReplaced) }

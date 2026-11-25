@@ -1,0 +1,7 @@
+Nguồn: https://visawebapp.boca.gov.tw/BOCA_EVISA/MRV01FORM.do (General Visa, bước 1 — lấy 2026-11-18). Trích chữ, không phải toàn bộ trang.
+The name field must be in English. All other fields accept English or Chinese. Special characters are not alllowed.
+VIET NAM, SOCIALIST REPUBLIC OF(越南)
+Nationality
+Duration of Stay
+Number of Entries
+Purpose of Travel

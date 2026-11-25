@@ -273,7 +273,7 @@ function fit(text: string, f: { family: string; weight: number }, maxW: number, 
   return Math.max(4, Math.min(maxH, (maxW * 100) / Math.max(1, w)));
 }
 
-function platePath(W: number, H: number, shape: SignTemplate['shape']): string {
+export function platePath(W: number, H: number, shape: SignTemplate['shape']): string {
   if (shape === 'circle') { const r = Math.min(W, H) / 2; return `M ${W / 2 - r} ${H / 2} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`; }
   if (shape === 'arch') { const r = W / 2; return `M 0 ${H} L 0 ${r} A ${r} ${r} 0 0 1 ${W} ${r} L ${W} ${H} Z`; }
   if (shape === 'oval') return `M 0 ${H / 2} A ${W / 2} ${H / 2} 0 1 0 ${W} ${H / 2} A ${W / 2} ${H / 2} 0 1 0 0 ${H / 2} Z`;
@@ -523,7 +523,8 @@ function wallFill(id: string, uid: string, VW: number) {
 }
 
 // aspect: ép khung cảnh theo tỉ lệ ô chứa (vd 4/3) → tường phủ kín, không hở viền
-export function SignSvg({ spec, data, mode = 'preview', style, className, aspect }: { spec: SignSpec; data: SignData; mode?: 'preview' | 'cut'; style?: React.CSSProperties; className?: string; aspect?: number }) {
+// face: chỉ riêng mặt bảng cho texture 3D — 'plate' = cắt đúng khung tấm W×H; 'decal' = thêm lề (quầng neon, bóng chữ rời) nền trong suốt
+export function SignSvg({ spec, data, mode = 'preview', style, className, aspect, face }: { spec: SignSpec; data: SignData; mode?: 'preview' | 'cut'; style?: React.CSSProperties; className?: string; aspect?: number; face?: 'plate' | 'decal' }) {
   const uid = 's' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const t = tplById(spec.tpl); const W = spec.w, H = spec.h; const font = signFont(spec.fontId);
   const m = matById(spec.material); const L = matById(spec.letter);
@@ -551,7 +552,9 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
     ox = (VW - Iw) / 2 + zcx * Iw - W / 2; oy = (VH - Ih) / 2 + zcy * Ih - H / 2;
   }
   const kind = spec.kind || 'cnc';
-  if (kind !== 'cnc') return <SignKindSvg spec={spec} data={data} uid={uid} t={t} W={W} H={H} ox={ox} oy={oy} th={th} VW={VW} VH={VH} shape={shape} font={font} m={m} L={L} style={style} className={className} />;
+  const fpad = face === 'decal' ? Math.max(W, H) * 0.14 : 0;
+  const vb = face ? `${ox - fpad} ${oy - fpad} ${W + fpad * 2} ${H + fpad * 2}` : `0 0 ${VW} ${VH}`;
+  if (kind !== 'cnc') return <SignKindSvg spec={spec} data={data} uid={uid} t={t} W={W} H={H} ox={ox} oy={oy} th={th} VW={VW} VH={VH} shape={shape} font={font} m={m} L={L} style={style} className={className} vb={vb} face={!!face} />;
   const plate = (
     <>
       <path d={shape} fill={fillOf(m, uid, 'plate')} />
@@ -559,7 +562,7 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
     </>
   );
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${VW} ${VH}`} style={style} className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={vb} style={style} className={className}>
       <defs>
         {texFilter(m, uid, W)}
         {gradDef(m, uid, 'plate')}
@@ -578,13 +581,13 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
         <filter id={`${uid}-tsh`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={Math.min(W, H) * 0.006} /></filter>
         <filter id={`${uid}-lift`} x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx={0} dy={th * 0.6} stdDeviation={th * 0.5} floodOpacity={0.45} /></filter>
       </defs>
-      {backdrop(spec, uid, VW, VH)}
+      {!face && backdrop(spec, uid, VW, VH)}
       <g transform={`translate(${ox} ${oy})`}>
         <path d={shape} fill="none" data-plate="" />
-        {spec.style !== 'loose' && spec.style !== 'paint' && <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />}
+        {!face && spec.style !== 'loose' && spec.style !== 'paint' && <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />}
         {spec.style === 'cut' ? (
           <>
-            <g transform={`translate(${th * 0.5} ${th})`}><g mask={`url(#${uid}-mask)`}><path d={shape} fill={m.edge} /></g></g>
+            {!face && <g transform={`translate(${th * 0.5} ${th})`}><g mask={`url(#${uid}-mask)`}><path d={shape} fill={m.edge} /></g></g>}
             <g mask={`url(#${uid}-mask)`}>{plate}</g>
           </>
         ) : spec.style === 'paint' ? (
@@ -601,15 +604,15 @@ export function SignSvg({ spec, data, mode = 'preview', style, className, aspect
           </>
         ) : spec.style === 'standoff' ? (
           <>
-            <path d={shape} fill="#000" opacity={0.3} filter={`url(#${uid}-blur)`} transform={`translate(${th * 4} ${th * 7})`} />
-            <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />
+            {!face && <path d={shape} fill="#000" opacity={0.3} filter={`url(#${uid}-blur)`} transform={`translate(${th * 4} ${th * 7})`} />}
+            {!face && <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />}
             {plate}
             <g filter={`url(#${uid}-lift)`}><Content t={t} d={data} W={W} H={H} font={font} fill={fillOf(L, uid, 'letter')} arcId={arcId} /></g>
             <Bolts W={W} H={H} shape={t.shape} />
           </>
         ) : (
           <>
-            <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />
+            {!face && <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />}
             {plate}
             <g filter={`url(#${uid}-lift)`}><Content t={t} d={data} W={W} H={H} font={font} fill={fillOf(L, uid, 'letter')} arcId={arcId} /></g>
           </>
@@ -639,9 +642,9 @@ function Bolts({ W, H, shape }: { W: number; H: number; shape?: SignTemplate['sh
 const lum = (h: string) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
 
 // Các loại bảng hiệu ngoài CNC: neon, hộp đèn, chữ nổi LED, khắc laser, bảng phấn, in màu — mỗi loại vài kiểu (spec.variant)
-function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font, m, L, style, className }: {
+function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font, m, L, style, className, vb, face }: {
   spec: SignSpec; data: SignData; uid: string; t: SignTemplate; W: number; H: number; ox: number; oy: number; th: number; VW: number; VH: number;
-  shape: string; font: SignFont; m: Material; L: Material; style?: React.CSSProperties; className?: string;
+  shape: string; font: SignFont; m: Material; L: Material; style?: React.CSSProperties; className?: string; vb: string; face: boolean;
 }) {
   const kind = spec.kind || 'cnc';
   const v = variantOf(spec);
@@ -650,11 +653,11 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
   const rectish = !t.shape || t.shape === 'rect' || t.shape === 'chamfer';
   const inset = (k: number) => { const ins = minWH * k, sx = (W - ins * 2) / W, sy = (H - ins * 2) / H; return { tf: `translate(${ins} ${ins}) scale(${sx} ${sy})`, sw: (w: number) => w / Math.min(sx, sy) }; };
   const blurF = (id: string, sd: number) => <filter key={id} id={`${uid}-${id}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation={sd} /></filter>;
-  const shadow = <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />;
+  const shadow = face ? null : <path d={shape} fill="#000" opacity={0.38} filter={`url(#${uid}-blur)`} transform={`translate(${th * 1.2} ${th * 3})`} />;
   const letterShadow = (k: string, o = 0.45) => <g opacity={o} filter={`url(#${uid}-tsh)`} transform={`translate(${th * 0.9} ${th * 1.8})`}>{C('#000000', k)}</g>;
   const plate = (
     <>
-      <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />
+      {!face && <path d={shape} fill={m.edge} transform={`translate(${th * 0.5} ${th})`} />}
       <path d={shape} fill={fillOf(m, uid, 'plate')} />
       <g clipPath={`url(#${uid}-clip)`}><Texture m={m} uid={uid} /></g>
     </>
@@ -916,7 +919,7 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
   }
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${VW} ${VH}`} style={style} className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox={vb} style={style} className={className}>
       <defs>
         {texFilter(m, uid, W)}
         {gradDef(m, uid, 'plate')}
@@ -925,7 +928,7 @@ function SignKindSvg({ spec, data, uid, t, W, H, ox, oy, th, VW, VH, shape, font
         <filter id={`${uid}-blur`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation={th * 2.2} /></filter>
         {defs}
       </defs>
-      {backdrop(spec, uid, VW, VH)}
+      {!face && backdrop(spec, uid, VW, VH)}
       <g transform={`translate(${ox} ${oy})`}><path d={shape} fill="none" data-plate="" />{body}</g>
       {(kind === 'engrave' || kind === 'print' || kind === 'chalk') && <SceneLight spec={spec} uid={uid} VW={VW} VH={VH} ox={ox} oy={oy}><path d={shape} fill="#ffffff" /></SceneLight>}
     </svg>

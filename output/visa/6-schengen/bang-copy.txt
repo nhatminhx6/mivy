@@ -1,0 +1,62 @@
+🇪🇺 Châu Âu (Schengen) — Form Schengen chung, nộp ở trung tâm của nước đến
+
+1. Surname (Family name)
+    LE
+    Họ
+2. Surname at birth (Former family name(s))
+    LE
+    Họ khi sinh (người Việt: giống ô 1)
+3. First name(s) (Given name(s))
+    THU HA
+    Tên đệm + tên
+4. Date of birth (day-month-year)
+    21-07-1995
+    Ngày sinh
+5. Place of birth
+    HO CHI MINH CITY
+    Nơi sinh
+6. Country of birth
+    VIET NAM
+    Nước sinh
+7. Current nationality
+    VIETNAMESE
+    Quốc tịch
+8. Sex
+    FEMALE
+    Giới tính
+9. Civil status
+    SINGLE
+    Tình trạng hôn nhân
+11. National identity number, where applicable
+    079195004321
+    Số CCCD
+12. Type of travel document
+    ORDINARY PASSPORT
+    Loại giấy tờ
+13. Number of travel document
+    C7654321
+    Số hộ chiếu
+14. Date of issue
+    10-08-2021
+    Ngày cấp
+15. Valid until
+    10-08-2031
+    Có giá trị đến
+16. Issued by (country)
+    VIET NAM
+    Nước cấp
+19. Applicant's home address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nhà
+19. E-mail address
+    thuha.le@gmail.com
+    Email
+19. Telephone no.
+    +84 912 345 678
+    Số điện thoại
+21. Current occupation
+    ACCOUNTANT
+    Nghề nghiệp
+22. Employer and employer's address and telephone number
+    PHO XUA COMPANY LIMITED, 12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Nơi làm việc + địa chỉ (+ SĐT công ty nếu có)

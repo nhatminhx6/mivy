@@ -15,7 +15,7 @@ public enum DebugVestRender {
         let editor = PortraitEditor()
         await editor.prepare(cgImage: cg, orientation: CGImagePropertyOrientation(photo.imageOrientation))
         var log = "mask: \(await editor.hasMask())\n"
-        for outfit in OutfitOption.allCases where outfit != .keep {
+        for outfit in OutfitOption.allCases {   // keep = background swap only
             for background in [BackgroundOption.white, .blue] {
                 var settings = EditSettings()
                 settings.outfit = outfit

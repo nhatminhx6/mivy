@@ -2,6 +2,7 @@ import Testing
 import Foundation
 import FotoDocsCore
 import FotoDocsImaging
+import CoreGraphics
 
 @Suite("VisaProfile")
 struct VisaProfileTests {
@@ -63,8 +64,18 @@ struct VisaProfileTests {
         #expect(value("jp", "dob") == "05/03/1990")
         #expect(value("us", "dob") == "05-MAR-1990")
         #expect(value("schengen", "dob") == "05-03-1990")
-        #expect(value("jp", "address") == "12 LE LOI, PHUONG BEN NGHE")
+        #expect(value("jp", "address") == "12 LE LOI, BEN NGHE WARD")
         #expect(VisaForms.all.map(\.id).sorted() == ["au", "cn", "jp", "kr", "schengen", "tw", "uk", "us"])
+        // checked against the official forms on 18/11/2026 (mivy/output/visa/doi-chieu)
+        #expect(value("cn", "dob") == "1990-03-05")                       // China: yyyy-MM-dd
+        p.placeOfBirth = "TP Hồ Chí Minh"; p.maritalStatus = .single; p.phone = "0912 345 678"
+        p.passportIssuePlace = "Cục Quản lý xuất nhập cảnh"; p.surname = "LE"
+        #expect(value("schengen", "birthPlace") == "HO CHI MINH CITY")  // English, not "TP HO CHI MINH"
+        #expect(value("au", "marital") == "NEVER MARRIED OR BEEN IN A DE FACTO RELATIONSHIP")
+        #expect(value("au", "phone") == "+84 912 345 678")
+        #expect(value("schengen", "birthSurname") == "LE")               // box 2
+        #expect(value("us", "issueCity").isEmpty)                         // a city, not "IMMIGRATION DEPARTMENT"
+        #expect(value("cn", "authority") == "IMMIGRATION DEPARTMENT")
     }
 }
 
@@ -107,6 +118,26 @@ struct CCCDTextTests {
 struct CardCropTests {
     @Test("ID-1 proportions")
     func aspect() { #expect(abs(CardScanner.idAspect - 1.5858) < 0.001) }
+
+    @Test("A picture already cut to the card keeps the whole card, not the portrait box inside it")
+    func alreadyCropped() throws {
+        // light-blue card with a grey portrait box, edge to edge like a scan
+        let w = 856, h = 540
+        let ctx = try #require(CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        ctx.setFillColor(CGColor(red: 0.88, green: 0.93, blue: 0.98, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.setFillColor(CGColor(gray: 0.75, alpha: 1)); ctx.fill(CGRect(x: 40, y: 100, width: 200, height: 260))
+        let photo = try #require(ctx.makeImage())
+        let card = try #require(CardScanner.extractCard(photo))
+        #expect(abs(CGFloat(card.width) / CGFloat(card.height) - CardScanner.idAspect) < 0.02)
+        // the top-right corner is the blue card, not the grey box
+        let px = try #require(CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                        space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        px.draw(card, in: CGRect(x: -CGFloat(card.width) + 5, y: -CGFloat(card.height) + 5, width: CGFloat(card.width), height: CGFloat(card.height)))
+        let b = try #require(px.data).load(as: UInt32.self)
+        let blue = Int((b >> 16) & 255), red = Int(b & 255)
+        #expect(blue - red > 15, "cropped to the grey portrait box")
+    }
 }
 
 @Suite("Profile merge")
@@ -125,5 +156,35 @@ struct ProfileMergeTests {
         #expect(p.oldIDNumber.isEmpty && p.idIssueDate == nil)
         p.apply(CCCDInfo(idNumber: "079090001234", oldIDNumber: "", fullName: "Trần Thị Mẫu", dateOfBirth: nil, sex: .female, address: "", issueDate: nil))
         #expect(p.surname == "TRAN" && p.givenNames == "THI MAU")
+    }
+}
+
+@Suite("English address and company name")
+struct LatinEnglishTests {
+    @Test("Administrative units are translated, names that only look like them are kept")
+    func address() {
+        #expect(Latin.address("45 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP Hồ Chí Minh")
+                == "45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY")
+        #expect(Latin.address("12 Lê Lợi, P.12, Q. Bình Thạnh, TP.HCM") == "12 LE LOI, WARD 12, BINH THANH DISTRICT, HO CHI MINH CITY")
+        #expect(Latin.address("Thôn 3, Xã Tân Lập, Huyện Đan Phượng, Thành phố Hà Nội")
+                == "THON 3, TAN LAP COMMUNE, DAN PHUONG DISTRICT, HA NOI CITY")
+        #expect(Latin.address("Thị trấn Tịnh Biên, Tịnh Biên, Tỉnh An Giang") == "TINH BIEN TOWN, TINH BIEN, AN GIANG PROVINCE")
+        #expect(Latin.address("Dương Đông, Phú Quốc") == "DUONG DONG, PHU QUOC")
+        #expect(Latin.address("Đường Trần Phú, Phú Nhuận") == "TRAN PHU STREET, PHU NHUAN")
+    }
+
+    @Test("Company legal forms in English")
+    func company() {
+        #expect(Latin.company("Công ty TNHH Phố Xưa") == "PHO XUA COMPANY LIMITED")
+        #expect(Latin.company("Công ty Cổ phần Sữa Việt Nam") == "SUA VIET NAM JOINT STOCK COMPANY")
+        #expect(Latin.company("Công ty TNHH MTV Bánh Mì Sài Gòn") == "BANH MI SAI GON ONE MEMBER COMPANY LIMITED")
+        #expect(Latin.company("Trường THPT Lê Quý Đôn") == "TRUONG THPT LE QUY DON")
+    }
+
+    @Test("Passport issuing authority in English")
+    func issuer() {
+        #expect(Latin.issuer("Cục Quản lý xuất nhập cảnh") == "IMMIGRATION DEPARTMENT")
+        #expect(Latin.issuer("Cục QLXNC") == "IMMIGRATION DEPARTMENT")
+        #expect(Latin.issuer("TP Hồ Chí Minh") == "HO CHI MINH CITY")
     }
 }

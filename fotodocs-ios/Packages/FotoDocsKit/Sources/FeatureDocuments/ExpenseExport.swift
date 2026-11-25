@@ -91,18 +91,29 @@ enum ExpenseExport {
             }
             header()
             for (i, r) in receipts.enumerated() {
-                if y + rowH > page.height - m {
+                // the note (who was entertained, why) is what the accountant checks: it wraps under the vendor,
+                // the row grows, nothing is cut off
+                let vendor = r.vendor.isEmpty ? "—" : r.vendor
+                let noteW = widths[2] - 8
+                let vendorH = textHeight(vendor, width: noteW, size: 10)
+                let noteH = r.note.isEmpty ? 0 : textHeight(r.note, width: noteW, size: 9) + 2
+                let h = max(rowH, vendorH + noteH + 10)
+                if y + h > page.height - m {
                     ctx.beginPage()
                     y = m
                     header()
                 }
-                let vendor = [r.vendor.isEmpty ? "—" : r.vendor, r.note].filter { !$0.isEmpty }.joined(separator: " · ")
-                let cells = ["\(i + 1)", day(r.date), vendor, r.category.rawValue, r.amount.map(VND.format) ?? "—"]
-                for (c, t) in cells.enumerated() {
-                    text(t, cell(xs[c], widths[c], y, rowH), size: 10, align: c == 4 ? .right : (c == 0 ? .center : .left))
+                let cells = ["\(i + 1)", day(r.date), "", r.category.rawValue, r.amount.map(VND.format) ?? "—"]
+                for (c, t) in cells.enumerated() where c != 2 {
+                    text(t, cell(xs[c], widths[c], y, h), size: 10, align: c == 4 ? .right : (c == 0 ? .center : .left))
                 }
-                hLine(y + rowH, m, page.width - m, line)
-                y += rowH
+                let top = y + (h - vendorH - noteH) / 2
+                text(vendor, CGRect(x: xs[2] + 4, y: top, width: noteW, height: vendorH + 1), size: 10)
+                if !r.note.isEmpty {
+                    text(r.note, CGRect(x: xs[2] + 4, y: top + vendorH + 2, width: noteW, height: noteH), size: 9, color: .darkGray)
+                }
+                hLine(y + h, m, page.width - m, line)
+                y += h
             }
             if y + 140 > page.height - m {
                 ctx.beginPage()
@@ -138,6 +149,11 @@ enum ExpenseExport {
 
     // MARK: Drawing
 
+    private static func textHeight(_ s: String, width: CGFloat, size: CGFloat) -> CGFloat {
+        ceil((s as NSString).boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin],
+                                          attributes: [.font: PDFFont.make(size)], context: nil).height)
+    }
+
     private static func cell(_ x: CGFloat, _ w: CGFloat, _ y: CGFloat, _ h: CGFloat) -> CGRect {
         CGRect(x: x + 4, y: y + (h - 14) / 2, width: w - 8, height: 14)
     }
@@ -147,8 +163,7 @@ enum ExpenseExport {
         let style = NSMutableParagraphStyle()
         style.alignment = align
         style.lineBreakMode = rect.height > size * 2 ? .byWordWrapping : .byTruncatingTail
-        var font = UIFont.systemFont(ofSize: size, weight: bold ? .bold : .regular)
-        if italic, let d = font.fontDescriptor.withSymbolicTraits(.traitItalic) { font = UIFont(descriptor: d, size: size) }
+        let font = PDFFont.make(size, weight: bold ? .bold : .regular, italic: italic)
         (s as NSString).draw(with: rect, options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
                              attributes: [.font: font, .foregroundColor: color, .paragraphStyle: style], context: nil)
     }

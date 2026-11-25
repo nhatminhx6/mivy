@@ -1,0 +1,59 @@
+🇬🇧 Anh — Khai online ở gov.uk/standard-visitor
+
+Given names
+    THU HA
+    Tên đệm + tên
+Family name
+    LE
+    Họ
+Sex
+    FEMALE
+    Giới tính
+Marital status
+    SINGLE
+    Tình trạng hôn nhân
+Date of birth
+    21/07/1995
+    Ngày sinh
+Place of birth
+    HO CHI MINH CITY
+    Nơi sinh
+Country of birth
+    VIET NAM
+    Nước sinh
+Nationality
+    VIETNAMESE
+    Quốc tịch
+National identity number
+    079195004321
+    Số CCCD
+Passport number
+    C7654321
+    Số hộ chiếu
+Issuing authority
+    IMMIGRATION DEPARTMENT
+    Cơ quan cấp
+Date of issue
+    10/08/2021
+    Ngày cấp hộ chiếu
+Date of expiry
+    10/08/2031
+    Ngày hết hạn hộ chiếu
+Home address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nhà (quốc gia: VIET NAM)
+Telephone number
+    +84 912 345 678
+    Số điện thoại (có mã +84)
+E-mail
+    thuha.le@gmail.com
+    Email
+Current occupation
+    ACCOUNTANT
+    Nghề nghiệp
+Employer / School name
+    PHO XUA COMPANY LIMITED
+    Nơi làm việc / học
+Employer / School address
+    12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nơi làm việc

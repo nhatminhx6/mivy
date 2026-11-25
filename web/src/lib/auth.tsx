@@ -35,7 +35,7 @@ export const authApi = {
 
 // ---------- đơn in ----------
 export type OrderStatus = 'new' | 'quoted' | 'deposited' | 'sample' | 'printing' | 'delivered' | 'cancelled';
-export type PrintProduct = 'card' | 'sticker' | 'keychain' | 'hashtag' | 'custom';
+export type PrintProduct = 'card' | 'sticker' | 'keychain' | 'hashtag' | 'cardvisit' | 'standee' | 'packaging' | 'flyer' | 'calendar' | 'envelope' | 'banner' | 'brochure' | 'seal' | 'pouch' | 'stationery' | 'cup' | 'tape' | 'tote' | 'hangtag' | 'voucher' | 'badge' | 'notebook' | 'foodbox' | 'tableware' | 'qrstand' | 'magnet' | 'mug' | 'tshirt' | 'pin' | 'fan' | 'canvas' | 'pillow' | 'umbrella' | 'receiptbook' | 'giftwrap' | 'aframe' | 'plasticbag' | 'plaque' | 'cap' | 'greeting' | 'flag' | 'rigidbox' | 'label' | 'tumbler' | 'pen' | 'certificate' | 'booklet' | 'photobook' | 'tabletent' | 'windowdecal' | 'menubook' | 'wetwipe' | 'cakebox' | 'coaster' | 'mousepad' | 'bookmark' | 'postcard' | 'ticket' | 'lightbox' | 'shelftalker' | 'foodbag' | 'selfieframe' | 'wallmural' | 'signboard' | 'tube' | 'sash' | 'nametag' | 'luggagetag' | 'drawstring' | 'menuboard' | 'tissuebox' | 'deliverybox' | 'apron' | 'helmet' | 'scratchcard' | 'puzzle' | 'phonecase' | 'playingcards' | 'clock' | 'invitation' | 'signage' | 'pricelist' | 'seating' | 'welcomesign' | 'wovenlabel' | 'doormat' | 'awning' | 'namelabel' | 'favorbox' | 'poster' | 'notepad' | 'ribbon' | 'patch' | 'acrylicstand' | 'carton' | 'cupcarrier' | 'ricebag' | 'nonla' | 'cardecal' | 'mooncakebox' | 'custom';
 export interface PrintOrder {
   id: number; code: string; product: PrintProduct; title: string; quantity: number; material: string;
   contact_name: string; phone: string; address: string; need_by: string; note: string;

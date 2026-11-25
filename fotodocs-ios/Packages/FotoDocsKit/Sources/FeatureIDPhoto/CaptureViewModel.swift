@@ -21,6 +21,9 @@ public final class CaptureViewModel {
     public var autoHint: String?
 
     private let camera = CameraService()
+    /// simulator only: the still photo standing in for the camera feed (nil on a device)
+    public private(set) var simFrame: UIImage?
+    private var simTask: Task<Void, Never>?
     private var autoStreak = 0
     private var lastCenter: CGPoint?
     /// ~2 s at the analysis rate (every 6th frame)
@@ -34,6 +37,14 @@ public final class CaptureViewModel {
 
     public func onAppear() async {
         cameraAvailable = CameraService.isSupported()
+        #if targetEnvironment(simulator)
+        if !cameraAvailable, let still = SimCamera.image {
+            simFrame = still
+            cameraAvailable = true
+            startSimFeed()
+            return
+        }
+        #endif
         guard cameraAvailable else { return }
         let granted = await CameraService.requestAccess()
         guard granted else {
@@ -51,7 +62,32 @@ public final class CaptureViewModel {
     }
 
     public func onDisappear() {
+        simTask?.cancel()
         camera.stop()
+    }
+
+    /// The simulator has no camera: feed the checks with the still photo ~5 fps, like the real stream.
+    private func startSimFeed() {
+        simTask?.cancel()
+        guard let still = simFrame, let cg = still.cgImage else { return }
+        let orientation = CGImagePropertyOrientation(still.imageOrientation)
+        simTask = Task { [weak self] in
+            let checked = await Task.detached { FaceChecker.analyze(ciImage: CIImage(cgImage: cg), orientation: orientation) }.value
+            while !Task.isCancelled {
+                guard let self, self.capturedImage == nil else { return }
+                self.apply(checked)
+                try? await Task.sleep(for: .milliseconds(200))
+            }
+        }
+    }
+
+    private func takePhoto() {
+        if let still = simFrame {
+            simTask?.cancel()
+            if let data = still.jpegData(compressionQuality: 0.95) { useCaptured(data) }
+            return
+        }
+        camera.capturePhoto()
     }
 
     private func apply(_ result: FaceCheckResult) {
@@ -65,12 +101,12 @@ public final class CaptureViewModel {
         autoHint = issue
         guard autoCapture, issue == nil else { autoStreak = 0; return }
         autoStreak += 1
-        if autoStreak >= Self.autoFrames { autoStreak = 0; camera.capturePhoto() }
+        if autoStreak >= Self.autoFrames { autoStreak = 0; takePhoto() }
     }
 
     public func shutter() {
         guard cameraAvailable else { return }
-        camera.capturePhoto()
+        takePhoto()
     }
 
     public func switchCamera() {
@@ -81,7 +117,7 @@ public final class CaptureViewModel {
         autoStreak = 0
         capturedImage = nil
         result = .empty
-        if cameraAvailable { camera.start() }
+        if simFrame != nil { startSimFeed() } else if cameraAvailable { camera.start() }
     }
 
     private func useCaptured(_ data: Data) {
@@ -102,9 +138,25 @@ public final class CaptureViewModel {
         let orientation = CGImagePropertyOrientation(image.imageOrientation)
         result = FaceChecker.analyze(ciImage: CIImage(cgImage: cgImage), orientation: orientation)
         capturedImage = image
+        simTask?.cancel()
         camera.stop()
     }
 }
+
+#if targetEnvironment(simulator)
+/// Stand-in for the camera on the simulator (it has none): Tests/Fixtures/portrait-frontal.jpg from the repo
+/// (the simulator reads the Mac's disk), or any photo via the SIM_CAMERA_IMAGE environment variable.
+enum SimCamera {
+    static let image: UIImage? = {
+        let repo = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let path = ProcessInfo.processInfo.environment["SIM_CAMERA_IMAGE"]
+            ?? repo.appendingPathComponent("Tests/Fixtures/portrait-frontal.jpg").path
+        return UIImage(contentsOfFile: path)
+    }()
+}
+#endif
 
 extension CGImagePropertyOrientation {
     init(_ uiOrientation: UIImage.Orientation) {

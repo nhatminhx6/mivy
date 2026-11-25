@@ -1,0 +1,68 @@
+🇨🇳 Trung Quốc — Khai online ở bio.visaforchina.cn (khu vực Hà Nội, Đà Nẵng; TP.HCM xem hướng dẫn của Tổng lãnh sự quán)
+
+1.1 Surname
+    LE
+    Họ
+1.1 Given name(s)
+    THU HA
+    Tên đệm + tên
+1.2 Date of birth (yyyy-MM-dd)
+    1995-07-21
+    Ngày sinh
+1.3 Sex
+    FEMALE
+    Giới tính
+1.4A Country of birth
+    VIET NAM
+    Nước sinh
+1.4B–C Province / City of birth
+    HO CHI MINH CITY
+    Tỉnh / thành nơi sinh
+1.5 Marital status
+    SINGLE
+    Tình trạng hôn nhân
+1.6 Nationality
+    VIET NAM
+    Quốc tịch (chọn trong danh sách)
+1.6B National identity card No.
+    079195004321
+    Số CCCD
+1.7A Passport type
+    ORDINARY
+    Loại hộ chiếu
+1.7B Passport No.
+    C7654321
+    Số hộ chiếu
+1.7C Country of issue
+    VIET NAM
+    Nước cấp
+1.7D Issuing place
+    (trống — bạn tự điền)
+    Thành phố nơi cấp hộ chiếu (Cục QLXNC ở Hà Nội: HA NOI; chi nhánh TP.HCM: HO CHI MINH CITY)
+1.7E Issuing authority
+    IMMIGRATION DEPARTMENT
+    Cơ quan cấp
+1.7F Date of issue (yyyy-MM-dd)
+    2021-08-10
+    Ngày cấp
+1.7G Date of expiry (yyyy-MM-dd)
+    2031-08-10
+    Ngày hết hạn
+3.1 Current occupation
+    ACCOUNTANT
+    Nghề nghiệp (chọn trong danh sách)
+3.2 Employer / school
+    PHO XUA COMPANY LIMITED
+    Nơi làm việc / học
+3.2 Address of employer / school
+    12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nơi làm việc
+5.1 Home address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nhà
+5.3 Mobile phone
+    0912 345 678
+    Số di động
+5.4 E-mail
+    thuha.le@gmail.com
+    Email

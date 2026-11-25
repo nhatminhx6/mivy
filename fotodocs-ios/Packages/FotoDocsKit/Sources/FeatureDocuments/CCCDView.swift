@@ -75,7 +75,7 @@ struct CCCDView: View {
         .onChange(of: backItem) { _, item in Task { backRaw = await load(item); await process() } }
         .onChange(of: kind) { Task { await process() } }
         .onChange(of: maskNumbers) { Task { await process() } }
-        .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
+        .sheet(item: $share) { payload in FilePreviewSheet(url: payload.url) }
     }
 
     private var kindPicker: some View {

@@ -42,6 +42,7 @@ test('bảng hiệu: chữ nằm trong tấm, tường phủ kín, chụp lướ
     await grid.screenshot({ path: path.join(OUT, `${TAG}-${k.replace(/\s+/g, '-')}.png`) });
   }
   // cảnh ảnh thật: preview có <image> cảnh, mọi file cảnh tải được, tải PNG mockup (ảnh cảnh nhúng) không lỗi
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi mockup phẳng
   const preview = page.getByTestId('sign-preview');
   await expect(preview.locator('image[data-scene]')).toHaveCount(1);
   const broken = await page.$$eval('[data-testid="sign-scenes"] img', async (ims) => (await Promise.all(ims.map((i) => fetch((i as HTMLImageElement).src).then((r) => (r.ok ? '' : (i as HTMLImageElement).src))))).filter(Boolean));

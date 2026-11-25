@@ -23,7 +23,7 @@ export const PL_FONT_CSS = "@import url('https://fonts.googleapis.com/css2?famil
 export const FIT_STEPS: [number, number][] = [
   [1, 1.15], [1, 1.07], [1, 1], [1, 0.92], [2, 1], [2, 0.92], [2, 0.85], [2, 0.78], [2, 0.72], [2, 0.66], [3, 0.7], [3, 0.64], [3, 0.58],
 ];
-export const fitStart = (l: PLLayout) => (l === 'cards' ? FIT_STEPS.findIndex(([c]) => c === 2) : 0);
+export const fitStart = (_l: PLLayout) => 0; // mọi bố cục thử từ 1 cột chữ to; chỉ chia cột khi thật sự tràn
 
 // ---------- dán nhanh: Excel (tab) / "Tên | Giá | Mô tả" / "Tên - 25k" ----------
 export function normPrice(p: string): string {
@@ -78,10 +78,16 @@ const B = "'Be Vietnam Pro', sans-serif";
 const SCRIPT = "'Dancing Script', cursive";
 const SERIF = "'Playfair Display', serif";
 
+// cột giá đủ rộng cho giá dài nhất (vd "35.000đ") → 2 cột giá M/L không dính nhau
+function priceW(sec: PLSection, pill: boolean): number {
+  const n = Math.max(0, ...sec.items.flatMap((i) => [i.price || '', i.price2 || '']).map((p) => p.length));
+  return Math.max(pill ? 118 : 104, Math.round(n * 15.8) + (pill ? 34 : 14));
+}
+
 function Section({ s, sec, t }: { s: (n: number) => number; sec: PLSection; t: Tok }) {
-  const pw = s(t.pricePill ? 118 : 104);
+  const pw = s(priceW(sec, !!t.pricePill));
   return (
-    <div style={{ breakInside: 'avoid', marginBottom: s(30), ...t.sectionCard }}>
+    <div data-pl-section style={{ breakInside: 'avoid', marginBottom: s(30), ...t.sectionCard }}>
       {(sec.title || sec.cols) && (
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: s(10), marginBottom: s(10) }}>
           <div style={{ flex: 1, minWidth: 0, fontFamily: t.headFont, fontWeight: t.headWeight, fontSize: s(t.headSize), lineHeight: 1.1, color: t.head }}>{sec.title}</div>
@@ -98,7 +104,7 @@ function Section({ s, sec, t }: { s: (n: number) => number; sec: PLSection; t: T
             <span style={{ flex: '1 1 auto', minWidth: s(18), borderBottom: `${Math.max(2, s(3))}px dotted ${t.leader}`, transform: `translateY(-${s(7)}px)` }} />
             {it.old && <span style={{ flex: 'none', fontWeight: 500, fontSize: s(19), color: t.desc, textDecoration: 'line-through' }}>{it.old}</span>}
             {[it.price, ...(sec.cols ? [it.price2 || ''] : [])].map((p, j) => (
-              <span key={j} style={{ width: sec.cols ? pw : undefined, flex: 'none', textAlign: 'right', fontWeight: 800, fontSize: s(25), color: t.price, whiteSpace: 'nowrap' }}>
+              <span key={j} data-pl-price style={{ width: sec.cols ? pw : undefined, flex: 'none', textAlign: 'right', fontWeight: 800, fontSize: s(25), color: t.price, whiteSpace: 'nowrap' }}>
                 {t.pricePill && p ? <span style={{ background: t.pricePill, borderRadius: 99, padding: `${s(3)}px ${s(12)}px` }}>{p}</span> : p}
               </span>
             ))}
@@ -108,6 +114,38 @@ function Section({ s, sec, t }: { s: (n: number) => number; sec: PLSection; t: T
       ))}
     </div>
   );
+}
+
+// Chia nội dung thành N cột CÂN nhau (thay CSS columns: column-fill auto dồn hết vào cột 1, balance thì sai đo tràn).
+// Đơn vị ước lượng chiều cao: tiêu đề nhóm ≈ 2.2 dòng, món ≈ 1 (+0.75 nếu có mô tả). Được cắt nhóm giữa chừng
+// (phần sau giữ hàng nhãn cột giá M/L, không lặp tên nhóm).
+type Chunk = PLSection;
+const unitOf = (it: PLItem) => 1 + (it.desc ? 0.75 : 0);
+export function splitColumns(sections: PLSection[], n: number): Chunk[][] {
+  const secs = sections.map((sec) => ({ ...sec, items: sec.items.filter((i) => i.name) })).filter((sec) => sec.items.length || sec.title);
+  if (n <= 1) return [secs];
+  const total = secs.reduce((a, sec) => a + (sec.title || sec.cols ? 2.2 : 0) + sec.items.reduce((b, it) => b + unitOf(it), 0), 0);
+  const cols: Chunk[][] = [[]];
+  let acc = 0, ci = 0;
+  const target = () => (total * (ci + 1)) / n;
+  for (const sec of secs) {
+    let cur: Chunk = { ...sec, items: [] };
+    const head = sec.title || sec.cols ? 2.2 : 0;
+    // cả nhóm lọt vừa cột này → giữ nguyên nhóm; nhóm mới bắt đầu sát mục tiêu → đẩy sang cột sau
+    if (ci < n - 1 && cols[ci].length && acc + head + 1 > target() + 0.5) { ci++; cols.push([]); }
+    acc += head;
+    for (const it of sec.items) {
+      const u = unitOf(it);
+      if (ci < n - 1 && cur.items.length >= 2 && acc + u / 2 > target() && sec.items.length - cur.items.length >= 2) {
+        cols[ci].push(cur); ci++; cols.push([]);
+        cur = { title: '', cols: sec.cols, items: [] };
+      }
+      cur.items.push(it); acc += u;
+    }
+    cols[ci].push(cur);
+  }
+  while (cols.length < n) cols.push([]);
+  return cols;
 }
 
 const Illus = ({ id, size, style }: { id?: string; size: number; style: CSSProperties }) =>
@@ -204,7 +242,7 @@ export function PriceBoard({ data, layout, aspect, T, brand, illus = [], fit, bo
 
   const bodyStyle: CSSProperties = {
     flex: '1 1 auto', minHeight: 0, overflow: 'hidden', marginTop: u(layout === 'cards' ? 30 : 26),
-    columnCount: cols, columnGap: u(layout === 'cards' ? 22 : 44), columnFill: 'auto',
+    display: 'flex', alignItems: 'flex-start', gap: u(layout === 'cards' ? 22 : 44),
     ...(layout === 'menu' ? { background: '#ffffff', borderRadius: u(32), border: `2px solid ${T.soft}`, padding: `${u(30)}px ${u(36)}px ${u(6)}px`, boxShadow: `0 ${u(18)}px ${u(40)}px ${T.main}14` } : {}),
     ...(layout === 'elegant' ? { padding: `0 ${u(cols === 1 ? 70 : 10)}px` } : {}),
   };
@@ -215,7 +253,11 @@ export function PriceBoard({ data, layout, aspect, T, brand, illus = [], fit, bo
       {layout === 'chalk' && <><Illus id={illus[0]} size={u(130)} style={{ left: u(50), top: u(44), transform: 'rotate(-12deg)' }} /><Illus id={illus[1]} size={u(130)} style={{ right: u(50), top: u(44), transform: 'rotate(12deg)' }} /></>}
       <div style={{ flex: 'none', position: 'relative' }}>{header}</div>
       <div ref={bodyRef} data-pl-body style={bodyStyle}>
-        {data.sections.map((sec, i) => <Section key={i} s={s} sec={sec} t={tok} />)}
+        {splitColumns(data.sections, cols).map((col, ci) => (
+          <div key={ci} data-pl-col style={{ flex: '1 1 0', minWidth: 0 }}>
+            {col.map((sec, i) => <Section key={i} s={s} sec={sec} t={tok} />)}
+          </div>
+        ))}
       </div>
       {footer}
     </div>

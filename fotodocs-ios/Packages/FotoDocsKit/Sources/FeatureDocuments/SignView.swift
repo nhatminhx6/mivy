@@ -58,7 +58,7 @@ struct SignView: View {
         .fotoHidesTabBar()
         .toolbarBackground(FotoDocs.Palette.background, for: .navigationBar)
         .onChange(of: item) { _, newItem in Task { await loadDocument(newItem) } }
-        .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
+        .sheet(item: $share) { payload in FilePreviewSheet(url: payload.url) }
     }
 
     private func documentCanvas(_ document: UIImage) -> some View {

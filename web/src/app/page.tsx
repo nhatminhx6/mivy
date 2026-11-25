@@ -29,6 +29,7 @@ export default function HomePage() {
             <span className="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 font-bold">STUDIO</span>
           </Link>
           <nav className="hidden md:flex items-center gap-7 text-sm text-slate-400 font-medium">
+            <Link href="/in" className="text-mv-fg hover:text-indigo-300 transition-colors">In theo nhu cầu</Link>
             <a href="#tinh-nang" className="hover:text-mv-fg transition-colors">Tính năng</a>
             <a href="#nganh" className="hover:text-mv-fg transition-colors">Theo ngành</a>
             <a href="#so-sanh" className="hover:text-mv-fg transition-colors">So sánh</a>
@@ -58,6 +59,10 @@ export default function HomePage() {
               <Link href="/studio/templates" className="mv-btn mv-btn-primary !px-7 !py-3.5 !text-[15px]"><Wand2 className="w-5 h-5" /> Chọn mẫu thiết kế <ArrowRight className="w-4 h-4" /></Link>
               <Link href="/studio/marketing" className="mv-btn mv-btn-ghost !px-7 !py-3.5 !text-[15px]"><Sparkles className="w-5 h-5 text-indigo-300" /> Tạo poster quảng cáo</Link>
             </div>
+            <p className="mt-5 text-sm text-slate-400">
+              Cần in tem, nhãn, thiệp, lịch?{' '}
+              <Link href="/in" className="text-indigo-300 font-semibold hover:underline inline-flex items-center gap-1">Xem Mivy nhận in gì <ArrowRight className="w-4 h-4" /></Link>
+            </p>
             <div className="mt-14 pt-8 border-t border-mv-hair grid grid-cols-2 sm:grid-cols-4 gap-5 text-slate-400 text-[13px]">
               {['Tiếng Việt chuẩn', '0đ chi phí API', 'Kho mẫu đủ loại', 'Xuất PNG · ZIP'].map((t) => (
                 <div key={t} className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-300" /><span>{t}</span></div>

@@ -1,0 +1,65 @@
+🇺🇸 Mỹ — Khai online DS-160 ở ceac.state.gov
+
+Surnames
+    LE
+    Họ
+Given Names
+    THU HA
+    Tên đệm + tên
+Full Name in Native Alphabet
+    LÊ THU HÀ
+    Họ tên có dấu
+Sex
+    FEMALE
+    Giới tính
+Marital status
+    SINGLE
+    Tình trạng hôn nhân
+Date of birth
+    21-JUL-1995
+    Ngày sinh
+City of birth
+    HO CHI MINH CITY
+    Tỉnh / thành nơi sinh
+Country of birth
+    VIET NAM
+    Nước sinh
+Country/Region of Origin (Nationality)
+    VIET NAM
+    Quốc tịch
+National Identification Number
+    079195004321
+    Số CCCD
+Passport/Travel Document Number
+    C7654321
+    Số hộ chiếu
+Country/Authority that Issued Passport
+    VIET NAM
+    Nước cấp
+City where issued
+    (trống — bạn tự điền)
+    Thành phố nơi cấp hộ chiếu (Cục QLXNC ở Hà Nội: HA NOI; chi nhánh TP.HCM: HO CHI MINH CITY)
+Issuance Date
+    10-AUG-2021
+    Ngày cấp
+Expiration Date
+    10-AUG-2031
+    Ngày hết hạn
+Home Address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nhà
+Primary Phone Number
+    0912 345 678
+    Số điện thoại
+Email Address
+    thuha.le@gmail.com
+    Email
+Primary Occupation
+    ACCOUNTANT
+    Nghề nghiệp
+Present Employer or School Name
+    PHO XUA COMPANY LIMITED
+    Nơi làm việc / học
+Employer / School address
+    12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nơi làm việc

@@ -1,0 +1,71 @@
+🇦🇺 Úc — Khai online ở ImmiAccount (immi.homeaffairs.gov.au)
+
+Family name
+    LE
+    Họ
+Given names
+    THU HA
+    Tên đệm + tên
+Sex
+    FEMALE
+    Giới tính
+Date of birth
+    21 JUL 1995
+    Ngày sinh
+Passport number
+    C7654321
+    Số hộ chiếu
+Country of passport
+    VIET NAM
+    Nước cấp
+Nationality
+    VIETNAMESE
+    Quốc tịch
+Date of issue
+    10 AUG 2021
+    Ngày cấp hộ chiếu
+Date of expiry
+    10 AUG 2031
+    Ngày hết hạn hộ chiếu
+Place of issue / issuing authority
+    IMMIGRATION DEPARTMENT
+    Nơi cấp
+Town / City of birth
+    HO CHI MINH CITY
+    Tỉnh / thành nơi sinh
+Country of birth
+    VIET NAM
+    Nước sinh
+Relationship status
+    NEVER MARRIED OR BEEN IN A DE FACTO RELATIONSHIP
+    Tình trạng quan hệ
+National identity card: Family name
+    LE
+    Họ trên CCCD
+National identity card: Given names
+    THU HA
+    Tên trên CCCD
+National identity card: Identification number
+    079195004321
+    Số CCCD
+National identity card: Country of issue
+    VIET NAM
+    Nước cấp CCCD
+Usual residential address
+    45 NGUYEN HUE, BEN NGHE WARD, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nhà (quốc gia: VIET NAM)
+Mobile phone (country code 84)
+    +84 912 345 678
+    Số di động
+E-mail
+    thuha.le@gmail.com
+    Email
+Position you hold
+    ACCOUNTANT
+    Nghề nghiệp / chức vụ
+Employer / School name
+    PHO XUA COMPANY LIMITED
+    Nơi làm việc / học
+Employer / School address
+    12 LE LOI, DISTRICT 1, HO CHI MINH CITY
+    Địa chỉ nơi làm việc

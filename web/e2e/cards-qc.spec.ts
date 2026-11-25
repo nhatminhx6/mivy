@@ -36,6 +36,7 @@ test('Thiệp: mọi mẫu cưới + sinh nhật sạch layout, chụp lại đ�
   test.setTimeout(240_000);
   await page.goto('/studio/cards');
   await expect(page.getByTestId('card-tpl')).toHaveCount(28, { timeout: 60_000 });
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   for (const kind of ['Thiệp cưới', 'Sinh nhật']) {
     await page.getByRole('button', { name: kind, exact: true }).click();
     const tpls = page.getByTestId('card-tpl');
@@ -54,6 +55,7 @@ test('Thiệp: đổi khổ + tên/địa chỉ dài vẫn không tràn', async 
   test.setTimeout(240_000);
   await page.goto('/studio/cards');
   await expect(page.getByTestId('card-tpl')).toHaveCount(28, { timeout: 60_000 });
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   await page.getByTestId('card-groom').fill('Nguyễn Trần Hoàng Gia Khánh');
   await page.getByTestId('card-bride').fill('Lê Phạm Ngọc Thu Hà Phương');
   await page.getByTestId('card-address').fill('Nhà hàng tiệc cưới Riverside Palace, 360D Bến Vân Đồn, Phường 1, Quận 4, Thành phố Hồ Chí Minh');
@@ -85,6 +87,7 @@ test('Thiệp: tải PNG + file in PDF', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto('/studio/cards');
   await expect(page.getByTestId('card-tpl')).toHaveCount(28, { timeout: 60_000 });
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   const [png] = await Promise.all([page.waitForEvent('download'), page.getByTestId('card-png').click()]);
   const pngPath = path.join(OUT, png.suggestedFilename());
   await png.saveAs(pngPath);

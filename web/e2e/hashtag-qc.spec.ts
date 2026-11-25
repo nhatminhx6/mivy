@@ -14,6 +14,7 @@ test('Hashtag cầm tay: mọi mẫu, sửa chữ, đổi khổ, tải file cắ
   await page.goto('/studio/hashtag');
   const occ = page.getByTestId('ht-occ');
   await expect(occ.first()).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId('tab-flat').click(); // mặc định tab 3D → soi bản thiết kế phẳng
   const preview = page.getByTestId('ht-preview');
   // chờ bản lớn dựng lại sau khi đổi (đường cắt khác trước)
   const cutD = () => page.locator('[data-testid="ht-cut-file"] #CutContour path').first().getAttribute('d').catch(() => '');

@@ -71,8 +71,18 @@ for y in range(ysrc, min(H, bottom)):
 canvas = Image.fromarray(np.dstack([L, La]).clip(0, 255).astype(np.uint8), 'RGBA')
 # the suit's soft edge round the neck hole: over the stand-in neck it blended into a pink rim the app keeps as
 # part of the suit (a red line at the bottom of the V) — inside the hole the edge keeps its own colour instead
+# its colour comes from the solid suit next to it (the antialiased rim itself was tinted: a pink-grey dotted
+# fringe along the collar on small photos)
 Ga = np.asarray(G2).astype(float)
 edge = (Ga[..., 3] > 0) & (Ga[..., 3] < 255)
+solid = Ga[..., 3] >= 250
+acc = np.zeros(Ga.shape[:2] + (3,)); cnt = np.zeros(Ga.shape[:2])
+for dy in range(-3, 4):
+    for dx in range(-3, 4):
+        sh = np.roll(np.roll(Ga, dy, 0), dx, 1); ok = np.roll(np.roll(solid, dy, 0), dx, 1)
+        acc += sh[..., :3] * ok[..., None]; cnt += ok
+fix = edge & (cnt > 0)
+Ga[fix, :3] = acc[fix] / cnt[fix][:, None]
 Ga[edge, 3] = 255
 G2 = Image.fromarray(Ga.clip(0, 255).astype(np.uint8), 'RGBA')
 canvas.alpha_composite(G2, (max(0, ox), max(0, oy))) if ox >= 0 and oy >= 0 else canvas.paste(G2, (ox, oy), G2)

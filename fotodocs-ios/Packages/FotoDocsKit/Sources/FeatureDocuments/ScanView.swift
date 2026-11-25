@@ -20,8 +20,10 @@ struct ScanView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     HStack(spacing: 12) {
-                        if VNDocumentCameraViewController.isSupported {
-                            Button { showScanner = true } label: {
+                        if DocumentScanner.isAvailable {
+                            Button {
+                                if let fake = DocumentScanner.simulated(["cccd-fake", "passport-fake"]) { pages += fake } else { showScanner = true }
+                            } label: {
                                 DocActionTile(title: "Quét camera", icon: "doc.viewfinder", tint: FotoDocs.Palette.link)
                             }
                             .buttonStyle(.plain)
@@ -65,7 +67,7 @@ struct ScanView: View {
             }
             .ignoresSafeArea()
         }
-        .sheet(item: $share) { payload in ShareSheet(items: [payload.url]) }
+        .sheet(item: $share) { payload in FilePreviewSheet(url: payload.url) }
     }
 
     private func loadPicked(_ items: [PhotosPickerItem]) async {
@@ -103,6 +105,30 @@ struct DocActionTile: View {
 
 /// VisionKit document camera bridge (real device only).
 struct DocumentScanner: UIViewControllerRepresentable {
+    /// The camera button is shown on a device that has the document camera, and always on the simulator
+    /// (where the "camera" hands back sample pictures instead, see `simulated`).
+    static var isAvailable: Bool {
+        #if targetEnvironment(simulator)
+        true
+        #else
+        VNDocumentCameraViewController.isSupported
+        #endif
+    }
+
+    /// Simulator only: what the camera "scans" — fake documents from the repo's `Tests/Fixtures` (the simulator
+    /// reads the Mac's disk), so the whole flow runs without a phone. Nil on a device: open the real camera.
+    static func simulated(_ fixtures: [String]) -> [UIImage]? {
+        #if targetEnvironment(simulator)
+        let dir = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Tests/Fixtures")
+        let pages = fixtures.compactMap { UIImage(contentsOfFile: dir.appendingPathComponent($0 + ".jpg").path) }
+        return pages.isEmpty ? nil : pages
+        #else
+        nil
+        #endif
+    }
+
     let onFinish: ([UIImage]) -> Void
     let onCancel: () -> Void
 

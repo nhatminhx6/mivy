@@ -21,6 +21,7 @@ struct FotoDocsApp: App {
                 .task { await account.restore() }
                 #if DEBUG
                 .task { await DebugVestRender.runIfRequested() }
+                .task { await DebugCVRender.runIfRequested() }
                 #endif
         }
         .modelContainer(for: [DossierItem.self, ExpenseReceipt.self])

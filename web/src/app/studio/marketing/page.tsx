@@ -24,6 +24,10 @@ import { TemplateHtmlPreview, TemplateHtmlPreviewHandle } from '@/components/Tem
 import { AD_LAYOUTS, AD_BACKGROUNDS, AdContent } from '@/lib/ad-skins';
 import { buildAdTemplate, AD_SKIN_CSS, AD_SIZES } from '@/lib/ad-poster';
 import { AsyncButton } from '@/components/AsyncButton';
+import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Mockup3D';
+import { renderHtmlToPng } from '@/lib/html-export';
+import { PrintRequest, type PrintFiles } from '@/components/PrintRequest';
+import { posterPrintSize, defaultScene, type PosterScene, type FrameColor } from '@/lib/poster-3d';
 
 // skin groups cho băng chọn phong cách
 const SKIN_GROUPS = Array.from(new Set(AD_LAYOUTS.map((s) => s.group)));
@@ -79,6 +83,11 @@ export default function MarketingStudioPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [htmlStyleId, setHtmlStyleId] = useState<string>('minimal_light'); // luôn render bằng skin (đã bỏ canvas cũ)
   const [htmlSizeId, setHtmlSizeId] = useState<string>('feed45'); // khổ xuất: 4:5 / 1:1 / 9:16 / 16:9
+  // Xem thành phẩm in (poster treo quán) bằng 3D — mặc định vẫn là bản thiết kế phẳng (sản phẩm chính là ảnh đăng mạng)
+  const [previewTab, setPreviewTab] = useState<'3d' | 'flat'>('flat');
+  const [posterScene, setPosterScene] = useState<PosterScene | null>(null); // null = tự chọn theo khổ
+  const [posterFrame, setPosterFrame] = useState<FrameColor>('black');
+  const view3d = useRef<Mockup3DHandle | null>(null);
   const [htmlBgId, setHtmlBgId] = useState<string>('none'); // màu nền áp lên bố cục (tách riêng)
   const [bgGroup, setBgGroup] = useState<string>('Trung tính');
   const [styleGroup, setStyleGroup] = useState<string>('Tất cả');
@@ -736,6 +745,63 @@ export default function MarketingStudioPage() {
   };
   const htmlFrameOpts = { borderWidth: state.borderWidth, borderColor: state.borderColor, borderRadius: state.borderRadius };
   const activeHtmlTemplate = htmlStyleId ? buildAdTemplate(adContent, htmlStyleId, state.season, decorOpts, htmlFrameOpts, htmlSizeId, htmlBgId) : null;
+  // 3D: xuất đúng template HTML đang hiện ra PNG → texture → poster treo tường / dán / giá đứng
+  const scene3d: PosterScene = posterScene ?? (activeHtmlTemplate ? defaultScene(activeHtmlTemplate.w, activeHtmlTemplate.h) : 'frame');
+  const print3d = activeHtmlTemplate ? posterPrintSize(activeHtmlTemplate.w, activeHtmlTemplate.h) : null;
+  const tplKey = (() => {
+    if (!activeHtmlTemplate) return '';
+    const str = activeHtmlTemplate.html + activeHtmlTemplate.css;
+    let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+    return `${activeHtmlTemplate.id}|${activeHtmlTemplate.w}x${activeHtmlTemplate.h}|${h}`;
+  })();
+  const build3d = async () => {
+    const t = activeHtmlTemplate;
+    if (!t) throw new Error('Chưa có poster');
+    const blob = await renderHtmlToPng({ w: t.w, h: t.h, css: t.css, html: t.html }, 1.25);
+    const bmp = await createImageBitmap(blob);
+    const k = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+    const { posterBuilder } = await import('@/lib/poster-3d');
+    const ps = posterPrintSize(t.w, t.h);
+    return posterBuilder({ art: c, wMm: ps.wMm, hMm: ps.hMm, scene: scene3d, frame: posterFrame });
+  };
+  // Đặt in poster: file in = PDF đúng khổ thật (≈150dpi, lề tràn 3mm + vạch cắt); ảnh xem trước = ảnh chụp 3D
+  const posterMaterial = scene3d === 'frame' ? 'Poster + khung' : scene3d === 'tape' ? 'Poster giấy ảnh bóng' : 'Poster formex/ dán tường';
+  const makePosterFiles = async (): Promise<PrintFiles> => {
+    const t = activeHtmlTemplate;
+    if (!t) throw new Error('Chưa có poster');
+    const ps = posterPrintSize(t.w, t.h);
+    const targetW = (ps.wMm / 25.4) * 150;
+    const scale = Math.max(1, Math.min(3, targetW / t.w));
+    const png = await renderHtmlToPng({ w: t.w, h: t.h, css: t.css, html: t.html }, scale);
+    const dataUrl = await new Promise<string>((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.onerror = () => rej(fr.error); fr.readAsDataURL(png); });
+    const { pdfFromImage } = await import('@/lib/print-export');
+    const file = await pdfFromImage(dataUrl, t.w * scale, t.h * scale, { wMm: ps.wMm, hMm: ps.hMm }, 3);
+    const toJpeg = (c: HTMLCanvasElement) => new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('Không tạo được ảnh'))), 'image/jpeg', 0.88));
+    let preview: Blob;
+    try {
+      const wide = t.w > t.h;
+      let c = await view3d.current?.snapshot(1200, wide ? 900 : 1500);
+      if (!c) { // tab 3D chưa mở → dựng 3D ngoài màn hình bằng cùng builder
+        const core = await import('@/lib/mockup3d');
+        c = await core.snapshot(await build3d(), 1200, wide ? 900 : 1500);
+      }
+      preview = await toJpeg(c);
+    } catch {
+      const bmp = await createImageBitmap(png);
+      const k = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+      preview = await toJpeg(c);
+    }
+    return { file, fileName: `mivy-poster-${htmlStyleId || 'in'}-${ps.wMm / 10}x${ps.hMm / 10}cm.pdf`, preview };
+  };
+  // hook cho QC: chạy makeFiles thật (không cần đăng nhập)
+  if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') (window as unknown as { __posterPrint?: () => Promise<{ fileType: string; fileSize: number; fileName: string; previewType: string; previewSize: number; head: string }> }).__posterPrint = async () => {
+    const f = await makePosterFiles();
+    return { fileType: f.file.type, fileSize: f.file.size, fileName: f.fileName, previewType: f.preview.type, previewSize: f.preview.size, head: await f.file.slice(0, 5).text() };
+  };
   const isProductLayout = AD_LAYOUTS.find((s) => s.id === htmlStyleId)?.layout === 'product';
   const styleList = styleGroup === 'Tất cả' ? AD_LAYOUTS : AD_LAYOUTS.filter((s) => s.group === styleGroup);
   const bgList = AD_BACKGROUNDS.filter((b) => b.id === 'none' || b.group === bgGroup);
@@ -850,13 +916,45 @@ export default function MarketingStudioPage() {
               <Download className="w-4 h-4" />
               <span>Tải ảnh PNG</span>
             </AsyncButton>
+            {activeHtmlTemplate && print3d && (
+              <PrintRequest product="poster" title={`Poster ${print3d.label} · ${posterMaterial}`} defaultMaterial={posterMaterial}
+                design={{ style: htmlStyleId, size: htmlSizeId, bg: htmlBgId, scene: scene3d, frame: posterFrame, content: adContent }} makeFiles={makePosterFiles} />
+            )}
           </div>
 
           <div className="glass-panel rounded-2xl p-3 border border-mv-hair space-y-2.5">
-            {/* Poster đang chọn — TO, lấp đầy cột */}
+            {activeHtmlTemplate && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-400">{previewTab === '3d' ? `Bản in poster ${print3d?.label}` : 'Ảnh đăng mạng'}</span>
+                <PreviewTabs value={previewTab} onChange={setPreviewTab} />
+              </div>
+            )}
+            {previewTab === '3d' && activeHtmlTemplate && (
+              <div className="space-y-2" data-testid="poster-3d">
+                <Mockup3DView ref={view3d} build={build3d} rebuildKey={`${tplKey}|${scene3d}|${posterFrame}`} refitKey={`${scene3d}|${htmlSizeId}`} debounce={700} className={`rounded-xl w-full ${activeHtmlTemplate.w > activeHtmlTemplate.h ? 'aspect-[4/3]' : 'aspect-[4/5] max-h-[42vh]'}`} />
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {([['frame', 'Khung treo tường'], ['tape', 'Dán băng keo'], ['stand', 'Giá đứng']] as [PosterScene, string][]).map(([id, name]) => (
+                    <button key={id} type="button" onClick={() => setPosterScene(id)} data-testid={`poster-scene-${id}`}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors ${scene3d === id ? 'border-indigo-500 bg-indigo-500/20 text-mv-fg' : 'border-mv-hair text-slate-300 hover:border-mv-hair-strong'}`}>{name}</button>
+                  ))}
+                  {scene3d === 'frame' && ([['black', 'Đen'], ['oak', 'Gỗ sồi'], ['white', 'Trắng']] as [FrameColor, string][]).map(([id, name]) => (
+                    <button key={id} type="button" onClick={() => setPosterFrame(id)} data-testid={`poster-frame-${id}`}
+                      className={`text-[11px] px-2 py-1 rounded-lg border transition-colors ${posterFrame === id ? 'border-amber-400/70 bg-amber-400/15 text-mv-fg' : 'border-mv-hair text-slate-400 hover:border-mv-hair-strong'}`}>{name}</button>
+                  ))}
+                  <button type="button" data-testid="poster-3d-png" className="ml-auto text-[11px] px-2.5 py-1 rounded-lg border border-mv-hair text-slate-300 hover:border-mv-hair-strong"
+                    onClick={async () => {
+                      const wide = (activeHtmlTemplate?.w ?? 1) > (activeHtmlTemplate?.h ?? 1);
+                      const c = await view3d.current?.snapshot(1600, wide ? 1200 : 2000);
+                      if (!c) return;
+                      const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = `mivy-poster-3d-${htmlStyleId}.png`; a.click();
+                    }}>Tải ảnh 3D</button>
+                </div>
+              </div>
+            )}
+            {/* Poster đang chọn — TO, lấp đầy cột (tab 3D: ẩn nhưng vẫn giữ để xuất PNG) */}
             <div
               onClick={() => { if (activeHtmlTemplate) setHtmlFull(true); else openPreview(state.selected); }}
-              className="group relative rounded-xl overflow-hidden cursor-pointer bg-black/60 !border-indigo-500 ring-1 ring-indigo-500/40 border"
+              className={`group relative rounded-xl overflow-hidden cursor-pointer bg-black/60 !border-indigo-500 ring-1 ring-indigo-500/40 border ${previewTab === '3d' && activeHtmlTemplate ? 'hidden' : ''}`}
               title="Bấm để xem toàn màn hình"
             >
               {activeHtmlTemplate && (

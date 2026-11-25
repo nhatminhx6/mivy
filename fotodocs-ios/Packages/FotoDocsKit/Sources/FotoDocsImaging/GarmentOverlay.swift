@@ -157,6 +157,8 @@ public final class Garment: @unchecked Sendable {
 /// skin stay; only the clothes are drawn over the body, scaled to the user's real neck width and
 /// placed at the base of their neck. Everything of the user below the collar (old clothes,
 /// shoulders) is covered by the suit or replaced by the backdrop.
+private func smooth01(_ v: Double) -> Double { let t = max(0, min(1, v)); return t * t * (3 - 2 * t) }
+
 public enum GarmentOverlay {
     /// Vision drops shiny spots (hair highlights, glare) out of the person: anything not connected to the
     /// photo's border is part of the person.
@@ -219,10 +221,19 @@ public enum GarmentOverlay {
                 for y in 0..<H { for x in 0..<W where r.at(x, y)[0] >= 252 { let d = c.at(x, y), q = o.at(x, y); for k in 0..<4 { d[k] = q[k] } } }
                 fg = c.image() ?? cleaned
             }
+            // last pass over the whole soft edge (the crown too): old wall out of the colours, wall-only
+            // pixels see-through (a light glow round the hair on a coloured backdrop)
+            var blendMask = cut
+            // (from the ORIGINAL photo: the earlier clean-up had already turned wall in the gaps between
+            // strands silver-grey, which no longer reads as wall)
+            if let d = EdgeDefringe.apply(user, alpha: cut,
+                                         face: parts.map { p in { x, y in max(p.face(Double(x), Double(y)), p.skin(Double(x), Double(y))) } }) {
+                fg = d.image; blendMask = d.mask
+            }
             let blend = CIFilter(name: "CIBlendWithMask")
             blend?.setValue(CIImage(cgImage: fg), forKey: kCIInputImageKey)
             blend?.setValue(CIImage(color: CIColor(cgColor: background)).cropped(to: full), forKey: kCIInputBackgroundImageKey)
-            blend?.setValue(CIImage(cgImage: cut), forKey: kCIInputMaskImageKey)
+            blend?.setValue(CIImage(cgImage: blendMask), forKey: kCIInputMaskImageKey)
             if let out = blend?.outputImage, let img = FaceGeometry.ciContext.createCGImage(out, from: full) {
                 base = img; cutout = cut
             }
@@ -645,8 +656,20 @@ public enum GarmentOverlay {
         // narrower than the V left grey wedges of "back of the collar" down to its tip)
         if garment.vSkin == nil {
             // (all the way up to the collar tips: a strip stretched sideways there showed as a straight dark wedge)
+            // the neck's soft outline (feathered over ~0.02 jaw) lies wholly UNDER the collar: half of it showed
+            // inside, mixed with the collar's grey back — a dark line along the collar
+            let under = 0.012 * jaw + 2
             for y in 0..<H {
-                if let wl = wingL[y], let wr = wingR[y] { spanL[y] = min(spanL[y], wl + 1); spanR[y] = max(spanR[y], wr - 1) }
+                if let wl = wingL[y], let wr = wingR[y] { spanL[y] = min(spanL[y], wl - under); spanR[y] = max(spanR[y], wr + under) }
+            }
+            // and eased in above the collar tips (it started on one row: a horizontal seam where the fill began)
+            if let fw = wingL.firstIndex(where: { $0 != nil }), let wl = wingL[fw], let wr = wingR[fw] {
+                let T = max(3, Int(0.08 * jaw))
+                for y in max(0, fw - T)..<fw {
+                    let t = smooth01(Double(y - (fw - T)) / Double(T))
+                    spanL[y] = min(spanL[y], spanL[y] + (wl - under - spanL[y]) * t)
+                    spanR[y] = max(spanR[y], spanR[y] + (wr + under - spanR[y]) * t)
+                }
             }
         }
         // The suit is a clean studio render, the photo a phone shot: soften the suit to the photo's sharpness
@@ -691,7 +714,7 @@ public enum GarmentOverlay {
         // it (push-pull: averaged outward over coarser and coarser grids, so the fill meets the real skin
         // seamlessly), plus the photo's grain. Rebuilding the whole neck looked flat and fake; stretching the
         // real one smeared it and dragged old-collar shadows down.
-        var patch: (x0: Int, y0: Int, w: Int, h: Int, rgb: [Double], m: [Double])?
+        var patch: (x0: Int, y0: Int, w: Int, h: Int, rgb: [Double], m: [Double], det: [Double], kn: [Double], src: [Int], gain: [Double])?
         if ghost, let orig {
             let ry0 = max(0, Int(chin - 0.05 * jaw)), ry1 = min(H - 1, Int(neckBottom) + 3)
             let rx0 = max(0, Int((ry0...ry1).map { spanL[$0] }.min()!) - 6), rx1 = min(W - 1, Int((ry0...ry1).map { spanR[$0] }.max()!) + 6)
@@ -713,6 +736,22 @@ public enum GarmentOverlay {
                     let (_, cb, cr) = ycc(orig.clamped(x, y)); cbs.append(cb); crs.append(cr)
                 }
             }
+            // per column: the bare skin higher up the same column (a shadow running down the neck, like the
+            // side muscle's, is dark there too and stays; a shadow cast by old clothes is darker than above it)
+            let gateFrom = Int(chin + 0.03 * jaw), gateTo = Int((neckEnd ?? collarY) - 0.1 * jaw)
+            var colY = [Double](repeating: skinY, count: rx1 - rx0 + 1)
+            if gateTo > gateFrom + 3 {
+                for x in rx0...rx1 {
+                    var v = [Double]()
+                    for y in stride(from: gateFrom, to: gateTo, by: 2) where Double(x) >= spanL[y] && Double(x) <= spanR[y] {
+                        if let parts, parts.skin(Double(x), Double(y)) < 0.5 || parts.face(Double(x), Double(y)) > 0.5 { continue }
+                        v.append(ycc(orig.clamped(x, y)).0)
+                    }
+                    if v.count >= 3 { colY[x - rx0] = v.sorted()[v.count / 2] }
+                }
+                let raw = colY, kc = 4
+                for i in 0..<colY.count { let a = max(0, i - kc), b = min(colY.count - 1, i + kc); colY[i] = raw[a...b].reduce(0, +) / Double(b - a + 1) }
+            }
             let skinCb = cbs.isEmpty ? (ref?.cb ?? 110) : cbs.sorted()[cbs.count / 2], skinCr = crs.isEmpty ? (ref?.cr ?? 150) : crs.sorted()[crs.count / 2]
             for y in ry0...ry1 {
                 for x in rx0...rx1 {
@@ -730,11 +769,94 @@ public enum GarmentOverlay {
                         allow[i] = 1
                     }
                     let (oy, ocb, ocr) = ycc(o)
-                    k *= smooth((oy / skinY - 0.68) / 0.12)           // cast shadows are not the neck's own light
-                    k *= 1 - smooth((hypot(ocb - skinCb, ocr - skinCr) - 7) / 6)
+                    // shadows cast by old clothes (near where they start) are not the neck's own light; higher up a
+                    // dark band is the jaw's own shadow and stays
+                    if Double(y) > (neckEnd ?? collarY) - 0.1 * jaw { k *= smooth((oy / colY[x - rx0] - 0.7) / 0.12) }
+                    k *= 1 - smooth((hypot(ocb - skinCb, ocr - skinCr) - 14) / 8)
                     allow[i] *= smooth((Double(y) - (chin + 0.02 * jaw)) / (0.08 * jaw))   // never over the chin; eased in
                     known[i] = k
                     for c in 0..<3 { C[i * 3 + c] = Double(o[c]) * k }
+                }
+            }
+            // box blur (two passes) over the region
+            func boxBlur(_ src: [Double], _ ch: Int, _ R: Int) -> [Double] {
+                var v = src, t = src
+                for _ in 0..<2 {
+                    for y in 0..<h { for c in 0..<ch {
+                        var acc = [Double](repeating: 0, count: w + 1)
+                        for x in 0..<w { acc[x + 1] = acc[x] + v[(y * w + x) * ch + c] }
+                        for x in 0..<w { let a = max(0, x - R), b = min(w - 1, x + R); t[(y * w + x) * ch + c] = (acc[b + 1] - acc[a]) / Double(b - a + 1) }
+                    } }
+                    for x in 0..<w { for c in 0..<ch {
+                        var acc = [Double](repeating: 0, count: h + 1)
+                        for y in 0..<h { acc[y + 1] = acc[y] + t[(y * w + x) * ch + c] }
+                        for y in 0..<h { let a = max(0, y - R), b = min(h - 1, y + R); v[(y * w + x) * ch + c] = (acc[b + 1] - acc[a]) / Double(b - a + 1) }
+                    } }
+                }
+                return v
+            }
+            // the real neck's own rim (the photo's soft outline, darker) is not kept: it drew a line where it
+            // met the fill. Bare skin is shrunk a little.
+            let around = boxBlur(known, 1, max(1, Int(0.006 * jaw)))
+            for i in 0..<(w * h) { known[i] *= smooth((around[i] - 0.8) / 0.18) }
+            // weighted colours from the photo (the shrink changed the weights)
+            var det = [Double](repeating: 0, count: w * h * 3)
+            var raw = [Double](repeating: 0, count: w * h * 3)
+            do {
+                for y in 0..<h { for x in 0..<w { let o = orig.at(x + rx0, y + ry0); for c in 0..<3 { raw[(y * w + x) * 3 + c] = Double(o[c]) } } }
+                for i in 0..<(w * h) { for c in 0..<3 { C[i * 3 + c] = raw[i * 3 + c] * known[i] } }
+                // the skin's fine texture (pores, grain): photo minus a small blur, copied into the fill
+                // (only the fine scale, softly limited: a shadow edge copied down showed as a stray shape)
+                let b = boxBlur(raw, 3, max(1, Int(0.012 * jaw)))
+                for i in 0..<(w * h * 3) { let d = raw[i] - b[i]; det[i] = 22 * d / (22 + abs(d)) }
+            }
+            // where each filled pixel takes its texture: the bare skin right above it in the same column,
+            // reflected back and forth (coherent skin continuing past the edge, not scattered grain)
+            // The reflection line (where the bare skin ends) is smoothed across columns: each column on its own
+            // made neighbouring columns copy unrelated rows (streaks like brushed lines).
+            var srcRow = [Int](repeating: -1, count: w * h)
+            let minRun = max(3, Int(0.05 * jaw)), maxRun = max(minRun, Int(0.3 * jaw))
+            var edge = [Int](repeating: -1, count: w)
+            for x in 0..<w {
+                var curStart = -1
+                for y in 0..<h {
+                    if known[y * w + x] > 0.9 {
+                        if curStart < 0 { curStart = y }
+                        if y - curStart + 1 >= minRun { edge[x] = y }
+                    } else { curStart = -1 }
+                }
+            }
+            var edgeS = edge
+            let kE = max(2, Int(0.04 * jaw))
+            for x in 0..<w {
+                let v = edge[max(0, x - kE)...min(w - 1, x + kE)].filter { $0 >= 0 }
+                edgeS[x] = v.isEmpty ? -1 : v.sorted()[v.count / 2]
+            }
+            let L = max(minRun, min(maxRun, Int(0.15 * jaw)))
+            for x in 0..<w {
+                for y in 0..<h {
+                    let i = y * w + x
+                    if known[i] > 0.9 { srcRow[i] = y; continue }
+                    let e = edgeS[x]
+                    guard e >= 0, y > e else { continue }
+                    let q = (y - e) % (2 * L), sy = max(0, q < L ? e - q : e - (2 * L - 1 - q))
+                    if known[sy * w + x] > 0.5 { srcRow[i] = sy }
+                }
+            }
+            // as indices into `det`; columns with no bare skin above (the sides of the V) borrow sideways,
+            // reflected back and forth from the nearest textured column in the same row
+            var srcIdx = (0..<(w * h)).map { srcRow[$0] >= 0 ? srcRow[$0] * w + $0 % w : -1 }
+            for y in 0..<h {
+                let row = (0..<w).map { srcIdx[y * w + $0] }
+                guard let first = row.firstIndex(where: { $0 >= 0 }), let last = row.lastIndex(where: { $0 >= 0 }) else { continue }
+                let L = max(1, min(last - first + 1, maxRun))
+                for x in 0..<first {
+                    let d = first - x, q = (d - 1) % (2 * L), xs = q < L ? first + q : first + (2 * L - 1 - q)
+                    srcIdx[y * w + x] = row[min(last, xs)]
+                }
+                for x in (last + 1)..<max(last + 1, w) {
+                    let d = x - last, q = (d - 1) % (2 * L), xs = q < L ? last - q : last - (2 * L - 1 - q)
+                    srcIdx[y * w + x] = row[max(first, xs)]
                 }
             }
             if known.reduce(0, +) < 30 {
@@ -742,7 +864,7 @@ public enum GarmentOverlay {
                 // (darkest right under it, lighter toward the collar), darker toward the neck's sides
                 let r = ref ?? (Y: 150, cb: 110, cr: 150)
                 for y in 0..<h {
-                    let t = smooth(Double(y + ry0 - Int(chin)) / max(1, neckBottom - chin)), Yr = r.Y * (0.45 + 0.3 * t)
+                    let t = smooth(Double(y + ry0 - Int(chin)) / max(1, neckBottom - chin)), Yr = r.Y * (0.28 + 0.14 * t)
                     for x in 0..<w {
                         let yy = y + ry0, half = max(1, (spanR[yy] - spanL[yy]) / 2), u = (Double(x + rx0) - (spanL[yy] + half)) / half
                         let Y = Yr * (1 - 0.25 * min(1, pow(abs(u), 3)))
@@ -750,7 +872,7 @@ public enum GarmentOverlay {
                         for c in 0..<3 { C[(y * w + x) * 3 + c] = rgb[c] }
                     }
                 }
-                patch = (rx0, ry0, w, h, C, allow)
+                patch = (rx0, ry0, w, h, C, allow, det, [Double](repeating: 0, count: w * h), srcIdx, [Double](repeating: 1, count: w * h))
             } else {
                 // push: halve until one cell, weights capped at 1
                 var lw = [known], lc = [C], lws = [(w, h)]
@@ -784,7 +906,7 @@ public enum GarmentOverlay {
                     col = out
                 }
                 // where the fill shows: not bare skin (softened so real skin fades into the fill), and allowed
-                let R = max(1, Int(0.012 * jaw))
+                let R = max(1, Int(0.025 * jaw))
                 var soft = known, tmp = known
                 for _ in 0..<2 {
                     for y in 0..<h { var acc = [Double](repeating: 0, count: w + 1); for x in 0..<w { acc[x + 1] = acc[x] + soft[y * w + x] }
@@ -792,7 +914,41 @@ public enum GarmentOverlay {
                     for x in 0..<w { var acc = [Double](repeating: 0, count: h + 1); for y in 0..<h { acc[y + 1] = acc[y] + tmp[y * w + x] }
                         for y in 0..<h { let a = max(0, y - R), b = min(h - 1, y + R); soft[y * w + x] = (acc[b + 1] - acc[a]) / Double(b - a + 1) } }
                 }
-                patch = (rx0, ry0, w, h, col, (0..<(w * h)).map { allow[$0] * (1 - known[$0] * min(1, soft[$0] * 1.5)) })
+                let mFill = (0..<(w * h)).map { allow[$0] * (1 - known[$0] * min(1, soft[$0] * 1.5)) }
+                // Inside the collar only the FRONT of the neck shows (the collar hides its sides): its light is
+                // nearly even across. The real sides there were dark (and the fill took that darkness), which
+                // read as a black line along the collar: brighten toward the row's centre light (never darken).
+                var gain = [Double](repeating: 1, count: w * h)
+                if let fw = wingL.firstIndex(where: { $0 != nil }) {
+                    var lum = [Double](repeating: 0, count: w * h)
+                    for i in 0..<(w * h) {
+                        var c3 = [0.0, 0.0, 0.0]
+                        for c in 0..<3 { c3[c] = raw[i * 3 + c] * known[i] + col[i * 3 + c] * (1 - known[i]) }
+                        lum[i] = 0.299 * c3[0] + 0.587 * c3[1] + 0.114 * c3[2]
+                    }
+                    let L = boxBlur(lum, 1, max(2, Int(0.03 * jaw)))
+                    for y in 0..<h {
+                        let yy = y + ry0
+                        guard yy >= fw, let wl = wingL[yy], let wr = wingR[yy], wr - wl > 4 else { continue }
+                        let mid = (wl + wr) / 2, half = (wr - wl) / 2
+                        var cv = [Double]()
+                        for x in Int(mid - 0.3 * half)...Int(mid + 0.3 * half) where x - rx0 >= 0 && x - rx0 < w { cv.append(L[y * w + x - rx0]) }
+                        guard !cv.isEmpty else { continue }
+                        let lc = cv.sorted()[cv.count / 2]
+                        // only below the collar tips (the jaw's own shadow right under the chin stays), eased in
+                        let ramp = smooth01(Double(yy - fw) / max(1, 0.15 * jaw))
+                        let D2 = 0.16 * jaw
+                        for x in max(rx0, Int(wl) - 2)...min(rx1, Int(wr) + 2) {
+                            // only along the collar: the rest of the neck keeps the photo's own light
+                            let near = 1 - smooth01(min(Double(x) - wl, wr - Double(x)) / D2)
+                            guard near > 0 else { continue }
+                            let u = min(1, abs(Double(x) - mid) / half), target = lc * (1 - 0.06 * pow(u, 3))
+                            let g = max(1, min(1.8, target / max(1, L[y * w + x - rx0])))
+                            gain[y * w + x - rx0] = 1 + (g - 1) * ramp * near
+                        }
+                    }
+                }
+                patch = (rx0, ry0, w, h, col, mFill, det, known, srcIdx, gain)
             }
         }
         var neckRef: (Y: Double, cb: Double, cr: Double)?
@@ -850,13 +1006,25 @@ public enum GarmentOverlay {
             }
             if let pt = patch, yy >= pt.y0, yy < pt.y0 + pt.h {
                 for x in max(0, pt.x0)..<min(W, pt.x0 + pt.w) {
-                    let i = (yy - pt.y0) * pt.w + (x - pt.x0), m = pt.m[i]
+                    let i = (yy - pt.y0) * pt.w + (x - pt.x0), m = pt.m[i], gn = pt.gain[i]
+                    if gn > 1.001 { let u = px.at(x, yy); for c in 0..<3 { u[c] = UInt8(min(255, Double(u[c]) * gn)) } }
                     guard m > 0.002 else { continue }
+                    // texture: the fine detail of a bare-skin pixel nearby (a few hashed tries), else plain grain
                     var hs = UInt32(truncatingIfNeeded: x &* 374761393 ^ yy &* 668265263)
-                    hs = (hs ^ (hs >> 13)) &* 1274126177; hs ^= hs >> 16
+                    var tex: [Double]?
+                    if pt.src[i] >= 0 { let j = pt.src[i] * 3; tex = [pt.det[j], pt.det[j + 1], pt.det[j + 2]] }
+                    let reachT = max(4, Int(0.3 * jaw))
+                    for _ in 0..<(tex == nil ? 10 : 0) {
+                        hs = (hs ^ (hs >> 13)) &* 1274126177; hs ^= hs >> 16
+                        let sx = x - pt.x0 + Int(hs % UInt32(2 * reachT + 1)) - reachT
+                        let sy = yy - pt.y0 + Int((hs >> 12) % UInt32(2 * reachT + 1)) - reachT
+                        guard sx >= 0, sy >= 0, sx < pt.w, sy < pt.h, pt.kn[sy * pt.w + sx] > 0.9 else { continue }
+                        let j = (sy * pt.w + sx) * 3
+                        tex = [pt.det[j], pt.det[j + 1], pt.det[j + 2]]; break
+                    }
                     let nz = ((Double(hs & 0xFFFF) + Double(hs >> 16)) / 65535 - 1) / 0.408 * skinGrain * 0.8
                     let u = px.at(x, yy)
-                    for c in 0..<3 { u[c] = UInt8(max(0, min(255, Double(u[c]) * (1 - m) + (pt.rgb[i * 3 + c] + nz) * m))) }
+                    for c in 0..<3 { u[c] = UInt8(max(0, min(255, Double(u[c]) * (1 - m) + (pt.rgb[i * 3 + c] * gn + (tex?[c] ?? nz)) * m))) }
                     u[3] = 255
                 }
             } else if !ghost, let src = mirrorRow[yy], let orig, let e = neckStop {
@@ -916,7 +1084,7 @@ public enum GarmentOverlay {
                     // round the neck: darker toward its sides, and in the jaw's shadow right under the jaw
                     // (faded in from the jaw line so the face itself is never touched)
                     let fadeIn = smooth(below / (0.05 * jaw)) * (1 - keepFace)
-                    let rim = smooth((abs(Double(x) - mid) / half - 0.55) / 0.45)
+                    let rim = smooth((abs(Double(x) - mid) / half - 0.55) / 0.45) * (ghost ? 1 - smooth((Double(yy) - firstWing) / (0.12 * jaw)) : 1)
                     let under = jawRow[x] == nil ? 0 : 1 - smooth(below / jawShade)
                     let out = max(l - Double(x), Double(x) - r) + feather / 2
                     let outside = smooth(out / feather)
@@ -972,24 +1140,25 @@ public enum GarmentOverlay {
                 // the collar wraps round the neck: shadow on the neck along the collar's inner edges
                 if let wl = wingL[yy], let wr = wingR[yy], Double(x) > wl, Double(x) < wr {
                     // (ghost suit: the neck fills the whole V, so a strong narrow band read as two painted stripes)
-                    let d = min(Double(x) - wl, wr - Double(x)), D = (ghost ? 0.07 : 0.045) * jaw
+                    let d = min(Double(x) - wl, wr - Double(x)), D = (ghost ? 0.08 : 0.045) * jaw
                     if d < D {
-                        // ghost: a thin dark contact line where the collar sits on the skin, then a soft falloff
-                        let tight = ghost ? 0.28 * exp(-d / max(1, 0.008 * jaw)) : 0
-                        let k = 1 - min(0.4, (ghost ? 0.12 : 0.3) * pow(1 - d / D, ghost ? 2 : 3) + tight)
+                        // ghost: only a soft falloff (a tight dark contact line read as a drawn black line)
+                        let k = 1 - (ghost ? 0.07 : 0.3) * pow(1 - d / D, ghost ? 2 : 3)
                         for c in 0..<3 { u[c] = UInt8(Double(u[c]) * k) }
                     }
                 }
                 // soft contact shadow on the neck just above the collar
                 let sTop = suitTop[x]
                 if Double(x) >= spanL[yy], Double(x) <= spanR[yy], dx < neckHalf * 1.3, yy < sTop, Double(sTop - yy) < shadowDepth {
-                    let k = 1 - 0.22 * (1 - Double(sTop - yy) / shadowDepth)
+                    // (ghost suit: the collar edge runs diagonally, so this shadow straight above it traced the
+                    // edge as a dark line — kept only faint)
+                    let k = 1 - (ghost ? 0.04 : 0.22) * (1 - Double(sTop - yy) / shadowDepth)
                     u[0] = UInt8(Double(u[0]) * k); u[1] = UInt8(Double(u[1]) * k); u[2] = UInt8(Double(u[2]) * k)
                 }
                 let g = suit.at(x, yy)
                 let a = Double(g[3]) / 255
                 var cast = 1.0
-                if let wl = wingL[yy], let wr = wingR[yy], Double(yy) <= neckBottom {
+                if !ghost, let wl = wingL[yy], let wr = wingR[yy], Double(yy) <= neckBottom {
                     let d = Double(x) <= wl ? wl - Double(x) : Double(x) >= wr ? Double(x) - wr : -1, D = 0.03 * jaw
                     if d >= 0, d < D { cast = 1 - 0.2 * (1 - d / D) * (1 - d / D) }
                 }

@@ -80,7 +80,7 @@ struct ItineraryView: View {
             store.value.setDates(from: DayDate(s), to: DayDate(end))
         }
         .onChange(of: end) { _, e in store.value.setDates(from: DayDate(start), to: DayDate(e)) }
-        .sheet(item: $share) { ShareSheet(items: [$0.url]) }
+        .sheet(item: $share) { FilePreviewSheet(url: $0.url) }
     }
 
     private func dayCard(_ day: Binding<Itinerary.Day>) -> some View {
@@ -193,7 +193,7 @@ struct TranslationEditView: View {
         .navigationBarTitleDisplayMode(.inline)
         .fotoHidesTabBar()
         .onAppear(perform: prefill)
-        .sheet(item: $share) { ShareSheet(items: [$0.url]) }
+        .sheet(item: $share) { FilePreviewSheet(url: $0.url) }
     }
 
     /// First visit: fill what the visa profile already knows.

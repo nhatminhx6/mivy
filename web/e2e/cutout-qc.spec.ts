@@ -45,6 +45,7 @@ for (const kind of ['sticker', 'keychain'] as const) {
     const presets = page.getByTestId('cut-preset');
     await expect(presets.first()).toBeVisible({ timeout: 60_000 });
     await expect(page.locator('[data-testid="cut-preset"] svg')).toHaveCount(await presets.count(), { timeout: 60_000 });
+    await page.getByTestId('tab-flat').click(); // mặc định tab 3D (cả sticker lẫn móc khoá) → soi bản thiết kế phẳng
     const n = await presets.count();
     for (let i = 0; i < n; i++) {
       await presets.nth(i).click();
@@ -73,6 +74,7 @@ test('sticker: chữ dài / chỉ chữ / viền dày vẫn 1 nét cắt', async
   test.setTimeout(120_000);
   await page.goto('/studio/sticker');
   await expect(page.locator('[data-testid="cut-preset"] svg').first()).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId('tab-flat').click();
   await page.getByTestId('cut-src-none').click();
   for (const t of ['A', 'Cảm ơn quý khách đã tin tưởng\nủng hộ shop mình nhiều nha\nhẹn gặp lại', 'Hi   bạn']) {
     await page.getByTestId('cut-text').fill(t);

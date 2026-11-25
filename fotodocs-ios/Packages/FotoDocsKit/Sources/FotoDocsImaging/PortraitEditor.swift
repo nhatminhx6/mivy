@@ -126,7 +126,7 @@ public actor PortraitEditor {
         // the overlay cuts the person out itself (cleaning the old wall out of the edges): original backdrop in
         if let garment = garments[name], let full = adjusted(settings, replaceBackground: false),
            let whole = context.createCGImage(full, from: full.extent),
-           let user = Self.headAndShoulders(whole),
+           let user = Self.headAndShoulders(whole, hairTop: hairTop(whole)),
            let dressed = GarmentOverlay.compose(user: user, garment: garment, alternatives: builds, background: backdrop, tuning: settings.outfitTuning) {
             let ci = CIImage(cgImage: dressed)
             let crop = Self.aspectCropRect(in: ci.extent, aspect: targetAspect, zoom: settings.zoom, offsetY: settings.offsetY)
@@ -135,9 +135,30 @@ public actor PortraitEditor {
         return render(settings: settings, targetAspect: targetAspect).map { PortraitRender(image: $0, outfitFitted: false) }
     }
 
+    /// Top of the head (hair included) from the person mask, in top-left pixels of `image`: the first row
+    /// over the face's middle where the person covers most of a narrow band. nil without a mask.
+    private func hairTop(_ image: CGImage) -> Double? {
+        guard let mask, let pts = FaceGeometry.jawContour(image),
+              let minX = pts.map(\.x).min(), let maxX = pts.map(\.x).max(),
+              let mcg = context.createCGImage(mask, from: mask.extent),
+              mcg.width == image.width, mcg.height == image.height else { return nil }
+        let m = RGBABitmap(mcg)
+        let cx = (minX + maxX) / 2, half = 0.25 * (maxX - minX)
+        let x0 = max(0, Int(cx - half)), x1 = min(m.w - 1, Int(cx + half))
+        guard x1 > x0 else { return nil }
+        for y in 0..<m.h {
+            var n = 0
+            for x in x0...x1 where m.at(x, y)[0] > 127 { n += 1 }
+            if Double(n) > 0.3 * Double(x1 - x0 + 1) { return Double(y) }
+        }
+        return nil
+    }
+
     /// An ID photo only needs head and shoulders: a waist-up or full-body photo is cropped to that first,
     /// so the suit (a head-and-shoulders template) fills the frame instead of ending mid-chest.
-    static func headAndShoulders(_ image: CGImage) -> CGImage? {
+    /// `hairTop`: top of the head from the person mask — the face contour stops around the eyes, and a
+    /// tall hairstyle reached the frame's top edge (no backdrop above the head, as an ID photo needs).
+    static func headAndShoulders(_ image: CGImage, hairTop: Double? = nil) -> CGImage? {
         guard let pts = FaceGeometry.jawContour(image),
               let minX = pts.map(\.x).min(), let maxX = pts.map(\.x).max(),
               let top = pts.map(\.y).min() else { return image }
@@ -145,7 +166,12 @@ public actor PortraitEditor {
         let W = Double(image.width), H = Double(image.height)
         // hair above the contour (~1 jaw), down to just above where the suit templates end (~1.25 jaw under the chin)
         guard let chin = pts.map(\.y).max() else { return image }
-        let y0 = max(0, top - 1.0 * jaw), y1 = min(H, chin + 1.12 * jaw)
+        var y0 = max(0, top - 1.0 * jaw)
+        let y1 = min(H, chin + 1.12 * jaw)
+        if let hairTop, hairTop < chin - 0.5 * jaw {
+            // backdrop above the head: about 10% of the head's height (hair to chin)
+            y0 = max(0, min(y0, hairTop - 0.12 * (chin - hairTop)))
+        }
         let w = min(W, 3.2 * jaw), h = y1 - y0
         let x0 = max(0, min(W - w, cx - w / 2))
         // already head-and-shoulders: leave it
@@ -171,7 +197,16 @@ public actor PortraitEditor {
             curve.point2 = CGPoint(x: 0.65, y: 0.35)
             curve.point3 = CGPoint(x: 0.88, y: 0.9)
             curve.point4 = CGPoint(x: 1, y: 1)
-            blend.maskImage = curve.outputImage ?? mask
+            var blendMask = curve.outputImage ?? mask
+            // the whole soft edge (hair at the crown too): old wall out of the colours, wall-only pixels
+            // see-through — a light glow round the hair otherwise shows on a coloured backdrop
+            if let srcCG = context.createCGImage(image, from: extent),
+               let maskCG = context.createCGImage(blendMask.cropped(to: extent), from: extent),
+               let clean = EdgeDefringe.apply(srcCG, alpha: maskCG) {
+                blend.inputImage = CIImage(cgImage: clean.image)
+                blendMask = CIImage(cgImage: clean.mask)
+            }
+            blend.maskImage = blendMask
             image = blend.outputImage ?? image
         }
         let colorControls = CIFilter.colorControls()

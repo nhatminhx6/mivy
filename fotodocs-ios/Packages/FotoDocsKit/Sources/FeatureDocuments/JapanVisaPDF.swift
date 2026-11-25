@@ -18,26 +18,41 @@ enum JapanVisaPDF {
     /// Text boxes on page 1 (field names are the form's own, matched to the printed labels by position).
     private static func texts(_ p: VisaProfile) -> [String: String] {
         let dmy = { (d: DayDate?) in d?.formatted(.dmySlash) ?? "" }
-        let birth = [Latin.upper(p.placeOfBirth), p.countryEN].filter { !$0.isEmpty }.joined(separator: ", ")
         return [
             "T2[0]": p.surname,                                   // Surname
             "T7[0]": p.givenNames,                                // Given and middle names
             "#area[4].T14[0]": dmy(p.dateOfBirth),                // Date of birth
-            "#area[4].T16[0]": p.placeOfBirth.isEmpty ? "" : birth, // Place of birth
             "T50[0]": p.countryEN,                                // Nationality
             "T37[0]": p.idNumber,                                 // ID No. issued by your government
             "T49[0]": p.passportNumber,                           // Passport No.
-            "#area[9].T57[1]": Latin.upper(p.passportIssuePlace), // Place of issue
+            "#area[9].T57[1]": Latin.issuer(p.passportIssuePlace), // Place of issue
             "#area[9].T53[0]": dmy(p.passportIssueDate),          // Date of issue
-            "#area[0].T57[0]": Latin.upper(p.passportIssuePlace), // Issuing authority
+            "#area[0].T57[0]": Latin.issuer(p.passportIssuePlace), // Issuing authority
             "#area[0].T59[0]": dmy(p.passportExpiry),             // Date of expiry
-            "T0[1]": Latin.upper(p.address),                      // Current residential address
+            "T0[1]": Latin.address(p.address),                      // Current residential address
             "#area[11].T3[0]": p.phone,                           // Mobile No.
             "T3[1]": p.email,                                     // E-Mail
             "T5[0]": Latin.upper(p.occupation),                   // Current profession
-            "#area[3].emp_name[0]": Latin.upper(p.employer),      // Employer name
-            "emp_adr[0]": Latin.upper(p.employerAddress),         // Employer address
+            "#area[3].emp_name[0]": Latin.company(p.employer),      // Employer name
+            "emp_adr[0]": Latin.address(p.employerAddress),         // Employer address
         ].mapKeys { p1 + $0 }
+    }
+
+    /// Place of birth is one box over three printed columns, (City) (State or Province) (Country) at PDF x
+    /// 293 / 353 / 457 (box 265…549): a city goes under (City), a province under (State or Province), the
+    /// country under (Country). Written in English ("HO CHI MINH CITY", "NGHE AN PROVINCE").
+    private static let birthField = p1 + "#area[4].T16[0]"
+    private static let birthProvinceX: CGFloat = 348, birthCountryX: CGFloat = 448
+    /// centrally-run cities: a city even when typed without "TP"
+    private static let cities: Set<String> = ["HA NOI", "HO CHI MINH", "HAI PHONG", "DA NANG", "CAN THO", "HUE"]
+
+    private static func birthTexts(_ p: VisaProfile, in box: CGRect) -> [(CGRect, String)] {
+        let place = Latin.address(p.placeOfBirth)
+        let isCity = place.hasSuffix(" CITY") || cities.contains(place)
+        let cityBox = CGRect(x: box.minX, y: box.minY, width: birthProvinceX - box.minX - 4, height: box.height)
+        let provinceBox = CGRect(x: birthProvinceX, y: box.minY, width: birthCountryX - birthProvinceX - 4, height: box.height)
+        let countryBox = CGRect(x: birthCountryX, y: box.minY, width: box.maxX - birthCountryX, height: box.height)
+        return [(isCity ? cityBox : provinceBox, place), (countryBox, p.countryEN)].filter { !$0.1.isEmpty }
     }
 
     /// Radio groups: field name and the on-state of the box to tick.
@@ -66,6 +81,7 @@ enum JapanVisaPDF {
         for a in first.annotations where a.type == "Widget" {
             guard let name = a.fieldName else { continue }
             if let v = values[name], !v.isEmpty { textRects.append((a.bounds, v)) }
+            if name == birthField { textRects += birthTexts(profile, in: a.bounds) }
             if checks.contains(where: { $0.0 == name && $0.1 == a.buttonWidgetStateString }) { tickRects.append(a.bounds) }
         }
         for i in 0..<doc.pageCount {
@@ -143,7 +159,48 @@ private extension Dictionary {
     }
 }
 
-struct JapanVisaPDFSheet: View {
+/// Destinations whose OFFICIAL form the app fills itself (the file the applicant prints and submits).
+enum OfficialVisaForm {
+    case japan, korea, schengen
+
+    static func of(_ countryID: String) -> OfficialVisaForm? {
+        switch countryID {
+        case JapanVisaPDF.countryID: JapanVisaPDF.isAvailable ? .japan : nil
+        case KoreaVisaPDF.countryID: KoreaVisaPDF.isAvailable ? .korea : nil
+        case SchengenVisaPDF.countryID: SchengenVisaPDF.isAvailable ? .schengen : nil
+        default: nil
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .japan: "Form visa Nhật (PDF)"
+        case .korea: "Form visa Hàn Quốc (PDF)"
+        case .schengen: "Form visa Schengen (PDF)"
+        }
+    }
+    /// Schengen's form has no photo box (the photo is handed in apart).
+    var takesPhoto: Bool { self != .schengen }
+    var note: String {
+        switch self {
+        case .japan: "App điền sẵn thông tin cá nhân vào form chính thức của Bộ Ngoại giao Nhật, dán ảnh visa vào khung ảnh. Bạn in ra, tự điền phần chuyến đi rồi ký tên."
+        case .korea: "App điền sẵn thông tin cá nhân vào form chính thức của Hàn Quốc (mẫu 17, bản 2022), tick sẵn giới tính, loại hộ chiếu, hôn nhân, nghề nghiệp và dán ảnh vào khung ảnh. Bạn in ra, tự điền phần chuyến đi, người mời, cam kết rồi ký tên."
+        case .schengen: "App điền sẵn thông tin cá nhân vào mẫu đơn Schengen chung của EU (ô 1–22), tick sẵn giới tính, hôn nhân, loại hộ chiếu. Bạn in ra, tự điền phần chuyến đi (ô 23 trở đi), ký tên và nộp kèm ảnh visa."
+        }
+    }
+    var photoLabel: String { self == .japan ? "Chọn ảnh visa 45×35 mm" : "Chọn ảnh visa 35×45 mm" }
+
+    @MainActor func fill(_ p: VisaProfile, photo: UIImage?) -> URL? {
+        switch self {
+        case .japan: JapanVisaPDF.fill(p, photo: photo)
+        case .korea: KoreaVisaPDF.fill(p, photo: photo)
+        case .schengen: SchengenVisaPDF.fill(p)
+        }
+    }
+}
+
+struct OfficialVisaFormSheet: View {
+    let form: OfficialVisaForm
     let profile: VisaProfile
     @Environment(\.dismiss) private var dismiss
     @State private var photoItem: PhotosPickerItem?
@@ -154,10 +211,10 @@ struct JapanVisaPDFSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("App điền sẵn thông tin cá nhân vào form chính thức của Bộ Ngoại giao Nhật, dán ảnh visa vào khung ảnh. Bạn in ra, tự điền phần chuyến đi rồi ký tên.")
+                    Text(form.note)
                         .font(.bvp(.subheadline))
                         .foregroundStyle(FotoDocs.Palette.textSecondary)
-                    PhotosPicker(selection: $photoItem, matching: .images) {
+                    if form.takesPhoto { PhotosPicker(selection: $photoItem, matching: .images) {
                         HStack(spacing: 14) {
                             ZStack {
                                 FotoDocs.Palette.primaryTint
@@ -170,7 +227,7 @@ struct JapanVisaPDFSheet: View {
                             .frame(width: 70, height: 90)
                             .clipShape(.rect(cornerRadius: 8))
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(photo == nil ? "Chọn ảnh visa 45×35 mm" : "Đổi ảnh")
+                                Text(photo == nil ? form.photoLabel : "Đổi ảnh")
                                     .font(.bvp(.headline, .semibold))
                                     .foregroundStyle(FotoDocs.Palette.textPrimary)
                                 Text("Ảnh chụp bằng app, nền trắng. Có thể bỏ qua rồi dán ảnh giấy sau.")
@@ -182,21 +239,15 @@ struct JapanVisaPDFSheet: View {
                         .padding(14)
                         .fotoCard(16)
                     }
-                    .buttonStyle(.plain)
-                    if JapanVisaPDF.isAvailable {
-                        PillButton("Tạo file PDF", systemImage: "doc.fill") {
-                            share = JapanVisaPDF.fill(profile, photo: photo).map(SharePayload.init)
-                        }
-                    } else {
-                        Text("Form chính thức chưa có trong bản này.")
-                            .font(.bvp(.subheadline, .semibold))
-                            .foregroundStyle(FotoDocs.Palette.warning)
+                    .buttonStyle(.plain) }
+                    PillButton("Tạo file PDF", systemImage: "doc.fill") {
+                        share = form.fill(profile, photo: photo).map(SharePayload.init)
                     }
                 }
                 .padding(20)
             }
             .background(FotoDocs.Palette.background)
-            .navigationTitle("Form visa Nhật (PDF)")
+            .navigationTitle(form.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Đóng") { dismiss() } }
@@ -207,6 +258,6 @@ struct JapanVisaPDFSheet: View {
                 if let data = try? await item?.loadTransferable(type: Data.self) { photo = UIImage(data: data) }
             }
         }
-        .sheet(item: $share) { ShareSheet(items: [$0.url]) }
+        .sheet(item: $share) { FilePreviewSheet(url: $0.url) }
     }
 }

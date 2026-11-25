@@ -118,9 +118,27 @@ enum DocumentBuilder {
 
     private static func label(_ text: String, above rect: CGRect) {
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 11, weight: .semibold),
+            .font: PDFFont.make(11, weight: .semibold),
             .foregroundColor: UIColor.darkGray,
         ]
         (text as NSString).draw(at: CGPoint(x: rect.minX, y: rect.minY - 16), withAttributes: attrs)
+    }
+}
+
+/// Fonts for the PDFs the app draws itself. Not the iOS system font: it writes "Đ" into the PDF text as the look-alike
+/// "Ð" (U+00D0), so copying "Đi lại" or searching the file for it fails. Be Vietnam Pro (bundled, registered at launch)
+/// keeps every Vietnamese letter; the system font is only the fallback when it is not registered.
+enum PDFFont {
+    static func make(_ size: CGFloat, weight: UIFont.Weight = .regular, italic: Bool = false) -> UIFont {
+        let name = weight >= .bold ? "BeVietnamPro-Bold" : weight >= .semibold ? "BeVietnamPro-SemiBold"
+            : weight >= .medium ? "BeVietnamPro-Medium" : "BeVietnamPro-Regular"
+        guard let font = UIFont(name: name, size: size) else {
+            let sys = UIFont.systemFont(ofSize: size, weight: weight)
+            return italic ? sys.fontDescriptor.withSymbolicTraits(.traitItalic).map { UIFont(descriptor: $0, size: size) } ?? sys : sys
+        }
+        guard italic else { return font }
+        // no italic file bundled: slant the upright one
+        let slant = CGAffineTransform(a: 1, b: 0, c: 0.2, d: 1, tx: 0, ty: 0)
+        return UIFont(descriptor: font.fontDescriptor.withMatrix(slant), size: size)
     }
 }
