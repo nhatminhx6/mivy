@@ -127,8 +127,15 @@ export type CtPrint = '1' | '2' | 'full';
 export interface CtSpec {
   style: CtStyle; size: string; flute: string; board: CtBoard; print: CtPrint;
   inks: [string, string]; palette: string; layout: string; font: string; icons: CtIcon[];
+  dimensions?: Pick<CtSize, 'l' | 'w' | 'h'>;
 }
-export interface CtTemplate { id: string; name: string; spec: Omit<CtSpec, 'size' | 'flute'> }
+export function ctSpecSize(spec: CtSpec): CtSize {
+  const preset = ctSize(spec.size);
+  if (!spec.dimensions) return preset;
+  const { l, w, h } = spec.dimensions;
+  return { ...preset, l, w, h, name: `${l} × ${w} × ${h} mm` };
+}
+export interface CtTemplate { id: string; name: string; spec: Omit<CtSpec, 'size' | 'flute' | 'dimensions'> }
 const IC_ALL: CtIcon[] = ['fragile', 'up', 'dry', 'stack'];
 export const CT_TEMPLATES: CtTemplate[] = [
   { id: 'rsc-basic', name: 'Kho cơ bản · kraft đen', spec: { style: 'rsc', board: 'kraft', print: '1', inks: ['black', 'black'], palette: 'pink', layout: 'center', font: 'oswald', icons: ['up', 'dry'] } },
@@ -558,7 +565,7 @@ const Q = (...pts: Pt[]): Poly => ({ pts });
 const slot = (x: number, y: number, w: number, h: number) => rrect(x, y, w, h, Math.min(w, h) / 2);
 
 function buildDie(spec: CtSpec): DieBase {
-  const s = ctSize(spec.size), t = ctFlute(spec.flute).t;
+  const s = ctSpecSize(spec), t = ctFlute(spec.flute).t;
   const L = s.l, W = s.w, H = s.h;
   const polys: Poly[] = [], panels: Panel[] = [], folds: [Pt, Pt][] = [];
   let holes = '';
@@ -692,7 +699,7 @@ export function CartonDieline({ spec, data, logo, side = 'out', preview = false,
   const die = ctDieline(spec);
   const c = ctxOf(spec, data, logo);
   const [uid] = useState(() => `ctd${++artSeq}`);
-  const s = ctSize(spec.size), fl = ctFlute(spec.flute);
+  const s = ctSpecSize(spec), fl = ctFlute(spec.flute);
   const inside = side === 'in';
   // mặt trong: toạ độ x lật gương quanh tâm tờ (khuôn nhìn từ mặt sau), chữ vẫn xuôi
   const mx = (x: number) => (inside ? die.W - x : x);
@@ -752,7 +759,7 @@ export function CartonDieline({ spec, data, logo, side = 'out', preview = false,
 
 // thumbnail mẫu: mặt dài (RSC) / nắp (mailer) trên nền giấy
 export function HeroThumb({ spec, data, logo, style }: { spec: CtSpec; data: CtData; logo?: string; style?: CSSProperties }) {
-  const s = ctSize(spec.size);
+  const s = ctSpecSize(spec);
   const w = s.l, h = spec.style === 'rsc' ? s.h : s.w;
   const art = heroArt(w, h, ctxOf(spec, data, logo));
   return (

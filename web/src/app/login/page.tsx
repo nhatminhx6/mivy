@@ -1,29 +1,38 @@
 'use client';
-// Đăng nhập / đăng ký bằng email + mật khẩu (+ SĐT/Zalo để nhận báo giá in).
 
 import Link from 'next/link';
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { authApi } from '@/lib/auth';
+import { authApi, useAuth } from '@/lib/auth';
 
 function LoginForm() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const params = useSearchParams();
   const [mode, setMode] = useState<'login' | 'register'>(params.get('mode') === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   // chỉ cho quay về trang nội bộ
-  const next = (params.get('next') || '').startsWith('/') && !(params.get('next') || '').startsWith('//') ? params.get('next')! : '/studio/templates';
+  const returnPath = params.get('next') || '';
+  const next = /^\/(?![/\\])/.test(returnPath) && !/[\s\\]/.test(returnPath) ? returnPath : '/studio/templates';
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setErr('');
     try {
-      if (mode === 'register') await authApi.register(email, password, name, phone); else await authApi.login(email, password);
+      if (mode === 'register') {
+        if (password !== passwordConfirmation) throw new Error('Mật khẩu xác nhận chưa khớp.');
+        await authApi.register(name, phone, email, password, passwordConfirmation);
+      } else {
+        await authApi.login(identifier, password);
+      }
+      await refresh();
       router.replace(next);
     } catch (e2) { setErr(e2 instanceof Error ? e2.message : 'Có lỗi, thử lại nhé.'); setBusy(false); }
   };
@@ -40,14 +49,22 @@ function LoginForm() {
         </div>
         <div className="mv-seg flex" data-testid="auth-tabs">{tab('login', 'Đăng nhập')}{tab('register', 'Đăng ký')}</div>
         <form onSubmit={submit} className="space-y-3">
-          {mode === 'register' && (
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block"><span className="mv-label">Tên của bạn</span><input className="mv-input w-full mt-1" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
-              <label className="block"><span className="mv-label">SĐT / Zalo</span><input className="mv-input w-full mt-1" inputMode="tel" placeholder="Nhận báo giá in" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" data-testid="auth-phone" /></label>
-            </div>
+          {mode === 'register' ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block"><span className="mv-label">Tên của bạn</span><input className="mv-input w-full mt-1" required value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
+                <label className="block"><span className="mv-label">SĐT / Zalo</span><input className="mv-input w-full mt-1" type="tel" required placeholder="0909 123 456" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" data-testid="auth-phone" /></label>
+              </div>
+              <label className="block"><span className="mv-label">Email (tùy chọn)</span><input className="mv-input w-full mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" data-testid="auth-email" /></label>
+              <label className="block"><span className="mv-label">Mật khẩu</span><input className="mv-input w-full mt-1" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" data-testid="auth-password" /></label>
+              <label className="block"><span className="mv-label">Xác nhận mật khẩu</span><input className="mv-input w-full mt-1" type="password" required minLength={6} value={passwordConfirmation} onChange={(e) => setPasswordConfirmation(e.target.value)} autoComplete="new-password" data-testid="auth-password-confirmation" /></label>
+            </>
+          ) : (
+            <>
+              <label className="block"><span className="mv-label">Số điện thoại hoặc email</span><input className="mv-input w-full mt-1" type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" autoCapitalize="none" data-testid="auth-identifier" /></label>
+              <label className="block"><span className="mv-label">Mật khẩu</span><input className="mv-input w-full mt-1" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" data-testid="auth-password" /></label>
+            </>
           )}
-          <label className="block"><span className="mv-label">Email</span><input className="mv-input w-full mt-1" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" data-testid="auth-email" /></label>
-          <label className="block"><span className="mv-label">Mật khẩu</span><input className="mv-input w-full mt-1" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} data-testid="auth-password" /></label>
           {err && <p className="text-xs text-rose-300" data-testid="auth-error">{err}</p>}
           <button type="submit" disabled={busy} className="w-full mv-btn mv-btn-primary !flex justify-center !py-2.5 disabled:opacity-70" data-testid="auth-submit">
             {busy && <Loader2 className="w-4 h-4 animate-spin" />} {mode === 'register' ? 'Tạo tài khoản' : 'Đăng nhập'}

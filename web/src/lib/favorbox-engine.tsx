@@ -776,41 +776,48 @@ export function FavorThumb({ spec, data, logo, style }: { spec: FbSpec; data: Fb
   return <FaceSvg spec={spec} data={data} logo={logo} face={f} style={style} />;
 }
 
-function DieBody({ spec, data, logo, die, mode, uid }: { spec: FbSpec; data: FbData; logo?: string; die: Die; mode: 'print' | 'preview' | 'mask'; uid: string }) {
+function DieBody({ spec, data, logo, die, mode, uid, layer = 'all' }: { spec: FbSpec; data: FbData; logo?: string; die: Die; mode: 'print' | 'preview' | 'mask'; uid: string; layer?: 'all' | 'in' | 'cut' | 'fold' }) {
   const lid = (n: string) => (mode === 'print' ? n : `${n}${uid}`); // file in: đúng tên lớp In / CutContour / Fold
   const c = ctxOf(spec, data, logo), faces = fbFaces(spec);
   const byId = new Map(faces.map((f) => [f.id, f]));
   const kraftPrint = c.pal.kraft && mode === 'print';
   const artMode: ArtMode = mode === 'mask' ? 'mask' : mode === 'print' ? (c.foil === 'none' ? 'view' : 'print') : 'view';
-  return (
-    <g transform={`translate(${die.ox} ${die.oy})`}>
-      {mode !== 'mask' && <g id={lid('In')}>
-        {/* nền tràn lề 3mm: tô + viền dày theo đúng đường cắt (kraft: giấy có sẵn màu, không in nền) */}
-        {!kraftPrint && <path d={die.outline} fill={c.pal.paper} stroke={c.pal.paper} strokeWidth={FB_BLEED * 2} strokeLinejoin="round" />}
-        {mode === 'preview' && c.pal.kraft && <path d={die.outline} fill={c.pal.paper} />}
-        {die.arts.map((a, i) => {
-          const f = byId.get(a.face); if (!f) return null;
-          const cid = `${uid}c${i}`;
-          return (
-            <g key={i}>
-              <defs><clipPath id={cid}><path d={`M${a.clip.map((p) => `${r2(p[0])} ${r2(p[1])}`).join('L')}Z`} /></clipPath></defs>
-              <g clipPath={`url(#${cid})`}>
-                <g transform={`translate(${a.x} ${a.y})${a.rot ? ` rotate(180 ${f.w / 2} ${f.h / 2})` : ''}`}>
-                  <ArtG art={faceArt(f, c, f.id.length)} mode={artMode} />
-                </g>
+  const showIn = layer === 'all' || layer === 'in';
+  const showCut = layer === 'all' || layer === 'cut';
+  const showFold = layer === 'all' || layer === 'fold';
+  const inBody = (
+    <>
+      {!kraftPrint && <path d={die.outline} fill={c.pal.paper} stroke={c.pal.paper} strokeWidth={FB_BLEED * 2} strokeLinejoin="round" />}
+      {mode === 'preview' && c.pal.kraft && <path d={die.outline} fill={c.pal.paper} />}
+      {die.arts.map((a, i) => {
+        const f = byId.get(a.face); if (!f) return null;
+        const cid = `${uid}c${i}`;
+        return (
+          <g key={i}>
+            <defs><clipPath id={cid}><path d={`M${a.clip.map((p) => `${r2(p[0])} ${r2(p[1])}`).join('L')}Z`} /></clipPath></defs>
+            <g clipPath={`url(#${cid})`}>
+              <g transform={`translate(${a.x} ${a.y})${a.rot ? ` rotate(180 ${f.w / 2} ${f.h / 2})` : ''}`}>
+                <ArtG art={faceArt(f, c, f.id.length)} mode={artMode} />
               </g>
             </g>
-          );
-        })}
-      </g>}
-      {mode === 'mask' && die.arts.map((a, i) => {
+          </g>
+        );
+      })}
+    </>
+  );
+  return (
+    <g transform={`translate(${die.ox} ${die.oy})`}>
+      {mode !== 'mask' && showIn && (layer === 'all' ? <g id={lid('In')}>{inBody}</g> : inBody)}
+      {mode === 'mask' && showIn && die.arts.map((a, i) => {
         const f = byId.get(a.face); if (!f) return null;
         return <g key={i} transform={`translate(${a.x} ${a.y})${a.rot ? ` rotate(180 ${f.w / 2} ${f.h / 2})` : ''}`}><ArtG art={faceArt(f, c, f.id.length)} mode="mask" /></g>;
       })}
-      {mode !== 'mask' && <>
-        <g id={lid('CutContour')}><path d={die.cut} fill="none" stroke="#EC008C" strokeWidth={0.3} /></g>
-        <g id={lid('Fold')}><path d={die.fold} fill="none" stroke={mode === 'preview' ? '#2D8FD6' : '#00A0E3'} strokeWidth={0.3} strokeDasharray="2 1.2" /></g>
-      </>}
+      {mode !== 'mask' && showCut && (layer === 'all'
+        ? <g id={lid('CutContour')}><path d={die.cut} fill="none" stroke="#EC008C" strokeWidth={0.3} /></g>
+        : <path d={die.cut} fill="none" stroke="#EC008C" strokeWidth={0.3} />)}
+      {mode !== 'mask' && showFold && (layer === 'all'
+        ? <g id={lid('Fold')}><path d={die.fold} fill="none" stroke={mode === 'preview' ? '#2D8FD6' : '#00A0E3'} strokeWidth={0.3} strokeDasharray="2 1.2" /></g>
+        : <path d={die.fold} fill="none" stroke={mode === 'preview' ? '#2D8FD6' : '#00A0E3'} strokeWidth={0.3} strokeDasharray="2 1.2" />)}
     </g>
   );
 }
@@ -849,16 +856,27 @@ export function FavorSheet({ spec, data, logo, mode = 'print', style }: { spec: 
   const [uid] = useState(() => `fbs${++clipSeq}`);
   const cw = L.rot ? die.H : die.W, ch = L.rot ? die.W : die.H;
   const ox = (SHEET.w - (L.cols * cw + (L.cols - 1) * SHEET.gap)) / 2, oy = SHEET.m + 10;
-  const cells: ReactNode[] = [];
+  const transforms: string[] = [];
   for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
     const x = ox + c * (cw + SHEET.gap), y = oy + r * (ch + SHEET.gap);
-    cells.push(<use key={`${r}-${c}`} href={`#${uid}`} transform={L.rot ? `translate(${r2(x + cw)} ${r2(y)}) rotate(90)` : `translate(${r2(x)} ${r2(y)})`} />);
+    transforms.push(L.rot ? `translate(${r2(x + cw)} ${r2(y)}) rotate(90)` : `translate(${r2(x)} ${r2(y)})`);
   }
   return (
     <svg viewBox={`0 0 ${SHEET.w} ${SHEET.h}`} width={`${SHEET.w}mm`} height={`${SHEET.h}mm`} xmlns="http://www.w3.org/2000/svg" style={style} data-testid={mode === 'mask' ? 'fb-sheet-mask' : 'fb-sheet'} data-per-sheet={L.n}>
       <rect x={0} y={0} width={SHEET.w} height={SHEET.h} fill="#FFFFFF" />
-      <defs><g id={uid}><DieBody spec={spec} data={data} logo={logo} die={die} mode={mode} uid={uid} /></g></defs>
-      {cells}
+      <g id={mode === 'print' ? 'In' : `In${uid}`}>
+        {transforms.map((tr, i) => <g key={i} transform={tr}><DieBody spec={spec} data={data} logo={logo} die={die} mode={mode} uid={`${uid}i${i}`} layer="in" /></g>)}
+      </g>
+      {mode !== 'mask' && (
+        <>
+          <g id={mode === 'print' ? 'CutContour' : `CutContour${uid}`}>
+            {transforms.map((tr, i) => <g key={i} transform={tr}><DieBody spec={spec} data={data} logo={logo} die={die} mode={mode} uid={`${uid}c${i}`} layer="cut" /></g>)}
+          </g>
+          <g id={mode === 'print' ? 'Fold' : `Fold${uid}`}>
+            {transforms.map((tr, i) => <g key={i} transform={tr}><DieBody spec={spec} data={data} logo={logo} die={die} mode={mode} uid={`${uid}f${i}`} layer="fold" /></g>)}
+          </g>
+        </>
+      )}
       <text x={SHEET.m} y={SHEET.m + 4} fontSize={3.2} fontFamily="'Be Vietnam Pro'" fontWeight={600} fill="#666">
         {`Tờ ${SHEET.w / 10}×${SHEET.h / 10}cm · ${L.n} hộp/tờ · khuôn ${Math.round(die.W)}×${Math.round(die.H)}mm${mode === 'mask' ? ' · KHUÔN ÉP KIM' : ''}`}
       </text>

@@ -7,6 +7,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import AuthSession, User, WalletKind, WalletTx
@@ -81,16 +82,56 @@ class AccountService:
                                note="Quà đăng ký", balance_after=user.balance))
         return user
 
-    async def login(self, email: str, password: str) -> tuple[User, str]:
+    async def register_contact(self, name: str, phone: str, email: str, password: str,
+                               password_confirmation: str) -> tuple[User, str]:
+        name, phone, email = name.strip(), normalize_phone(phone), email.strip().lower()
+        if not name:
+            raise AccountError("missing_name", "Bạn nhập tên nhé.")
+        if not phone:
+            raise AccountError("bad_phone", "Bạn nhập số điện thoại hợp lệ nhé.")
+        if len(password) < 6:
+            raise AccountError("weak_password", "Mật khẩu cần ít nhất 6 ký tự.")
+        if password != password_confirmation:
+            raise AccountError("password_mismatch", "Mật khẩu xác nhận chưa khớp.")
+        if email and (len(email) > 255 or not EMAIL_RE.fullmatch(email)):
+            raise AccountError("bad_email", "Email không hợp lệ.")
+        if email in self.admins:
+            raise AccountError("email_unavailable", "Email này không dùng được để đăng ký.", 409)
+
+        try:
+            async with self.sessions() as s, s.begin():
+                user = User(email=email or f"contact-{secrets.token_hex(16)}", name=name[:120],
+                            phone=phone, login_phone=phone, password_hash=hash_password(password),
+                            balance=0, is_admin=False)
+                s.add(user)
+                await s.flush()
+                token = self._start_session(s, user)
+        except IntegrityError:
+            async with self.sessions() as s:
+                if await s.scalar(select(User.id).where(User.login_phone == phone)) is not None:
+                    raise AccountError("phone_taken", "Số điện thoại này đã có tài khoản. Bạn đăng nhập nhé.", 409)
+                if email and await s.scalar(select(User.id).where(User.email == email)) is not None:
+                    raise AccountError("email_taken", "Email này đã có tài khoản. Bạn đăng nhập nhé.", 409)
+            raise
+        return user, token
+
+    def _start_session(self, s: AsyncSession, user: User) -> str:
+        token = secrets.token_urlsafe(32)
+        s.add(AuthSession(token=token, user_id=user.id,
+                          expires_at=datetime.now(UTC) + timedelta(days=self.session_days)))
+        return token
+
+    async def login(self, identifier: str, password: str) -> tuple[User, str]:
+        identifier = identifier.strip().lower()
+        phone = normalize_phone(identifier) if "@" not in identifier else ""
+        match = User.login_phone == phone if phone else User.email == identifier
         async with self.sessions() as s, s.begin():
-            user = await s.scalar(select(User).where(User.email == email.strip().lower()))
+            user = await s.scalar(select(User).where(match))
             if not user or not verify_password(password, user.password_hash):
-                raise AccountError("bad_login", "Sai email hoặc mật khẩu.", 401)
-            if user.email in self.admins and not user.is_admin:
+                raise AccountError("bad_login", "Sai số điện thoại, email hoặc mật khẩu.", 401)
+            if user.login_phone is None and user.email in self.admins and not user.is_admin:
                 user.is_admin = True
-            token = secrets.token_urlsafe(32)
-            s.add(AuthSession(token=token, user_id=user.id,
-                              expires_at=datetime.now(UTC) + timedelta(days=self.session_days)))
+            token = self._start_session(s, user)
         return user, token
 
     async def logout(self, token: str) -> None:
@@ -168,7 +209,7 @@ class AccountService:
 
     async def search_users(self, q: str, limit: int = 30) -> list[User]:
         async with self.sessions() as s:
-            stmt = select(User).order_by(User.id.desc()).limit(limit)
+            stmt = select(User).where(User.email.contains("@")).order_by(User.id.desc()).limit(limit)
             if q.strip():
                 stmt = stmt.where(User.email.contains(q.strip().lower()))
             return list((await s.scalars(stmt)).all())

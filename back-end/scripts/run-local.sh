@@ -48,10 +48,10 @@ if [ "$HAS_COMFYUI" -eq 1 ]; then
   wait_ready http://127.0.0.1:8188/system_stats
 fi
 
-if ! curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
-  .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --reload-dir app &
+if ! curl -fsS http://127.0.0.1:8019/health >/dev/null 2>&1; then
+  .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8019 --reload --reload-dir app &
   CHILD_PIDS="$CHILD_PIDS $!"
 fi
-wait_ready http://127.0.0.1:8000/health
-echo "Mivy ready: http://localhost:8000/ui/ — text model: $TEXT_MODEL"
+wait_ready http://127.0.0.1:8019/health
+echo "Mivy ready: http://localhost:8019/ui/ — text model: $TEXT_MODEL"
 if [ -n "$CHILD_PIDS" ]; then wait; fi

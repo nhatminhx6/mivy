@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 
 from sqlalchemy import text
+from sqlalchemy.schema import CreateTable
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -44,3 +45,18 @@ def _add_missing_columns(conn) -> None:
                 default = f" DEFAULT '{arg}'" if isinstance(arg, str) else f" DEFAULT {arg}"
             kind = col.type.compile(conn.dialect)
             conn.execute(text(f"ALTER TABLE {table.name} ADD COLUMN {col.name} {kind}{default}"))
+    # Rebuild legacy SQLite tables whose owner was mandatory.
+    orders = Base.metadata.tables["print_orders"]
+    if any(row[1] == "user_id" and row[3] for row in conn.execute(text("PRAGMA table_info(print_orders)"))):
+        columns = ", ".join(orders.columns.keys())
+        ddl = str(CreateTable(orders).compile(dialect=conn.dialect))
+        with conn.begin_nested():
+            conn.exec_driver_sql(ddl.replace("CREATE TABLE print_orders", "CREATE TABLE print_orders_new", 1))
+            conn.exec_driver_sql(f"INSERT INTO print_orders_new ({columns}) SELECT {columns} FROM print_orders")
+            conn.exec_driver_sql("DROP TABLE print_orders")
+            conn.exec_driver_sql("ALTER TABLE print_orders_new RENAME TO print_orders")
+            for index in orders.indexes:
+                index.create(conn)
+    for index in Base.metadata.tables["users"].indexes:
+        if index.columns.keys() == ["login_phone"]:
+            index.create(conn, checkfirst=True)

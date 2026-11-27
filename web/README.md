@@ -33,7 +33,7 @@ web/
 │   └── types/
 │       └── index.ts           # Type definitions
 ├── public/                    # Assets tĩnh, font, logo
-├── next.config.mjs            # Cấu hình Next.js + API rewrites proxy về port 8000
+├── next.config.mjs            # Cấu hình Next.js + API rewrites proxy về port 8019 khi chạy dev
 ├── tailwind.config.ts         # Design tokens & bảng màu Mivy
 ├── tsconfig.json              # Cấu hình TypeScript ES2020
 └── package.json
@@ -70,8 +70,8 @@ npm run start
 ```
 
 ### Kết nối Backend:
-Mặc định `next.config.mjs` tự động rewrite các request `/v1/:path*` về backend tại `http://127.0.0.1:8000/v1/:path*`.
+Khi chạy `npm run dev`, Next chuyển tiếp `/v1/:path*` sang backend Mivy tại `http://127.0.0.1:8019/v1/:path*`. Bản production mặc định dùng cổng 8000.
 Nếu chạy trên môi trường khác, cấu hình biến môi trường:
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+API_URL=http://127.0.0.1:8019/v1/:path*
 ```

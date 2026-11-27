@@ -21,7 +21,7 @@ function shapesOf(d: string): THREE.Shape[] {
 
 const acrylic = () => ({
   cap: new THREE.MeshPhysicalMaterial({ color: '#F2FAFB', transparent: true, opacity: 0.22, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.03, ior: 1.49, specularIntensity: 1, depthWrite: false }),
-  side: new THREE.MeshPhysicalMaterial({ color: '#D9F0F2', transparent: true, opacity: 0.82, roughness: 0.04, clearcoat: 1, ior: 1.49, specularIntensity: 1, emissive: '#BFE6EA', emissiveIntensity: 0.12 }),
+  side: new THREE.MeshPhysicalMaterial({ color: '#D9F0F2', transparent: true, opacity: 0.65, roughness: 0.04, clearcoat: 1, ior: 1.49, specularIntensity: 1, emissive: '#BFE6EA', emissiveIntensity: 0.08 }),
 });
 
 // texture khớp toạ độ đường cắt: canvas = khung res (0.1mm), vẽ ảnh đúng chỗ
@@ -45,9 +45,14 @@ async function figure(fig: StandFig, spec: AsSpec, aniso: number): Promise<THREE
   const m = acrylic();
   const body = new THREE.Mesh(geo, [m.cap, m.side]);
   body.renderOrder = 3;
+  const edge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo, 22),
+    new THREE.LineBasicMaterial({color:'#d9f5f8', transparent:true, opacity:.29, depthWrite:false}),
+  );
+  edge.renderOrder = 4;
   const inner = new THREE.Group();
   inner.scale.set(U, -U, U);
-  inner.add(body);
+  inner.add(body, edge);
   const flat = new THREE.ShapeGeometry(shapes, 14);
   const art = await layerTex(fig, fig.res.art.href, aniso);
   // hình in ở mặt sau, nhìn xuyên mica từ phía trước

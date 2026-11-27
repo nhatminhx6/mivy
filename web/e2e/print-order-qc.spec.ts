@@ -1,26 +1,21 @@
 import { test, expect } from '@playwright/test';
 
-// QC luồng đặt in (cần backend chạy ở :8000 với ADMIN_EMAILS=boss@mivy.vn, DB thử):
-// khách chưa đăng nhập bấm "Gửi yêu cầu in" → tạo tài khoản ngay trong hộp (thiết kế giữ nguyên) → gửi đơn
-// → "Đơn in của tôi" thấy đơn → admin báo giá + cọc → khách thấy trạng thái + hướng dẫn cọc.
-const stamp = Date.now();
+// QC luồng đặt in (cần backend chạy ở :8019 với ADMIN_EMAILS=boss@mivy.vn, DB thử):
+// Kiểm tra đơn gắn với tài khoản qua luồng thiết kế và quản trị.
 
-test('đặt in thiệp: đăng ký trong hộp → gửi đơn → admin báo giá → khách thấy cọc', async ({ page, browser }) => {
+test('đặt in thiệp khi đã đăng nhập → admin báo giá → khách thấy cọc', async ({ page, browser }) => {
   test.setTimeout(180_000);
   const health = await page.request.get('/v1/me').catch(() => null);
-  test.skip(!health || health.status() >= 500, 'Backend :8000 chưa chạy');
+  test.skip(!health || health.status() >= 500, 'Backend :8019 chưa chạy');
 
+  const signup = await page.request.post('/v1/auth/register', {
+    data: { name: 'Thu Hà', phone: '0909123456', password: 'matkhau1', password_confirmation: 'matkhau1' },
+  });
+  expect(signup.ok()).toBeTruthy();
   await page.goto('/studio/cards');
   await expect(page.getByTestId('card-tpl')).toHaveCount(28, { timeout: 60_000 });
   await page.getByTestId('card-groom').fill('Hoàng Long');
   await page.getByTestId('print-request').click();
-  // chưa đăng nhập → tạo tài khoản ngay trong hộp
-  await expect(page.getByTestId('print-auth')).toBeVisible();
-  await page.getByTestId('auth-name').fill('Thu Hà');
-  await page.getByTestId('auth-phone').fill('0909 123 456');
-  await page.getByTestId('auth-email').fill(`ha${stamp}@gmail.com`);
-  await page.getByTestId('auth-password').fill('matkhau1');
-  await page.getByTestId('auth-submit').click();
   // form đặt in tự điền tên + SĐT từ tài khoản
   await expect(page.getByTestId('print-phone')).toHaveValue('0909123456', { timeout: 15_000 });
   await expect(page.getByTestId('print-name')).toHaveValue('Thu Hà');
@@ -47,7 +42,7 @@ test('đặt in thiệp: đăng ký trong hộp → gửi đơn → admin báo g
 
   // admin (phiên riêng) báo giá + cọc
   const admin = await browser.newPage();
-  const reg = await admin.request.post('/v1/auth/register', { data: { email: 'boss@mivy.vn', password: 'matkhau1' } });
+  const reg = await admin.request.post('/v1/auth/register', { data: { email: 'boss@mivy.vn', password: 'matkhau1' }, headers: { 'X-Mivy-Client': 'fotodocs-ios' } });
   if (reg.status() !== 200) await admin.request.post('/v1/auth/login', { data: { email: 'boss@mivy.vn', password: 'matkhau1' } });
   await admin.goto('/studio/admin');
   const row = admin.getByTestId('admin-order').filter({ hasText: code });
@@ -60,7 +55,7 @@ test('đặt in thiệp: đăng ký trong hộp → gửi đơn → admin báo g
   await row.getByTestId('admin-order-save').click();
   await expect(row).toContainText('Đã lưu');
   await admin.getByTestId('admin-tab-customers').click();
-  const cust = admin.getByTestId('admin-customer').filter({ hasText: `ha${stamp}@gmail.com` });
+  const cust = admin.getByTestId('admin-customer').filter({ hasText: '0909123456' }).first();
   await expect(cust).toContainText('1 đơn');
   await expect(cust).toContainText('900.000đ');
   await admin.close();
@@ -74,9 +69,15 @@ test('đặt in thiệp: đăng ký trong hộp → gửi đơn → admin báo g
 
 test('đặt in sticker khi đã đăng nhập: gửi kèm file cắt SVG', async ({ page }) => {
   test.setTimeout(120_000);
-  const r = await page.request.post('/v1/auth/register', { data: { email: `st${stamp}@gmail.com`, password: 'matkhau1', phone: '0911222333' } });
-  test.skip(r.status() >= 500, 'Backend :8000 chưa chạy');
-  await page.goto('/studio/sticker');
+  const health = await page.request.get('/v1/me').catch(() => null);
+  test.skip(!health || health.status() >= 500, 'Backend :8019 chưa chạy');
+  await page.goto('/login?mode=register&next=%2Fstudio%2Fsticker');
+  await page.getByLabel('Tên của bạn').fill('Shop Bánh Nhà Na');
+  await page.getByTestId('auth-phone').fill('0911222333');
+  await page.getByTestId('auth-password').fill('matkhau1');
+  await page.getByTestId('auth-password-confirmation').fill('matkhau1');
+  await page.getByTestId('auth-submit').click();
+  await expect(page).toHaveURL(/\/studio\/sticker$/);
   await expect(page.locator('[data-testid="cut-preview"][data-ready="1"]')).toHaveCount(1, { timeout: 60_000 });
   await page.getByTestId('print-request').click();
   await expect(page.getByTestId('print-phone')).toHaveValue('0911222333');

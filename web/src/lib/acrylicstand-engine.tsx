@@ -420,9 +420,11 @@ export async function buildStand(spec: AsSpec, data: AsData, uploads: (HTMLImage
 // ---------- chữ in trên đế ----------
 let mctx: CanvasRenderingContext2D | null = null;
 const measure = (t: string, family: string, weight: number, size: number) => {
+  if (typeof document === 'undefined') return Array.from(t).length * size * 0.58;
   if (!mctx) mctx = document.createElement('canvas').getContext('2d');
-  mctx!.font = `${weight} ${size}px "${family}"`;
-  return mctx!.measureText(t).width;
+  if (!mctx) return Array.from(t).length * size * 0.58;
+  mctx.font = `${weight} ${size}px "${family}"`;
+  return mctx.measureText(t).width;
 };
 function fitSize(t: string, family: string, weight: number, maxW: number, maxSize: number, min = 2) {
   let s = maxSize;
@@ -439,7 +441,14 @@ export function BaseText({ base, data, spec, mode = 'ink' }: { base: StandBase; 
   const midY = top + avail * 0.45;
   const halfW = base.shape === 'oval' ? (base.w / 2) * Math.sqrt(Math.max(0.05, 1 - ((midY - base.d / 2) / (base.d / 2)) ** 2)) : base.w / 2 - 3;
   const maxW = halfW * 2 * 0.86;
-  const name = (data.name || '').trim(), s2 = (data.sub || '').trim();
+  const clip = (value: string, family: string, weight: number, min: number) => {
+    const chars = Array.from(value.trim());
+    if (measure(chars.join(''), family, weight, min) <= maxW) return chars.join('');
+    while (chars.length && measure(chars.join('') + '…', family, weight, min) > maxW) chars.pop();
+    return chars.length ? chars.join('').trimEnd() + '…' : '';
+  };
+  const name = clip(data.name || '', f.family, f.weight, 2.2);
+  const s2 = clip(data.sub || '', BODY, 600, 1.6);
   const nSize = name ? fitSize(name, f.family, f.weight, maxW, Math.min(avail * (s2 ? 0.58 : 0.8), f.script ? 11 : 8.5), 2.2) : 0;
   const sSize = s2 ? fitSize(s2, BODY, 600, maxW, Math.min(avail * 0.26, 3.6), 1.6) : 0;
   const total = nSize * (f.script ? 1.0 : 0.95) + (s2 ? sSize * 1.5 : 0);

@@ -24,7 +24,8 @@ def client(tmp_path: Path):
 
 
 def register(c: TestClient, email: str, phone: str = "") -> dict:
-    r = c.post("/v1/auth/register", json={"email": email, "password": "matkhau1", "phone": phone})
+    r = c.post("/v1/auth/register", json={"email": email, "password": "matkhau1", "phone": phone},
+               headers={"X-Mivy-Client": "fotodocs-ios"})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -46,12 +47,31 @@ def test_normalize_phone() -> None:
     assert normalize_phone("12345") == ""
 
 
-def test_order_needs_login(client: TestClient) -> None:
-    assert send_order(client).status_code == 401
+def test_guest_requests_visible_only_to_admin(client: TestClient) -> None:
+    custom = send_order(client, data={"product": "custom"}, files={})
+    studio = send_order(client)
+    assert custom.status_code == studio.status_code == 200
+    assert not custom.json()["has_account"]
+    assert custom.json()["file_name"] == ""
+    custom_id, studio_id = custom.json()["id"], studio.json()["id"]
+    assert client.get(f"/v1/print-orders/{studio_id}/file").status_code == 401
+
+    register(client, "other@gmail.com")
+    assert client.get("/v1/me/print-orders").json() == []
+    assert client.get(f"/v1/print-orders/{studio_id}/file").status_code == 404
+
+    register(client, "boss@mivy.vn")
+    rows = client.get("/v1/admin/print-orders", params={"q": "0909123456"}).json()
+    assert {row["id"] for row in rows} == {custom_id, studio_id}
+    assert all(row["user_id"] is None for row in rows)
+    assert client.get(f"/v1/print-orders/{custom_id}/file").status_code == 404
+    assert client.get(f"/v1/print-orders/{studio_id}/file").content == PDF
 
 
 def test_customer_orders_and_saves_phone(client: TestClient) -> None:
-    register(client, "ha@gmail.com")
+    signup = client.post("/v1/auth/register", json={"name": "Thu Hà", "phone": "0909123456",
+                                                        "password": "matkhau1", "password_confirmation": "matkhau1"})
+    assert signup.status_code == 200, signup.text
     r = send_order(client)
     assert r.status_code == 200, r.text
     o = r.json()
@@ -69,7 +89,7 @@ def test_order_rejects_bad_input(client: TestClient) -> None:
     register(client, "a@gmail.com")
     assert send_order(client, data={"phone": "abc"}).json()["error"]["code"] == "bad_phone"
     assert send_order(client, data={"quantity": "0"}).json()["error"]["code"] == "bad_quantity"
-    assert send_order(client, data={"product": "mug"}).json()["error"]["code"] == "bad_product"
+    assert send_order(client, data={"product": "unknown-product"}).json()["error"]["code"] == "bad_product"
     bad_file = send_order(client, files={"file": ("x.exe", b"MZ", "application/octet-stream")})
     assert bad_file.json()["error"]["code"] == "bad_file"
 
@@ -132,3 +152,35 @@ async def test_old_database_gets_new_columns(tmp_path: Path) -> None:
     cols = {r[1] for r in con.execute("PRAGMA table_info(users)")}
     row = con.execute("SELECT phone, note, balance FROM users").fetchone()
     assert {"phone", "note"} <= cols and row == ("", "", 5)
+
+async def test_legacy_print_order_owner_migration(tmp_path: Path) -> None:
+    import sqlite3
+
+    from sqlalchemy.dialects.sqlite import dialect
+    from sqlalchemy.schema import CreateTable
+
+    from app.db.database import Database
+    from app.db.models import PrintOrder
+
+    path = tmp_path / "legacy.db"
+    ddl = str(CreateTable(PrintOrder.__table__).compile(dialect=dialect()))
+    with sqlite3.connect(path) as con:
+        con.execute(ddl.replace("user_id INTEGER,", "user_id INTEGER NOT NULL,"))
+        assert any(row[1] == "user_id" and row[3] for row in con.execute("PRAGMA table_info(print_orders)"))
+        con.execute("CREATE INDEX ix_print_orders_user_id ON print_orders (user_id)")
+        con.execute("""
+            INSERT INTO print_orders VALUES
+            (42, 7, 'card', 'Thiệp', 100, '', 'Hà', '0909123456', '', '', '',
+             '', 'card.pdf', 'new', NULL, NULL, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+
+    db = Database(f"sqlite+aiosqlite:///{path}")
+    try:
+        await db.create_tables()
+        await db.create_tables()
+    finally:
+        await db.close()
+    with sqlite3.connect(path) as con:
+        assert con.execute("SELECT id, user_id, file_name FROM print_orders").fetchone() == (42, 7, "card.pdf")
+        con.execute("UPDATE print_orders SET user_id = NULL WHERE id = 42")
+        assert any(row[1] == "ix_print_orders_user_id" for row in con.execute("PRAGMA index_list(print_orders)"))

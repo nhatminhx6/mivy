@@ -47,24 +47,24 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center relative z-10 mv-stagger">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-ink/[0.03] border border-mv-hair text-slate-200 text-[13px] font-semibold mb-7">
               <Sparkles className="w-4 h-4 text-indigo-300" />
-              <span>Thiết kế cho người bán — 0đ chi phí API</span>
+              <span>Tem nhãn và thiết kế cho cửa hàng</span>
             </div>
             <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-black tracking-tight leading-[1.07] mb-7 text-mv-fg">
-              Mọi thứ người bán cần,<br />trong một studio.
+              Tự thiết kế tem nhãn<br />cho cửa hàng của bạn
             </h1>
             <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-9 leading-relaxed">
-              Logo, bộ nhận diện, bảng giá, menu, poster — chọn mẫu, điền nội dung, xuất file sắc nét trong vài phút.
+              Chọn mẫu tem dán ly, hộp hoặc nhãn chai, thêm logo của quán rồi gửi nhu cầu in cho Mivy.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
-              <Link href="/studio/templates" className="mv-btn mv-btn-primary !px-7 !py-3.5 !text-[15px]"><Wand2 className="w-5 h-5" /> Chọn mẫu thiết kế <ArrowRight className="w-4 h-4" /></Link>
-              <Link href="/studio/marketing" className="mv-btn mv-btn-ghost !px-7 !py-3.5 !text-[15px]"><Sparkles className="w-5 h-5 text-indigo-300" /> Tạo poster quảng cáo</Link>
+              <Link href="/studio/print-custom" className="mv-btn mv-btn-primary !px-7 !py-3.5 !text-[15px]"><Printer className="w-5 h-5 text-indigo-300" /> Gửi yêu cầu in</Link>
+              <Link href="/in/tem-nhan-fnb" className="mv-btn mv-btn-ghost !px-7 !py-3.5 !text-[15px]"><Wand2 className="w-5 h-5" /> Xem mẫu tem nhãn <ArrowRight className="w-4 h-4" /></Link>
             </div>
             <p className="mt-5 text-sm text-slate-400">
               Cần in tem, nhãn, thiệp, lịch?{' '}
               <Link href="/in" className="text-indigo-300 font-semibold hover:underline inline-flex items-center gap-1">Xem Mivy nhận in gì <ArrowRight className="w-4 h-4" /></Link>
             </p>
             <div className="mt-14 pt-8 border-t border-mv-hair grid grid-cols-2 sm:grid-cols-4 gap-5 text-slate-400 text-[13px]">
-              {['Tiếng Việt chuẩn', '0đ chi phí API', 'Kho mẫu đủ loại', 'Xuất PNG · ZIP'].map((t) => (
+              {['Thêm logo của quán', 'Xem trước mẫu', 'Tải file thiết kế', 'Gửi yêu cầu in'].map((t) => (
                 <div key={t} className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-300" /><span>{t}</span></div>
               ))}
             </div>

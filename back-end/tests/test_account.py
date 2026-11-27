@@ -7,6 +7,8 @@ from app.core.config import Settings
 from app.main import create_app
 from app.services.tryon_service import TryOnError
 
+NATIVE = {"X-Mivy-Client": "fotodocs-ios"}
+
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 
 
@@ -37,7 +39,7 @@ def ctx(tmp_path: Path):
 
 
 def register(c: TestClient, email: str, pw: str = "matkhau1") -> dict:
-    r = c.post("/v1/auth/register", json={"email": email, "password": pw})
+    r = c.post("/v1/auth/register", headers=NATIVE, json={"email": email, "password": pw})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -58,10 +60,36 @@ def test_register_gives_bonus_and_logs_in(ctx) -> None:
 
 def test_register_rejects_bad_input_and_duplicates(ctx) -> None:
     c, _ = ctx
-    assert c.post("/v1/auth/register", json={"email": "sai", "password": "matkhau1"}).status_code == 400
-    assert c.post("/v1/auth/register", json={"email": "a@b.vn", "password": "123"}).status_code == 400
+    assert c.post("/v1/auth/register", headers=NATIVE, json={"email": "sai", "password": "matkhau1"}).status_code == 400
+    assert c.post("/v1/auth/register", headers=NATIVE, json={"email": "a@b.vn", "password": "123"}).status_code == 400
     register(c, "a@b.vn")
-    assert c.post("/v1/auth/register", json={"email": "A@b.vn", "password": "matkhau1"}).status_code == 409
+    assert c.post("/v1/auth/register", headers=NATIVE, json={"email": "A@b.vn", "password": "matkhau1"}).status_code == 409
+
+
+def test_contact_registration_rejects_bad_confirmation_and_allows_phone_login(ctx) -> None:
+    c, _ = ctx
+    path = "/v1/auth/register"
+    contact = {"name": " Thu Hà ", "phone": "+84 909 123 456", "password": "matkhau1"}
+    assert c.post(path, json=contact).status_code == 400
+    assert c.post(path, json={**contact, "password_confirmation": "matkhau2"}).status_code == 400
+    payload = {**contact, "password_confirmation": "matkhau1"}
+    first = c.post(path, json=payload)
+    assert first.status_code == 200, first.text
+    user = first.json()
+    assert user["name"] == "Thu Hà" and user["phone"] == "0909123456"
+    assert user["email"] == "" and not user["is_admin"] and user["balance"] == 0
+    assert c.get("/v1/me").json()["id"] == user["id"]
+    assert c.post(path, json={**payload, "phone": "0909123456"}).status_code == 409
+    c.post("/v1/auth/logout")
+    assert c.post("/v1/auth/login", json={"identifier": "0909 123 456", "password": "sai"}).status_code == 401
+    assert c.post("/v1/auth/login", json={"identifier": "0909 123 456", "password": "matkhau1"}).json()["id"] == user["id"]
+
+    with_email = {**payload, "phone": "0911222333", "email": "An@Example.com"}
+    second = c.post(path, json=with_email)
+    assert second.status_code == 200, second.text
+    assert second.json()["email"] == "an@example.com"
+    c.post("/v1/auth/logout")
+    assert c.post("/v1/auth/login", json={"identifier": "an@example.com", "password": "matkhau1"}).status_code == 200
 
 
 def test_login_logout(ctx) -> None:
@@ -77,7 +105,9 @@ def test_login_logout(ctx) -> None:
 def test_native_app_gets_bearer_token(ctx) -> None:
     c, _ = ctx
     app = {"X-Mivy-Client": "fotodocs-ios"}
-    assert "token" not in register(c, "web@b.vn")  # web: cookie only
+    web = c.post("/v1/auth/register", json={"name": "Web", "phone": "0909123456",
+                                                 "password": "matkhau1", "password_confirmation": "matkhau1"})
+    assert web.status_code == 200 and "token" not in web.json()
     c.cookies.clear()
     r = c.post("/v1/auth/register", json={"email": "app@b.vn", "password": "matkhau1"}, headers=app)
     token = r.json()["token"]

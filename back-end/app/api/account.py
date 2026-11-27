@@ -17,9 +17,13 @@ def accounts(request: Request) -> AccountService:
     return request.app.state.accounts
 
 
-async def current_user(request: Request) -> User:
+async def optional_user(request: Request) -> User | None:
     token = request.cookies.get(COOKIE) or bearer(request)
-    user = await accounts(request).user_by_token(token) if token else None
+    return await accounts(request).user_by_token(token) if token else None
+
+
+async def current_user(request: Request) -> User:
+    user = await optional_user(request)
     if not user:
         raise HTTPException(401, {"code": "unauthorized", "message": "Đăng nhập để dùng tính năng này nhé."})
     return user
@@ -36,13 +40,14 @@ def fail(e: AccountError) -> HTTPException:
 
 
 def public(u: User) -> dict:
-    return {"id": u.id, "email": u.email, "name": u.name, "phone": u.phone or "", "balance": u.balance,
+    return {"id": u.id, "email": u.email if "@" in u.email else "", "name": u.name, "phone": u.phone or "", "balance": u.balance,
             "is_admin": u.is_admin}
 
 
 class RegisterIn(BaseModel):
-    email: str
-    password: str
+    email: str | None = None
+    password: str = ""
+    password_confirmation: str | None = None
     name: str = ""
     phone: str = ""
 
@@ -53,7 +58,8 @@ class ProfileIn(BaseModel):
 
 
 class LoginIn(BaseModel):
-    email: str
+    identifier: str = ""
+    email: str = ""
     password: str
 
 
@@ -86,8 +92,13 @@ def set_cookie(request: Request, response: Response, token: str) -> None:
 async def register(body: RegisterIn, request: Request, response: Response) -> dict:
     svc = accounts(request)
     try:
-        await svc.register(body.email, body.password, body.name, body.phone)
-        user, token = await svc.login(body.email, body.password)
+        if body.password_confirmation is None and body.email and request.headers.get("x-mivy-client") == "fotodocs-ios":
+            await svc.register(body.email, body.password, body.name, body.phone)
+            user, token = await svc.login(body.email, body.password)
+        else:
+            user, token = await svc.register_contact(
+                body.name, body.phone, body.email or "", body.password, body.password_confirmation or ""
+            )
     except AccountError as e:
         raise fail(e) from e
     set_cookie(request, response, token)
@@ -97,7 +108,7 @@ async def register(body: RegisterIn, request: Request, response: Response) -> di
 @router.post("/auth/login")
 async def login(body: LoginIn, request: Request, response: Response) -> dict:
     try:
-        user, token = await accounts(request).login(body.email, body.password)
+        user, token = await accounts(request).login(body.identifier or body.email, body.password)
     except AccountError as e:
         raise fail(e) from e
     set_cookie(request, response, token)

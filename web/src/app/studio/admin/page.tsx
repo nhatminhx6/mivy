@@ -85,7 +85,7 @@ function AdminOrder({ o, onSaved }: { o: PrintOrder; onSaved: (o: PrintOrder) =>
   const half = () => { const p = num(price); if (p) setDeposit(String(Math.round(p / 2 / 1000) * 1000)); };
   return (
     <div className="glass-panel border border-mv-hair rounded-2xl p-4 grid grid-cols-1 md:grid-cols-[140px_minmax(0,1fr)_minmax(0,320px)] gap-4" data-testid="admin-order">
-      <a href={orderApi.previewUrl(o.id)} target="_blank" rel="noreferrer"><img src={orderApi.previewUrl(o.id)} alt="" className="w-full h-36 object-contain rounded-xl bg-[#EEF1F6]" /></a>
+      {o.file_name ? <a href={orderApi.previewUrl(o.id)} target="_blank" rel="noreferrer"><img src={orderApi.previewUrl(o.id)} alt="" className="w-full h-36 object-contain rounded-xl bg-[#EEF1F6]" /></a> : <div />}
       <div className="min-w-0 space-y-1.5 text-xs">
         <div className="text-sm font-bold text-mv-fg">{o.code} · {o.title}</div>
         <div className="text-slate-400"><b className="text-mv-fg">{o.quantity} cái</b>{o.material && ` · ${o.material}`} · gửi {new Date(o.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}</div>
@@ -93,7 +93,7 @@ function AdminOrder({ o, onSaved }: { o: PrintOrder; onSaved: (o: PrintOrder) =>
         {o.address && <div className="text-slate-400">Giao: {o.address}</div>}
         {o.need_by && <div className="text-slate-400">Cần trước: <b className="text-mv-fg">{new Date(o.need_by).toLocaleDateString('vi-VN')}</b></div>}
         {o.note && <div className="text-slate-400">Khách ghi chú: <span className="text-mv-fg">{o.note}</span></div>}
-        <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 font-bold text-mv-accent hover:underline pt-1"><Download className="w-3.5 h-3.5" /> Tải file in ({o.file_name.split('.').pop()?.toUpperCase()})</a>
+        {o.file_name && <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 font-bold text-mv-accent hover:underline pt-1"><Download className="w-3.5 h-3.5" /> Tải file in ({o.file_name.split('.').pop()?.toUpperCase()})</a>}
       </div>
       <div className="space-y-2">
         <select className="mv-input !py-2 !text-xs" value={st} onChange={(e) => setSt(e.target.value as OrderStatus)} aria-label="Trạng thái" data-testid="admin-order-status">

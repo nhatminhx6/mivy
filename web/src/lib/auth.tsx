@@ -23,8 +23,9 @@ const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Cont
 
 export const authApi = {
   me: () => call<Me>('/v1/me'),
-  login: (email: string, password: string) => call<Me>('/v1/auth/login', json({ email, password })),
-  register: (email: string, password: string, name: string, phone = '') => call<Me>('/v1/auth/register', json({ email, password, name, phone })),
+  login: (identifier: string, password: string) => call<Me>('/v1/auth/login', json({ identifier, password })),
+  register: (name: string, phone: string, email: string, password: string, passwordConfirmation: string) =>
+    call<Me>('/v1/auth/register', json({ name, phone, email, password, password_confirmation: passwordConfirmation })),
   updateMe: (p: { name?: string; phone?: string }) => call<Me>('/v1/me', { ...json(p), method: 'PATCH' }),
   logout: () => call('/v1/auth/logout', { method: 'POST' }),
   transactions: () => call<Tx[]>('/v1/me/transactions'),
@@ -41,7 +42,7 @@ export interface PrintOrder {
   contact_name: string; phone: string; address: string; need_by: string; note: string;
   status: OrderStatus; status_label: string; price: number | null; deposit: number | null; file_name: string;
   created_at: string; updated_at: string | null;
-  user_id?: number; email?: string; admin_note?: string;
+  has_account?: boolean; user_id?: number | null; email?: string; admin_note?: string;
 }
 export interface Customer extends Me { note: string; created_at: string; orders: number; last_order_at: string | null; total: number }
 export const ORDER_STEPS: { id: OrderStatus; label: string }[] = [

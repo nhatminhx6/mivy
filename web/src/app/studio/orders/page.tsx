@@ -42,7 +42,7 @@ function OrderCard({ o }: { o: PrintOrder }) {
   const qr = o.status === 'quoted' && o.deposit ? vietQr(o.deposit, o.code) : null;
   return (
     <div className="glass-panel border border-mv-hair rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4" data-testid="order-card">
-      <img src={orderApi.previewUrl(o.id)} alt="" className="w-full sm:w-36 h-40 sm:h-36 object-contain rounded-xl bg-[#EEF1F6] shrink-0" />
+      {o.file_name && <img src={orderApi.previewUrl(o.id)} alt="" className="w-full sm:w-36 h-40 sm:h-36 object-contain rounded-xl bg-[#EEF1F6] shrink-0" />}
       <div className="flex-1 min-w-0 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -77,7 +77,7 @@ function OrderCard({ o }: { o: PrintOrder }) {
             </div>
           </div>
         ) : null}
-        <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 text-xs font-bold text-mv-accent hover:underline"><Download className="w-3.5 h-3.5" /> Tải file in</a>
+        {o.file_name && <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 text-xs font-bold text-mv-accent hover:underline"><Download className="w-3.5 h-3.5" /> Tải file in</a>}
       </div>
     </div>
   );

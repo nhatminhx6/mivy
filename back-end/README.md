@@ -10,7 +10,7 @@ Trên máy anh đã setup, mở hai terminal và chạy:
 cd /Users/minh.nn1/Projects/personal/mivy/back-end && sh scripts/run-local.sh
 ```
 
-Script khởi động hoặc dùng lại Ollama, kiểm tra model text, chạy ComfyUI nếu đã cài đủ và backend ở port 8000. Lần đầu thiếu model thì script sẽ tải model. Nếu thiếu ComfyUI, script chuyển engine ảnh sang `mock`; điều này không đồng nghĩa đã có model tạo ảnh local thật.
+Script khởi động hoặc dùng lại Ollama, kiểm tra model text, chạy ComfyUI nếu đã cài đủ và backend ở port 8019. Lần đầu thiếu model thì script sẽ tải model. Nếu thiếu ComfyUI, script chuyển engine ảnh sang `mock`; điều này không đồng nghĩa đã có model tạo ảnh local thật.
 
 **Terminal 2 — Web Next.js:**
 
@@ -20,8 +20,8 @@ cd /Users/minh.nn1/Projects/personal/mivy/web && npm run dev
 
 - Web hiện tại: **http://localhost:3009/studio/marketing**
 - Bộ mẫu kiểm tra: http://localhost:3009/studio/marketing/review
-- API docs: http://localhost:8000/docs
-- `http://localhost:8000/ui/` là giao diện cũ; các thay đổi template mới nằm trên web port **3009**.
+- API docs: http://localhost:8019/docs
+- `http://localhost:8019/ui/` là giao diện cũ; các thay đổi template mới nằm trên web port **3009**.
 
 Giữ hai terminal mở; Ctrl+C để dừng. Script backend chỉ dừng các dịch vụ do lần chạy đó khởi động. Các phần dưới đây mô tả thêm backend và giao diện legacy.
 
@@ -56,11 +56,11 @@ default, and database tables/directories are created automatically at startup.
 ## Run the backend
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8019 --reload
 ```
 
-Open Mivy Studio at [http://127.0.0.1:8000/ui/](http://127.0.0.1:8000/ui/) or
-Swagger UI at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+Open Mivy Studio at [http://127.0.0.1:8019/ui/](http://127.0.0.1:8019/ui/) or
+Swagger UI at [http://127.0.0.1:8019/docs](http://127.0.0.1:8019/docs).
 
 ## Test and lint
 
@@ -75,7 +75,7 @@ The default `GENERATION_ENGINE=mock` copies the uploaded image to the output dir
 short delay. Create a job:
 
 ```bash
-curl -i -X POST http://127.0.0.1:8000/v1/generations/images \
+curl -i -X POST http://127.0.0.1:8019/v1/generations/images \
   -F 'image=@/absolute/path/to/product.png;type=image/png' \
   -F 'prompt=Premium studio advertisement' \
   -F 'style=minimal' \
@@ -85,8 +85,8 @@ curl -i -X POST http://127.0.0.1:8000/v1/generations/images \
 Use the returned UUID to check status and download the result:
 
 ```bash
-curl http://127.0.0.1:8000/v1/generations/JOB_ID
-curl -o result.png http://127.0.0.1:8000/v1/generations/JOB_ID/result
+curl http://127.0.0.1:8019/v1/generations/JOB_ID
+curl -o result.png http://127.0.0.1:8019/v1/generations/JOB_ID/result
 ```
 
 ## Switch to ComfyUI
@@ -124,7 +124,7 @@ and an image-to-image workflow. Start ComfyUI and Mivy together with:
 ./scripts/run-local.sh
 ```
 
-Then use the Mivy UI at `http://127.0.0.1:8000/ui/`. Stop both processes with `Ctrl+C`.
+Then use the Mivy UI at `http://127.0.0.1:8019/ui/`. Stop both processes with `Ctrl+C`.
 
 `run-local.sh` selects the real image engine. Uploaded products use local BiRefNet
 segmentation and deterministic composition, preserving original product pixels and fitting
@@ -160,6 +160,6 @@ Errors use a consistent shape and never include local file paths or stack traces
 - `POST /v1/creative/images`: multipart `prompt`, optional `image`; returns queued job ID.
   This endpoint refuses the mock engine. Poll existing `/v1/generations/{id}`.
 - `OLLAMA_BASE_URL`, `TEXT_MODEL`, `TEXT_TIMEOUT_SECONDS` configure text inference.
-  The local runner assumes default service ports (11434/8188/8000).
+  The local runner assumes default service ports (11434/8188/8019).
 - Text calls and image worker share a process-local lock. Run one API process for this local
   setup; it is not a distributed/multi-worker queue.

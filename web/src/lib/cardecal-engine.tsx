@@ -69,13 +69,13 @@ export const CD_FONTS: CDFont[] = [
   { id: 'montserrat', name: 'Montserrat', family: 'Montserrat', weight: 800, upper: true },
   { id: 'oswald', name: 'Oswald', family: 'Oswald', weight: 700, upper: true },
   { id: 'bvp', name: 'Be Vietnam', family: 'Be Vietnam Pro', weight: 800, upper: true },
-  { id: 'archivo', name: 'Archivo', family: 'Archivo', weight: 800, upper: true },
+  { id: 'archivo', name: 'Montserrat đậm', family: 'Montserrat', weight: 800, upper: true },
   { id: 'baloo', name: 'Baloo', family: 'Baloo 2', weight: 800, upper: false },
 ];
 export const cdFont = (id: string) => CD_FONTS.find((f) => f.id === id) || CD_FONTS[0];
 const BODY = 'Be Vietnam Pro';
 const NUM = 'Oswald';
-export const CD_FONT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;800&family=Montserrat:wght@800&family=Oswald:wght@700&family=Archivo:wght@800&family=Baloo+2:wght@800&display=swap');`;
+export const CD_FONT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;800&family=Montserrat:wght@800&family=Oswald:wght@700&family=Baloo+2:wght@800&display=swap');`;
 
 export function useCDFonts(): boolean {
   const [ready, setReady] = useState(false);

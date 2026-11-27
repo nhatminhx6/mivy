@@ -105,7 +105,7 @@ export default function NicheLandingPage({ params }: { params: { niche: string }
           <div className="max-w-4xl mx-auto text-center relative z-10 mv-stagger">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-ink/[0.03] border border-mv-hair text-slate-200 text-[13px] font-semibold mb-7">
               <Wand2 className="w-4 h-4 text-indigo-300" />
-              <span>{niche.eyebrow} · thiết kế miễn phí, chỉ tính tiền in</span>
+              <span>{niche.eyebrow} · tự thiết kế miễn phí</span>
             </div>
             <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-black tracking-tight leading-[1.1] mb-6 text-mv-fg">
               {niche.h1}
@@ -117,14 +117,24 @@ export default function NicheLandingPage({ params }: { params: { niche: string }
               <Link href={niche.studioHref} className="mv-btn mv-btn-primary !px-7 !py-3.5 !text-[15px]">
                 <Wand2 className="w-5 h-5" /> {niche.ctaDesign} <ArrowRight className="w-4 h-4" />
               </Link>
+              {niche.slug === 'tem-nhan-fnb' && (
+                <Link href="/studio/label" className="mv-btn mv-btn-ghost !px-7 !py-3.5 !text-[15px]">
+                  Thiết kế nhãn chai / hũ
+                </Link>
+              )}
               {zaloHref && (
                 <a href={zaloHref} target="_blank" rel="noopener noreferrer" className="mv-btn mv-btn-ghost !px-7 !py-3.5 !text-[15px]">
-                  <MessageCircle className="w-5 h-5 text-indigo-300" /> Hỏi báo giá qua Zalo
+                  <MessageCircle className="w-5 h-5 text-indigo-300" /> Gửi nhu cầu qua Zalo
                 </a>
               )}
             </div>
+            {niche.slug === 'tem-nhan-fnb' && (
+              <Link href="/studio/print-custom" className="mt-5 inline-block text-sm font-semibold text-indigo-300 hover:underline">
+                Có mẫu sẵn? Gửi yêu cầu in
+              </Link>
+            )}
             <div className="mt-12 pt-8 border-t border-mv-hair grid grid-cols-2 sm:grid-cols-4 gap-5 text-slate-400 text-[13px]">
-              {['File in chuẩn', 'Nhận đơn lẻ', 'Báo giá ngay', 'Giao nhanh'].map((t) => (
+              {['Chọn mẫu có sẵn', 'Thêm logo của bạn', 'Xem trước thiết kế', 'Gửi yêu cầu in'].map((t) => (
                 <div key={t} className="flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-indigo-300" />
                   <span>{t}</span>

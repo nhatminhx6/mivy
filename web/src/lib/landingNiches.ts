@@ -42,8 +42,8 @@ export type Niche = {
 const SHARED_PAINS: Pain[] = [
   {
     icon: 'file',
-    title: 'File in chuẩn, không lo bị trả lại',
-    desc: 'Tự thêm bleed 2–3mm, vạch cắt, chuyển CMYK, outline chữ, DPI ≥300. Xưởng nhận in liền, khỏi sửa tới sửa lui.',
+    title: 'Gửi kèm thiết kế',
+    desc: 'Tải file thiết kế theo mẫu đã chọn để Mivy kiểm tra trước khi in.',
   },
   {
     icon: 'small',
@@ -52,13 +52,13 @@ const SHARED_PAINS: Pain[] = [
   },
   {
     icon: 'price',
-    title: 'Thấy giá ngay, không phải ib hỏi',
-    desc: 'Chọn khổ, chất liệu, số lượng là ra giá liền trên web. Không chờ, không bị cả chục nơi nhắn tin loạn.',
+    title: 'Gửi nhu cầu theo mẫu',
+    desc: 'Chọn số lượng, chất liệu và để lại thông tin liên hệ cho Mivy.',
   },
   {
     icon: 'fast',
-    title: 'Làm nhanh, giao gấp',
-    desc: 'Thiết kế xong là có file đặt in trong 5 phút. Cần gấp trong ngày — báo trước, Mivy tìm xưởng gần bạn.',
+    title: 'Ghi ngày cần nhận',
+    desc: 'Cho Mivy biết ngày bạn cần hàng để xác nhận thời gian phù hợp.',
   },
 ];
 
@@ -69,10 +69,10 @@ export const NICHES: Niche[] = [
     eyebrow: 'Tem · nhãn · decal',
     h1: 'In tem nước hoa chiết — tự thiết kế, file chuẩn, nhận đơn lẻ',
     tagline:
-      'Chọn mẫu đẹp, điền tên hương & dung tích, xuất file in chuẩn (bleed, vạch cắt, CMYK, DPI 300) — rồi đặt in số lượng ít, giao nhanh. Không cần biết thiết kế.',
+      'Chọn mẫu đẹp, điền tên hương & dung tích, tải file thiết kế — rồi đặt in số lượng ít, giao nhanh. Không cần biết thiết kế.',
     metaTitle: 'In tem nước hoa chiết số lượng ít — tự thiết kế, file chuẩn | Mivy',
     metaDescription:
-      'Tự thiết kế tem nước hoa chiết từ mẫu đẹp, xuất file in chuẩn (bleed, vạch cắt, CMYK, DPI 300). Nhận in số lượng ít, báo giá ngay, giao nhanh. Miễn phí thiết kế.',
+      'Tự thiết kế tem nước hoa chiết từ mẫu đẹp, tải file thiết kế. Nhận in số lượng ít, gửi yêu cầu trực tuyến. Miễn phí thiết kế.',
     keywords: [
       'in tem nước hoa',
       'in tem chiết nước hoa',
@@ -93,8 +93,8 @@ export const NICHES: Niche[] = [
     steps: [
       'Chọn mẫu tem nước hoa trong kho — bố cục sang, hợp chai chiết.',
       'Điền tên hương, dung tích (5ml/10ml…), thêm logo nếu có.',
-      'Mivy xuất file in chuẩn: bleed, vạch cắt, CMYK, chữ đã outline.',
-      'Bấm "Gửi yêu cầu in" — báo giá ngay, cọc, Mivy lo in & giao.',
+      'Xem trước và tải file thiết kế.',
+      'Bấm "Gửi yêu cầu in" — Mivy sẽ liên hệ để xác nhận nhu cầu.',
     ],
     faqs: [
       {
@@ -107,7 +107,7 @@ export const NICHES: Niche[] = [
       },
       {
         q: 'File có bị xưởng chê thiếu chuẩn không?',
-        a: 'Không. File xuất ra đã có bleed 2–3mm, vạch cắt, màu CMYK, chữ outline và DPI ≥300 — xưởng nhận in được ngay, không phải chỉnh lại.',
+        a: 'Bạn có thể gửi file trực tiếp từ Studio. Mivy sẽ kiểm tra file và liên hệ nếu cần điều chỉnh.',
       },
       {
         q: 'Tem dán chai có bền, chống nước không?',
@@ -121,10 +121,10 @@ export const NICHES: Niche[] = [
     eyebrow: 'Tem · nhãn · decal',
     h1: 'In tem nhãn cho quán ăn, tiệm bánh, cà phê — trọn bộ, đơn lẻ',
     tagline:
-      'Tem dán ly, nhãn hộp, sticker logo, tem niêm phong — thiết kế đồng bộ một tông, xuất file in chuẩn, nhận in số lượng ít cho quán mới mở.',
+      'Thêm logo cho tem dán ly, hộp mang đi hoặc thiết kế nhãn chai, hũ. Xem trước mẫu rồi gửi nhu cầu in.',
     metaTitle: 'In tem nhãn quán ăn, cà phê, tiệm bánh — đồng bộ, đơn lẻ | Mivy',
     metaDescription:
-      'Thiết kế & in tem nhãn F&B: tem dán ly, nhãn hộp, sticker logo, tem niêm phong. Đồng bộ một tông, file in chuẩn, nhận số lượng ít, báo giá ngay.',
+      'Thiết kế & in tem nhãn F&B: tem dán ly, nhãn hộp, sticker logo, tem niêm phong. Chọn mẫu, thêm logo và gửi yêu cầu in trực tuyến.',
     keywords: [
       'in tem nhãn quán ăn',
       'in sticker cà phê',
@@ -134,7 +134,7 @@ export const NICHES: Niche[] = [
       'tem nhãn số lượng ít',
     ],
     studioHref: '/studio/sticker',
-    ctaDesign: 'Tự thiết kế tem nhãn quán',
+    ctaDesign: 'Thiết kế tem logo',
     pains: SHARED_PAINS,
     specs: [
       { label: 'Loại hay in', value: 'Tem dán ly, nhãn hộp, sticker logo, tem niêm phong' },
@@ -145,8 +145,8 @@ export const NICHES: Niche[] = [
     steps: [
       'Chọn mẫu theo loại quán (đồ ăn, trà sữa, cà phê, bánh).',
       'Điền tên quán, slogan, thông tin liên hệ, gắn logo.',
-      'Xuất trọn bộ file in chuẩn — cùng tông, cùng nhận diện.',
-      'Gửi yêu cầu in — báo giá ngay, in & giao tận nơi.',
+      'Xem lại mẫu và kiểm tra kích thước.',
+      'Gửi mẫu, số lượng và thông tin liên hệ cho Mivy.',
     ],
     faqs: [
       {
@@ -155,7 +155,7 @@ export const NICHES: Niche[] = [
       },
       {
         q: 'Có làm được trọn bộ cùng tông không?',
-        a: 'Có. Chọn một bộ mẫu là ra đồng bộ tem ly, nhãn hộp, sticker logo — cùng màu, cùng font, nhìn chuyên nghiệp.',
+        a: 'Bạn có thể dùng cùng logo và màu thương hiệu cho từng mẫu tem, nhãn trong Studio.',
       },
       {
         q: 'Tem niêm phong bóc là rách có in được không?',
@@ -172,7 +172,7 @@ export const NICHES: Niche[] = [
       'Mẫu thiệp tất niên sang, điền tên công ty & thông tin buổi tiệc là xong. Xuất file in chuẩn, nhận in số lượng vừa, giao kịp lịch tổ chức.',
     metaTitle: 'In thiệp mời tất niên cuối năm — mẫu đẹp, file chuẩn | Mivy',
     metaDescription:
-      'Thiết kế & in thiệp mời tất niên: mẫu sang, tự điền nội dung, xuất file in chuẩn (bleed, vạch cắt). Nhận in số lượng vừa, báo giá ngay, giao kịp mùa cuối năm.',
+      'Thiết kế & in thiệp mời tất niên: mẫu sang, tự điền nội dung, xuất file in chuẩn (bleed, vạch cắt). Nhận in số lượng vừa, gửi yêu cầu trực tuyến.',
     keywords: [
       'in thiệp mời tất niên',
       'thiệp tất niên công ty',
@@ -193,7 +193,7 @@ export const NICHES: Niche[] = [
       'Chọn mẫu thiệp tất niên hợp ngành của công ty.',
       'Điền tên công ty, lời mời, thời gian & địa điểm tiệc.',
       'Xuất file in chuẩn — cả bao thư và ruột thiệp.',
-      'Gửi yêu cầu in — báo giá ngay, giao kịp lịch tổ chức.',
+      'Gửi mẫu và ngày cần nhận để Mivy liên hệ xác nhận.',
     ],
     faqs: [
       {
@@ -215,7 +215,7 @@ export const NICHES: Niche[] = [
       'Lịch bloc, lịch để bàn in logo công ty làm quà Tết. Chọn mẫu, gắn logo & ảnh sản phẩm, xuất file in chuẩn, nhận in số lượng vừa phải.',
     metaTitle: 'In lịch Tết 2027 theo thương hiệu — lịch bloc, để bàn | Mivy',
     metaDescription:
-      'Thiết kế & in lịch Tết 2027: lịch bloc, lịch để bàn in logo công ty. Mẫu đẹp, tự gắn logo & ảnh, file in chuẩn, nhận số lượng ít, báo giá ngay.',
+      'Thiết kế & in lịch Tết 2027: lịch bloc, lịch để bàn in logo công ty. Mẫu đẹp, tự gắn logo & ảnh, file in chuẩn, gửi yêu cầu trực tuyến.',
     keywords: [
       'in lịch tết 2027',
       'in lịch bloc',
@@ -236,7 +236,7 @@ export const NICHES: Niche[] = [
       'Chọn mẫu lịch Tết hợp thương hiệu.',
       'Gắn logo, màu thương hiệu, ảnh sản phẩm.',
       'Xuất file in chuẩn cho xưởng.',
-      'Gửi yêu cầu in — báo giá ngay, giao kịp Tết.',
+      'Gửi mẫu và ngày cần nhận để Mivy liên hệ xác nhận.',
     ],
     faqs: [
       {

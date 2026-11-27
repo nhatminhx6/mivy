@@ -12,21 +12,22 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Mivy Studio — Tạo Poster Quảng Cáo & Thiết Kế Bằng AI 0đ API',
+    default: 'Mivy — Thiết kế & đặt in online, xuất file in chuẩn miễn phí',
     template: '%s | Mivy Studio',
   },
   description:
-    'Nền tảng tạo bộ 3 poster tuyển dụng, khóa học, dịch vụ và ảnh nền nghệ thuật AI chuẩn studio, miễn phí 100% không tốn tiền API. Xuất ảnh sắc nét 1080p, đa tỷ lệ 1:1, 4:5, 9:16.',
+    'Tự thiết kế thiệp cưới, sticker, tem nhãn, hộp giấy, card visit… online miễn phí rồi xuất file in chuẩn (tràn lề, vạch cắt, CMYK, chữ outline) và gửi yêu cầu in. Nhận cả đơn lẻ, số lượng ít, báo giá nhanh qua Zalo.',
   keywords: [
-    'tạo poster ai',
-    'thiết kế poster tuyển dụng',
-    'poster tuyển dụng ai',
-    'visual ai background',
-    'mivy studio',
-    'thiết kế quảng cáo miễn phí',
-    'poster khóa học',
-    'bộ 3 poster quảng cáo',
-    'ai design studio việt nam',
+    'thiết kế online miễn phí',
+    'xuất file in chuẩn',
+    'đặt in online',
+    'in theo yêu cầu',
+    'in số lượng ít',
+    'thiết kế thiệp cưới online',
+    'in sticker tem nhãn',
+    'thiết kế bao bì hộp giấy',
+    'file in chuẩn bleed cmyk',
+    'xưởng in tphcm',
   ],
   authors: [{ name: 'Mivy Team', url: siteUrl }],
   creator: 'Mivy',
@@ -39,9 +40,9 @@ export const metadata: Metadata = {
     locale: 'vi_VN',
     url: siteUrl,
     siteName: 'Mivy Studio',
-    title: 'Mivy Studio — Tạo Poster Quảng Cáo & Thiết Kế Bằng AI 0đ API',
+    title: 'Mivy — Thiết kế & đặt in online, xuất file in chuẩn miễn phí',
     description:
-      'Tự động tạo bộ 3 poster tuyển dụng, khóa học, dịch vụ và visual background AI chuẩn studio, miễn phí 100% 0đ API.',
+      'Thiết kế thiệp cưới, sticker, tem nhãn, bao bì, card visit… online miễn phí, xuất file in chuẩn rồi gửi yêu cầu in. Nhận cả đơn lẻ.',
     images: [
       {
         url: `${siteUrl}/assets/recruitment-team.png`,
@@ -53,9 +54,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Mivy Studio — Tạo Poster Quảng Cáo & Thiết Kế Bằng AI 0đ API',
+    title: 'Mivy — Thiết kế & đặt in online, xuất file in chuẩn miễn phí',
     description:
-      'Tự động tạo bộ 3 poster tuyển dụng, khóa học, dịch vụ chuẩn studio với AI 0đ.',
+      'Thiết kế thiệp cưới, sticker, tem nhãn, bao bì… online miễn phí, xuất file in chuẩn rồi gửi yêu cầu in.',
     images: [`${siteUrl}/assets/recruitment-team.png`],
   },
   robots: {
@@ -84,7 +85,7 @@ export default function RootLayout({
         '@id': `${siteUrl}/#website`,
         url: siteUrl,
         name: 'Mivy Studio',
-        description: 'Tạo Poster Quảng Cáo & Thiết Kế Bằng AI 0đ API',
+        description: 'Thiết kế & đặt in online, xuất file in chuẩn miễn phí',
         inLanguage: 'vi-VN',
       },
       {
@@ -99,7 +100,7 @@ export default function RootLayout({
           priceCurrency: 'VND',
         },
         description:
-          'Nền tảng tạo poster đa ngành, nội dung marketing và hình ảnh nghệ thuật chuẩn studio tích hợp AI.',
+          'Công cụ thiết kế online miễn phí cho dân in: thiệp, sticker, tem nhãn, bao bì, card visit… xuất file in chuẩn (tràn lề, vạch cắt, CMYK) rồi đặt in, nhận cả đơn lẻ.',
       },
     ],
   };

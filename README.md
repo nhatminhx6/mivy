@@ -13,7 +13,7 @@ cd web && npm run dev
 
 ```bash
 # 2) Backend — chỉ cần khi dùng Studio Image (gen ảnh sản phẩm qua ComfyUI)
-cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8019 --reload
 ```
 
 → Mở [http://localhost:3009/studio/marketing](http://localhost:3009/studio/marketing)
@@ -22,18 +22,18 @@ cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --rel
 
 ## 🚀 Hướng Dẫn Chạy Dự Án (2 Terminal Riêng Biệt)
 
-### Terminal 1 — Backend (Port 8000)
+### Terminal 1 — Backend (Port 8019)
 
 ```bash
 # Cách 1 (Khuyên dùng): Tự động khởi động Ollama + ComfyUI + FastAPI Backend
 cd back-end && sh scripts/run-local.sh
 
 # Cách 2: Chỉ chạy FastAPI Backend (nhẹ, tự reload khi sửa code)
-cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+cd back-end && .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8019 --reload
 ```
 
-- **API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Health check:** [http://localhost:8000/health](http://localhost:8000/health)
+- **API Docs (Swagger UI):** [http://localhost:8019/docs](http://localhost:8019/docs)
+- **Health check:** [http://localhost:8019/health](http://localhost:8019/health)
 
 ---
 

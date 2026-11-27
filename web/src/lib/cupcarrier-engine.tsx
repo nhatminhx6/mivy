@@ -492,11 +492,11 @@ function face(c: Ctx, layout: string, back: boolean): ReactNode {
  * ink: chỉ lớp mực, nền trong suốt (texture 3D).
  * print: file in 1 mặt đúng khổ — nền tham khảo (không in) + In + CutContour (bao/lỗ quai/miệng) + Fold/Seal + vị trí quai + ghi chú.
  */
-export type CCMode = 'face' | 'ink' | 'print';
+export type CCMode = 'face' | 'ink' | 'print' | 'tex';
 export const CC_MARGIN = 14;
 
-export function CupCarrierSvg({ spec, data, logo = null, side = 'front', mode = 'face', style }: {
-  spec: CCSpec; data: CCData; logo?: CCLogo | null; side?: 'front' | 'back'; mode?: CCMode; style?: CSSProperties;
+export function CupCarrierSvg({ spec, data, logo = null, side = 'front', mode = 'face', blank = false, style }: {
+  spec: CCSpec; data: CCData; logo?: CCLogo | null; side?: 'front' | 'back'; mode?: CCMode; blank?: boolean; style?: CSSProperties;
 }) {
   const uid = useId().replace(/[:]/g, '') + side[0] + mode[0];
   const sz = ccSize(spec.size);
@@ -563,10 +563,10 @@ export function CupCarrierSvg({ spec, data, logo = null, side = 'front', mode = 
     <svg viewBox={`0 0 ${g.W} ${g.H}`} xmlns="http://www.w3.org/2000/svg" style={style} preserveAspectRatio="xMidYMid meet" data-area={area}>
       <clipPath id={holeCut}><path d={outlineWithHole} fillRule="evenodd" clipRule="evenodd" /></clipPath>
       <g clipPath={`url(#${holeCut})`}>
-        <rect data-media="1" x={0} y={0} width={g.W} height={g.H} fill={med.hex} />
+        <rect data-media="1" x={0} y={0} width={g.W} height={g.H} fill={med.hex} opacity={mode === 'tex' ? med.opacity : 1} />
         {g.folds.map((y) => <rect key={y} x={0} y={y - 0.6} width={g.W} height={1.2} fill={med.dark ? '#fff' : '#000'} opacity={0.08} />)}
         {g.handles.map((h, i) => <rect key={i} x={h.x} y={h.y} width={h.w} height={h.h} fill={med.dark ? '#fff' : '#000'} opacity={0.05} />)}
-        {art}
+        {!blank && art}
       </g>
       {g.hole && <path d={g.hole} fill="none" stroke="#000" strokeOpacity={0.12} strokeWidth={1.2} />}
     </svg>

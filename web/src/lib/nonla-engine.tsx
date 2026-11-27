@@ -549,7 +549,7 @@ export function sectorPath(g: NLGeo): string {
 }
 
 // lá nón (xem trước phẳng): nền rơm + gân lá xuyên tâm + vòng nan
-function LeafBg({ g, path }: { g: NLGeo; path: string }) {
+function LeafBg({ g, path, uid }: { g: NLGeo; path: string; uid: string }) {
   const rays: ReactNode[] = [];
   const n = 90;
   for (let i = 0; i <= n; i++) {
@@ -565,7 +565,7 @@ function LeafBg({ g, path }: { g: NLGeo; path: string }) {
   return (
     <g>
       <path d={path} fill="#EFE5C9" />
-      <g clipPath="url(#nl-leaf-clip)">{rays}{rings}</g>
+      <g clipPath={`url(#${uid}-leaf-clip)`}>{rays}{rings}</g>
     </g>
   );
 }
@@ -592,8 +592,8 @@ export function NonlaSvg({ spec, data, logo, mode = 'mock', style }: { spec: NLS
     const x0 = -g.b * Math.sin(g.half) - 6, w = 2 * g.b * Math.sin(g.half) + 12, y0 = g.a * Math.cos(g.half) - 6, h = g.b - y0 + 6;
     return (
       <svg viewBox={`${f2(x0)} ${f2(y0)} ${f2(w)} ${f2(h)}`} xmlns="http://www.w3.org/2000/svg" style={style} {...meta}>
-        <defs><clipPath id="nl-leaf-clip"><path d={sect} /></clipPath></defs>
-        <LeafBg g={g} path={sect} />
+        <defs><clipPath id={`${uid}-leaf-clip`}><path d={sect} /></clipPath></defs>
+        <LeafBg g={g} path={sect} uid={uid} />
         <path d={panel} fill="none" stroke="#9C8B62" strokeWidth={0.8} strokeDasharray="3 3" />
         {face}
       </svg>
@@ -606,8 +606,8 @@ export function NonlaSvg({ spec, data, logo, mode = 'mock', style }: { spec: NLS
   if (mode === 'mock') {
     return (
       <svg viewBox={vb} xmlns="http://www.w3.org/2000/svg" style={style} {...meta}>
-        <defs><clipPath id="nl-leaf-clip"><path d={sect} /></clipPath></defs>
-        <LeafBg g={g} path={sect} />
+        <defs><clipPath id={`${uid}-leaf-clip`}><path d={sect} /></clipPath></defs>
+        <LeafBg g={g} path={sect} uid={uid} />
         <path d={sect} fill="none" stroke="#9C8B62" strokeWidth={1.2} />
         <path d={panel} fill="none" stroke="#EC008C" strokeWidth={1} strokeDasharray="5 4" />
         {face}

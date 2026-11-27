@@ -1,4 +1,4 @@
-"""Đơn in: khách (đã đăng nhập) gửi yêu cầu + file in; xem đơn của mình. Admin: danh sách đơn, báo giá,
+"""Đơn in: khách gửi yêu cầu in; xem đơn của mình. Admin: danh sách đơn, báo giá,
 đổi trạng thái, danh sách khách hàng + ghi chú chăm sóc."""
 
 from fastapi import (
@@ -14,10 +14,10 @@ from fastapi import (
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.api.account import admin_user, current_user, fail, public
+from app.api.account import admin_user, current_user, fail, optional_user, public
 from app.db.models import PrintOrder, User
 from app.services.account_service import AccountError
-from app.services.print_order_service import STATUS_LABEL, PrintOrderService, order_code
+from app.services.print_order_service import MAX_FILE, MAX_PREVIEW, STATUS_LABEL, PrintOrderService, order_code
 
 router = APIRouter(prefix="/v1", tags=["print-orders"])
 
@@ -28,6 +28,7 @@ def orders(request: Request) -> PrintOrderService:
 
 def out(o: PrintOrder, admin: bool = False, email: str = "") -> dict:
     d = {
+        "has_account": o.user_id is not None,
         "id": o.id,
         "code": order_code(o.id),
         "product": o.product,
@@ -48,7 +49,7 @@ def out(o: PrintOrder, admin: bool = False, email: str = "") -> dict:
         "updated_at": o.updated_at.isoformat() if o.updated_at else None,
     }
     if admin:
-        d.update({"user_id": o.user_id, "email": email, "admin_note": o.admin_note})
+        d.update({"user_id": o.user_id, "email": email if "@" in email else "", "admin_note": o.admin_note})
     return d
 
 
@@ -66,9 +67,9 @@ async def create_order(
     need_by: str = Form(""),
     note: str = Form(""),
     design: str = Form(""),
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
     preview: UploadFile | None = File(None),
-    user: User = Depends(current_user),
+    user: User | None = Depends(optional_user),
 ) -> dict:
     svc = orders(request)
     try:
@@ -84,13 +85,13 @@ async def create_order(
             need_by=need_by,
             note=note,
             design=design,
-            file_name=file.filename or "",
-            file_bytes=await file.read(),
-            preview=await preview.read() if preview else None,
+            file_name=(file.filename or "") if file else "",
+            file_bytes=await file.read(MAX_FILE + 1) if file else b"",
+            preview=await preview.read(MAX_PREVIEW + 1) if preview and file else None,
         )
     except AccountError as e:
         raise fail(e) from e
-    background.add_task(svc.notify_new, o, user.email)
+    background.add_task(svc.notify_new, o, public(user)["email"] if user else "")
     return out(o)
 
 
@@ -112,7 +113,7 @@ async def order_file(
 ) -> FileResponse:
     o = await owned(request, order_id, user)
     p = orders(request).file_path(o)
-    if not p.exists():
+    if not o.file_name or not p.is_file():
         raise HTTPException(404, {"code": "no_file", "message": "File in không còn."})
     return FileResponse(p, filename=f"{order_code(o.id)}-{o.file_name}")
 

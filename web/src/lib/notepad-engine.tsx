@@ -167,21 +167,23 @@ export const NP_FIELDS: NPField[] = [
 
 // ---------- đo chữ ----------
 let mctx: CanvasRenderingContext2D | null = null;
-export function textW(t: string, family: string, weight: number, size: number): number {
-  if (typeof document === 'undefined') return (t || '').length * size * 0.55;
+export function textW(t: string, family: string, weight: number, size: number, ls = 0): number {
+  const s = t || '';
+  const extra = ls * Math.max(0, [...s].length - 1);
+  if (typeof document === 'undefined') return s.length * size * 0.55 + extra;
   if (!mctx) mctx = document.createElement('canvas').getContext('2d');
-  if (!mctx) return (t || '').length * size * 0.55;
+  if (!mctx) return s.length * size * 0.55 + extra;
   mctx.font = `${weight} ${size}px "${family}"`;
-  return mctx.measureText(t || '').width;
+  return mctx.measureText(s).width + extra;
 }
-const fitSize = (t: string, fam: string, wt: number, size: number, maxW: number, min = size * 0.5) => {
-  const w = textW(t, fam, wt, size);
+const fitSize = (t: string, fam: string, wt: number, size: number, maxW: number, min = size * 0.5, ls = 0) => {
+  const w = textW(t, fam, wt, size, ls);
   return w <= maxW ? size : Math.max(min, (size * maxW) / w);
 };
-const clip = (t: string, fam: string, wt: number, size: number, maxW: number) => {
-  if (textW(t, fam, wt, size) <= maxW) return t;
+const clip = (t: string, fam: string, wt: number, size: number, maxW: number, ls = 0) => {
+  if (textW(t, fam, wt, size, ls) <= maxW) return t;
   let s = t;
-  while (s.length > 1 && textW(s + '…', fam, wt, size) > maxW) s = s.slice(0, -1);
+  while (s.length > 1 && textW(s + '…', fam, wt, size, ls) > maxW) s = s.slice(0, -1);
   return s.trimEnd() + '…';
 };
 // tách 2 dòng cân đối
@@ -352,7 +354,7 @@ export function NoteSheetSvg({ spec, data, wMm, hMm, shape = 'sq', paperHex = '#
       const ls = fitSize(lbl, font.family, font.weight, Math.min(7 * U * k, headH * 0.55), S.w * 0.95, minTxt);
       els.push(txt(S.x, top + ls * 0.95, clip(lbl, font.family, font.weight, ls, S.w), { size: ls, fam: font.family, wt: font.weight, key: 'todo' }));
       const bs = Math.max(minTxt, Math.min(2.4 * U * k, headH * 0.22));
-      if (brand) els.push(txt(S.x, top + ls * 0.95 + bs * 1.55, clip(brand, BODY, 800, bs, S.w), { size: bs, wt: 800, fill: pal.accent, ls: 0.3 * U, key: 'tb' }));
+      if (brand) els.push(txt(S.x, top + ls * 0.95 + bs * 1.55, clip(brand, BODY, 800, bs, S.w, 0.3 * U), { size: bs, wt: 800, fill: pal.accent, ls: 0.3 * U, key: 'tb' }));
       bg.push(<line key="tl" x1={S.x} x2={S.x + S.w} y1={top + headH - 1.2 * U} y2={top + headH - 1.2 * U} stroke={pal.accent} strokeWidth={0.5 * U} />);
     } else {
       if (useBadge) els.push(<g key="badge"><Badge cx={S.x + r} cy={top + headH * 0.48} r={r} data={data} pal={pal} font={font} invert={onBand} /></g>);
@@ -374,7 +376,7 @@ export function NoteSheetSvg({ spec, data, wMm, hMm, shape = 'sq', paperHex = '#
     // tối giản: tiêu đề trang nhỏ trên cùng
     if (headerLbl) {
       const hs = Math.max(minTxt, Math.min(3 * U * k, S.h * 0.08));
-      els.push(txt(S.x, top + hs, clip(headerLbl.toUpperCase(), BODY, 800, hs, S.w * 0.7), { size: hs, wt: 800, ls: 0.6 * U, key: 'mh' }));
+      els.push(txt(S.x, top + hs, clip(headerLbl.toUpperCase(), BODY, 800, hs, S.w * 0.7, 0.6 * U), { size: hs, wt: 800, ls: 0.6 * U, key: 'mh' }));
       top += hs * 2;
     }
   }
@@ -481,7 +483,7 @@ function CoverArt({ spec, data, W, H, b }: { spec: NPSpec; data: NPData; W: numb
       <rect x={pad * 0.5} y={pad * 0.5} width={W - pad} height={H - pad} rx={2 * U} fill="none" stroke={pal.accent} strokeWidth={0.5 * U} strokeOpacity={0.7} />
       <Badge cx={W / 2} cy={cy} r={r} data={data} pal={pal} font={font} invert={dark} />
       {els}
-      <text x={W / 2} y={ly} textAnchor="middle" fontFamily={q(BODY)} fontWeight={800} fontSize={Math.max(2 * U, 2.6 * U * k)} letterSpacing={1.2 * U * k} fill={fg} opacity={0.8}>{clip(lbl, BODY, 800, Math.max(2 * U, 2.6 * U * k), tw)}</text>
+      <text x={W / 2} y={ly} textAnchor="middle" fontFamily={q(BODY)} fontWeight={800} fontSize={Math.max(2 * U, 2.6 * U * k)} letterSpacing={1.2 * U * k} fill={fg} opacity={0.8}>{clip(lbl, BODY, 800, Math.max(2 * U, 2.6 * U * k), tw, 1.2 * U * k)}</text>
       {foot && <text x={W / 2} y={H - pad * 0.95} textAnchor="middle" fontFamily={q(BODY)} fontWeight={BW} fontSize={fs} fill={spec.layout === 'band' ? '#FFFFFF' : fg}>{clip(foot, BODY, BW, fs, tw)}</text>}
     </g>
   );
@@ -524,7 +526,7 @@ function CubeWrapArt({ spec, data, b }: { spec: NPSpec; data: NPData; b: number 
   // mặt 4: hotline + sự kiện
   const hl = (data.hotline || '').trim();
   const ev = (data.event || data.header || '').trim();
-  if (ev) { const es = fitSize(ev, BODY, 800, 6 * U, tw, 2 * U); els.push(<text key="c3e" x={F * 3.5} y={F * 0.38} textAnchor="middle" fontFamily={q(BODY)} fontWeight={800} fontSize={es} fill={pal.accent} letterSpacing={0.6 * U}>{clip(ev.toUpperCase(), BODY, 800, es, tw)}</text>); }
+  if (ev) { const es = fitSize(ev, BODY, 800, 6 * U, tw, 2 * U, 0.6 * U); els.push(<text key="c3e" x={F * 3.5} y={F * 0.38} textAnchor="middle" fontFamily={q(BODY)} fontWeight={800} fontSize={es} fill={pal.accent} letterSpacing={0.6 * U}>{clip(ev.toUpperCase(), BODY, 800, es, tw, 0.6 * U)}</text>); }
   if (hl) { const hs = fitSize(hl, font.family, font.weight, 10 * U, tw, 2.4 * U); els.push(<text key="c3h" x={F * 3.5} y={F * 0.6} textAnchor="middle" fontFamily={q(font.family)} fontWeight={font.weight} fontSize={hs} fill={fg}>{hl}</text>); }
   return (
     <g>

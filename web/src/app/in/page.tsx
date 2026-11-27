@@ -9,7 +9,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mivy.vn';
 export const metadata: Metadata = {
   title: 'In theo nhu cầu — tem nhãn, thiệp, lịch Tết | Mivy',
   description:
-    'Chọn đúng thứ bạn cần in: tem nước hoa, tem nhãn F&B, thiệp tất niên, lịch Tết. Tự thiết kế từ mẫu đẹp, xuất file in chuẩn, nhận đơn lẻ, báo giá ngay.',
+    'Chọn đúng thứ bạn cần in: tem nước hoa, tem nhãn F&B, thiệp tất niên, lịch Tết. Chọn mẫu, thêm logo và gửi nhu cầu in cho Mivy.',
   keywords: ['in tem nhãn', 'in theo yêu cầu', 'thiết kế file in', 'in số lượng ít', 'in nhanh', ...NICHES.flatMap((n) => n.keywords)],
   alternates: { canonical: `${siteUrl}/in` },
   openGraph: {
@@ -52,7 +52,7 @@ export default function InHubPage() {
               Bạn cần in gì?
             </h1>
             <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
-              Chọn đúng thứ bạn cần. Mỗi loại có mẫu đẹp để tự chỉnh, xuất file in chuẩn, nhận đơn lẻ và báo giá ngay — không cần biết thiết kế.
+              Chọn đúng thứ bạn cần. Chọn mẫu có sẵn, thêm nội dung của bạn rồi gửi nhu cầu in.
             </p>
           </div>
         </section>
@@ -81,7 +81,7 @@ export default function InHubPage() {
         <section className="py-14 px-6">
           <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { icon: FileCheck2, title: 'File in chuẩn', desc: 'Bleed, vạch cắt, CMYK, outline chữ, DPI ≥300 — xưởng nhận in liền.' },
+              { icon: FileCheck2, title: 'Gửi kèm mẫu', desc: 'Mivy nhận thiết kế từ Studio, file có sẵn hoặc ảnh tham khảo.' },
               { icon: Package, title: 'Nhận đơn lẻ', desc: 'Không ép số lượng lớn. In vài chục chiếc vẫn làm.' },
               { icon: Wand2, title: 'Tự thiết kế free', desc: 'Chọn mẫu, điền nội dung — không cần biết thiết kế, không tốn phí.' },
             ].map((f) => {

@@ -71,7 +71,7 @@ class PrintOrderService:
 
     async def create(
         self,
-        user: User,
+        user: User | None,
         *,
         product: str,
         title: str,
@@ -93,12 +93,16 @@ class PrintOrderService:
             raise AccountError("bad_quantity", "Số lượng cần từ 1 đến 100.000.")
         phone = normalize_phone(phone)
         if not phone:
-            raise AccountError("bad_phone", "Cần số điện thoại / Zalo để báo giá.")
+            raise AccountError("bad_phone", "Cần số điện thoại / Zalo để Mivy liên hệ.")
         if need_by and not DATE_RE.match(need_by):
             raise AccountError("bad_date", "Ngày cần nhận không hợp lệ.")
         ext = Path(file_name or "").suffix.lower()
         allowed = CUSTOM_EXT if product == "custom" else FILE_EXT
-        if ext not in allowed or not file_bytes or len(file_bytes) > MAX_FILE:
+        if product == "custom" and not title.strip():
+            raise AccountError("bad_title", "Cho Mivy biết bạn cần in gì nhé.")
+        if (product != "custom" or file_name or file_bytes) and (
+            ext not in allowed or not file_bytes or len(file_bytes) > MAX_FILE
+        ):
             kinds = "PDF/SVG/ảnh/AI/PSD/CDR/EPS/ZIP" if product == "custom" else "PDF/SVG"
             raise AccountError("bad_file", f"File phải là {kinds}, tối đa 40MB.")
         if preview and len(preview) > MAX_PREVIEW:
@@ -109,7 +113,7 @@ class PrintOrderService:
             design = ""
         async with self.sessions() as s, s.begin():
             o = PrintOrder(
-                user_id=user.id,
+                user_id=user.id if user else None,
                 product=product,
                 title=title.strip()[:200] or PRODUCTS[product],
                 quantity=quantity,
@@ -126,15 +130,15 @@ class PrintOrderService:
             s.add(o)
             await s.flush()
             # lần đầu đặt in → lưu SĐT/tên vào tài khoản để chăm sóc sau
-            u = await s.get(User, user.id)
+            u = await s.get(User, user.id) if user else None
             if u and not u.phone:
                 u.phone = phone
             if u and not u.name and o.contact_name:
                 u.name = o.contact_name
-            folder = self.folder(o.id)
-            folder.mkdir(parents=True, exist_ok=True)
-            self.file_path(o).write_bytes(file_bytes)
-            if preview:
+            if file_bytes:
+                self.folder(o.id).mkdir(parents=True, exist_ok=True)
+                self.file_path(o).write_bytes(file_bytes)
+            if preview and file_bytes:
                 self.preview_path(o).write_bytes(preview)
         return o
 
@@ -155,7 +159,7 @@ class PrintOrderService:
         self, status: str = "", q: str = "", limit: int = 200
     ) -> list[tuple[PrintOrder, str]]:
         async with self.sessions() as s:
-            stmt = select(PrintOrder, User.email).join(User, User.id == PrintOrder.user_id)
+            stmt = select(PrintOrder, User.email).outerjoin(User, User.id == PrintOrder.user_id)
             if status:
                 stmt = stmt.where(PrintOrder.status == status)
             if q.strip():
@@ -171,7 +175,7 @@ class PrintOrderService:
                     conds.append(PrintOrder.id == int(code))
                 stmt = stmt.where(or_(*conds))
             rows = await s.execute(stmt.order_by(PrintOrder.id.desc()).limit(limit))
-            return [(o, e) for o, e in rows.all()]
+            return [(o, e or "") for o, e in rows.all()]
 
     async def admin_update(self, order_id: int, changes: dict) -> PrintOrder:
         async with self.sessions() as s, s.begin():

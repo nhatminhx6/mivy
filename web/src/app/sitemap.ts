@@ -1,8 +1,9 @@
 import { MetadataRoute } from 'next';
 import { NICHE_SLUGS } from '@/lib/landingNiches';
+import { STUDIO_SEO_SLUGS } from '@/lib/studioSeo';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mivy.vn';
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://mivy.vn').replace(/\/$/, '');
   const currentDate = new Date().toISOString();
 
   const landingPages: MetadataRoute.Sitemap = [
@@ -20,6 +21,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
+  // Mọi trang sản phẩm /studio/* (nguồn: product-catalog qua studioSeo).
+  const studioPages: MetadataRoute.Sitemap = STUDIO_SEO_SLUGS.map((slug) => ({
+    url: `${baseUrl}/studio/${slug}`,
+    lastModified: currentDate,
+    changeFrequency: 'weekly' as const,
+    priority: 0.72,
+  }));
+
   return [
     {
       url: baseUrl,
@@ -34,23 +43,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/studio/marketing`,
+      url: `${baseUrl}/pricing`,
       lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/studio/templates`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/studio/drafts`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.7,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
     ...landingPages,
+    ...studioPages,
   ];
 }

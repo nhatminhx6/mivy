@@ -20,6 +20,11 @@ import { Mockup3DView, PreviewTabs, type Mockup3DHandle } from '@/components/Moc
 
 const FIRST: RBSpec = { ...RB_TEMPLATES[0].spec, width: 25, spacing: 'normal' };
 const TABLE_BG = 'linear-gradient(135deg,#F3EEE7 0%,#E6DED3 100%)';
+const mergeData = (base: RBData, patch: Partial<RBData>): RBData => {
+  const out: RBData = { ...base };
+  for (const [k, v] of Object.entries(patch)) if (v !== undefined) out[k] = v;
+  return out;
+};
 
 export default function RibbonPage() {
   const ready = useRBFonts();
@@ -51,7 +56,7 @@ export default function RibbonPage() {
   const setField = (key: string, v: string) => { setDirty(true); setData((d) => ({ ...d, [key]: v })); };
   const pickTemplate = (t: (typeof RB_TEMPLATES)[number]) => {
     set(t.spec);
-    if (!dirty) setData({ ...defaultRBData(), ...t.data });
+    if (!dirty) setData(mergeData(defaultRBData(), t.data));
   };
   const setInkCount = (n: number) => setSpec((s) => {
     const inks = s.inks.slice(0, n);
@@ -140,7 +145,7 @@ export default function RibbonPage() {
                 {RB_TEMPLATES.map((t) => {
                   const ts: RBSpec = { ...spec, ...t.spec };
                   const on = (['layout', 'type', 'color', 'print', 'foil', 'font'] as const).every((k) => spec[k] === t.spec[k]) && spec.inks.join() === t.spec.inks.join();
-                  const td = dirty ? data : { ...defaultRBData(), ...t.data };
+                  const td = dirty ? data : mergeData(defaultRBData(), t.data);
                   return (
                     <button key={t.id} type="button" onClick={() => pickTemplate(t)} data-testid="rb-tpl"
                       className={`rounded-xl border p-1.5 text-left transition-all ${on ? 'border-indigo-400 ring-2 ring-indigo-400/40' : 'border-mv-hair hover:border-mv-hair-strong'}`}>
