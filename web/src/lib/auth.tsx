@@ -42,8 +42,12 @@ export interface PrintOrder {
   contact_name: string; phone: string; address: string; need_by: string; note: string;
   status: OrderStatus; status_label: string; price: number | null; deposit: number | null; file_name: string;
   created_at: string; updated_at: string | null;
+  unread?: number; // số tin chưa đọc (khách: tin admin; admin: tin khách)
   has_account?: boolean; user_id?: number | null; email?: string; admin_note?: string;
 }
+// Chat theo đơn (khách ↔ Mivy)
+export type MsgSender = 'customer' | 'admin';
+export interface OrderMessage { id: number; order_id: number; sender: MsgSender; body: string; created_at: string }
 export interface Customer extends Me { note: string; created_at: string; orders: number; last_order_at: string | null; total: number }
 export const ORDER_STEPS: { id: OrderStatus; label: string }[] = [
   { id: 'new', label: 'Mới gửi' }, { id: 'quoted', label: 'Đã báo giá' }, { id: 'deposited', label: 'Đã cọc' },
@@ -70,6 +74,14 @@ export const orderApi = {
   adminUpdate: (id: number, p: Partial<Pick<PrintOrder, 'status' | 'price' | 'deposit' | 'admin_note'>>) => call<PrintOrder>(`/v1/admin/print-orders/${id}`, patch(p)),
   customers: (q = '') => call<Customer[]>(`/v1/admin/customers?q=${encodeURIComponent(q)}`),
   updateCustomer: (id: number, p: { name?: string; phone?: string; note?: string }) => call<Customer>(`/v1/admin/customers/${id}`, patch(p)),
+};
+// Chat theo đơn: khách dùng /print-orders/:id/messages, admin dùng /admin/print-orders/:id/messages.
+// GET ?after=<id tin cuối> chỉ lấy tin mới → polling nhẹ; GET cũng tự đánh dấu đã đọc.
+export const messageApi = {
+  list: (orderId: number, after = 0) => call<OrderMessage[]>(`/v1/print-orders/${orderId}/messages?after=${after}`),
+  send: (orderId: number, body: string) => call<OrderMessage>(`/v1/print-orders/${orderId}/messages`, json({ body })),
+  adminList: (orderId: number, after = 0) => call<OrderMessage[]>(`/v1/admin/print-orders/${orderId}/messages?after=${after}`),
+  adminSend: (orderId: number, body: string) => call<OrderMessage>(`/v1/admin/print-orders/${orderId}/messages`, json({ body })),
 };
 export const fmtVnd = (n?: number | null) => (n == null ? '—' : `${n.toLocaleString('vi-VN')}đ`);
 export const zaloLink = (phone: string) => `https://zalo.me/${phone}`;

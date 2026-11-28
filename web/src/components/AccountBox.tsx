@@ -24,11 +24,14 @@ export function AccountBox() {
         <span className="text-[11px] text-slate-400 truncate" title={me.email}>{me.name || me.email}</span>
         <button type="button" onClick={logout} title="Đăng xuất" className="text-slate-500 hover:text-mv-fg"><LogOut className="w-3.5 h-3.5" /></button>
       </div>
-      <Link href="/studio/wallet" className="flex items-center gap-2 group" data-testid="account-balance">
-        <Wallet className="w-4 h-4 text-mv-pro shrink-0" />
-        <span className="text-base font-bold text-mv-fg flex-1 tabular-nums">{fmtDong(me.balance)}</span>
-        <span className="text-xs font-bold text-mv-accent group-hover:underline">Nạp tiền</span>
-      </Link>
+      {/* Ví + nạp tiền chỉ cho khách — admin tự cộng/trừ tiền ở trang Quản trị → ví */}
+      {!me.is_admin && (
+        <Link href="/studio/wallet" className="flex items-center gap-2 group" data-testid="account-balance">
+          <Wallet className="w-4 h-4 text-mv-pro shrink-0" />
+          <span className="text-base font-bold text-mv-fg flex-1 tabular-nums">{fmtDong(me.balance)}</span>
+          <span className="text-xs font-bold text-mv-accent group-hover:underline">Nạp tiền</span>
+        </Link>
+      )}
       <Link href="/studio/orders" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-mv-fg" data-testid="account-orders"><Printer className="w-3.5 h-3.5" /> Đơn in của tôi</Link>
       {me.is_admin && (
         <Link href="/studio/admin" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-mv-fg"><ShieldCheck className="w-3.5 h-3.5" /> Quản trị đơn · khách · ví</Link>

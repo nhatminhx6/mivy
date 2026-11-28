@@ -1,6 +1,8 @@
 """Đơn in: khách gửi yêu cầu in; xem đơn của mình. Admin: danh sách đơn, báo giá,
 đổi trạng thái, danh sách khách hàng + ghi chú chăm sóc."""
 
+from datetime import UTC, datetime
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -15,7 +17,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.api.account import admin_user, current_user, fail, optional_user, public
-from app.db.models import PrintOrder, User
+from app.db.models import MessageSender, OrderMessage, PrintOrder, User
 from app.services.account_service import AccountError
 from app.services.print_order_service import MAX_FILE, MAX_PREVIEW, STATUS_LABEL, PrintOrderService, order_code
 
@@ -26,7 +28,14 @@ def orders(request: Request) -> PrintOrderService:
     return request.app.state.print_orders
 
 
-def out(o: PrintOrder, admin: bool = False, email: str = "") -> dict:
+def iso(dt: datetime | None) -> str | None:
+    """SQLite trả datetime naive (mất tzinfo) → coi là UTC để client hiển thị đúng giờ VN."""
+    if dt is None:
+        return None
+    return (dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt).isoformat()
+
+
+def out(o: PrintOrder, admin: bool = False, email: str = "", unread: int = 0) -> dict:
     d = {
         "has_account": o.user_id is not None,
         "id": o.id,
@@ -45,12 +54,27 @@ def out(o: PrintOrder, admin: bool = False, email: str = "") -> dict:
         "price": o.price,
         "deposit": o.deposit,
         "file_name": o.file_name,
-        "created_at": o.created_at.isoformat(),
-        "updated_at": o.updated_at.isoformat() if o.updated_at else None,
+        "unread": unread,
+        "created_at": iso(o.created_at),
+        "updated_at": iso(o.updated_at),
     }
     if admin:
         d.update({"user_id": o.user_id, "email": email if "@" in email else "", "admin_note": o.admin_note})
     return d
+
+
+def msg_out(m: OrderMessage) -> dict:
+    return {
+        "id": m.id,
+        "order_id": m.order_id,
+        "sender": m.sender,
+        "body": m.body,
+        "created_at": iso(m.created_at),
+    }
+
+
+class MessageBody(BaseModel):
+    body: str
 
 
 @router.post("/print-orders")
@@ -97,7 +121,9 @@ async def create_order(
 
 @router.get("/me/print-orders")
 async def my_orders(request: Request, user: User = Depends(current_user)) -> list[dict]:
-    return [out(o) for o in await orders(request).mine(user.id)]
+    rows = await orders(request).mine(user.id)
+    unread = await orders(request).unread_map([o.id for o in rows], MessageSender.CUSTOMER)
+    return [out(o, unread=unread.get(o.id, 0)) for o in rows]
 
 
 async def owned(request: Request, order_id: int, user: User) -> PrintOrder:
@@ -105,6 +131,43 @@ async def owned(request: Request, order_id: int, user: User) -> PrintOrder:
     if not o or (o.user_id != user.id and not user.is_admin):
         raise HTTPException(404, {"code": "no_order", "message": "Không tìm thấy đơn."})
     return o
+
+
+async def owner_only(request: Request, order_id: int, user: User) -> PrintOrder:
+    """Chat phía khách: chỉ chủ đơn (đơn có tài khoản), không cho admin đi cửa này."""
+    o = await orders(request).get(order_id)
+    if not o or o.user_id != user.id:
+        raise HTTPException(404, {"code": "no_order", "message": "Không tìm thấy đơn."})
+    return o
+
+
+# ---------- Chat theo đơn: phía khách ----------
+@router.get("/print-orders/{order_id}/messages")
+async def my_messages(
+    order_id: int, request: Request, after: int = 0, user: User = Depends(current_user)
+) -> list[dict]:
+    await owner_only(request, order_id, user)
+    svc = orders(request)
+    await svc.mark_read(order_id, MessageSender.CUSTOMER)
+    return [msg_out(m) for m in await svc.messages(order_id, after)]
+
+
+@router.post("/print-orders/{order_id}/messages")
+async def send_message(
+    order_id: int,
+    body: MessageBody,
+    request: Request,
+    background: BackgroundTasks,
+    user: User = Depends(current_user),
+) -> dict:
+    o = await owner_only(request, order_id, user)
+    svc = orders(request)
+    try:
+        m = await svc.add_message(order_id, MessageSender.CUSTOMER, body.body)
+    except AccountError as e:
+        raise fail(e) from e
+    background.add_task(svc.notify_message, o, m.body)
+    return msg_out(m)
 
 
 @router.get("/print-orders/{order_id}/file")
@@ -147,7 +210,9 @@ class CustomerPatch(BaseModel):
 async def admin_orders(
     request: Request, status: str = "", q: str = "", _: User = Depends(admin_user)
 ) -> list[dict]:
-    return [out(o, True, e) for o, e in await orders(request).admin_list(status, q)]
+    rows = await orders(request).admin_list(status, q)
+    unread = await orders(request).unread_map([o.id for o, _e in rows], MessageSender.ADMIN)
+    return [out(o, True, e, unread.get(o.id, 0)) for o, e in rows]
 
 
 @router.patch("/admin/print-orders/{order_id}")
@@ -159,6 +224,32 @@ async def admin_update_order(
     except AccountError as e:
         raise fail(e) from e
     return out(o, True)
+
+
+# ---------- Chat theo đơn: phía admin ----------
+@router.get("/admin/print-orders/{order_id}/messages")
+async def admin_messages(
+    order_id: int, request: Request, after: int = 0, _: User = Depends(admin_user)
+) -> list[dict]:
+    svc = orders(request)
+    if not await svc.get(order_id):
+        raise HTTPException(404, {"code": "no_order", "message": "Không tìm thấy đơn."})
+    await svc.mark_read(order_id, MessageSender.ADMIN)
+    return [msg_out(m) for m in await svc.messages(order_id, after)]
+
+
+@router.post("/admin/print-orders/{order_id}/messages")
+async def admin_send_message(
+    order_id: int, body: MessageBody, request: Request, _: User = Depends(admin_user)
+) -> dict:
+    svc = orders(request)
+    if not await svc.get(order_id):
+        raise HTTPException(404, {"code": "no_order", "message": "Không tìm thấy đơn."})
+    try:
+        m = await svc.add_message(order_id, MessageSender.ADMIN, body.body)
+    except AccountError as e:
+        raise fail(e) from e
+    return msg_out(m)
 
 
 @router.get("/admin/customers")

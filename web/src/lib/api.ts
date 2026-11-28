@@ -1,8 +1,12 @@
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:8000`
-    : 'http://127.0.0.1:8000');
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === 'production'
+    // Sau reverse proxy (Cloudflare Tunnel): gọi same-origin "/v1/*",
+    // để Next rewrites proxy sang backend. KHÔNG gọi thẳng :8000 (cổng đó không hở ra ngoài).
+    ? ''
+    : typeof window !== 'undefined'
+      ? `${window.location.protocol}//${window.location.hostname}:8000`
+      : 'http://127.0.0.1:8000');
 
 export async function api<T = any>(url: string, options: RequestInit = {}): Promise<T> {
   const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;

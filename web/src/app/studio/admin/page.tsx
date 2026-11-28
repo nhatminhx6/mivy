@@ -4,30 +4,107 @@
 // - Khách hàng: danh sách khách, số đơn, tổng chi, ghi chú chăm sóc
 // - Ví: cộng/trừ tiền sau khi nhận chuyển khoản
 
-import { useEffect, useState } from 'react';
-import { Download, Loader2, MessageCircle, Phone, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Clock, Download, Loader2, MessageCircle, Package, Phone, Search, TrendingUp, Users } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { OrderChat } from '@/components/OrderChat';
 import {
   KIND_LABEL, ORDER_STEPS, STATUS_LABEL, authApi, fmtVnd, orderApi, useAuth, zaloLink,
   type Customer, type Me, type OrderStatus, type PrintOrder, type Tx,
 } from '@/lib/auth';
 
-type Tab = 'orders' | 'customers' | 'wallet';
-const TABS: { id: Tab; name: string }[] = [{ id: 'orders', name: 'Đơn in' }, { id: 'customers', name: 'Khách hàng' }, { id: 'wallet', name: 'Ví' }];
+type Tab = 'overview' | 'orders' | 'customers' | 'wallet';
+const TABS: { id: Tab; name: string }[] = [{ id: 'overview', name: 'Tổng quan' }, { id: 'orders', name: 'Đơn in' }, { id: 'customers', name: 'Khách hàng' }, { id: 'wallet', name: 'Ví' }];
 const ALL_STATUS: OrderStatus[] = [...ORDER_STEPS.map((s) => s.id), 'cancelled'];
 
 export default function AdminPage() {
   const { me, ready } = useAuth();
-  const [tab, setTab] = useState<Tab>('orders');
+  const [tab, setTab] = useState<Tab>('overview');
   if (!ready) return null;
   if (!me?.is_admin) return <div className="p-8 text-sm text-slate-400">Trang này chỉ dành cho admin.</div>;
   return (
     <div className="p-6 lg:p-8 space-y-5 max-w-6xl">
-      <PageHeader title="Quản trị" sub="Đơn in, khách hàng, ví." />
+      <PageHeader title="Quản trị" sub="Tổng quan, đơn in, khách hàng, ví." />
       <div className="mv-seg" role="tablist">
         {TABS.map((t) => <button key={t.id} type="button" onClick={() => setTab(t.id)} data-active={tab === t.id} className="mv-seg-btn" data-testid={`admin-tab-${t.id}`}>{t.name}</button>)}
       </div>
-      {tab === 'orders' ? <OrdersTab /> : tab === 'customers' ? <CustomersTab /> : <WalletTab />}
+      {tab === 'overview' ? <OverviewTab onGotoOrders={() => setTab('orders')} />
+        : tab === 'orders' ? <OrdersTab />
+        : tab === 'customers' ? <CustomersTab />
+        : <WalletTab />}
+    </div>
+  );
+}
+
+// ---------- Tổng quan (dashboard: ai vừa gửi yêu cầu in) ----------
+const ACTIVE_STATUS: OrderStatus[] = ['new', 'quoted', 'deposited', 'sample', 'printing'];
+function timeAgo(iso: string) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'vừa xong';
+  if (s < 3600) return `${Math.floor(s / 60)} phút trước`;
+  if (s < 86400) return `${Math.floor(s / 3600)} giờ trước`;
+  if (s < 604800) return `${Math.floor(s / 86400)} ngày trước`;
+  return new Date(iso).toLocaleDateString('vi-VN');
+}
+function StatCard({ icon, label, value, hint, tone }: { icon: React.ReactNode; label: string; value: string; hint?: string; tone?: string }) {
+  return (
+    <div className="glass-panel border border-mv-hair rounded-2xl p-4">
+      <div className={`inline-flex items-center justify-center w-9 h-9 rounded-xl mb-2 ${tone || 'bg-indigo-500/15 text-mv-accent'}`}>{icon}</div>
+      <div className="text-2xl font-bold text-mv-fg leading-tight">{value}</div>
+      <div className="text-xs text-slate-400">{label}{hint && <> · <span className="text-slate-300">{hint}</span></>}</div>
+    </div>
+  );
+}
+function OverviewTab({ onGotoOrders }: { onGotoOrders: () => void }) {
+  const [rows, setRows] = useState<PrintOrder[] | null>(null);
+  useEffect(() => { orderApi.adminList('', '').then(setRows).catch(() => setRows([])); }, []);
+  const s = useMemo(() => {
+    const r = rows || [];
+    const newCount = r.filter((o) => o.status === 'new').length;
+    const active = r.filter((o) => ACTIVE_STATUS.includes(o.status)).length;
+    const revenue = r.filter((o) => o.status === 'delivered').reduce((a, o) => a + (o.price || 0), 0);
+    const customers = new Set(r.map((o) => (o.email || o.phone || o.contact_name || '').toLowerCase()).filter(Boolean)).size;
+    const recent = [...r].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 8);
+    return { newCount, active, revenue, customers, recent, total: r.length };
+  }, [rows]);
+  if (!rows) return <Loader2 className="w-5 h-5 animate-spin text-slate-400" />;
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={<Clock className="w-5 h-5" />} label="Yêu cầu mới chờ xử lý" value={String(s.newCount)} tone={s.newCount ? 'bg-amber-500/20 text-amber-300' : undefined} />
+        <StatCard icon={<Package className="w-5 h-5" />} label="Đơn đang chạy" value={String(s.active)} />
+        <StatCard icon={<Users className="w-5 h-5" />} label="Khách đã gửi đơn" value={String(s.customers)} />
+        <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Doanh thu đã giao" value={fmtVnd(s.revenue)} tone="bg-emerald-500/15 text-emerald-300" />
+      </div>
+
+      <div className="glass-panel border border-mv-hair rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-bold text-mv-fg">Yêu cầu in mới nhất — ai vừa gửi</div>
+          <button type="button" onClick={onGotoOrders} className="text-xs font-bold text-mv-accent hover:underline">Xem tất cả đơn →</button>
+        </div>
+        {s.recent.length === 0 ? <p className="text-sm text-slate-400">Chưa có yêu cầu in nào.</p> : (
+          <div className="divide-y divide-mv-hair">
+            {s.recent.map((o) => (
+              <div key={o.id} className="py-3 flex items-center gap-3 text-xs" data-testid="overview-request">
+                {o.file_name ? <img src={orderApi.previewUrl(o.id)} alt="" className="w-11 h-11 object-contain rounded-lg bg-[#EEF1F6] shrink-0" /> : <div className="w-11 h-11 rounded-lg bg-ink/[0.04] shrink-0" />}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-mv-fg truncate">{o.contact_name || '(khách chưa đặt tên)'}</span>
+                    {o.status === 'new' && <span className="rounded-full bg-amber-500/20 text-amber-300 px-2 py-0.5 text-[10px] font-bold">MỚI</span>}
+                    {(o.unread || 0) > 0 && <span className="rounded-full bg-mv-accent text-white px-2 py-0.5 text-[10px] font-bold">{o.unread} tin</span>}
+                    {!o.has_account && <span className="rounded-full border border-mv-hair text-slate-400 px-2 py-0.5 text-[10px]">khách vãng lai</span>}
+                  </div>
+                  <div className="text-slate-400 truncate">{o.code} · {o.title} · <b className="text-mv-fg">{o.quantity} cái</b>{o.email ? ` · ${o.email}` : ''}</div>
+                </div>
+                <div className="text-right shrink-0 space-y-1">
+                  <div className="text-slate-500">{timeAgo(o.created_at)}</div>
+                  {o.phone ? <ContactLinks phone={o.phone} /> : <span className="text-slate-500">chưa có SĐT</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -111,6 +188,9 @@ function AdminOrder({ o, onSaved }: { o: PrintOrder; onSaved: (o: PrintOrder) =>
           <button type="button" onClick={save} disabled={busy || !dirty} className="mv-btn mv-btn-primary !py-1.5 !text-xs disabled:opacity-50" data-testid="admin-order-save">{busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Lưu</button>
           <span className="text-[11px] text-slate-400">{msg || (o.price ? `${fmtVnd(o.price)} · cọc ${fmtVnd(o.deposit)}` : '')}</span>
         </div>
+        {o.has_account
+          ? <OrderChat orderId={o.id} role="admin" unread={o.unread || 0} />
+          : <p className="text-[11px] text-slate-400">Khách vãng lai (không tài khoản) — liên hệ qua Zalo.</p>}
       </div>
     </div>
   );

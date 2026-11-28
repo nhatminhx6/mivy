@@ -10,11 +10,13 @@ from datetime import datetime
 from pathlib import Path
 
 import httpx
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.db.models import OrderStatus, PrintOrder, User
+from app.db.models import MessageSender, OrderMessage, OrderStatus, PrintOrder, User
 from app.services.account_service import AccountError, normalize_phone
+
+MAX_MESSAGE = 4000
 
 log = logging.getLogger(__name__)
 
@@ -244,7 +246,80 @@ class PrintOrderService:
                 u.name = str(changes["name"] or "").strip()[:120]
         return u
 
+    # ---- Chat theo đơn (khách ↔ Mivy) ----
+    async def messages(self, order_id: int, after: int = 0) -> list[OrderMessage]:
+        async with self.sessions() as s:
+            q = (
+                select(OrderMessage)
+                .where(OrderMessage.order_id == order_id, OrderMessage.id > after)
+                .order_by(OrderMessage.id.asc())
+            )
+            return list((await s.scalars(q)).all())
+
+    async def add_message(self, order_id: int, sender: str, body: str) -> OrderMessage:
+        text = body.strip()
+        if not text:
+            raise AccountError("empty_message", "Nhập nội dung tin nhắn nhé.")
+        async with self.sessions() as s, s.begin():
+            m = OrderMessage(order_id=order_id, sender=sender, body=text[:MAX_MESSAGE])
+            s.add(m)
+        return m
+
+    async def mark_read(self, order_id: int, reader: str) -> None:
+        """reader đọc → đánh dấu đã đọc mọi tin của phía KIA còn chưa đọc."""
+        other = MessageSender.ADMIN if reader == MessageSender.CUSTOMER else MessageSender.CUSTOMER
+        async with self.sessions() as s, s.begin():
+            await s.execute(
+                update(OrderMessage)
+                .where(
+                    OrderMessage.order_id == order_id,
+                    OrderMessage.sender == other,
+                    OrderMessage.read_at.is_(None),
+                )
+                .values(read_at=func.now())
+            )
+
+    async def unread_map(self, order_ids: list[int], viewer: str) -> dict[int, int]:
+        """Số tin chưa đọc của mỗi đơn, theo góc nhìn viewer (đếm tin từ phía KIA)."""
+        if not order_ids:
+            return {}
+        other = MessageSender.ADMIN if viewer == MessageSender.CUSTOMER else MessageSender.CUSTOMER
+        async with self.sessions() as s:
+            q = (
+                select(OrderMessage.order_id, func.count(OrderMessage.id))
+                .where(
+                    OrderMessage.order_id.in_(order_ids),
+                    OrderMessage.sender == other,
+                    OrderMessage.read_at.is_(None),
+                )
+                .group_by(OrderMessage.order_id)
+            )
+            return {oid: n for oid, n in (await s.execute(q)).all()}
+
     # ---- báo admin qua Telegram (không cấu hình thì bỏ qua, lỗi mạng cũng bỏ qua) ----
+    async def notify_message(self, o: PrintOrder, body: str) -> None:
+        """Khách nhắn tin mới trong đơn → báo Telegram cho admin."""
+        if not self.telegram_token or not self.telegram_chat:
+            return
+        lines = [
+            f"💬 Tin nhắn mới · {order_code(o.id)}",
+            f"{o.contact_name or 'Khách'} · {o.phone}",
+            body[:600],
+        ]
+        if self.site_url:
+            lines.append(f"{self.site_url.rstrip('/')}/studio/admin")
+        base = f"https://api.telegram.org/bot{self.telegram_token}"
+        try:
+            async with httpx.AsyncClient(timeout=15) as c:
+                r = await c.post(
+                    f"{base}/sendMessage",
+                    data={"chat_id": self.telegram_chat, "text": "\n".join(lines)},
+                )
+                if r.status_code >= 400:
+                    log.warning("telegram msg notify failed: %s %s", r.status_code, r.text[:200])
+        except httpx.HTTPError as e:
+            log.warning("telegram msg notify error: %s", e)
+
     async def notify_new(self, o: PrintOrder, email: str) -> None:
         if not self.telegram_token or not self.telegram_chat:
             return

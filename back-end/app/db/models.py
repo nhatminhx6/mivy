@@ -120,3 +120,23 @@ class PrintOrder(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
     )
+
+
+# ---------- Chat theo đơn (khách ↔ Mivy, thay cho Zalo cho đơn có tài khoản) ----------
+class MessageSender(StrEnum):
+    CUSTOMER = "customer"  # chủ đơn gửi
+    ADMIN = "admin"  # Mivy trả lời
+
+
+class OrderMessage(Base):
+    __tablename__ = "order_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("print_orders.id"), index=True)
+    sender: Mapped[str] = mapped_column(String(20))  # customer | admin
+    body: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
+    # thời điểm phía KIA đọc tin (tin khách → admin đọc; tin admin → khách đọc). None = chưa đọc.
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

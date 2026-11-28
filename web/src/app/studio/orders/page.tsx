@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Download, Loader2, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
+import { OrderChat } from '@/components/OrderChat';
 import { BANK, ORDER_STEPS, STATUS_GUIDE, fmtVnd, orderApi, useAuth, vietQr, type PrintOrder } from '@/lib/auth';
 
 export default function MyOrdersPage() {
@@ -77,7 +78,10 @@ function OrderCard({ o }: { o: PrintOrder }) {
             </div>
           </div>
         ) : null}
-        {o.file_name && <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 text-xs font-bold text-mv-accent hover:underline"><Download className="w-3.5 h-3.5" /> Tải file in</a>}
+        <div className="flex items-center gap-4 flex-wrap">
+          {o.file_name && <a href={orderApi.fileUrl(o.id)} className="inline-flex items-center gap-1.5 text-xs font-bold text-mv-accent hover:underline"><Download className="w-3.5 h-3.5" /> Tải file in</a>}
+          <OrderChat orderId={o.id} role="customer" unread={o.unread || 0} />
+        </div>
       </div>
     </div>
   );
